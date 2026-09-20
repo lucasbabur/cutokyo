@@ -12,6 +12,15 @@ publish = false
 cutokyo-domain.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+time.workspace = true
+uuid = { workspace = true, features = ["v4"] }
+rusqlite.workspace = true
+rusqlite_migration.workspace = true
+fs4.workspace = true
+sha2.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
 
 [lints]
 workspace = true

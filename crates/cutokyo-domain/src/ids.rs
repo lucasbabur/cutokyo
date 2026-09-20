@@ -116,6 +116,47 @@ identifier!(
     "plugin_id",
     "Identity declared by an external plugin."
 );
+identifier!(
+    AccountId,
+    "account_id",
+    "Stable identity for a harness or provider account."
+);
+identifier!(TurnId, "turn_id", "Stable identity for a projected turn.");
+identifier!(
+    MessageId,
+    "message_id",
+    "Stable identity for a projected transcript message."
+);
+identifier!(
+    ToolCallId,
+    "tool_call_id",
+    "Stable identity for a projected tool invocation."
+);
+identifier!(
+    AgentRunId,
+    "agent_run_id",
+    "Stable identity for a projected agent or subagent run."
+);
+identifier!(
+    InstallationSnapshotId,
+    "installation_snapshot_id",
+    "Stable identity for one installed-infrastructure snapshot."
+);
+identifier!(
+    ConfigItemId,
+    "config_item_id",
+    "Stable identity for one installed configuration item."
+);
+identifier!(
+    PriceSnapshotId,
+    "price_snapshot_id",
+    "Stable identity for a validity-bounded price snapshot."
+);
+identifier!(
+    QuotaWindowId,
+    "quota_window_id",
+    "Stable identity for a provider quota window."
+);
 
 #[cfg(test)]
 mod tests {
