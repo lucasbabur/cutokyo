@@ -8,6 +8,9 @@ on:
 permissions:
   contents: read
 
+env:
+  CARGO_DIST_VERSION: "0.32.0"
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -94,14 +97,16 @@ jobs:
         run: corepack enable && corepack prepare pnpm@11.25.0 --activate
       - name: Install TypeScript workspace without tracked-source rewrites
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/pnpm-install-source.json" -- pnpm install --frozen-lockfile
-      - name: Build production frontend
-        run: pnpm --dir ui build
+      - name: Build production frontend without tracked-source rewrites
+        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/frontend-build-source.json" -- pnpm --dir ui build
+      - name: Install pinned cargo-dist for npm-wrapper tests
+        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/install-dist-source.json" -- cargo install cargo-dist --version "$CARGO_DIST_VERSION" --locked
       - name: Build Rust workspace without tracked-source rewrites
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/build-source.json" -- cargo build --locked --workspace
       - name: Test Rust workspace without tracked-source rewrites
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/test-source.json" -- cargo test --locked --workspace
-      - name: Build actual Tauri application
-        run: pnpm tauri build --debug --no-bundle
+      - name: Build actual Tauri application without tracked-source rewrites
+        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/tauri-build-source.json" -- pnpm tauri build --debug --no-bundle
       - name: Exercise native Tauri journey on Linux
         if: runner.os == 'Linux'
         run: xvfb-run -a pnpm --dir ui test:e2e:tauri

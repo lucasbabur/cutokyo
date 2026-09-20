@@ -1,8 +1,13 @@
 //! Deterministic fake endpoint and adverse-world integration checks.
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
+    ffi::OsString,
+    fmt::Write as _,
     fs,
+    io::{Read as _, Seek as _, SeekFrom},
+    path::{Path, PathBuf},
+    process::{Command, ExitStatus, Stdio},
     sync::{
         Arc, Mutex, PoisonError,
         atomic::{AtomicUsize, Ordering},
@@ -58,9 +63,12 @@ use fake_harness::{
     FakeCodexProcessRunner, FakeMcpEndpoint, FakeMcpServer, FakeOpenCodeSpawner,
     FakeProviderEndpoint, FakeWorld, FixtureCoverage, HarnessScenario, ProviderRequest,
 };
+use flate2::read::GzDecoder;
 use rmcp::model::{CallToolResult, ContentBlock, Tool, ToolAnnotations};
 use serde_json::{Map, Value, json};
+use sha2::{Digest as _, Sha256};
 use tokio_util::sync::CancellationToken;
+use wait_timeout::ChildExt as _;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -2254,4 +2262,1208 @@ async fn analysis_preview_cancel_retry_idempotency() -> Result<(), Box<dyn std::
         [receipt.summary]
     );
     Ok(())
+}
+
+#[derive(Debug)]
+struct BoundedCommandOutput {
+    status: ExitStatus,
+    stdout: String,
+    stderr: String,
+}
+
+fn run_bounded(
+    command: &mut Command,
+    timeout: Duration,
+    label: &str,
+) -> TestResult<BoundedCommandOutput> {
+    let rendered = format!("{command:?}");
+    let mut stdout = tempfile::tempfile()?;
+    let mut stderr = tempfile::tempfile()?;
+    command.stdout(Stdio::from(stdout.try_clone()?));
+    command.stderr(Stdio::from(stderr.try_clone()?));
+    let mut child = command
+        .spawn()
+        .map_err(|error| format!("could not start {label} ({rendered}): {error}"))?;
+    let Some(status) = child.wait_timeout(timeout)? else {
+        child.kill()?;
+        let _terminated = child.wait()?;
+        return Err(format!("{label} exceeded its {timeout:?} time bound ({rendered})").into());
+    };
+    stdout.seek(SeekFrom::Start(0))?;
+    stderr.seek(SeekFrom::Start(0))?;
+    let mut stdout_bytes = Vec::new();
+    let mut stderr_bytes = Vec::new();
+    stdout.read_to_end(&mut stdout_bytes)?;
+    stderr.read_to_end(&mut stderr_bytes)?;
+    Ok(BoundedCommandOutput {
+        status,
+        stdout: String::from_utf8_lossy(&stdout_bytes).into_owned(),
+        stderr: String::from_utf8_lossy(&stderr_bytes).into_owned(),
+    })
+}
+
+fn checked_output(output: BoundedCommandOutput, label: &str) -> TestResult<BoundedCommandOutput> {
+    if output.status.success() {
+        return Ok(output);
+    }
+    Err(format!(
+        "{label} exited {:?}\nstdout:\n{}\nstderr:\n{}",
+        output.status.code(),
+        output.stdout,
+        output.stderr
+    )
+    .into())
+}
+
+fn python_executable() -> &'static str {
+    if cfg!(windows) { "python" } else { "python3" }
+}
+
+fn command_args(values: &[&str]) -> Vec<OsString> {
+    values.iter().map(OsString::from).collect()
+}
+
+fn source_guard_command(
+    script_root: &Path,
+    guarded_root: &Path,
+    manifest: &Path,
+    guarded_command: &[OsString],
+    environment: &[(&str, &Path)],
+    timeout: Duration,
+) -> TestResult<BoundedCommandOutput> {
+    let mut command = Command::new(python_executable());
+    command
+        .arg(script_root.join("tools/scripts/source-snapshot.py"))
+        .arg("--root")
+        .arg(guarded_root)
+        .arg("--manifest")
+        .arg(manifest)
+        .arg("--")
+        .args(guarded_command)
+        .current_dir(guarded_root);
+    for (key, value) in environment {
+        command.env(key, value);
+    }
+    run_bounded(&mut command, timeout, "tracked-source guard")
+}
+
+fn run_git(root: &Path, arguments: &[&str]) -> TestResult<BoundedCommandOutput> {
+    let mut command = Command::new("git");
+    command.args(arguments).current_dir(root);
+    checked_output(
+        run_bounded(&mut command, Duration::from_secs(30), "Git fixture command")?,
+        "Git fixture command",
+    )
+}
+
+fn initialize_git_fixture(root: &Path) -> TestResult {
+    run_git(root, &["init", "--quiet"])?;
+    run_git(root, &["config", "user.name", "Cutokyo C19 Fixture"])?;
+    run_git(
+        root,
+        &["config", "user.email", "c19-fixture@cutokyo.invalid"],
+    )?;
+    run_git(root, &["add", "--all"])?;
+    run_git(root, &["commit", "--quiet", "-m", "C19 disposable fixture"])?;
+    Ok(())
+}
+
+fn tracked_checkout(source: &Path, destination: &Path) -> TestResult {
+    fs::create_dir_all(destination)?;
+    let mut list = Command::new("git");
+    list.args(["ls-files", "-z"]).current_dir(source);
+    let files = checked_output(
+        run_bounded(
+            &mut list,
+            Duration::from_secs(30),
+            "list tracked source for disposable checkout",
+        )?,
+        "list tracked source for disposable checkout",
+    )?;
+    for relative in files.stdout.split('\0').filter(|value| !value.is_empty()) {
+        let from = source.join(relative);
+        let to = destination.join(relative);
+        let metadata = fs::symlink_metadata(&from)?;
+        if !metadata.file_type().is_file() {
+            return Err(
+                format!("tracked checkout fixture only accepts regular files: {relative}").into(),
+            );
+        }
+        if let Some(parent) = to.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::copy(&from, &to)?;
+        fs::set_permissions(&to, metadata.permissions())?;
+    }
+    initialize_git_fixture(destination)
+}
+
+fn json_file(path: &Path) -> TestResult<Value> {
+    Ok(serde_json::from_slice(&fs::read(path)?)?)
+}
+
+fn sha256_path(path: &Path) -> TestResult<String> {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+
+    let mut hasher = Sha256::new();
+    let mut source = fs::File::open(path)?;
+    let mut block = vec![0_u8; 64 * 1024];
+    loop {
+        let read = source.read(&mut block)?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&block[..read]);
+    }
+    let digest = hasher.finalize();
+    let mut encoded = String::with_capacity(64);
+    for byte in digest {
+        encoded.push(char::from(HEX[usize::from(byte >> 4)]));
+        encoded.push(char::from(HEX[usize::from(byte & 0x0f)]));
+    }
+    Ok(encoded)
+}
+
+fn write_checksum_sidecar(archive: &Path, checksum: &Path) -> TestResult {
+    let filename = archive
+        .file_name()
+        .and_then(|value| value.to_str())
+        .ok_or("native archive has no UTF-8 filename")?;
+    fs::write(checksum, format!("{} *{filename}\n", sha256_path(archive)?))?;
+    Ok(())
+}
+
+fn assert_fixture_clean(root: &Path) -> TestResult {
+    let status = run_git(root, &["status", "--porcelain=v1", "--untracked-files=all"])?;
+    if !status.stdout.is_empty() {
+        return Err(format!("disposable checkout is dirty:\n{}", status.stdout).into());
+    }
+    Ok(())
+}
+
+const SOURCE_GUARD_MAIN: &str = "fn main() { println!(\"guarded build\"); }\n";
+
+fn create_source_guard_fixture(checkout: &Path) -> TestResult {
+    fs::create_dir_all(checkout.join("src"))?;
+    fs::write(
+        checkout.join("Cargo.toml"),
+        "[package]\nname = \"source-guard-fixture\"\nversion = \"0.1.0\"\nedition = \"2024\"\n",
+    )?;
+    fs::write(checkout.join("src/main.rs"), SOURCE_GUARD_MAIN)?;
+    fs::write(
+        checkout.join("package.json"),
+        "{\"name\":\"source-guard-fixture\",\"version\":\"1.0.0\",\"files\":[\"index.js\"]}\n",
+    )?;
+    fs::write(checkout.join("index.js"), "module.exports = 'guarded';\n")?;
+    fs::write(checkout.join(".gitignore"), "/target/\n*.tgz\n")?;
+    let mut lockfile = Command::new("cargo");
+    lockfile
+        .args(["generate-lockfile", "--offline"])
+        .current_dir(checkout);
+    checked_output(
+        run_bounded(
+            &mut lockfile,
+            Duration::from_secs(30),
+            "generate disposable Cargo lockfile",
+        )?,
+        "generate disposable Cargo lockfile",
+    )?;
+    initialize_git_fixture(checkout)
+}
+
+fn prove_guarded_builds(production_root: &Path, checkout: &Path, artifacts: &Path) -> TestResult {
+    let cargo_manifest = artifacts.join("cargo-source.json");
+    let cargo_target = artifacts.join("cargo-target");
+    let cargo_arguments = vec![
+        OsString::from("cargo"),
+        OsString::from("build"),
+        OsString::from("--locked"),
+        OsString::from("--manifest-path"),
+        checkout.join("Cargo.toml").into_os_string(),
+        OsString::from("--target-dir"),
+        cargo_target.clone().into_os_string(),
+    ];
+    checked_output(
+        source_guard_command(
+            production_root,
+            checkout,
+            &cargo_manifest,
+            &cargo_arguments,
+            &[],
+            Duration::from_secs(120),
+        )?,
+        "guarded representative Cargo build",
+    )?;
+    let cargo_evidence = json_file(&cargo_manifest)?;
+    assert_eq!(cargo_evidence["source_unchanged"], true);
+    assert_eq!(cargo_evidence["repository_clean"], true);
+    assert_eq!(cargo_evidence["command_executed"], true);
+    let binary_name = if cfg!(windows) {
+        "source-guard-fixture.exe"
+    } else {
+        "source-guard-fixture"
+    };
+    let built_binary = cargo_target.join("debug").join(binary_name);
+    assert!(built_binary.is_file());
+    assert!(!built_binary.starts_with(checkout));
+
+    let npm_manifest = artifacts.join("npm-source.json");
+    let npm_output = artifacts.join("npm-pack");
+    fs::create_dir_all(&npm_output)?;
+    let npm_arguments = vec![
+        OsString::from("npm"),
+        OsString::from("pack"),
+        checkout.as_os_str().to_owned(),
+        OsString::from("--ignore-scripts"),
+        OsString::from("--pack-destination"),
+        npm_output.clone().into_os_string(),
+    ];
+    checked_output(
+        source_guard_command(
+            production_root,
+            checkout,
+            &npm_manifest,
+            &npm_arguments,
+            &[],
+            Duration::from_secs(120),
+        )?,
+        "guarded representative npm package",
+    )?;
+    assert!(npm_output.join("source-guard-fixture-1.0.0.tgz").is_file());
+    assert_eq!(json_file(&npm_manifest)?["source_unchanged"], true);
+    assert_fixture_clean(checkout)
+}
+
+fn prove_guard_catches_rewrite(
+    production_root: &Path,
+    checkout: &Path,
+    artifacts: &Path,
+) -> TestResult {
+    let manifest = artifacts.join("rewrite-source.json");
+    let arguments = command_args(&[
+        python_executable(),
+        "-c",
+        "from pathlib import Path; Path('src/main.rs').write_text('fn main() {}\\n', encoding='utf-8')",
+    ]);
+    let rewrite = source_guard_command(
+        production_root,
+        checkout,
+        &manifest,
+        &arguments,
+        &[],
+        Duration::from_secs(30),
+    )?;
+    assert_eq!(rewrite.status.code(), Some(86));
+    let evidence = json_file(&manifest)?;
+    assert_eq!(evidence["source_unchanged"], false);
+    assert_eq!(evidence["changed_paths"], json!(["src/main.rs"]));
+    assert_eq!(evidence["command_exit_code"], 0);
+    fs::write(checkout.join("src/main.rs"), SOURCE_GUARD_MAIN)?;
+    assert_fixture_clean(checkout)
+}
+
+fn prove_guard_refuses_dirty_start(
+    production_root: &Path,
+    checkout: &Path,
+    artifacts: &Path,
+) -> TestResult {
+    fs::write(
+        checkout.join("Cargo.toml"),
+        "[package]\nname = \"source-guard-fixture\"\nversion = \"9.9.9\"\nedition = \"2024\"\n",
+    )?;
+    let should_not_run = artifacts.join("dirty-command-ran");
+    let arguments = vec![
+        OsString::from(python_executable()),
+        OsString::from("-c"),
+        OsString::from(
+            "from pathlib import Path; import sys; Path(sys.argv[1]).write_text('ran', encoding='utf-8')",
+        ),
+        should_not_run.clone().into_os_string(),
+    ];
+    let dirty_manifest = artifacts.join("dirty-source.json");
+    let dirty = source_guard_command(
+        production_root,
+        checkout,
+        &dirty_manifest,
+        &arguments,
+        &[],
+        Duration::from_secs(30),
+    )?;
+    assert_eq!(dirty.status.code(), Some(86));
+    assert!(!should_not_run.exists());
+    let evidence = json_file(&dirty_manifest)?;
+    assert_eq!(evidence["source_unchanged"], false);
+    assert_eq!(evidence["repository_clean"], false);
+    assert_eq!(evidence["command_executed"], false);
+    assert_eq!(evidence["preexisting_changes"], json!(["Cargo.toml"]));
+
+    run_git(checkout, &["add", "Cargo.toml"])?;
+    let staged_manifest = artifacts.join("staged-source.json");
+    let staged = source_guard_command(
+        production_root,
+        checkout,
+        &staged_manifest,
+        &arguments,
+        &[],
+        Duration::from_secs(30),
+    )?;
+    assert_eq!(staged.status.code(), Some(86));
+    assert!(!should_not_run.exists());
+    assert_eq!(
+        json_file(&staged_manifest)?["preexisting_changes"],
+        json!(["Cargo.toml"])
+    );
+    run_git(
+        checkout,
+        &["restore", "--staged", "--worktree", "Cargo.toml"],
+    )?;
+    assert_fixture_clean(checkout)
+}
+
+#[test]
+fn artifact_source_immutability() -> TestResult {
+    let production_root = repository_root()?;
+    let temporary = tempfile::tempdir()?;
+    let checkout = temporary.path().join("checkout");
+    let artifacts = temporary.path().join("artifacts");
+    fs::create_dir_all(&artifacts)?;
+    create_source_guard_fixture(&checkout)?;
+    prove_guarded_builds(&production_root, &checkout, &artifacts)?;
+    prove_guard_catches_rewrite(&production_root, &checkout, &artifacts)?;
+    prove_guard_refuses_dirty_start(&production_root, &checkout, &artifacts)
+}
+
+fn host_dist_target() -> TestResult<&'static str> {
+    match (std::env::consts::OS, std::env::consts::ARCH) {
+        ("linux", "x86_64") => Ok("x86_64-unknown-linux-gnu"),
+        ("macos", "x86_64") => Ok("x86_64-apple-darwin"),
+        ("macos", "aarch64") => Ok("aarch64-apple-darwin"),
+        ("windows", "x86_64") => Ok("x86_64-pc-windows-msvc"),
+        (os, architecture) => {
+            Err(format!("cargo-dist npm fixture does not declare host {os}/{architecture}").into())
+        }
+    }
+}
+
+fn native_archive_name() -> TestResult<String> {
+    let suffix = if cfg!(windows) { ".zip" } else { ".tar.xz" };
+    Ok(format!("cutokyo-cli-{}{suffix}", host_dist_target()?))
+}
+
+fn native_binary_name() -> &'static str {
+    if cfg!(windows) {
+        "cutokyo.exe"
+    } else {
+        "cutokyo"
+    }
+}
+
+fn create_native_archive(binary: &Path, archive: &Path) -> TestResult {
+    let archive_parent = archive.parent().ok_or("native archive has no parent")?;
+    fs::create_dir_all(archive_parent)?;
+    let archive_path = format!("cutokyo-cli-0.1.0/{}", native_binary_name());
+    let script = r"
+import pathlib
+import sys
+import tarfile
+import zipfile
+binary = pathlib.Path(sys.argv[1])
+output = pathlib.Path(sys.argv[2])
+member = sys.argv[3]
+if output.name.endswith('.zip'):
+    with zipfile.ZipFile(output, 'w', compression=zipfile.ZIP_DEFLATED) as package:
+        package.write(binary, member)
+else:
+    with tarfile.open(output, 'w:xz') as package:
+        package.add(binary, arcname=member, recursive=False)
+";
+    let mut command = Command::new(python_executable());
+    command
+        .arg("-c")
+        .arg(script)
+        .arg(binary)
+        .arg(archive)
+        .arg(archive_path)
+        .current_dir(archive_parent);
+    checked_output(
+        run_bounded(
+            &mut command,
+            Duration::from_secs(60),
+            "create representative cargo-dist native archive",
+        )?,
+        "create representative cargo-dist native archive",
+    )?;
+    Ok(())
+}
+
+fn extract_generated_npm_package(archive: &Path, destination: &Path) -> TestResult<PathBuf> {
+    fs::create_dir_all(destination)?;
+    let compressed = GzDecoder::new(fs::File::open(archive)?);
+    let mut package = tar::Archive::new(compressed);
+    package.unpack(destination)?;
+    let root = destination.join("package");
+    if !root.join("package.json").is_file() {
+        return Err("cargo-dist npm package did not contain package/package.json".into());
+    }
+    Ok(root)
+}
+
+struct NpmSmokeInputs<'a> {
+    production_root: &'a Path,
+    checkout: &'a Path,
+    npm_package: &'a Path,
+    native_archive: &'a Path,
+    native_checksum: &'a Path,
+    dependency_package: &'a Path,
+    manifest: &'a Path,
+}
+
+fn run_npm_smoke(inputs: &NpmSmokeInputs<'_>) -> TestResult<BoundedCommandOutput> {
+    let command = vec![
+        OsString::from(python_executable()),
+        inputs
+            .production_root
+            .join("tools/release/smoke-npm.py")
+            .into_os_string(),
+        OsString::from("--npm-package"),
+        inputs.npm_package.as_os_str().to_owned(),
+        OsString::from("--native-archive"),
+        inputs.native_archive.as_os_str().to_owned(),
+        OsString::from("--native-checksum"),
+        inputs.native_checksum.as_os_str().to_owned(),
+        OsString::from("--dependency-package"),
+        inputs.dependency_package.as_os_str().to_owned(),
+        OsString::from("--expected-version"),
+        OsString::from("v0.1.0"),
+    ];
+    source_guard_command(
+        inputs.checkout,
+        inputs.checkout,
+        inputs.manifest,
+        &command,
+        &[],
+        Duration::from_secs(180),
+    )
+}
+
+struct NpmArtifacts {
+    npm_package: PathBuf,
+    native_archive: PathBuf,
+    native_checksum: PathBuf,
+    dependency_package: PathBuf,
+}
+
+fn generate_npm_wrapper(checkout: &Path, artifacts: &Path) -> TestResult<PathBuf> {
+    let manifest = artifacts.join("dist-global-source.json");
+    let dist_target = artifacts.join("dist-target");
+    let arguments = command_args(&[
+        "dist",
+        "build",
+        "--tag=v0.1.0",
+        "--artifacts=global",
+        "--output-format=json",
+    ]);
+    checked_output(
+        source_guard_command(
+            checkout,
+            checkout,
+            &manifest,
+            &arguments,
+            &[("CARGO_TARGET_DIR", &dist_target)],
+            Duration::from_secs(180),
+        )?,
+        "cargo-dist generated npm package",
+    )?;
+    assert_eq!(json_file(&manifest)?["source_unchanged"], true);
+    let generated = dist_target.join("distrib/cutokyo-cli-npm-package.tar.gz");
+    assert!(generated.is_file());
+    let wrapper = extract_generated_npm_package(&generated, &artifacts.join("generated-wrapper"))?;
+    let metadata = json_file(&wrapper.join("package.json"))?;
+    assert_eq!(metadata["name"], "cutokyo");
+    assert_eq!(metadata["version"], "0.1.0");
+    assert_eq!(metadata["bin"]["cutokyo"], "run-cutokyo.js");
+    assert_eq!(
+        metadata["supportedPlatforms"][host_dist_target()?]["artifactName"],
+        native_archive_name()?
+    );
+    assert!(!wrapper.join("src").exists());
+    assert!(!wrapper.join("index.ts").exists());
+    Ok(wrapper)
+}
+
+fn build_npm_native_archive(checkout: &Path, artifacts: &Path) -> TestResult<(PathBuf, PathBuf)> {
+    let build_target = artifacts.join("cli-target");
+    let manifest = artifacts.join("cli-build-source.json");
+    let arguments = vec![
+        OsString::from("cargo"),
+        OsString::from("build"),
+        OsString::from("--locked"),
+        OsString::from("--manifest-path"),
+        checkout.join("Cargo.toml").into_os_string(),
+        OsString::from("-p"),
+        OsString::from("cutokyo-cli"),
+        OsString::from("--target-dir"),
+        build_target.clone().into_os_string(),
+    ];
+    checked_output(
+        source_guard_command(
+            checkout,
+            checkout,
+            &manifest,
+            &arguments,
+            &[],
+            Duration::from_secs(300),
+        )?,
+        "native Cutokyo CLI build for npm artifact",
+    )?;
+    let binary = build_target.join("debug").join(native_binary_name());
+    assert!(binary.is_file());
+    let directory = artifacts.join("native");
+    fs::create_dir_all(&directory)?;
+    let archive = directory.join(native_archive_name()?);
+    create_native_archive(&binary, &archive)?;
+    let checksum = archive.with_file_name(format!(
+        "{}.sha256",
+        archive
+            .file_name()
+            .and_then(|value| value.to_str())
+            .ok_or("native archive filename is not UTF-8")?
+    ));
+    write_checksum_sidecar(&archive, &checksum)?;
+    Ok((archive, checksum))
+}
+
+fn pack_npm_wrapper(checkout: &Path, artifacts: &Path, wrapper: &Path) -> TestResult<PathBuf> {
+    let directory = artifacts.join("npm-package");
+    fs::create_dir_all(&directory)?;
+    let manifest = artifacts.join("npm-pack-source.json");
+    let arguments = vec![
+        OsString::from("npm"),
+        OsString::from("pack"),
+        wrapper.as_os_str().to_owned(),
+        OsString::from("--ignore-scripts"),
+        OsString::from("--pack-destination"),
+        directory.clone().into_os_string(),
+    ];
+    checked_output(
+        source_guard_command(
+            checkout,
+            checkout,
+            &manifest,
+            &arguments,
+            &[],
+            Duration::from_secs(120),
+        )?,
+        "locally pack cargo-dist npm wrapper",
+    )?;
+    let package = directory.join("cutokyo-0.1.0.tgz");
+    assert!(package.is_file());
+    Ok(package)
+}
+
+fn prepare_npm_artifacts(checkout: &Path, artifacts: &Path) -> TestResult<NpmArtifacts> {
+    let wrapper = generate_npm_wrapper(checkout, artifacts)?;
+    let (native_archive, native_checksum) = build_npm_native_archive(checkout, artifacts)?;
+    let npm_package = pack_npm_wrapper(checkout, artifacts, &wrapper)?;
+    let dependency_package = checkout.join("tests/fixtures/release/detect-libc-2.1.2.tgz");
+    assert!(dependency_package.is_file());
+    assert_eq!(
+        sha256_path(&dependency_package)?,
+        "270dec0fc06cff86481da8af2dd8f18dee6b602790b14ef0e1c2c18d7da39427"
+    );
+    assert_fixture_clean(checkout)?;
+    Ok(NpmArtifacts {
+        npm_package,
+        native_archive,
+        native_checksum,
+        dependency_package,
+    })
+}
+
+fn prove_npm_package_launches(
+    production_root: &Path,
+    checkout: &Path,
+    artifacts: &Path,
+    package: &NpmArtifacts,
+) -> TestResult {
+    let smoke = checked_output(
+        run_npm_smoke(&NpmSmokeInputs {
+            production_root,
+            checkout,
+            npm_package: &package.npm_package,
+            native_archive: &package.native_archive,
+            native_checksum: &package.native_checksum,
+            dependency_package: &package.dependency_package,
+            manifest: &artifacts.join("npm-smoke-source.json"),
+        })?,
+        "offline installed npm wrapper smoke",
+    )?;
+    let receipt: Value = serde_json::from_str(smoke.stdout.trim())?;
+    assert_eq!(receipt["version"], "0.1.0");
+    assert_eq!(receipt["launcher"], "node_modules/.bin/cutokyo");
+    assert_eq!(receipt["source_tree_shortcut"], false);
+    assert_eq!(
+        receipt["network_mode"],
+        "offline-private-cache-and-loopback-artifact-server"
+    );
+    let native_location = receipt["native_location"]
+        .as_str()
+        .ok_or("npm smoke receipt omitted native_location")?;
+    assert!(native_location.starts_with("node_modules/cutokyo/"));
+    assert!(native_location.contains(".bin_real"));
+    assert!(!native_location.contains("target/"));
+    assert_eq!(receipt["npm_sha256"], sha256_path(&package.npm_package)?);
+    assert_eq!(
+        receipt["native_sha256"],
+        sha256_path(&package.native_archive)?
+    );
+    Ok(())
+}
+
+fn prove_npm_rejects_missing_archive(
+    production_root: &Path,
+    checkout: &Path,
+    artifacts: &Path,
+    package: &NpmArtifacts,
+) -> TestResult {
+    let directory = artifacts.join("missing");
+    fs::create_dir_all(&directory)?;
+    let archive = directory.join(native_archive_name()?);
+    let checksum = archive.with_file_name(format!(
+        "{}.sha256",
+        archive
+            .file_name()
+            .and_then(|value| value.to_str())
+            .ok_or("missing archive filename is not UTF-8")?
+    ));
+    let result = run_npm_smoke(&NpmSmokeInputs {
+        production_root,
+        checkout,
+        npm_package: &package.npm_package,
+        native_archive: &archive,
+        native_checksum: &checksum,
+        dependency_package: &package.dependency_package,
+        manifest: &artifacts.join("npm-missing-source.json"),
+    })?;
+    assert!(!result.status.success());
+    assert!(result.stderr.contains("native archive"));
+    Ok(())
+}
+
+fn prove_npm_rejects_wrong_binary(
+    production_root: &Path,
+    checkout: &Path,
+    artifacts: &Path,
+    package: &NpmArtifacts,
+) -> TestResult {
+    let directory = artifacts.join("wrong");
+    fs::create_dir_all(&directory)?;
+    let binary = directory.join(native_binary_name());
+    fs::write(&binary, b"this is not a native executable\n")?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        fs::set_permissions(&binary, fs::Permissions::from_mode(0o755))?;
+    }
+    let archive = directory.join(native_archive_name()?);
+    create_native_archive(&binary, &archive)?;
+    let checksum = archive.with_file_name(format!(
+        "{}.sha256",
+        archive
+            .file_name()
+            .and_then(|value| value.to_str())
+            .ok_or("wrong archive filename is not UTF-8")?
+    ));
+    write_checksum_sidecar(&archive, &checksum)?;
+    let result = run_npm_smoke(&NpmSmokeInputs {
+        production_root,
+        checkout,
+        npm_package: &package.npm_package,
+        native_archive: &archive,
+        native_checksum: &checksum,
+        dependency_package: &package.dependency_package,
+        manifest: &artifacts.join("npm-wrong-source.json"),
+    })?;
+    assert!(!result.status.success());
+    assert!(
+        result.stderr.contains("installed launcher exited")
+            || result.stderr.contains("generated postinstall exited")
+    );
+    Ok(())
+}
+
+fn prove_npm_rejects_checksum_mismatch(
+    production_root: &Path,
+    checkout: &Path,
+    artifacts: &Path,
+    package: &NpmArtifacts,
+) -> TestResult {
+    let directory = artifacts.join("mismatch");
+    fs::create_dir_all(&directory)?;
+    let archive = directory.join(native_archive_name()?);
+    fs::copy(&package.native_archive, &archive)?;
+    let filename = archive
+        .file_name()
+        .and_then(|value| value.to_str())
+        .ok_or("mismatched archive filename is not UTF-8")?;
+    let checksum = archive.with_file_name(format!("{filename}.sha256"));
+    fs::write(&checksum, format!("{} *{filename}\n", "0".repeat(64)))?;
+    let result = run_npm_smoke(&NpmSmokeInputs {
+        production_root,
+        checkout,
+        npm_package: &package.npm_package,
+        native_archive: &archive,
+        native_checksum: &checksum,
+        dependency_package: &package.dependency_package,
+        manifest: &artifacts.join("npm-mismatch-source.json"),
+    })?;
+    assert!(!result.status.success());
+    assert!(result.stderr.contains("checksum mismatch"));
+    Ok(())
+}
+
+#[test]
+fn npm_wrapper_install() -> TestResult {
+    let production_root = repository_root()?;
+    let temporary = tempfile::tempdir()?;
+    let checkout = temporary.path().join("checkout");
+    let artifacts = temporary.path().join("artifacts");
+    tracked_checkout(&production_root, &checkout)?;
+    fs::create_dir_all(&artifacts)?;
+    let package = prepare_npm_artifacts(&checkout, &artifacts)?;
+    prove_npm_package_launches(&production_root, &checkout, &artifacts, &package)?;
+    prove_npm_rejects_missing_archive(&production_root, &checkout, &artifacts, &package)?;
+    prove_npm_rejects_wrong_binary(&production_root, &checkout, &artifacts, &package)?;
+    prove_npm_rejects_checksum_mismatch(&production_root, &checkout, &artifacts, &package)?;
+    assert_fixture_clean(&checkout)
+}
+
+fn write_release_file(root: &Path, relative: &str, bytes: &[u8]) -> TestResult<PathBuf> {
+    let path = root.join(relative);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    fs::write(&path, bytes)?;
+    Ok(path)
+}
+
+fn refresh_release_checksums(root: &Path) -> TestResult {
+    let mut paths = Vec::new();
+    for entry in walk_release_files(root)? {
+        let relative = entry.relative_path;
+        if !matches!(
+            relative.as_str(),
+            "SHA256SUMS" | "release-manifest.json" | "latest.json"
+        ) {
+            paths.push((relative, entry.path));
+        }
+    }
+    paths.sort_by(|left, right| left.0.cmp(&right.0));
+    let mut inventory = String::new();
+    for (relative, path) in paths {
+        writeln!(&mut inventory, "{} *{relative}", sha256_path(&path)?)?;
+    }
+    fs::write(root.join("SHA256SUMS"), inventory)?;
+    Ok(())
+}
+
+struct ReleaseFile {
+    path: PathBuf,
+    relative_path: String,
+}
+
+fn walk_release_files(root: &Path) -> TestResult<Vec<ReleaseFile>> {
+    fn visit(root: &Path, directory: &Path, files: &mut Vec<ReleaseFile>) -> TestResult {
+        for entry in fs::read_dir(directory)? {
+            let entry = entry?;
+            let path = entry.path();
+            let file_type = entry.file_type()?;
+            if file_type.is_dir() {
+                visit(root, &path, files)?;
+            } else if file_type.is_file() {
+                files.push(ReleaseFile {
+                    relative_path: path
+                        .strip_prefix(root)?
+                        .to_string_lossy()
+                        .replace('\\', "/"),
+                    path,
+                });
+            }
+        }
+        Ok(())
+    }
+
+    let mut files = Vec::new();
+    visit(root, root, &mut files)?;
+    Ok(files)
+}
+
+fn create_release_fixture(root: &Path) -> TestResult {
+    fs::create_dir_all(root)?;
+    let native = write_release_file(
+        root,
+        "cli/cutokyo-cli-x86_64-unknown-linux-gnu.tar.xz",
+        b"representative native CLI archive\n",
+    )?;
+    write_checksum_sidecar(
+        &native,
+        &root.join("cli/cutokyo-cli-x86_64-unknown-linux-gnu.tar.xz.sha256"),
+    )?;
+    write_release_file(
+        root,
+        "installers/cutokyo-cli-installer.sh",
+        b"#!/bin/sh\nexit 0\n",
+    )?;
+    write_release_file(root, "installers/cutokyo-cli-installer.ps1", b"exit 0\r\n")?;
+    write_release_file(
+        root,
+        "npm/cutokyo-0.1.0.tgz",
+        b"representative cargo-dist npm installer\n",
+    )?;
+    write_release_file(
+        root,
+        "tauri-linux/Cutokyo_0.1.0_amd64.deb",
+        b"representative Debian package\n",
+    )?;
+    write_release_file(
+        root,
+        "tauri-linux/Cutokyo_0.1.0_x86_64.AppImage.tar.gz",
+        b"representative Linux updater payload\n",
+    )?;
+    write_release_file(
+        root,
+        "tauri-macos/Cutokyo_0.1.0_x64.app.tar.gz",
+        b"representative macOS updater payload\n",
+    )?;
+    write_release_file(
+        root,
+        "tauri-windows/Cutokyo_0.1.0_x64.msi.zip",
+        b"representative Windows updater payload\n",
+    )?;
+    write_release_file(
+        root,
+        "release-contract/cargo-dist-plan.json",
+        b"{\"dist_version\":\"0.32.0\",\"announcement_tag\":\"v0.1.0\"}\n",
+    )?;
+    write_release_file(
+        root,
+        "release-contract/sbom/cutokyo-cli.cdx.json",
+        b"{\"bomFormat\":\"CycloneDX\",\"specVersion\":\"1.6\",\"version\":1}\n",
+    )?;
+    write_release_file(
+        root,
+        "release-contract/build-provenance.intoto.jsonl",
+        b"{\"_type\":\"https://in-toto.io/Statement/v1\",\"subject\":[]}\n",
+    )?;
+    write_release_file(
+        root,
+        "tauri-linux/package-smoke.json",
+        &serde_json::to_vec(&json!({
+            "binary": "cutokyo-desktop",
+            "gui_activated": false,
+            "liveness_exit": 0,
+            "process_liveness": true,
+            "package": "cutokyo-desktop_0.1.0_amd64.deb",
+            "product_readiness": false,
+            "product_readiness_exit": 69,
+            "repeat_uninstall_exit": 0,
+            "source_tree_shortcut": false,
+            "version": "0.1.0"
+        }))?,
+    )?;
+    refresh_release_checksums(root)
+}
+
+fn add_updater_signatures(root: &Path) -> TestResult {
+    for relative in [
+        "tauri-linux/Cutokyo_0.1.0_x86_64.AppImage.tar.gz.sig",
+        "tauri-macos/Cutokyo_0.1.0_x64.app.tar.gz.sig",
+        "tauri-windows/Cutokyo_0.1.0_x64.msi.zip.sig",
+    ] {
+        write_release_file(root, relative, b"synthetic-minisign-boundary")?;
+    }
+    refresh_release_checksums(root)
+}
+
+fn release_manifest_command(
+    production_root: &Path,
+    artifacts: &Path,
+    require_signatures: bool,
+) -> TestResult<BoundedCommandOutput> {
+    let mut command = Command::new(python_executable());
+    command
+        .arg(production_root.join("tools/release/create-manifest.py"))
+        .arg("--artifacts")
+        .arg(artifacts)
+        .arg("--tag")
+        .arg("v0.1.0")
+        .arg("--repository")
+        .arg("lucasbabur/cutokyo")
+        .arg("--output")
+        .arg(artifacts.join("release-manifest.json"))
+        .current_dir(production_root);
+    if require_signatures {
+        command.arg("--require-updater-signatures");
+    }
+    run_bounded(
+        &mut command,
+        Duration::from_secs(30),
+        "release artifact manifest",
+    )
+}
+
+fn fresh_release_fixture(parent: &Path, name: &str) -> TestResult<PathBuf> {
+    let root = parent.join(name);
+    create_release_fixture(&root)?;
+    Ok(root)
+}
+
+fn assert_unsigned_release_policy(manifest: &Value, latest: &Value) {
+    assert_eq!(latest["platforms"], json!({}));
+    assert_eq!(manifest["policy"]["updater_signatures_required"], false);
+    assert_eq!(manifest["policy"]["updater_platforms"], json!([]));
+    assert_eq!(
+        manifest["policy"]["probe_contract"],
+        json!({
+            "fresh_product_readiness_exit": 69,
+            "process_liveness_exit": 0,
+            "same_signal": false
+        })
+    );
+    assert_ne!(
+        manifest["policy"]["probe_contract"]["process_liveness_exit"],
+        manifest["policy"]["probe_contract"]["fresh_product_readiness_exit"]
+    );
+    assert_eq!(
+        manifest["policy"]["trust_boundaries"]["notarization"],
+        "separate macOS tag-release gate; not asserted by this manifest"
+    );
+    assert_eq!(
+        manifest["policy"]["trust_boundaries"]["platform_signing"],
+        "separate macOS and Windows tag-release gates; Linux is not platform signed"
+    );
+    assert_eq!(
+        manifest["policy"]["trust_boundaries"]["build_provenance"],
+        "created by a separate pinned GitHub attestation step; not asserted by this manifest"
+    );
+}
+
+fn assert_release_inventory(root: &Path, manifest: &Value) -> TestResult {
+    let entries = manifest["artifacts"]
+        .as_array()
+        .ok_or("release manifest artifacts must be an array")?;
+    let mut paths = BTreeSet::new();
+    let mut basenames = BTreeSet::new();
+    let mut kinds = BTreeSet::new();
+    for entry in entries {
+        let relative = entry["path"]
+            .as_str()
+            .ok_or("manifest artifact path is missing")?;
+        let kind = entry["kind"]
+            .as_str()
+            .ok_or("manifest artifact kind is missing")?;
+        let recorded_digest = entry["sha256"]
+            .as_str()
+            .ok_or("manifest artifact digest is missing")?;
+        assert!(
+            paths.insert(relative.to_owned()),
+            "duplicate path {relative}"
+        );
+        let basename = Path::new(relative)
+            .file_name()
+            .and_then(|value| value.to_str())
+            .ok_or("manifest artifact basename is missing")?;
+        assert!(
+            basenames.insert(basename.to_owned()),
+            "duplicate release basename {basename}"
+        );
+        assert_eq!(recorded_digest.len(), 64);
+        assert!(recorded_digest.bytes().all(|byte| byte.is_ascii_hexdigit()));
+        assert_ne!(kind, "release-metadata");
+        kinds.insert(kind.to_owned());
+        assert_eq!(recorded_digest, sha256_path(&root.join(relative))?);
+    }
+    for required_kind in [
+        "build-provenance",
+        "cargo-dist-plan",
+        "checksum",
+        "cyclonedx-sbom",
+        "desktop-package",
+        "installed-package-smoke",
+        "native-archive",
+        "native-installer",
+        "npm-installer",
+        "updater-manifest",
+    ] {
+        assert!(
+            kinds.contains(required_kind),
+            "missing kind {required_kind}"
+        );
+    }
+    assert!(paths.contains("SHA256SUMS"));
+    assert!(paths.contains("latest.json"));
+    Ok(())
+}
+
+fn prove_unsigned_release_manifest(production_root: &Path, parent: &Path) -> TestResult {
+    let root = fresh_release_fixture(parent, "unsigned")?;
+    checked_output(
+        release_manifest_command(production_root, &root, false)?,
+        "unsigned local release manifest",
+    )?;
+    let manifest = json_file(&root.join("release-manifest.json"))?;
+    let latest = json_file(&root.join("latest.json"))?;
+    assert_unsigned_release_policy(&manifest, &latest);
+    assert_release_inventory(&root, &manifest)
+}
+
+fn prove_release_integrity_rejections(production_root: &Path, parent: &Path) -> TestResult {
+    let duplicate = fresh_release_fixture(parent, "duplicate")?;
+    let target = duplicate.join("collision/cutokyo-0.1.0.tgz");
+    fs::create_dir_all(target.parent().ok_or("duplicate target has no parent")?)?;
+    fs::copy(duplicate.join("npm/cutokyo-0.1.0.tgz"), target)?;
+    refresh_release_checksums(&duplicate)?;
+    let duplicate_result = release_manifest_command(production_root, &duplicate, false)?;
+    assert!(!duplicate_result.status.success());
+    assert!(
+        duplicate_result
+            .stderr
+            .contains("asset names must be unique")
+    );
+
+    let tampered = fresh_release_fixture(parent, "tampered")?;
+    fs::write(
+        tampered.join("cli/cutokyo-cli-x86_64-unknown-linux-gnu.tar.xz"),
+        b"tampered after checksums were frozen\n",
+    )?;
+    let tampered_result = release_manifest_command(production_root, &tampered, false)?;
+    assert!(!tampered_result.status.success());
+    assert!(tampered_result.stderr.contains("checksum mismatch"));
+
+    let missing_sbom = fresh_release_fixture(parent, "missing-sbom")?;
+    fs::remove_file(missing_sbom.join("release-contract/sbom/cutokyo-cli.cdx.json"))?;
+    refresh_release_checksums(&missing_sbom)?;
+    let sbom_result = release_manifest_command(production_root, &missing_sbom, false)?;
+    assert!(!sbom_result.status.success());
+    assert!(sbom_result.stderr.contains("cyclonedx-sbom"));
+
+    let missing_checksum = fresh_release_fixture(parent, "missing-checksum")?;
+    fs::remove_file(missing_checksum.join("SHA256SUMS"))?;
+    let checksum_result = release_manifest_command(production_root, &missing_checksum, false)?;
+    assert!(!checksum_result.status.success());
+    assert!(checksum_result.stderr.contains("SHA256SUMS"));
+    Ok(())
+}
+
+fn prove_release_health_contract(production_root: &Path, parent: &Path) -> TestResult {
+    let root = fresh_release_fixture(parent, "conflated-health")?;
+    write_release_file(
+        &root,
+        "tauri-linux/package-smoke.json",
+        &serde_json::to_vec(&json!({
+            "liveness_exit": 0,
+            "process_liveness": true,
+            "package": "cutokyo-desktop_0.1.0_amd64.deb",
+            "product_readiness": true,
+            "product_readiness_exit": 0,
+            "source_tree_shortcut": false
+        }))?,
+    )?;
+    refresh_release_checksums(&root)?;
+    let result = release_manifest_command(production_root, &root, false)?;
+    assert!(!result.status.success());
+    assert!(result.stderr.contains("liveness/readiness"));
+    Ok(())
+}
+
+fn prove_release_signature_contract(production_root: &Path, parent: &Path) -> TestResult {
+    let missing = fresh_release_fixture(parent, "missing-signatures")?;
+    let missing_result = release_manifest_command(production_root, &missing, true)?;
+    assert!(!missing_result.status.success());
+    assert!(
+        missing_result
+            .stderr
+            .contains("signed updater payloads are missing")
+    );
+
+    let signed = fresh_release_fixture(parent, "signed")?;
+    add_updater_signatures(&signed)?;
+    checked_output(
+        release_manifest_command(production_root, &signed, true)?,
+        "signed updater-boundary release manifest",
+    )?;
+    let latest = json_file(&signed.join("latest.json"))?;
+    let platforms = latest["platforms"]
+        .as_object()
+        .ok_or("signed updater platforms must be an object")?;
+    assert_eq!(
+        platforms.keys().cloned().collect::<BTreeSet<_>>(),
+        BTreeSet::from([
+            "darwin-x86_64".to_owned(),
+            "linux-x86_64".to_owned(),
+            "windows-x86_64".to_owned(),
+        ])
+    );
+    assert!(platforms.values().all(|value| {
+        value["signature"] == "synthetic-minisign-boundary"
+            && value["url"].as_str().is_some_and(|url| {
+                url.starts_with("https://github.com/lucasbabur/cutokyo/releases/download/v0.1.0/")
+            })
+    }));
+    Ok(())
+}
+
+fn prove_release_workflow_boundaries(production_root: &Path) -> TestResult {
+    let workflow = fs::read_to_string(production_root.join(".github/workflows/release.yml"))?;
+    let signing = fs::read_to_string(production_root.join("docs/release/signing.md"))?;
+    let ordinary_tauri: Value = serde_json::from_slice(&fs::read(
+        production_root.join("crates/cutokyo-desktop/tauri.conf.json"),
+    )?)?;
+    let release_tauri: Value = serde_json::from_slice(&fs::read(
+        production_root.join("crates/cutokyo-desktop/tauri.release.conf.json"),
+    )?)?;
+    assert!(
+        workflow
+            .contains("actions/attest-build-provenance@96b4a1ef7235a096b17240c259729fdd70c83d45")
+    );
+    assert!(workflow.contains("id-token: write"));
+    assert!(workflow.contains("Release refused: required signing/publication secrets are absent"));
+    assert!(workflow.contains("exit 78"));
+    for secret in [
+        "NPM_TOKEN",
+        "TAURI_SIGNING_PRIVATE_KEY",
+        "APPLE_CERTIFICATE",
+        "APPLE_ID",
+        "WINDOWS_CERTIFICATE",
+    ] {
+        assert!(
+            workflow.contains(secret),
+            "missing release preflight {secret}"
+        );
+    }
+    assert!(workflow.contains("Build unsigned dry-run Tauri package"));
+    assert!(workflow.contains("Build signed macOS or Linux updater package"));
+    assert!(workflow.contains("Build signed Windows updater package"));
+    assert!(signing.contains("An updater `.sig` does not imply platform code signing."));
+    assert!(signing.contains(
+        "Linux checksum/provenance success does not imply macOS notarization or Windows"
+    ));
+    assert!(
+        ordinary_tauri["bundle"]
+            .get("createUpdaterArtifacts")
+            .is_none()
+    );
+    assert_eq!(release_tauri["bundle"]["createUpdaterArtifacts"], true);
+    Ok(())
+}
+
+#[test]
+fn release_artifact_manifest() -> TestResult {
+    let production_root = repository_root()?;
+    let temporary = tempfile::tempdir()?;
+    prove_unsigned_release_manifest(&production_root, temporary.path())?;
+    prove_release_integrity_rejections(&production_root, temporary.path())?;
+    prove_release_health_contract(&production_root, temporary.path())?;
+    prove_release_signature_contract(&production_root, temporary.path())?;
+    prove_release_workflow_boundaries(&production_root)
 }

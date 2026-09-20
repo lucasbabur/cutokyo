@@ -1139,14 +1139,18 @@ dependencies = [
  "cutokyo-core",
  "cutokyo-domain",
  "fake-harness",
+ "flate2",
  "jsonschema",
  "rmcp",
  "rusqlite",
  "serde",
  "serde_json",
+ "sha2 0.11.0",
+ "tar",
  "tempfile",
  "tokio",
  "tokio-util",
+ "wait-timeout",
 ]
 
 [[package]]
@@ -6245,6 +6249,15 @@ source = "git+https://github.com/santhreal/vyre.git?rev=8be30afe43fb54e38965dd9e
 dependencies = [
  "serde",
  "smallvec",
+]
+
+[[package]]
+name = "wait-timeout"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09ac3b126d3914f9849036f826e054cbabdc8519970b8998ddaf3b5bd3c65f11"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

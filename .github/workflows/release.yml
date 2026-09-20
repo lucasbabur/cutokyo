@@ -172,8 +172,11 @@ jobs:
           npm_directory="$(dirname "$(find target/npm-wrapper -type f -name package.json -print -quit)")"
           test -n "$npm_directory"
           python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/npm-pack-source.json" -- npm pack "./$npm_directory" --pack-destination ./global-installers
+          mkdir -p global-installers/npm-dependencies
+          cp tests/fixtures/release/detect-libc-2.1.2.tgz global-installers/npm-dependencies/
           cp target/distrib/*installer* global-installers/
-          test -n "$(find global-installers -type f -name '*.tgz' -print -quit)"
+          test -n "$(find global-installers -type f -name 'cutokyo-*.tgz' -print -quit)"
+          test -n "$(find global-installers/npm-dependencies -type f -name 'detect-libc-2.1.2.tgz' -print -quit)"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: global-installers
@@ -315,7 +318,8 @@ jobs:
           fi
       - name: Install, probe, and uninstall the Linux desktop package before activation
         if: runner.os == 'Linux'
-        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/tauri-smoke-source.json" -- python tools/release/smoke-tauri-linux.py --artifacts tauri-artifacts --expected-version "${{ needs.release-contract.outputs.tag }}"
+        shell: bash
+        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/tauri-smoke-source.json" -- python tools/release/smoke-tauri-linux.py --artifacts tauri-artifacts --expected-version "${{ needs.release-contract.outputs.tag }}" > tauri-artifacts/package-smoke.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: tauri-${{ matrix.os }}
@@ -333,19 +337,26 @@ jobs:
           path: release-artifacts
       - name: Install and launch the locally packed npm artifact
         run: |
-          npm_package="$(find release-artifacts -type f -name '*.tgz' -print -quit)"
+          npm_package="$(find release-artifacts -type f -name 'cutokyo-*.tgz' -print -quit)"
+          dependency_package="$(find release-artifacts -type f -name 'detect-libc-2.1.2.tgz' -print -quit)"
           native_archive="$(find release-artifacts -type f -name '*x86_64-unknown-linux-gnu.tar.xz' -print -quit)"
-          test -n "$npm_package" && test -n "$native_archive"
-          python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/npm-smoke-source.json" -- python3 tools/release/smoke-npm.py --npm-package "$npm_package" --native-archive "$native_archive" --expected-version "${{ needs.release-contract.outputs.tag }}"
+          native_checksum="$(find release-artifacts -type f -name '*x86_64-unknown-linux-gnu.tar.xz.sha256' -print -quit)"
+          test -n "$npm_package" && test -n "$dependency_package"
+          test -n "$native_archive" && test -n "$native_checksum"
+          python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/npm-smoke-source.json" -- python3 tools/release/smoke-npm.py --npm-package "$npm_package" --native-archive "$native_archive" --native-checksum "$native_checksum" --dependency-package "$dependency_package" --expected-version "${{ needs.release-contract.outputs.tag }}" > release-artifacts/npm-smoke.json
+          rm -f "$dependency_package"
       - name: Build deterministic release and updater manifests
         run: |
+          (
+            cd release-artifacts
+            find . -type f ! -name SHA256SUMS ! -name release-manifest.json ! -name latest.json -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          )
           python3 tools/release/create-manifest.py \
             --artifacts release-artifacts \
             --tag "${{ needs.release-contract.outputs.tag }}" \
             --repository "${{ github.repository }}" \
             --output release-artifacts/release-manifest.json \
             ${{ needs.release-contract.outputs.publish == 'true' && '--require-updater-signatures' || '' }}
-          find release-artifacts -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > release-artifacts/SHA256SUMS
       - name: Attest dry-run or release artifacts with GitHub build provenance
         uses: actions/attest-build-provenance@96b4a1ef7235a096b17240c259729fdd70c83d45 # v2
         with:

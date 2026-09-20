@@ -20,6 +20,10 @@ rusqlite.workspace = true
 rmcp.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
+sha2.workspace = true
+flate2.workspace = true
+tar.workspace = true
+wait-timeout.workspace = true
 
 [[test]]
 name = "pipeline"

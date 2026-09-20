@@ -51,6 +51,7 @@ tracing = "=0.1.44"
 tracing-subscriber = { version = "=0.3.20", features = ["env-filter", "fmt", "json"] }
 tar = "=0.4.44"
 flate2 = "=1.1.9"
+wait-timeout = "=0.2.1"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import hmac
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -31,7 +33,38 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def run(command: list[str], *, cwd: Path, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+def verify_native_checksum(checksum_path: Path, native_archive: Path) -> str:
+    try:
+        lines = [
+            line.strip()
+            for line in checksum_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+    except (OSError, UnicodeError) as error:
+        fail(f"could not read native checksum: {error}")
+    if len(lines) != 1:
+        fail("native checksum must contain exactly one nonempty line")
+    match = re.fullmatch(r"([0-9A-Fa-f]{64})\s+[ *]?([^/\\]+)", lines[0])
+    if match is None:
+        fail("native checksum is not a bounded SHA-256 sidecar")
+    expected, filename = match.groups()
+    if filename != native_archive.name:
+        fail(
+            "native checksum names a different artifact: "
+            f"expected {native_archive.name}, received {filename}"
+        )
+    actual = sha256(native_archive)
+    if not hmac.compare_digest(expected.lower(), actual):
+        fail(
+            "native archive checksum mismatch: "
+            f"expected {expected.lower()}, received {actual}"
+        )
+    return actual
+
+
+def run(
+    command: list[str], *, cwd: Path, env: dict[str, str] | None = None
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         command,
         cwd=cwd,
@@ -47,18 +80,55 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--npm-package", required=True, type=Path)
     parser.add_argument("--native-archive", required=True, type=Path)
+    parser.add_argument("--native-checksum", required=True, type=Path)
+    parser.add_argument("--dependency-package", required=True, type=Path)
     parser.add_argument("--expected-version", required=True)
     args = parser.parse_args()
 
     npm_package = args.npm_package.resolve()
     native_archive = args.native_archive.resolve()
-    if not npm_package.is_file() or not native_archive.is_file():
-        fail("npm package and native archive must both be regular files")
+    native_checksum = args.native_checksum.resolve()
+    dependency_package = args.dependency_package.resolve()
+    required_files = {
+        "npm package": npm_package,
+        "native archive": native_archive,
+        "native checksum": native_checksum,
+        "npm dependency package": dependency_package,
+    }
+    missing = [label for label, path in required_files.items() if not path.is_file()]
+    if missing:
+        fail("required regular files are missing: " + ", ".join(missing))
+    native_digest = verify_native_checksum(native_checksum, native_archive)
 
     with tempfile.TemporaryDirectory(prefix="cutokyo-npm-smoke-") as temporary:
         root = Path(temporary)
         project = root / "consumer"
         project.mkdir()
+        npm_cache = root / "npm-cache"
+        npm_cache.mkdir()
+        offline_environment = os.environ.copy()
+        offline_environment.update(
+            {
+                "NO_PROXY": "127.0.0.1,localhost",
+                "no_proxy": "127.0.0.1,localhost",
+                "npm_config_audit": "false",
+                "npm_config_cache": os.fspath(npm_cache),
+                "npm_config_fund": "false",
+                "npm_config_offline": "true",
+                "npm_config_registry": "http://127.0.0.1:9/",
+                "npm_config_update_notifier": "false",
+            }
+        )
+        cached = run(
+            ["npm", "cache", "add", os.fspath(dependency_package)],
+            cwd=root,
+            env=offline_environment,
+        )
+        if cached.returncode != 0:
+            fail(
+                "could not seed the private offline npm cache: "
+                f"{cached.stderr.strip()}"
+            )
         (project / "package.json").write_text(
             '{"name":"cutokyo-artifact-smoke","private":true}\n', encoding="utf-8"
         )
@@ -69,9 +139,13 @@ def main() -> int:
                 "--ignore-scripts",
                 "--no-audit",
                 "--no-fund",
+                "--offline",
+                "--omit=dev",
+                os.fspath(dependency_package),
                 os.fspath(npm_package),
             ],
             cwd=project,
+            env=offline_environment,
         )
         if install.returncode != 0:
             fail(f"npm install exited {install.returncode}: {install.stderr.strip()}")
@@ -96,7 +170,9 @@ def main() -> int:
             metadata_path.write_text(
                 json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
             )
-            postinstall = run(["node", "install.js"], cwd=installed)
+            postinstall = run(
+                ["node", "install.js"], cwd=installed, env=offline_environment
+            )
             if postinstall.returncode != 0:
                 fail(
                     f"generated postinstall exited {postinstall.returncode}: "
@@ -112,7 +188,7 @@ def main() -> int:
         )
         if not launcher.exists():
             fail("npm package did not expose node_modules/.bin/cutokyo")
-        environment = os.environ.copy()
+        environment = offline_environment.copy()
         environment["CUTOKYO_CONFIG_FILE"] = os.fspath(root / "config.toml")
         environment["CUTOKYO_DATA_DIR"] = os.fspath(root / "data")
         launched = run(
@@ -129,10 +205,11 @@ def main() -> int:
         if payload.get("ok") is not True or actual != expected:
             fail(f"expected installed version {expected!r}, received {actual!r}")
 
+        native_name = "cutokyo.exe" if os.name == "nt" else "cutokyo"
         native_candidates = [
             path
-            for path in installed.rglob("cutokyo")
-            if path.is_file() and path.name == "cutokyo" and path.parent.name != ".bin"
+            for path in installed.rglob(native_name)
+            if path.is_file() and path.name == native_name and path.parent.name != ".bin"
         ]
         if len(native_candidates) != 1:
             fail(f"expected one installed native executable, found {len(native_candidates)}")
@@ -148,7 +225,11 @@ def main() -> int:
                     "npm_package": npm_package.name,
                     "npm_sha256": sha256(npm_package),
                     "native_archive": native_archive.name,
-                    "native_sha256": sha256(native_archive),
+                    "native_checksum": native_checksum.name,
+                    "native_sha256": native_digest,
+                    "dependency_package": dependency_package.name,
+                    "dependency_sha256": sha256(dependency_package),
+                    "network_mode": "offline-private-cache-and-loopback-artifact-server",
                     "launcher": "node_modules/.bin/cutokyo",
                     "native_location": native.relative_to(project).as_posix(),
                     "source_tree_shortcut": False,

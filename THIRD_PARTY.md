@@ -41,9 +41,20 @@ Exact active versions are in `Cargo.lock`.
 | tracing-subscriber | 0.3.20 | MIT | Bounded JSONL subscriber output |
 | tar | 0.4.44 | MIT OR Apache-2.0 | Deterministic diagnostic archive construction |
 | flate2 | 1.1.9 | MIT OR Apache-2.0 | Gzip diagnostic archive compression; version shared with KeyHog's exact maintained dependency |
+| wait-timeout | 0.2.1 | MIT OR Apache-2.0 | Bounded release-artifact subprocess integration tests |
 | tauri | 2.11.5 | Apache-2.0 OR MIT | Optional desktop-runtime dependency; stable v2 |
 | tauri-build | 2.6.3 | Apache-2.0 OR MIT | Official Tauri build-context generator |
 | tauri-plugin-wdio-webdriver | 1.4.0 | MIT | Test-feature-only embedded native WebDriver server; release builds reject the feature |
+
+## Release-test npm fixture
+
+The cargo-dist generated npm installer has one runtime dependency. Its exact upstream
+package is retained solely as an offline install-test input; it is not a Cutokyo CLI
+implementation and is removed before release assembly.
+
+| Package | Version | Artifact SHA-256 | License | Upstream |
+| --- | ---: | --- | --- | --- |
+| detect-libc | 2.1.2 | `270dec0fc06cff86481da8af2dd8f18dee6b602790b14ef0e1c2c18d7da39427` | Apache-2.0 | <https://www.npmjs.com/package/detect-libc/v/2.1.2> |
 
 ## OpenCode fixture reference artifacts
 

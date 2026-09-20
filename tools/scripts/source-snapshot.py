@@ -65,6 +65,23 @@ def changed_paths(before: dict[str, str], after: dict[str, str]) -> list[str]:
     return [name for name in names if before.get(name) != after.get(name)]
 
 
+def tracked_worktree_changes(root: Path) -> list[str]:
+    completed = subprocess.run(
+        ["git", "-C", os.fspath(root), "diff", "--no-renames", "--name-only", "-z", "HEAD", "--"],
+        check=False,
+        capture_output=True,
+    )
+    if completed.returncode != 0:
+        fail("could not compare tracked source with HEAD")
+    return sorted(
+        {
+            os.fsdecode(raw_name)
+            for raw_name in completed.stdout.split(b"\0")
+            if raw_name
+        }
+    )
+
+
 def write_json(path: Path, value: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + ".tmp")
@@ -107,13 +124,16 @@ def emit_evidence(evidence: dict[str, object], manifest: Path | None) -> None:
 def check_capture(root: Path, snapshot_path: Path, manifest: Path | None) -> int:
     before = load_capture(snapshot_path)
     after = tracked_snapshot(root)
-    changed = changed_paths(before, after)
+    repository_changes = tracked_worktree_changes(root)
+    changed = sorted(set(changed_paths(before, after)) | set(repository_changes))
     evidence: dict[str, object] = {
         "schema_version": SNAPSHOT_SCHEMA_VERSION,
         "mode": "verify",
         "tracked_files": len(before),
         "source_unchanged": not changed,
         "changed_paths": changed,
+        "repository_clean": not repository_changes,
+        "preexisting_changes": repository_changes,
     }
     emit_evidence(evidence, manifest)
     return 86 if changed else 0
@@ -167,14 +187,32 @@ def main() -> int:
     if args.capture is not None:
         if args.command:
             fail("--capture does not accept a command")
+        preexisting_changes = tracked_worktree_changes(root)
+        snapshot = tracked_snapshot(root)
+        if preexisting_changes:
+            emit_evidence(
+                {
+                    "schema_version": SNAPSHOT_SCHEMA_VERSION,
+                    "mode": "capture",
+                    "tracked_files": len(snapshot),
+                    "source_unchanged": False,
+                    "changed_paths": preexisting_changes,
+                    "repository_clean": False,
+                    "preexisting_changes": preexisting_changes,
+                },
+                args.manifest,
+            )
+            return 86
         capture(args.capture, root)
         emit_evidence(
             {
                 "schema_version": SNAPSHOT_SCHEMA_VERSION,
                 "mode": "capture",
-                "tracked_files": len(tracked_snapshot(root)),
+                "tracked_files": len(snapshot),
                 "source_unchanged": True,
                 "changed_paths": [],
+                "repository_clean": True,
+                "preexisting_changes": [],
             },
             args.manifest,
         )
@@ -192,21 +230,44 @@ def main() -> int:
 
     directory = command_directory(root, args.cwd)
     before = tracked_snapshot(root)
+    preexisting_changes = tracked_worktree_changes(root)
+    if preexisting_changes:
+        emit_evidence(
+            {
+                "schema_version": SNAPSHOT_SCHEMA_VERSION,
+                "mode": "command",
+                "command": command,
+                "command_directory": directory.relative_to(root).as_posix() or ".",
+                "command_executed": False,
+                "command_exit_code": None,
+                "tracked_files": len(before),
+                "source_unchanged": False,
+                "changed_paths": preexisting_changes,
+                "repository_clean": False,
+                "preexisting_changes": preexisting_changes,
+            },
+            args.manifest,
+        )
+        return 86
     try:
         completed = subprocess.run(command, cwd=directory, check=False)
     except OSError as error:
         fail(f"could not execute command: {error}", 127)
     after = tracked_snapshot(root)
-    changed = changed_paths(before, after)
+    repository_changes = tracked_worktree_changes(root)
+    changed = sorted(set(changed_paths(before, after)) | set(repository_changes))
     evidence = {
         "schema_version": SNAPSHOT_SCHEMA_VERSION,
         "mode": "command",
         "command": command,
         "command_directory": directory.relative_to(root).as_posix() or ".",
+        "command_executed": True,
         "command_exit_code": completed.returncode,
         "tracked_files": len(before),
         "source_unchanged": not changed,
         "changed_paths": changed,
+        "repository_clean": not repository_changes,
+        "preexisting_changes": [],
     }
     emit_evidence(evidence, args.manifest)
     if changed:
