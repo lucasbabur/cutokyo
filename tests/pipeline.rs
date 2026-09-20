@@ -125,6 +125,7 @@ fn every_schema_has_registered_good_and_bad_golden_fixtures()
     }
 
     let expected = BTreeSet::from([
+        "schemas/cli-output.v1.json",
         "schemas/domain/records.v1.json",
         "schemas/plugin-protocol.v1.json",
         "schemas/settings/settings-patch.v1.json",

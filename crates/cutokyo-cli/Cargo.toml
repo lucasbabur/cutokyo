@@ -14,7 +14,23 @@ path = "src/main.rs"
 
 [dependencies]
 cutokyo-core.workspace = true
+cutokyo-domain.workspace = true
+serde.workspace = true
 serde_json.workspace = true
+clap.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tar.workspace = true
+flate2.workspace = true
+time.workspace = true
+tempfile.workspace = true
+sha2.workspace = true
+
+[dev-dependencies]
+jsonschema.workspace = true
+
+[package.metadata.dist]
+dist = true
 
 [lints]
 workspace = true

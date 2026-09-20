@@ -17,8 +17,8 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22.22.3"
-      - name: Install genuine public harness CLIs
-        run: npm install --global @anthropic-ai/claude-code @openai/codex opencode-ai
+      - name: Install genuine public harness CLIs without tracked-source rewrites
+        run: python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/harness-install-source.json" -- npm install --global @anthropic-ai/claude-code @openai/codex opencode-ai
       - name: Record installed Claude Code, Codex, and OpenCode versions
         id: probe
         continue-on-error: true
@@ -27,7 +27,7 @@ jobs:
           claude --version > drift-output/claude.txt
           codex --version > drift-output/codex.txt
           opencode --version > drift-output/opencode.txt
-          cargo test -p fake-harness
+          python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/fake-harness-source.json" -- cargo test --locked -p fake-harness
       - name: Preserve drift evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

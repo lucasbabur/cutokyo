@@ -6,8 +6,7 @@ This foundation ships no copied fonts, images, icons, or predecessor assets.
 ## Direct Rust dependencies
 
 Metadata was verified from crates.io and each upstream repository on 2026-09-20.
-Exact active versions are in `Cargo.lock`; optional researched dependencies are not
-shipped until their feature implementation enables them.
+Exact active versions are in `Cargo.lock`.
 
 | Package | Foundation version | License | Purpose/status |
 | --- | ---: | --- | --- |
@@ -19,7 +18,7 @@ shipped until their feature implementation enables them.
 | keyhog-core | 0.5.86, git `058b28911fbe9db4b0957f13be003f5fb36eb1a4` | MIT OR Apache-2.0 | Secret finding types projected into Cutokyo's sanitized guard model |
 | keyhog-scanner | 0.5.86, git `058b28911fbe9db4b0957f13be003f5fb36eb1a4` | MIT OR Apache-2.0 | Maintained secret scanner with decode, entropy, ML, and multiline features |
 | keyring | 4.2.0 | MIT OR Apache-2.0 | OS credential-store access for analysis provider keys |
-| tempfile | 3.27.0 | MIT OR Apache-2.0 | Isolated architecture mutation tests |
+| tempfile | 3.27.0 | MIT OR Apache-2.0 | Atomic runtime writes and isolated architecture mutation tests |
 | uuid | 1.26.1 | Apache-2.0 OR MIT | Collision-resistant temporary and spool filenames |
 | rusqlite | 0.40.2 | MIT | Bundled SQLite, FTS5, pragmas, and the online backup API |
 | rusqlite_migration | 2.6.0 | Apache-2.0 | Forward-only SQLite migration runner |
@@ -27,7 +26,7 @@ shipped until their feature implementation enables them.
 | rmcp | 3.4.0 | Apache-2.0 | Official Rust MCP SDK for Cutokyo's read server and upstream broker |
 | reqwest | 0.13.5 | MIT OR Apache-2.0 | Parsed HTTPS endpoints for MCP and analysis providers |
 | schemars | 1.2.1 | MIT | MCP tool input schemas |
-| sha2 | 0.11.0 | MIT OR Apache-2.0 | SHA-256 observation identities and backup digests |
+| sha2 | 0.11.0 | MIT OR Apache-2.0 | SHA-256 observation identities and backup/bundle digests |
 | toml_edit | 0.25.15 | MIT OR Apache-2.0 | Structure-preserving Codex and managed broker configuration edits |
 | json5 | 1.3.1 | MIT | Structural read-only parsing of documented OpenCode JSON/JSONC configuration |
 | ureq | 3.4.2 | MIT OR Apache-2.0 | Blocking, bounded requests to validated OpenCode loopback app-server origins |
@@ -35,6 +34,13 @@ shipped until their feature implementation enables them.
 | tokio | 1.53.1 | MIT | Bounded subprocess, timeout, cancellation, and MCP async runtime |
 | tokio-util | 0.7.19 | MIT | Cancellation tokens for analysis requests |
 | zeroize | 1.8.2 | Apache-2.0 OR MIT | Provider credential memory cleanup |
+| clap | 4.6.1 | MIT OR Apache-2.0 | Native CLI parsing, help, and exact command contracts; version shared with KeyHog's exact maintained dependency |
+| directories | 6.0.0 | MIT OR Apache-2.0 | Platform-native per-user config and data paths |
+| toml | 0.9.7 | MIT OR Apache-2.0 | Strict versioned user configuration parsing |
+| tracing | 0.1.44 | MIT | Structured instrumentation and ingest spans; version shared with KeyHog's exact maintained dependency |
+| tracing-subscriber | 0.3.20 | MIT | Bounded JSONL subscriber output |
+| tar | 0.4.44 | MIT OR Apache-2.0 | Deterministic diagnostic archive construction |
+| flate2 | 1.1.9 | MIT OR Apache-2.0 | Gzip diagnostic archive compression; version shared with KeyHog's exact maintained dependency |
 | tauri | 2.11.5 | Apache-2.0 OR MIT | Optional desktop-runtime dependency; stable v2 |
 | tauri-build | 2.6.3 | Apache-2.0 OR MIT | Official Tauri build-context generator |
 
@@ -53,27 +59,30 @@ Exact upstream tag `v1.18.28` resolved to commit
 `22006d97652839999596a34a48ff6be7dbb40c6e`; the fixture manifest records which
 shapes are package-derived versus locally observed.
 
-
 ## JavaScript development dependencies
 
 These packages are development tools, not a second product CLI and not bundled as
 runtime application code.
 
-| Package | Version | License |
-| --- | ---: | --- |
-| TypeScript | 7.0.2 | Apache-2.0 |
-| Vitest | 5.0.1 | MIT |
-| Oxlint | 1.83.0 | MIT |
-| Prettier | 3.9.8 | MIT |
-| @tauri-apps/cli | 2.11.4 | Apache-2.0 OR MIT |
+| Package         | Version | License           |
+| --------------- | ------: | ----------------- |
+| TypeScript      |   7.0.2 | Apache-2.0        |
+| Vitest          |   5.0.1 | MIT               |
+| Oxlint          |  1.83.0 | MIT               |
+| Prettier        |   3.9.8 | MIT               |
+| @tauri-apps/cli |  2.11.4 | Apache-2.0 OR MIT |
 
 ## Build and policy tools
 
-| Package | Version used by foundation | License | Purpose |
-| --- | ---: | --- | --- |
-| cargo-dist | 0.32.0 | MIT OR Apache-2.0 | Pinned dry-run distribution planning |
-| cargo-deny | 0.20.2 | MIT OR Apache-2.0 | Local license and dependency-policy acceptance run |
-| pnpm | 11.25.0 | MIT | Locked TypeScript workspace package manager |
+| Package         | Version used by foundation | License           | Purpose                                                       |
+| --------------- | -------------------------: | ----------------- | ------------------------------------------------------------- |
+| cargo-dist      |                     0.32.0 | MIT OR Apache-2.0 | Native archives and generated shell/PowerShell/npm installers |
+| cargo-cyclonedx |                      0.5.9 | Apache-2.0        | Release CycloneDX SBOM generation                             |
+| cargo-deny      |                     0.20.2 | MIT OR Apache-2.0 | Local license and dependency-policy acceptance run            |
+| cargo-pup       |                      0.1.8 | MIT OR Apache-2.0 | Visible non-blocking architecture report                      |
+| cargo-machete   |                      0.9.2 | MIT OR Apache-2.0 | Visible non-blocking unused-dependency report                 |
+| Knip            |                     6.37.0 | ISC               | Visible non-blocking TypeScript surface report                |
+| pnpm            |                    11.25.0 | MIT               | Locked TypeScript workspace package manager                   |
 
 ## Workflow actions and standards text
 

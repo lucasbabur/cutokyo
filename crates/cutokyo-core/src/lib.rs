@@ -7,6 +7,7 @@ pub mod adapters;
 pub mod analysis;
 pub mod app;
 pub mod bundle;
+pub mod config;
 pub mod guards;
 pub mod ingest;
 pub mod mcp;

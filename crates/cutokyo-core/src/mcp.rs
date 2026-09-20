@@ -551,6 +551,38 @@ impl CutokyoMcpServer {
     }
 }
 
+/// Serves the canonical read-only MCP surface over standard input and output.
+///
+/// # Errors
+///
+/// Returns a secret-safe capability error when the async runtime, transport, or
+/// official SDK service cannot start or finish cleanly.
+pub fn serve_stdio(port: Arc<dyn CutokyoReadPort>) -> DomainResult<()> {
+    let runtime = tokio::runtime::Runtime::new().map_err(|_| {
+        ContractError::new(
+            DomainErrorCode::CapabilityUnavailable,
+            "the MCP async runtime could not be started",
+        )
+    })?;
+    runtime.block_on(async move {
+        let service = CutokyoMcpServer::new(port)
+            .serve(rmcp::transport::stdio())
+            .await
+            .map_err(|_| {
+                ContractError::new(
+                    DomainErrorCode::CapabilityUnavailable,
+                    "the read-only MCP stdio service could not be started",
+                )
+            })?;
+        service.waiting().await.map(|_| ()).map_err(|_| {
+            ContractError::new(
+                DomainErrorCode::CapabilityUnavailable,
+                "the read-only MCP stdio service ended unsuccessfully",
+            )
+        })
+    })
+}
+
 async fn read_port_call<T, F>(call: F) -> std::result::Result<Json<T>, McpError>
 where
     T: Send + 'static,

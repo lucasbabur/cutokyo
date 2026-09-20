@@ -44,6 +44,13 @@ url = "=2.5.8"
 tokio = { version = "=1.53.1", features = ["fs", "io-std", "io-util", "macros", "process", "rt-multi-thread", "sync", "time"] }
 tokio-util = { version = "=0.7.19", features = ["rt"] }
 zeroize = "=1.8.2"
+clap = { version = "=4.6.1", features = ["derive", "env"] }
+directories = "=6.0.0"
+toml = "=0.9.7"
+tracing = "=0.1.44"
+tracing-subscriber = { version = "=0.3.20", features = ["env-filter", "fmt", "json"] }
+tar = "=0.4.44"
+flate2 = "=1.1.9"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
@@ -65,7 +72,27 @@ incremental = false
 debug = 0
 incremental = false
 
+[workspace.metadata.dist]
+cargo-dist-version = "0.32.0"
+ci = "github"
+installers = ["shell", "powershell", "npm"]
+npm-package = "cutokyo"
+npm-shrinkwrap = true
+pr-run-mode = "plan"
+# The release workflow layers pinned actions, signing preflight, Tauri, SBOM, and
+# provenance jobs over cargo-dist's plan. It is intentionally maintained here.
+allow-dirty = ["ci"]
+targets = [
+  "aarch64-apple-darwin",
+  "x86_64-apple-darwin",
+  "x86_64-unknown-linux-gnu",
+  "x86_64-pc-windows-msvc",
+]
+
 [profile.release]
 lto = "thin"
 codegen-units = 1
 strip = "symbols"
+
+[profile.dist]
+inherits = "release"

@@ -49,6 +49,18 @@
         "fixtures/settings/v1/good/clear-retention.json"
       ],
       "bad": ["fixtures/settings/v1/bad/unknown-field.json"]
+    },
+    {
+      "name": "cli-output-v1",
+      "schema": "schemas/cli-output.v1.json",
+      "good": [
+        "fixtures/cli/v1/good/version-success.json",
+        "fixtures/cli/v1/good/unavailable-error.json"
+      ],
+      "bad": [
+        "fixtures/cli/v1/bad/success-with-error.json",
+        "fixtures/cli/v1/bad/unknown-version.json"
+      ]
     }
   ]
 }

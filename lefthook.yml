@@ -1,14 +1,14 @@
 pre-commit:
   parallel: true
   commands:
-    rust-format:
+    rust-format-changed:
       glob: "*.rs"
-      run: cargo fmt --check
-    prettier:
-      glob: "*.{json,md,yaml,yml,ts,tsx}"
-      run: pnpm --dir ui exec prettier --check {staged_files}
-    static-contract:
-      glob: "{Cargo.toml,crates/**,schemas/**,fixtures/**,docs/**,.github/**}"
+      run: rustfmt --check --edition 2024 {staged_files}
+    prettier-changed:
+      glob: "*.{json,md,yaml,yml,ts,tsx,mjs}"
+      run: ui/node_modules/.bin/prettier --check {staged_files}
+    static-contract-changed:
+      glob: "{Cargo.toml,crates/**,schemas/**,fixtures/**,docs/**,.github/**,tools/fleet/**}"
       run: python3 tools/fleet/cutokyo-gates.py all --root .
 
 commit-msg:
