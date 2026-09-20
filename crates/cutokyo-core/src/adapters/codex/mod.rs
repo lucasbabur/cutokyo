@@ -229,7 +229,15 @@ impl StdioAppServerTransport {
                 } else {
                     ErrorCode::CapabilityUnavailable
                 };
-                ContractError::new(code, "failed to start the Codex App Server")
+                let actual = error.raw_os_error().map_or_else(
+                    || format!("{:?}", error.kind()),
+                    |raw_os_error| format!("{:?} (os error {raw_os_error})", error.kind()),
+                );
+                ContractError::new(code, "failed to start the Codex App Server").at_field(
+                    "executable",
+                    "startable Codex App Server",
+                    actual,
+                )
             })?;
         let stdin = child.stdin.take().ok_or_else(|| {
             ContractError::new(
@@ -925,6 +933,13 @@ mod tests {
         ProcessOutput, ProcessRunner, capability_matrix,
     };
 
+    #[cfg(unix)]
+    fn stdio_fixture(name: &str) -> std::path::PathBuf {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/codex/stdio")
+            .join(name)
+    }
+
     #[derive(Default)]
     struct FakeRunner {
         calls: Mutex<Vec<Vec<String>>>,
@@ -965,23 +980,7 @@ mod tests {
     #[test]
     fn codex_stdio_transport_bounds_jsonl_and_retains_notifications()
     -> Result<(), Box<dyn std::error::Error>> {
-        use std::{fs, os::unix::fs::PermissionsExt};
-
-        let temp = tempfile::TempDir::new()?;
-        let executable = temp.path().join("fake-codex");
-        fs::write(
-            &executable,
-            r#"#!/bin/sh
-read -r initialize
-printf '%s\n' '{"method":"server/notice","params":{"synthetic":true}}'
-printf '%s\n' '{"id":1,"result":{}}'
-read -r initialized
-read -r list
-printf '%s\n' '{"id":2,"result":{"data":[],"nextCursor":null}}'
-"#,
-        )?;
-        fs::set_permissions(&executable, fs::Permissions::from_mode(0o700))?;
-
+        let executable = stdio_fixture("bounds-and-notifications.sh");
         let mut client = CodexAppServerClient::spawn_stdio(
             executable.as_os_str(),
             "0.153.4",
@@ -1005,18 +1004,7 @@ printf '%s\n' '{"id":2,"result":{"data":[],"nextCursor":null}}'
     #[test]
     fn codex_stdio_transport_stops_before_parsing_an_oversized_line()
     -> Result<(), Box<dyn std::error::Error>> {
-        use std::{fs, os::unix::fs::PermissionsExt};
-
-        let temp = tempfile::TempDir::new()?;
-        let executable = temp.path().join("oversized-codex");
-        fs::write(
-            &executable,
-            r"#!/bin/sh
-read -r initialize
-printf '%100s\n' x
-",
-        )?;
-        fs::set_permissions(&executable, fs::Permissions::from_mode(0o700))?;
+        let executable = stdio_fixture("oversized-line.sh");
         let mut client = CodexAppServerClient::spawn_stdio(
             executable.as_os_str(),
             "0.153.4",
@@ -1038,19 +1026,7 @@ printf '%100s\n' x
     #[test]
     fn codex_stdio_transport_stops_after_malformed_jsonl() -> Result<(), Box<dyn std::error::Error>>
     {
-        use std::{fs, os::unix::fs::PermissionsExt};
-
-        let temp = tempfile::TempDir::new()?;
-        let executable = temp.path().join("malformed-codex");
-        fs::write(
-            &executable,
-            r"#!/bin/sh
-read -r initialize
-printf '%s\n' '{malformed'
-read -r keepalive
-",
-        )?;
-        fs::set_permissions(&executable, fs::Permissions::from_mode(0o700))?;
+        let executable = stdio_fixture("malformed-jsonl.sh");
         let mut client = CodexAppServerClient::spawn_stdio(
             executable.as_os_str(),
             "0.153.4",
@@ -1062,6 +1038,38 @@ read -r keepalive
             .ok_or_else(|| std::io::Error::other("malformed JSONL accepted"))?;
         assert_eq!(error.code, ErrorCode::InvalidContract);
         assert!(client.transport.child.try_wait()?.is_some());
+        Ok(())
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn codex_stdio_spawn_preserves_sanitized_os_error() -> Result<(), Box<dyn std::error::Error>> {
+        use std::fs::{self, OpenOptions};
+
+        let temp = tempfile::TempDir::new()?;
+        let executable = temp.path().join("writer-held-codex");
+        fs::copy(stdio_fixture("malformed-jsonl.sh"), &executable)?;
+        let writer = OpenOptions::new().write(true).open(&executable)?;
+
+        let error = CodexAppServerClient::spawn_stdio(
+            executable.as_os_str(),
+            "0.153.4",
+            AppServerLimits::default(),
+        )
+        .err()
+        .ok_or_else(|| std::io::Error::other("writer-held executable unexpectedly started"))?;
+        drop(writer);
+
+        assert_eq!(error.code, ErrorCode::CapabilityUnavailable);
+        assert_eq!(error.field.as_deref(), Some("executable"));
+        assert_eq!(
+            error.expected.as_deref(),
+            Some("startable Codex App Server")
+        );
+        assert_eq!(
+            error.actual.as_deref(),
+            Some("ExecutableFileBusy (os error 26)")
+        );
         Ok(())
     }
 

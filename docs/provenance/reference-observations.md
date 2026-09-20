@@ -19,6 +19,7 @@ independently restated and are corroborated by public documentation where possib
 | RO-010 | Package smoke tests must launch the package, not a source-tree binary. | Source success does not prove installer or wrapper correctness. | cargo-dist npm and Tauri distribution documentation. |
 | RO-011 | Health failures must remain independent and current versus lifetime quarantine must be distinct. | One successful write cannot erase unrelated backup, integrity, or retention faults. | Newly authored bounded health contract. |
 | RO-012 | Uninstall with no activation state is a successful no-op; partial recovery remains diagnosable. | Fresh or repeated uninstall should not become a product trap. | Idempotent cleanup practice and host config ownership rules. |
+| RO-013 | A parallel process launch can temporarily inherit another thread's writable executable descriptor before `exec` applies close-on-exec, causing Linux to reject execution with `ETXTBSY`. Executable test fixtures must therefore be completely published before parallel launch and remain unopened for writing while tests run. | Prevent nondeterministic false Codex-unavailable failures without retries, sleeps, or test serialization. | POSIX `exec` documents `ETXTBSY`; Linux `open(2)` documents that `O_CLOEXEC` acts during successful `exec`; independently reproduced on candidate `7468bb4` and corroborated by public Rust and Go issue reproductions. |
 
 ## Public sources
 
@@ -50,6 +51,12 @@ independently restated and are corroborated by public documentation where possib
 - Official Rust MCP SDK: <https://github.com/modelcontextprotocol/rust-sdk>.
 - cargo-dist npm installer:
   <https://axodotdev.github.io/cargo-dist/book/installers/npm.html>.
+- Process execution and Linux `ETXTBSY` semantics:
+  <https://pubs.opengroup.org/onlinepubs/9799919799/functions/exec.html>,
+  <https://www.man7.org/linux/man-pages/man2/open.2.html>,
+  <https://github.com/rust-lang/rust/issues/114554>,
+  <https://github.com/golang/go/issues/22315>,
+  <https://lkml.rescloud.iu.edu/hypermail/linux/kernel/2508.3/03883.html>.
 
 ## Fixture statement
 

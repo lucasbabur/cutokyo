@@ -48,6 +48,21 @@
       "surface": "otel_event_names",
       "url": "https://github.com/openai/codex/blob/main/codex-rs/otel/src/events/session_telemetry.rs",
       "version_scope": "official source inspected 2026-09-20; event export may vary by release"
+    },
+    {
+      "surface": "process_execution_etxtbsy",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/functions/exec.html",
+      "version_scope": "POSIX.1-2024 public specification read 2026-09-20"
+    },
+    {
+      "surface": "close_on_exec_semantics",
+      "url": "https://www.man7.org/linux/man-pages/man2/open.2.html",
+      "version_scope": "Linux man-pages public documentation read 2026-09-20"
+    },
+    {
+      "surface": "parallel_etxtbsy_reproductions",
+      "url": "https://github.com/rust-lang/rust/issues/114554",
+      "version_scope": "public Rust reproduction corroborated 2026-09-20; local candidate reproduction remains the primary observation"
     }
   ],
   "fixtures": [
@@ -98,6 +113,36 @@
       "limits": [
         "These records were not emitted by a live collector and are never labelled observed.",
         "The future event and private-input sentinel test raw preservation without containing user data."
+      ]
+    },
+    {
+      "path": "../stdio/bounds-and-notifications.sh",
+      "classification": "synthetic_transport_fixture",
+      "origin": "independently hand-authored POSIX shell fixture using invented JSON-RPC values to exercise bounded Codex stdio framing and notification retention",
+      "version": "test-only Codex App Server JSONL shape; not observed provider traffic",
+      "limits": [
+        "The script models only the initialize and empty thread-list exchange required by its transport test.",
+        "All JSON values are synthetic; no provider response, user content, private path, credential, or predecessor material was used."
+      ]
+    },
+    {
+      "path": "../stdio/oversized-line.sh",
+      "classification": "synthetic_adverse_transport_fixture",
+      "origin": "independently hand-authored POSIX shell mutation that emits fixed whitespace beyond the test's configured line bound",
+      "version": "test-only transport-limit mutation; not observed provider traffic",
+      "limits": [
+        "The script demonstrates pre-parse line-bound enforcement only; it does not model a valid Codex response.",
+        "Its output is generated synthetic padding and contains no provider, user, credential, path, or predecessor data."
+      ]
+    },
+    {
+      "path": "../stdio/malformed-jsonl.sh",
+      "classification": "synthetic_adverse_transport_fixture",
+      "origin": "independently hand-authored POSIX shell mutation that emits one invented malformed JSON line",
+      "version": "test-only malformed-framing mutation; not observed provider traffic",
+      "limits": [
+        "The script demonstrates malformed JSONL termination only; it does not model a valid Codex response.",
+        "Its malformed token is synthetic and contains no provider, user, credential, path, or predecessor data."
       ]
     }
   ]
