@@ -16,11 +16,17 @@ const evidencePath = resolve(
 
 describe("Cutokyo native Tauri application", () => {
   it("searches, opens, exactly resumes, and deletes an isolated native fixture", async () => {
+    const applicationUrl = new URL(await browser.getUrl());
+    assert.equal(applicationUrl.protocol, "tauri:");
+    assert.equal(applicationUrl.hostname, "localhost");
+
     const overview = await $("h1=Overview");
     await overview.waitForDisplayed();
     assert.equal(await overview.getText(), "Overview");
 
-    const windowSize = await browser.getWindowSize();
+    const windowSize = (await browser.tauri.execute(({ core }) =>
+      core.invoke("plugin:window|inner_size", { label: "main" }),
+    )) as { height: number; width: number };
     assert.ok(windowSize.width >= 900, `native width was ${windowSize.width}`);
     assert.ok(
       windowSize.height >= 700,
@@ -72,12 +78,23 @@ describe("Cutokyo native Tauri application", () => {
     await $("button=Delete session").click();
     const deletionDialog = await $('[role="dialog"]');
     await deletionDialog.waitForDisplayed();
-    assert.match(await deletionDialog.getText(), /Raw observations\s+1/);
-    assert.match(await deletionDialog.getText(), /Search rows\s+1/);
+    const rawObservationCount = await deletionDialog.$(
+      ".//dt[normalize-space(.)='Raw observations']/following-sibling::dd[1]",
+    );
+    const searchRowCount = await deletionDialog.$(
+      ".//dt[normalize-space(.)='Search rows']/following-sibling::dd[1]",
+    );
+    assert.equal(await rawObservationCount.getText(), "1");
+    assert.equal(await searchRowCount.getText(), "1");
     await $("button=Delete selected session").click();
 
-    await sessionsHeading.waitForDisplayed();
-    const emptyState = await $("h2=No sessions match these filters");
+    const returnedSessionsHeading = await $("h1=Sessions");
+    await returnedSessionsHeading.waitForDisplayed();
+    const deletedResult = await $(
+      'a[aria-label="Open Native exact resume 73A9"]',
+    );
+    await deletedResult.waitForExist({ reverse: true });
+    const emptyState = await $("h2=History is empty—not zero");
     await emptyState.waitForDisplayed();
   });
 });

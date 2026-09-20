@@ -9,6 +9,12 @@ import type { CommandClient } from "./contracts.js";
 import "./styles.css";
 
 async function resolveCommandClient(): Promise<CommandClient> {
+  if (import.meta.env.MODE === "native-e2e") {
+    const { installNativeE2eBridge } =
+      await import("./testing/nativeE2eBridge.js");
+    await installNativeE2eBridge();
+  }
+
   if (
     import.meta.env.DEV &&
     import.meta.env.VITE_CUTOKYO_BROWSER_FIXTURES === "1"

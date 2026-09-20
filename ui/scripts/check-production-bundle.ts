@@ -8,6 +8,8 @@ const sentinels = [
   "JEV exact resume needle 73A9",
   "delete-me-73A9",
   "fixture-parser-1",
+  "__wdio_original_core__",
+  "WDIO Tauri Plugin",
 ] as const;
 
 async function filesBelow(directory: string): Promise<string[]> {
@@ -44,10 +46,10 @@ for (const file of await filesBelow(dist)) {
 
 if (leaks.length > 0) {
   throw new Error(
-    `Browser fixture code leaked into production:\n${leaks.join("\n")}`,
+    `Test-only code leaked into production:\n${leaks.join("\n")}`,
   );
 }
 
 console.log(
-  "Production bundle contains no browser fixture selector, audit hook, or sentinel data.",
+  "Production bundle contains no browser fixture or native-E2E bridge code.",
 );

@@ -43,6 +43,7 @@ Exact active versions are in `Cargo.lock`.
 | flate2 | 1.1.9 | MIT OR Apache-2.0 | Gzip diagnostic archive compression; version shared with KeyHog's exact maintained dependency |
 | tauri | 2.11.5 | Apache-2.0 OR MIT | Optional desktop-runtime dependency; stable v2 |
 | tauri-build | 2.6.3 | Apache-2.0 OR MIT | Official Tauri build-context generator |
+| tauri-plugin-wdio | 1.4.0 | MIT OR Apache-2.0 | Test-feature-only WebdriverIO bridge and native window inspection commands |
 | tauri-plugin-wdio-webdriver | 1.4.0 | MIT | Test-feature-only embedded native WebDriver server; release builds reject the feature |
 
 ## OpenCode fixture reference artifacts
@@ -78,7 +79,7 @@ runtime application code.
 | axe-core / axe Playwright adapter | 4.13.0 | MPL-2.0 |
 | WebdriverIO CLI, runner, Mocha framework, and client | 9.31.9 | MIT |
 | @wdio/globals / @wdio/types | 9.31.3 / 9.30.1 | MIT |
-| @wdio/tauri-service | 1.4.0 | MIT |
+| @wdio/tauri-service / @wdio/tauri-plugin | 1.4.0 | MIT |
 | jsdom | 30.1.0 | MIT |
 | Knip | 6.37.0 | ISC |
 | Oxlint | 1.83.0 | MIT |

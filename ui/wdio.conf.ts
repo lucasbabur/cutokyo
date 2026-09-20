@@ -1,6 +1,6 @@
 import { chmodSync, copyFileSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { delimiter, dirname, join, resolve } from "node:path";
+import { basename, delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import LocalRunner from "@wdio/local-runner";
@@ -26,10 +26,20 @@ const fakeHarnessSource = join(
   `fake-resume-harness${executableSuffix}`,
 );
 
-const nativeTestRoot = join(
-  tmpdir(),
-  `cutokyo-native-test-wdio-${process.pid}`,
-);
+const nativeTestParent = resolve(tmpdir());
+const inheritedNativeTestRoot = process.env.CUTOKYO_DESKTOP_TEST_ROOT;
+const nativeTestRoot = inheritedNativeTestRoot
+  ? resolve(inheritedNativeTestRoot)
+  : join(nativeTestParent, `cutokyo-native-test-wdio-${process.pid}`);
+if (
+  dirname(nativeTestRoot) !== nativeTestParent ||
+  !basename(nativeTestRoot).startsWith("cutokyo-native-test-wdio-")
+) {
+  throw new Error(
+    "The propagated native test root must be a direct, isolated child of the system temporary directory.",
+  );
+}
+process.env.CUTOKYO_DESKTOP_TEST_ROOT = nativeTestRoot;
 const nativeResumeAudit = join(nativeTestRoot, "resume-audit.txt");
 process.env.CUTOKYO_NATIVE_RESUME_AUDIT = nativeResumeAudit;
 const fakeBin = join(nativeTestRoot, "bin");

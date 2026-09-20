@@ -371,7 +371,16 @@ pub(crate) fn run() -> Result<(), String> {
 
     let builder = tauri::Builder::default();
     #[cfg(feature = "native-e2e")]
-    let builder = builder.plugin(tauri_plugin_wdio_webdriver::init());
+    let builder = builder
+        .plugin(tauri_plugin_wdio::init())
+        .plugin(tauri_plugin_wdio_webdriver::init());
+
+    #[cfg(feature = "native-e2e")]
+    let context = tauri::generate_context!(
+        capabilities = ["crates/cutokyo-desktop/test-capabilities/native-e2e.json"]
+    );
+    #[cfg(not(feature = "native-e2e"))]
+    let context = tauri::generate_context!();
 
     builder
         .setup(|app| {
@@ -422,7 +431,7 @@ pub(crate) fn run() -> Result<(), String> {
             patch_desktop_preferences,
             check_for_updates,
         ])
-        .run(tauri::generate_context!())
+        .run(context)
         .map_err(|error| format!("Cutokyo desktop failed: {error}"))
 }
 
