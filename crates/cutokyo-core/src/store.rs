@@ -360,6 +360,8 @@ pub struct RetentionPlan {
     pub messages: u64,
     /// Selected summaries.
     pub summaries: u64,
+    /// Selected full-text search rows.
+    pub fts_rows: u64,
     /// Digest binds apply to this preview.
     pub plan_digest: String,
     /// Honest deletion disclosure.
@@ -915,6 +917,16 @@ impl WriterStore {
     pub fn apply_retention(&self, plan: &RetentionPlan) -> Result<DeletionReceipt> {
         verify_retention_plan(plan)?;
         self.delete_sessions_transaction(&plan.session_ids)
+    }
+
+    /// Counts every row that one exact session deletion would remove without
+    /// mutating the database.
+    ///
+    /// # Errors
+    ///
+    /// Returns not-found or a store read error.
+    pub fn preview_session_deletion(&self, session_id: &SessionId) -> Result<DeletionReceipt> {
+        self.reader().preview_session_deletion(session_id)
     }
 
     /// Deletes one exact session and all linked raw, derived, FTS, and summary rows.
@@ -1794,6 +1806,30 @@ impl ReadStore {
         Ok(Some(snapshot))
     }
 
+    /// Counts the exact raw, derived, summary, and FTS scope for one session.
+    ///
+    /// # Errors
+    ///
+    /// Returns not-found when the session does not exist or a store read error.
+    pub fn preview_session_deletion(&self, session_id: &SessionId) -> Result<DeletionReceipt> {
+        let connection = open_read_connection(&self.path)?;
+        let transaction = connection
+            .unchecked_transaction()
+            .map_err(|error| sqlite_error("begin session deletion preview", &error))?;
+        let ids = [session_id.as_str().to_owned()];
+        let counts = deletion_counts_tx(&transaction, Some(&ids))?;
+        transaction
+            .rollback()
+            .map_err(|error| sqlite_error("finish session deletion preview", &error))?;
+        if counts.sessions == 0 {
+            return Err(ContractError::new(
+                ErrorCode::NotFound,
+                "session was not found",
+            ));
+        }
+        Ok(counts)
+    }
+
     /// Builds a stable retention plan from sessions strictly older than cutoff.
     ///
     /// # Errors
@@ -1841,6 +1877,7 @@ impl ReadStore {
             raw_observations: counts.raw_observations,
             messages: counts.messages,
             summaries: counts.summaries,
+            fts_rows: counts.fts_rows,
             plan_digest: digest,
             disclosure: DELETION_DISCLOSURE.to_owned(),
         })

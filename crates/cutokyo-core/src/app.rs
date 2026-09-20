@@ -238,6 +238,15 @@ impl QueryUseCases {
         self.store.price_at(provider, model, at)
     }
 
+    /// Previews the exact row scope of deleting one session.
+    ///
+    /// # Errors
+    ///
+    /// Returns not-found or a store read error.
+    pub fn preview_session_deletion(&self, session_id: &SessionId) -> Result<DeletionReceipt> {
+        self.store.preview_session_deletion(session_id)
+    }
+
     /// Previews a retention policy without mutating local history.
     ///
     /// # Errors
@@ -403,6 +412,15 @@ impl LocalCore {
     /// Returns a validation or store error; no partial summary write commits.
     pub fn put_summary(&self, summary: &Summary) -> Result<()> {
         self.store.upsert_summary(summary)
+    }
+
+    /// Previews the exact row scope of deleting one session.
+    ///
+    /// # Errors
+    ///
+    /// Returns not-found or a store read error.
+    pub fn preview_session_deletion(&self, session_id: &SessionId) -> Result<DeletionReceipt> {
+        self.store.preview_session_deletion(session_id)
     }
 
     /// Previews retention without deletion.
