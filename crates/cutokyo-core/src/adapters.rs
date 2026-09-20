@@ -4,6 +4,8 @@ use cutokyo_domain::CaptureChannel;
 
 /// Claude Code capture, setup, inventory, detection, and exact-resume adapter.
 pub mod claude_code;
+/// Native Codex integration, normalization, resume, inventory, and reversible setup.
+pub mod codex;
 
 /// Native capture channels ordered before any consented proxy fallback.
 pub const NATIVE_CAPTURE_ORDER: [CaptureChannel; 7] = [

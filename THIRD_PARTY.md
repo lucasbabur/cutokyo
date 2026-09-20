@@ -22,6 +22,7 @@ shipped until their feature implementation enables them.
 | fs4 | 1.1.0 | MIT OR Apache-2.0 | Cross-platform database-writer and spool-publication file locks |
 | sha2 | 0.11.0 | MIT OR Apache-2.0 | SHA-256 observation identities and backup digests |
 | jsonc-parser | 0.33.2 | MIT | Structural Claude settings edits that preserve unmanaged JSON content ([upstream](https://github.com/dprint/jsonc-parser)) |
+| toml_edit | 0.25.15 | MIT OR Apache-2.0 | Structural ownership of reversible Codex TOML setup |
 | tauri | 2.11.5 | Apache-2.0 OR MIT | Optional desktop-runtime dependency; stable v2 |
 | tauri-build | 2.6.3 | Apache-2.0 OR MIT | Official Tauri build-context generator |
 

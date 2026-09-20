@@ -22,6 +22,7 @@ approval. Review status must be updated only from an actual review.
 | DL-014 | Dependency choices use maintained libraries rather than custom substitutes. | Foundation architect from registry/upstream research on 2026-09-19. | workspace manifests, ADR 0008, `THIRD_PARTY.md` | Cargo metadata, cargo-deny, lockfile | Pending independent review |
 | DL-015 | CLI and desktop composition roots invoke application services rather than store internals. | Foundation architect. | `crates/cutokyo-cli`, `crates/cutokyo-desktop` | architecture tests and Cargo metadata | Pending independent review |
 | DL-016 | Golden fixture registry fails on missing fixtures and bad/good inversions. | Foundation architect using synthetic data. | `fixtures/registry.json`, schemas and fixtures | `tests/pipeline.rs`, static contract gate selftests | Pending independent review |
+| DL-017 | Codex preserves `thread.id` as the exact resume target independently from `thread.sessionId`, captures bounded App Server pages as raw evidence before projection, degrades safely on incomplete or unknown protocol data, and owns reversible hook/OTel config structurally. | Codex harness builder from OpenAI public documentation, installed `codex-cli 0.153.4` schema/traffic, and explicitly labelled synthetic mutations. | `crates/cutokyo-core/src/adapters/codex/`, `tools/fake-harness/src/lib.rs` | `fixtures/codex/v1/`, Codex core/fake tests, `tests/e2e.rs::codex_setup_roundtrip` | Pending independent review |
 
 ## Update rule
 

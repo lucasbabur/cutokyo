@@ -1,0 +1,118 @@
+{
+  "fixture_version": 1,
+  "protocol_schema_version": "codex-cli 0.153.4",
+  "scenarios": [
+    {
+      "name": "paginated_history",
+      "adapter_version": "0.153.4",
+      "steps": [
+        {
+          "step": "request",
+          "method": "initialize",
+          "params": {"clientInfo":{"name":"cutokyo","title":"Cutokyo","version":"0.1.0"}},
+          "response": {"response_kind":"result","value":{"userAgent":"codex_cli_rs/0.153.4","codexHome":"/synthetic/codex-home","platformFamily":"unix","platformOs":"linux"}}
+        },
+        {"step":"notification","method":"initialized","params":{}},
+        {
+          "step":"request",
+          "method":"thread/resume",
+          "params":{"threadId":"0199-thread-exact","excludeTurns":true},
+          "response":{"response_kind":"result","value":{"thread":{"id":"0199-thread-exact","sessionId":"0199-session-tree-independent","cliVersion":"0.153.4","createdAt":1789700000,"updatedAt":1789700100,"cwd":"/synthetic/project","ephemeral":false,"modelProvider":"openai","preview":"synthetic","projectId":null,"source":"cli","status":{"type":"idle"},"turns":[]},"model":"gpt-5","modelProvider":"openai","cwd":"/synthetic/project","approvalPolicy":"never","approvalsReviewer":"user","sandbox":{"type":"readOnly"}}}
+        },
+        {
+          "step":"request",
+          "method":"thread/turns/list",
+          "params":{"threadId":"0199-thread-exact","cursor":null,"limit":1,"sortDirection":"asc","itemsView":"full"},
+          "response":{"response_kind":"result","value":{"data":[{"id":"turn-one","status":"completed","startedAt":1789700010,"completedAt":1789700020,"itemsView":"full","items":[{"id":"message-one","type":"userMessage","content":[{"type":"text","text":"synthetic prompt"}]}]}],"nextCursor":"turn-page-two"}}
+        },
+        {
+          "step":"request",
+          "method":"thread/turns/list",
+          "params":{"threadId":"0199-thread-exact","cursor":"turn-page-two","limit":1,"sortDirection":"asc","itemsView":"full"},
+          "response":{"response_kind":"result","value":{"data":[{"id":"turn-two","status":"completed","startedAt":1789700030,"completedAt":1789700040,"itemsView":"full","items":[{"id":"message-two","type":"agentMessage","text":"synthetic answer"}]}],"nextCursor":null}}
+        }
+      ]
+    },
+    {
+      "name":"dropped_tool_result",
+      "adapter_version":"0.153.4",
+      "steps":[
+        {"step":"request","method":"initialize","params":{"clientInfo":{"name":"cutokyo","title":"Cutokyo","version":"0.1.0"}},"response":{"response_kind":"result","value":{"userAgent":"codex_cli_rs/0.153.4"}}},
+        {"step":"notification","method":"initialized","params":{}},
+        {"step":"request","method":"thread/resume","params":{"threadId":"0199-thread-exact","excludeTurns":true},"response":{"response_kind":"result","value":{"thread":{"id":"0199-thread-exact","sessionId":"0199-session-tree-independent","cliVersion":"0.153.4","createdAt":1789700000,"updatedAt":1789700100,"cwd":"/synthetic/project","ephemeral":false,"modelProvider":"openai","preview":"synthetic","projectId":null,"source":"cli","status":{"type":"idle"},"turns":[]},"model":"gpt-5","modelProvider":"openai","cwd":"/synthetic/project","approvalPolicy":"never","approvalsReviewer":"user","sandbox":{"type":"readOnly"}}}},
+        {"step":"request","method":"thread/turns/list","params":{"threadId":"0199-thread-exact","cursor":null,"limit":100,"sortDirection":"asc","itemsView":"full"},"response":{"response_kind":"result","value":{"data":[{"id":"turn-dropped","status":"completed","startedAt":1789700010,"completedAt":1789700020,"itemsView":"full","items":[{"id":"tool-without-result","type":"mcpToolCall","server":"synthetic","tool":"read","arguments":{},"result":null,"status":"completed"}]}],"nextCursor":null}}}
+      ]
+    },
+    {
+      "name":"incomplete_resumed_view",
+      "adapter_version":"0.153.4",
+      "steps":[
+        {"step":"request","method":"initialize","params":{"clientInfo":{"name":"cutokyo","title":"Cutokyo","version":"0.1.0"}},"response":{"response_kind":"result","value":{"userAgent":"codex_cli_rs/0.153.4"}}},
+        {"step":"notification","method":"initialized","params":{}},
+        {"step":"request","method":"thread/resume","params":{"threadId":"0199-thread-exact","excludeTurns":true},"response":{"response_kind":"result","value":{"thread":{"id":"0199-thread-exact","sessionId":"0199-session-tree-independent","cliVersion":"0.153.4","createdAt":1789700000,"updatedAt":1789700100,"cwd":"/synthetic/project","ephemeral":false,"modelProvider":"openai","preview":"synthetic","projectId":null,"source":"cli","status":{"type":"idle"},"turns":[]},"model":"gpt-5","modelProvider":"openai","cwd":"/synthetic/project","approvalPolicy":"never","approvalsReviewer":"user","sandbox":{"type":"readOnly"}}}},
+        {"step":"request","method":"thread/turns/list","params":{"threadId":"0199-thread-exact","cursor":null,"limit":1,"sortDirection":"asc","itemsView":"full"},"response":{"response_kind":"result","value":{"data":[{"id":"turn-summary","status":"completed","startedAt":1789700010,"completedAt":1789700020,"itemsView":"summary","items":[]}],"nextCursor":null}}},
+        {"step":"request","method":"thread/items/list","params":{"threadId":"0199-thread-exact","turnId":"turn-summary","cursor":null,"limit":1,"sortDirection":"asc"},"response":{"response_kind":"result","value":{"data":[{"turnId":"turn-summary","item":{"id":"message-summary","type":"agentMessage","text":"first item only"}}],"nextCursor":"items-page-two"}}}
+      ]
+    },
+    {
+      "name":"unknown_version",
+      "adapter_version":"99.0.0",
+      "steps":[
+        {"step":"request","method":"initialize","params":{"clientInfo":{"name":"cutokyo","title":"Cutokyo","version":"0.1.0"}},"response":{"response_kind":"result","value":{"futureHandshake":true}}},
+        {"step":"notification","method":"initialized","params":{}},
+        {"step":"request","method":"thread/list","params":{"cursor":null,"limit":100,"sortDirection":"desc"},"response":{"response_kind":"result","value":{"data":[{"futureThreadShape":{"opaque":true}}],"nextCursor":null,"futureField":"preserved"}}}
+      ]
+    },
+    {
+      "name":"unavailable_resume",
+      "adapter_version":"0.153.4",
+      "steps":[
+        {"step":"request","method":"initialize","params":{"clientInfo":{"name":"cutokyo","title":"Cutokyo","version":"0.1.0"}},"response":{"response_kind":"result","value":{"userAgent":"codex_cli_rs/0.153.4"}}},
+        {"step":"notification","method":"initialized","params":{}},
+        {"step":"request","method":"thread/resume","params":{"threadId":"0199-thread-exact","excludeTurns":true},"response":{"response_kind":"native_error","code":-32602}}
+      ]
+    },
+    {
+      "name":"oversized_resume",
+      "adapter_version":"0.153.4",
+      "steps":[
+        {"step":"request","method":"initialize","params":{"clientInfo":{"name":"cutokyo","title":"Cutokyo","version":"0.1.0"}},"response":{"response_kind":"result","value":{"userAgent":"codex_cli_rs/0.153.4"}}},
+        {"step":"notification","method":"initialized","params":{}},
+        {"step":"request","method":"thread/resume","params":{"threadId":"0199-thread-exact","excludeTurns":true},"response":{"response_kind":"oversized","bytes":4096}}
+      ]
+    },
+    {
+      "name":"missing_terminal_event",
+      "adapter_version":"0.153.4",
+      "steps":[
+        {"step":"request","method":"initialize","params":{"clientInfo":{"name":"cutokyo","title":"Cutokyo","version":"0.1.0"}},"response":{"response_kind":"result","value":{"userAgent":"codex_cli_rs/0.153.4"}}},
+        {"step":"notification","method":"initialized","params":{}},
+        {"step":"request","method":"thread/resume","params":{"threadId":"0199-thread-exact","excludeTurns":true},"response":{"response_kind":"result","value":{"thread":{"id":"0199-thread-exact","sessionId":"0199-session-tree-independent","cliVersion":"0.153.4","createdAt":1789700000,"updatedAt":1789700100,"cwd":"/synthetic/project","ephemeral":false,"modelProvider":"openai","preview":"synthetic","projectId":null,"source":"cli","status":{"type":"active","activeFlags":[]},"turns":[]},"model":"gpt-5","modelProvider":"openai","cwd":"/synthetic/project","approvalPolicy":"never","approvalsReviewer":"user","sandbox":{"type":"readOnly"}}}},
+        {"step":"request","method":"thread/turns/list","params":{"threadId":"0199-thread-exact","cursor":null,"limit":100,"sortDirection":"asc","itemsView":"full"},"response":{"response_kind":"result","value":{"data":[{"id":"turn-running","status":"inProgress","startedAt":1789700010,"completedAt":null,"itemsView":"full","items":[]}],"nextCursor":null}}}
+      ]
+    },
+    {
+      "name":"pagination_drift",
+      "adapter_version":"0.153.4",
+      "steps":[
+        {"step":"request","method":"initialize","params":{"clientInfo":{"name":"cutokyo","title":"Cutokyo","version":"0.1.0"}},"response":{"response_kind":"result","value":{"userAgent":"codex_cli_rs/0.153.4"}}},
+        {"step":"notification","method":"initialized","params":{}},
+        {"step":"request","method":"thread/list","params":{"cursor":null,"limit":100,"sortDirection":"desc"},"response":{"response_kind":"result","value":{"data":[],"nextCursor":"same-cursor"}}},
+        {"step":"request","method":"thread/list","params":{"cursor":"same-cursor","limit":100,"sortDirection":"desc"},"response":{"response_kind":"result","value":{"data":[],"nextCursor":"same-cursor"}}}
+      ]
+    },
+    {
+      "name":"inventory_paginated",
+      "adapter_version":"0.153.4",
+      "steps":[
+        {"step":"request","method":"initialize","params":{"clientInfo":{"name":"cutokyo","title":"Cutokyo","version":"0.1.0"}},"response":{"response_kind":"result","value":{"userAgent":"codex_cli_rs/0.153.4"}}},
+        {"step":"notification","method":"initialized","params":{}},
+        {"step":"request","method":"hooks/list","params":{"cwds":["/synthetic/project"]},"response":{"response_kind":"result","value":{"data":[{"cwd":"/synthetic/project","errors":[],"warnings":[],"hooks":[{"key":"hook-user","enabled":true,"eventName":"sessionStart","isManaged":false,"source":"user","sourcePath":"/synthetic/home/.codex/hooks.json","currentHash":"synthetic-hash","displayOrder":0,"timeoutSec":10,"trustStatus":"trusted","handlerType":"command","command":"synthetic"}]}]}}},
+        {"step":"request","method":"skills/list","params":{"cwds":["/synthetic/project"],"forceReload":false},"response":{"response_kind":"result","value":{"data":[{"cwd":"/synthetic/project","errors":[],"skills":[{"name":"synthetic-skill","description":"Synthetic fixture skill","enabled":true,"path":"/synthetic/home/.agents/skills/synthetic/SKILL.md","scope":"user","pluginId":null}]}]}}},
+        {"step":"request","method":"plugin/list","params":{"cwds":["/synthetic/project"],"forceRefetch":false},"response":{"response_kind":"result","value":{"marketplaces":[{"name":"synthetic-marketplace","plugins":[{"authPolicy":"ON_USE","enabled":true,"id":"synthetic-plugin","installPolicy":"AVAILABLE","installed":true,"name":"Synthetic Plugin","source":{"type":"local","path":"/synthetic/plugin"}}]}],"featuredPluginIds":[],"marketplaceLoadErrors":[]}}},
+        {"step":"request","method":"mcpServerStatus/list","params":{"cursor":null,"limit":1,"detail":"full","threadId":null},"response":{"response_kind":"result","value":{"data":[{"name":"connected-mcp","authStatus":"unsupported","runtimeStatus":"connected","serverInfo":null,"tools":{},"resources":[],"resourceTemplates":[],"pluginId":null}],"nextCursor":"mcp-page-two"}}},
+        {"step":"request","method":"mcpServerStatus/list","params":{"cursor":"mcp-page-two","limit":1,"detail":"full","threadId":null},"response":{"response_kind":"result","value":{"data":[{"name":"configured-mcp","authStatus":"notLoggedIn","runtimeStatus":"notStarted","serverInfo":null,"tools":{},"resources":[],"resourceTemplates":[],"pluginId":"synthetic-plugin"}],"nextCursor":null}}}
+      ]
+    }
+  ]
+}
