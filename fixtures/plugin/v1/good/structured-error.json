@@ -1,0 +1,12 @@
+{
+  "protocol_major": 1,
+  "kind": "error",
+  "request_id": "processor-1",
+  "payload": {
+    "code": "invalid_record",
+    "message": "normalized record did not satisfy the plugin contract",
+    "field": "records[0]",
+    "expected": "normalized record",
+    "actual": "unsupported shape"
+  }
+}

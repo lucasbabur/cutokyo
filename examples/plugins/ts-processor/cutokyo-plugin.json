@@ -1,0 +1,11 @@
+{
+  "manifest_version": 1,
+  "protocol_major": 1,
+  "plugin_id": "example:ts-processor",
+  "plugin_kind": "processor",
+  "runtime": "node",
+  "entrypoint": "processor.ts",
+  "args": [],
+  "capabilities": ["emit_derived_fact"],
+  "timeout_ms": 5000
+}

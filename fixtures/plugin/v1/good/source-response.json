@@ -1,0 +1,19 @@
+{
+  "protocol_major": 1,
+  "kind": "response",
+  "request_id": "source-poll-1",
+  "payload": {
+    "status": "completed",
+    "cursor": "cursor:fixture:next",
+    "used_capabilities": ["emit_observation"],
+    "observations": [
+      {
+        "observation_id": "obs:fixture:source:1",
+        "kind": "fixture.event",
+        "payload": {
+          "synthetic": true
+        }
+      }
+    ]
+  }
+}

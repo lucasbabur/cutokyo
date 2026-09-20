@@ -46,6 +46,8 @@ pub const DELETION_DISCLOSURE: &str = "Deletion removes selected rows and search
 /// Exact destructive confirmation phrase used by the core use case.
 pub const DELETE_ALL_CONFIRMATION: &str = "DELETE ALL LOCAL HISTORY";
 
+const PROXY_STATE_META_KEY: &str = "proxy_lifecycle_state_v1";
+const MAX_PROXY_STATE_BYTES: usize = 1_024;
 const MIGRATION_1: &str = include_str!("../migrations/0001_initial.sql");
 const MIGRATION_2: &str = include_str!("../migrations/0002_durable_core.sql");
 const HEALTH_DIMENSIONS: [&str; 11] = [
@@ -279,6 +281,8 @@ pub struct HealthSnapshot {
 /// Search filters accepted by app use cases.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct SearchQuery {
+    /// Exact stable session identity.
+    pub session_id: Option<SessionId>,
     /// Transcript text, matched through FTS5.
     pub text: Option<String>,
     /// Exact project identity, name, or path.
@@ -889,6 +893,88 @@ impl WriterStore {
         transaction
             .commit()
             .map_err(|error| sqlite_error("commit summary write", &error))?;
+        Ok(())
+    }
+
+    /// Loads the bounded JSON value owned by the application proxy-state port.
+    ///
+    /// This remains crate-private so proxy code receives only its narrow port, never
+    /// this writer or the database path.
+    ///
+    /// # Errors
+    ///
+    /// Returns a lock, SQLite, or invalid-contract error. Oversized state is rejected
+    /// before SQLite materializes its text value.
+    pub(crate) fn load_proxy_state_json(&self) -> Result<Option<String>> {
+        let _guard = self.write_guard()?;
+        let connection = open_write_connection(&self.path)?;
+        let byte_length = connection
+            .query_row(
+                "SELECT length(CAST(value AS BLOB)) FROM schema_meta WHERE key = ?1",
+                [PROXY_STATE_META_KEY],
+                |row| row.get::<_, i64>(0),
+            )
+            .optional()
+            .map_err(|error| sqlite_error("read proxy state size", &error))?;
+        let Some(byte_length) = byte_length else {
+            return Ok(None);
+        };
+        if byte_length < 0
+            || usize::try_from(byte_length).map_or(true, |size| size > MAX_PROXY_STATE_BYTES)
+        {
+            return Err(ContractError::new(
+                ErrorCode::InvalidContract,
+                "persisted proxy lifecycle state exceeds its bound",
+            )
+            .at_field(
+                "proxy_state",
+                format!("at most {MAX_PROXY_STATE_BYTES} bytes"),
+                "oversized persisted value",
+            ));
+        }
+        connection
+            .query_row(
+                "SELECT value FROM schema_meta WHERE key = ?1",
+                [PROXY_STATE_META_KEY],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|error| sqlite_error("read proxy state", &error))
+    }
+
+    /// Persists one bounded JSON value owned by the application proxy-state port.
+    ///
+    /// # Errors
+    ///
+    /// Returns an invalid-contract, lock, SQLite, or transactional error.
+    pub(crate) fn save_proxy_state_json(&self, state_json: &str) -> Result<()> {
+        if state_json.len() > MAX_PROXY_STATE_BYTES {
+            return Err(ContractError::new(
+                ErrorCode::InvalidContract,
+                "proxy lifecycle state exceeds its bound",
+            )
+            .at_field(
+                "proxy_state",
+                format!("at most {MAX_PROXY_STATE_BYTES} bytes"),
+                format!("{} bytes", state_json.len()),
+            ));
+        }
+        serde_json::from_str::<Value>(state_json)
+            .map_err(|error| serialization_error("validate proxy lifecycle state", &error))?;
+        let _guard = self.write_guard()?;
+        let mut connection = open_write_connection(&self.path)?;
+        let transaction = connection
+            .transaction_with_behavior(TransactionBehavior::Immediate)
+            .map_err(|error| sqlite_error("begin proxy state write", &error))?;
+        transaction
+            .execute(
+                "INSERT INTO schema_meta(key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                params![PROXY_STATE_META_KEY, state_json],
+            )
+            .map_err(|error| sqlite_error("persist proxy state", &error))?;
+        transaction
+            .commit()
+            .map_err(|error| sqlite_error("commit proxy state write", &error))?;
         Ok(())
     }
 
@@ -3420,6 +3506,10 @@ fn search_connection(connection: &Connection, query: &SearchQuery) -> Result<Vec
         "SELECT s.session_id, s.harness, s.native_resume_id, s.project_id, p.name, s.branch, s.title, s.started_at, s.winning_observation_id FROM sessions s LEFT JOIN projects p ON p.project_id=s.project_id WHERE 1=1",
     );
     let mut values = Vec::<SqlValue>::new();
+    if let Some(session_id) = &query.session_id {
+        sql.push_str(" AND s.session_id=?");
+        values.push(SqlValue::Text(session_id.as_str().to_owned()));
+    }
     if let Some(text) = query.text.as_deref() {
         sql.push_str(" AND EXISTS (SELECT 1 FROM message_fts WHERE session_id=s.session_id AND message_fts MATCH ?)");
         values.push(SqlValue::Text(fts_literal(text)));

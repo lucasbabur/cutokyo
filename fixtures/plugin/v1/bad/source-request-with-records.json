@@ -1,0 +1,16 @@
+{
+  "protocol_major": 1,
+  "kind": "request",
+  "request_id": "bad-source-cross-field",
+  "payload": {
+    "operation": "source_poll",
+    "harness": "claude_code",
+    "cursor": null,
+    "window": {
+      "start": "2026-09-20T00:00:00Z",
+      "end": "2026-09-20T00:01:00Z"
+    },
+    "granted_capabilities": ["emit_observation"],
+    "records": [{"record_id": "forbidden"}]
+  }
+}

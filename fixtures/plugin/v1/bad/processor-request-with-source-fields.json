@@ -1,0 +1,12 @@
+{
+  "protocol_major": 1,
+  "kind": "request",
+  "request_id": "bad-processor-cross-field",
+  "payload": {
+    "operation": "process_records",
+    "granted_capabilities": ["emit_derived_fact"],
+    "records": [{"record_id": "record:fixture:1"}],
+    "harness": "claude_code",
+    "cursor": "forbidden"
+  }
+}

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.cutokyo.dev/plugin-protocol/v1",
   "title": "Cutokyo plugin JSON-line message v1",
-  "description": "Bidirectional subprocess envelope. Hosts validate every line before dispatch.",
+  "description": "A bidirectional subprocess envelope. The host validates every line before dispatch and every message before writing.",
   "type": "object",
   "additionalProperties": false,
   "required": ["protocol_major", "kind", "request_id", "payload"],
@@ -11,47 +11,37 @@
     "kind": {
       "enum": ["handshake", "request", "response", "cancel", "telemetry", "error"]
     },
-    "request_id": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 128,
-      "pattern": "^[A-Za-z0-9_.:@/-]+$"
-    },
-    "payload": {
-      "type": "object",
-      "maxProperties": 64
-    }
+    "request_id": { "$ref": "#/$defs/requestId" },
+    "payload": { "type": "object", "maxProperties": 64 }
   },
   "allOf": [
     {
       "if": { "properties": { "kind": { "const": "handshake" } }, "required": ["kind"] },
-      "then": {
-        "properties": {
-          "payload": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["plugin_id", "plugin_kind", "capabilities"],
-            "properties": {
-              "plugin_id": { "$ref": "#/$defs/identifier" },
-              "plugin_kind": { "enum": ["source", "processor"] },
-              "capabilities": {
-                "type": "array",
-                "uniqueItems": true,
-                "maxItems": 8,
-                "items": {
-                  "enum": ["transcript_read", "network", "emit_observation", "emit_derived_fact"]
-                }
-              }
-            }
-          }
-        }
-      }
+      "then": { "properties": { "payload": { "$ref": "#/$defs/handshake" } } }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "request" } }, "required": ["kind"] },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/request" } } }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "response" } }, "required": ["kind"] },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/response" } } }
     },
     {
       "if": { "properties": { "kind": { "const": "cancel" } }, "required": ["kind"] },
       "then": {
-        "properties": { "payload": { "type": "object", "maxProperties": 0 } }
+        "properties": {
+          "payload": { "type": "object", "additionalProperties": false, "maxProperties": 0 }
+        }
       }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "telemetry" } }, "required": ["kind"] },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/telemetry" } } }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "error" } }, "required": ["kind"] },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/error" } } }
     }
   ],
   "$defs": {
@@ -60,6 +50,180 @@
       "minLength": 1,
       "maxLength": 256,
       "pattern": "^[A-Za-z0-9_.:/@-]+$"
+    },
+    "requestId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_.:@/-]+$"
+    },
+    "capability": {
+      "enum": ["transcript_read", "network", "emit_observation", "emit_derived_fact"]
+    },
+    "capabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 8,
+      "items": { "$ref": "#/$defs/capability" }
+    },
+    "handshake": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["plugin_id", "plugin_kind", "capabilities", "cursor_idempotent"],
+      "properties": {
+        "plugin_id": { "$ref": "#/$defs/identifier" },
+        "plugin_kind": { "enum": ["source", "processor"] },
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "cursor_idempotent": { "type": "boolean" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "plugin_kind": { "const": "source" } },
+            "required": ["plugin_kind"]
+          },
+          "then": {
+            "properties": {
+              "cursor_idempotent": { "const": true },
+              "capabilities": { "contains": { "const": "emit_observation" } }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "plugin_kind": { "const": "processor" } },
+            "required": ["plugin_kind"]
+          },
+          "then": {
+            "properties": {
+              "capabilities": { "contains": { "const": "emit_derived_fact" } }
+            }
+          }
+        }
+      ]
+    },
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "string", "format": "date-time", "maxLength": 64 },
+        "end": { "type": "string", "format": "date-time", "maxLength": 64 }
+      }
+    },
+    "record": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 64
+    },
+    "request": {
+      "oneOf": [
+        { "$ref": "#/$defs/sourceRequest" },
+        { "$ref": "#/$defs/processorRequest" }
+      ]
+    },
+    "sourceRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation", "harness", "cursor", "window", "granted_capabilities"],
+      "properties": {
+        "operation": { "const": "source_poll" },
+        "harness": { "enum": ["claude_code", "codex", "opencode"] },
+        "cursor": { "type": ["string", "null"], "maxLength": 4096 },
+        "window": { "$ref": "#/$defs/window" },
+        "granted_capabilities": { "$ref": "#/$defs/capabilities" }
+      }
+    },
+    "processorRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation", "granted_capabilities", "records"],
+      "properties": {
+        "operation": { "const": "process_records" },
+        "granted_capabilities": { "$ref": "#/$defs/capabilities" },
+        "records": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": { "$ref": "#/$defs/record" }
+        },
+        "transcripts": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": { "type": "string", "maxLength": 1048576 }
+        }
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "used_capabilities"],
+      "properties": {
+        "status": { "enum": ["completed", "cancelled"] },
+        "cursor": { "type": ["string", "null"], "maxLength": 4096 },
+        "observations": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["observation_id", "kind", "payload"],
+            "properties": {
+              "observation_id": { "$ref": "#/$defs/identifier" },
+              "kind": { "type": "string", "minLength": 1, "maxLength": 128 },
+              "payload": { "type": "object", "maxProperties": 64 }
+            }
+          }
+        },
+        "tags": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": { "type": "string", "minLength": 1, "maxLength": 256 }
+        },
+        "derived_facts": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["fact_kind", "value", "source_observation_ids"],
+            "properties": {
+              "fact_kind": { "type": "string", "minLength": 1, "maxLength": 128 },
+              "value": {},
+              "source_observation_ids": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 128,
+                "uniqueItems": true,
+                "items": { "$ref": "#/$defs/identifier" }
+              }
+            }
+          }
+        },
+        "used_capabilities": { "$ref": "#/$defs/capabilities" },
+        "telemetry": { "$ref": "#/$defs/telemetry" }
+      }
+    },
+    "telemetry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "value"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9_.:-]+$" },
+        "value": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "unit": { "type": "string", "minLength": 1, "maxLength": 32 }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-z0-9_]+$" },
+        "message": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "field": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "expected": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "actual": { "type": "string", "minLength": 1, "maxLength": 256 }
+      }
     }
   }
 }

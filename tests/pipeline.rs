@@ -326,6 +326,7 @@ fn dashboard_reconciles() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(report.status.pending_entries, 0);
 
     let results = core.search(&SearchQuery {
+        session_id: None,
         text: Some("durable needle".to_owned()),
         project: Some("cutokyo-synthetic".to_owned()),
         branch: Some("feature/durable-core".to_owned()),

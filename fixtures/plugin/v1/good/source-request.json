@@ -1,0 +1,15 @@
+{
+  "protocol_major": 1,
+  "kind": "request",
+  "request_id": "source-poll-1",
+  "payload": {
+    "operation": "source_poll",
+    "harness": "claude_code",
+    "cursor": "cursor:fixture",
+    "window": {
+      "start": "2026-09-20T00:00:00Z",
+      "end": "2026-09-20T00:01:00Z"
+    },
+    "granted_capabilities": ["emit_observation"]
+  }
+}

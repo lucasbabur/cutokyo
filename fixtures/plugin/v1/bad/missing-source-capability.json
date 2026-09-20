@@ -1,0 +1,11 @@
+{
+  "protocol_major": 1,
+  "kind": "handshake",
+  "request_id": "handshake",
+  "payload": {
+    "plugin_id": "fixture:source",
+    "plugin_kind": "source",
+    "capabilities": [],
+    "cursor_idempotent": true
+  }
+}

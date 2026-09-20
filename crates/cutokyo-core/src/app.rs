@@ -11,7 +11,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     adapters::{CaptureDecision, CaptureResolver},
+    guards::{GuardChannel, GuardError, GuardErrorCode, SecretGuard},
     ingest::{IngestContract, Spool, SpoolCapReason, SpoolStatus},
+    proxy::{ProxyState, ProxyStateStore},
     store::{
         BackupManifest, CheckpointMode, CheckpointResult, DeletionReceipt, HealthSnapshot,
         LockOwner, ReadStore, RestoreReceipt, RetentionPlan, SearchQuery, SearchResult,
@@ -137,9 +139,14 @@ impl Application {
         spool_path: impl AsRef<Path>,
         owner: LockOwner,
     ) -> Result<LocalCore> {
+        let guard = SecretGuard::new().map_err(guard_contract_error)?;
         let spool = Spool::open(spool_path)?;
         let store = WriterStore::open(database_path, owner)?;
-        Ok(LocalCore { spool, store })
+        Ok(LocalCore {
+            spool,
+            store,
+            guard,
+        })
     }
 
     /// Opens a query-only application surface without claiming write ownership.
@@ -254,6 +261,40 @@ impl QueryUseCases {
 pub struct LocalCore {
     spool: Spool,
     store: WriterStore,
+    guard: SecretGuard,
+}
+
+/// Narrow application adapter for durable proxy lifecycle state.
+///
+/// The proxy receives this port rather than a database path, connection, or store
+/// handle. Provider traffic and credentials never pass through it.
+#[derive(Clone, Copy, Debug)]
+pub struct ProxyStatePort<'a> {
+    core: &'a LocalCore,
+}
+
+impl ProxyStateStore for ProxyStatePort<'_> {
+    fn load(&self) -> std::result::Result<Option<ProxyState>, String> {
+        let encoded = self
+            .core
+            .store
+            .load_proxy_state_json()
+            .map_err(|_| "proxy_state_load_failed".to_owned())?;
+        encoded
+            .map(|value| {
+                serde_json::from_str(&value).map_err(|_| "proxy_state_decode_failed".to_owned())
+            })
+            .transpose()
+    }
+
+    fn save(&self, state: &ProxyState) -> std::result::Result<(), String> {
+        let encoded =
+            serde_json::to_string(state).map_err(|_| "proxy_state_encode_failed".to_owned())?;
+        self.core
+            .store
+            .save_proxy_state_json(&encoded)
+            .map_err(|_| "proxy_state_save_failed".to_owned())
+    }
 }
 
 impl LocalCore {
@@ -265,7 +306,13 @@ impl LocalCore {
     /// Returns an input, capacity, lock, or filesystem error without publishing a
     /// partial finalized event.
     pub fn capture(&self, observation: &RawObservation) -> Result<SpoolReceipt> {
-        self.spool.append(observation)
+        let guarded = self
+            .guard
+            .redact_json(GuardChannel::Spool, &observation.payload)
+            .map_err(guard_contract_error)?;
+        let mut sanitized = observation.clone();
+        sanitized.payload = guarded.value;
+        self.spool.append(&sanitized)
     }
 
     /// Drains one stable snapshot of pending events. Malformed bytes move to
@@ -333,6 +380,15 @@ impl LocalCore {
         QueryUseCases {
             store: self.store.reader(),
         }
+    }
+
+    /// Returns a narrow durable lifecycle port for the provider proxy.
+    ///
+    /// This adapter exposes no database path, connection, store handle, provider
+    /// traffic, or credentials.
+    #[must_use]
+    pub fn proxy_state_port(&self) -> ProxyStatePort<'_> {
+        ProxyStatePort { core: self }
     }
 
     /// Returns bounded persisted health after refreshing bounded spool counters.
@@ -498,6 +554,22 @@ impl LocalCore {
             status.cap_reason.map(spool_cap_name),
         )
     }
+}
+
+impl crate::analysis::AnalysisSummarySink for LocalCore {
+    fn put_summary(&self, summary: &Summary) -> Result<()> {
+        LocalCore::put_summary(self, summary)
+    }
+}
+
+fn guard_contract_error(error: GuardError) -> ContractError {
+    let code = match error.code {
+        GuardErrorCode::BoundExceeded => ErrorCode::CapacityReached,
+        GuardErrorCode::ScannerUnavailable
+        | GuardErrorCode::InvalidScannerRange
+        | GuardErrorCode::UninspectableChannel => ErrorCode::CapabilityUnavailable,
+    };
+    ContractError::new(code, error.message).at_field(error.field, error.expected, error.actual)
 }
 
 fn spool_cap_name(reason: SpoolCapReason) -> &'static str {
