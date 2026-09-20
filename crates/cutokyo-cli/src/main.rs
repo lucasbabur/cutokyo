@@ -948,7 +948,7 @@ fn serve_mcp(
     }
     Ok(CommandSuccess {
         command: "mcp.serve",
-        data: json!({"handled": if once { 1 } else { 0 }}),
+        data: json!({"handled": u8::from(once)}),
         exit: 0,
         render: false,
     })
