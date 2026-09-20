@@ -30,6 +30,7 @@ rusqlite = { version = "=0.40.2", features = ["backup", "bundled"] }
 rusqlite_migration = "=2.6.0"
 fs4 = "=1.1.0"
 sha2 = "=0.11.0"
+jsonc-parser = { version = "=0.33.2", features = ["cst", "serde_json"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

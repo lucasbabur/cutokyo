@@ -1,0 +1,21 @@
+{
+  "fixture_version": 1,
+  "origin": "locally_observed_sanitized",
+  "observed_on": "2026-09-20",
+  "executable": "<LOCAL_CLAUDE_EXECUTABLE>",
+  "version": "2.1.278",
+  "version_exit_code": 0,
+  "documented_flags_observed": {
+    "--resume": true,
+    "--continue": true,
+    "--no-session-persistence": true
+  },
+  "account": {
+    "logged_in": true,
+    "auth_method": "oauth_token",
+    "api_provider": "firstParty",
+    "all_other_fields": "<REDACTED_NOT_RETAINED>"
+  },
+  "private_paths": "<REDACTED_NOT_RETAINED>",
+  "credentials": "<REDACTED_NOT_RETAINED>"
+}

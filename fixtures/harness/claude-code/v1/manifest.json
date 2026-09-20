@@ -1,0 +1,124 @@
+{
+  "fixture_schema_version": 1,
+  "harness": "claude_code",
+  "tested_executable_version": "2.1.278",
+  "captured_or_authored_on": "2026-09-20",
+  "parsers": {
+    "hooks": "claude-hook-v1",
+    "opentelemetry": "claude-otel-v1",
+    "transcript": "claude-jsonl-opaque-v1"
+  },
+  "limits": {
+    "hook_or_otel_input_bytes": 2097152,
+    "transcript_file_bytes": 134217728,
+    "transcript_line_bytes": 8388608,
+    "detection_output_bytes_per_stream": 65536,
+    "detection_timeout_seconds": 5
+  },
+  "sources": [
+    {
+      "surface": "hooks",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "retrieved_on": "2026-09-20",
+      "limits": "Hook deliveries can duplicate; hook session IDs do not establish exact resume authority."
+    },
+    {
+      "surface": "opentelemetry",
+      "url": "https://code.claude.com/docs/en/monitoring-usage",
+      "retrieved_on": "2026-09-20",
+      "limits": "Telemetry is opt-in, attributes may be omitted, and Claude's estimated cost is not provider billing authority."
+    },
+    {
+      "surface": "cli",
+      "url": "https://code.claude.com/docs/en/cli-reference",
+      "retrieved_on": "2026-09-20",
+      "limits": "Exact resume uses --resume with the retained native target; --continue is not a substitute."
+    },
+    {
+      "surface": "plugins",
+      "url": "https://code.claude.com/docs/en/plugins-reference",
+      "retrieved_on": "2026-09-20",
+      "limits": "Plugin list establishes installed and enabled status, not runtime loading."
+    },
+    {
+      "surface": "local_state",
+      "url": "https://code.claude.com/docs/en/claude-directory",
+      "retrieved_on": "2026-09-20",
+      "limits": "Transcript locations are documented, but internal JSONL records are mutable and intentionally treated as opaque."
+    }
+  ],
+  "fixtures": [
+    {
+      "path": "documented/session-start-resume.json",
+      "origin": "documented",
+      "sample_origin": "SessionStart resume example in the official hooks reference",
+      "source_url": "https://code.claude.com/docs/en/hooks",
+      "sha256": "ed2e3448d66c47275766d05b4c1314c77ec05635b438623e7b900faf362d1407",
+      "transformations": [
+        "session_id replaced with a synthetic UUID",
+        "transcript_path and cwd replaced with explicit synthetic path sentinels",
+        "model replaced with an explicit synthetic sentinel"
+      ]
+    },
+    {
+      "path": "observed/detection-2.1.278.sanitized.json",
+      "origin": "locally_observed_sanitized",
+      "sample_origin": "Read-only local executions of claude --version, claude --help, and claude auth status --json",
+      "source_url": "https://code.claude.com/docs/en/cli-reference",
+      "sha256": "87c95cec72d19d5948c0e20aa15d0493570ae625cd5eb32ae6a13106d311a51a",
+      "transformations": [
+        "executable path replaced with <LOCAL_CLAUDE_EXECUTABLE>",
+        "only boolean login state and allowlisted auth/provider classes retained",
+        "all account identifiers, arbitrary fields, credentials, and private paths discarded with explicit sentinels"
+      ]
+    },
+    {
+      "path": "synthetic/hook-resume-drift.jsonl",
+      "origin": "synthetic",
+      "sample_origin": "Deterministic CI case for duplicate resumed SessionStart delivery followed immediately by startup-ID drift",
+      "source_url": "https://code.claude.com/docs/en/hooks",
+      "sha256": "ebeb42df0a3a79d4a57893022788fc535a8549e8ff4c7f254b2935544a8dbe00",
+      "transformations": ["Authored with synthetic UUIDs and <SYNTHETIC_PROJECT_PATH>; never observed traffic"]
+    },
+    {
+      "path": "synthetic/otel-api-request.json",
+      "origin": "synthetic",
+      "sample_origin": "Documented claude_code.api_request field contract composed for deterministic CI",
+      "source_url": "https://code.claude.com/docs/en/monitoring-usage",
+      "sha256": "caaa2930cfa9e850870a6444a4c37d36c019dee1830b63f378ce268772f7de2f",
+      "transformations": ["Authored from documented field names with only explicit synthetic identifiers; never observed traffic"]
+    },
+    {
+      "path": "synthetic/transcript-main.initial.jsonl",
+      "origin": "synthetic",
+      "sample_origin": "Opaque mutable-JSONL CI revision",
+      "source_url": "https://code.claude.com/docs/en/claude-directory",
+      "sha256": "7efcc7f17f1666da7c63cf526563f3bac5a38f91c01179736959648d6757b280",
+      "transformations": ["Hand-authored synthetic opaque record; never represented as an observed internal schema"]
+    },
+    {
+      "path": "synthetic/transcript-main.changed.jsonl",
+      "origin": "synthetic",
+      "sample_origin": "Changed content under the same synthetic native UUID plus an appended line",
+      "source_url": "https://code.claude.com/docs/en/claude-directory",
+      "sha256": "06093ac273cdcb588dd295a5b753a3c14a358e519322a3e9360d9bc2dc8eeea0",
+      "transformations": ["Hand-authored synthetic opaque records; never represented as an observed internal schema"]
+    },
+    {
+      "path": "synthetic/transcript-main.truncated.jsonl",
+      "origin": "synthetic",
+      "sample_origin": "Complete synthetic records followed by a deliberately truncated byte tail",
+      "source_url": "https://code.claude.com/docs/en/claude-directory",
+      "sha256": "290f11e932489d42a0f7f722f45ac6e0e2d3bec19198b5dd07a3e44c1ab4a742",
+      "transformations": ["Hand-authored degraded-input case; never represented as observed traffic"]
+    },
+    {
+      "path": "synthetic/transcript-subagent.jsonl",
+      "origin": "synthetic",
+      "sample_origin": "Opaque subagent transcript layout CI case",
+      "source_url": "https://code.claude.com/docs/en/claude-directory",
+      "sha256": "b40ba0bc00fa73487ed277c84fab035eeb04cbfc248b1cd9b13887f53b24f47a",
+      "transformations": ["Hand-authored synthetic opaque record; never represented as an observed internal schema"]
+    }
+  ]
+}
