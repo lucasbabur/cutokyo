@@ -1,0 +1,102 @@
+{
+  "fixture_manifest_version": 1,
+  "harness": "opencode",
+  "observed_executable_version": "1.18.28",
+  "observed_executable_path_sentinel": "<PRIVATE_EXECUTABLE_PATH_SENTINEL>",
+  "capture_date": "2026-09-20",
+  "limits": {
+    "event_bytes": 8388608,
+    "server_response_bytes": 33554432,
+    "server_pages": 100,
+    "sse_events": 10000,
+    "sse_event_bytes": 1048576
+  },
+  "entries": [
+    {
+      "path": "observed-sanitized/server-connected.json",
+      "origin": "locally_observed_sanitized",
+      "source": "isolated installed OpenCode loopback GET /event SSE",
+      "source_url": "https://dev.opencode.ai/docs/server/",
+      "version": "1.18.28",
+      "redactions": [
+        "native event ID -> <SYNTHETIC_NATIVE_EVENT_ID_SENTINEL>"
+      ]
+    },
+    {
+      "path": "observed-sanitized/session-created.json",
+      "origin": "locally_observed_sanitized",
+      "source": "isolated installed OpenCode POST /session followed by the same GET /event SSE stream",
+      "source_url": "https://dev.opencode.ai/docs/server/",
+      "version": "1.18.28",
+      "redactions": [
+        "native event ID -> <SYNTHETIC_NATIVE_EVENT_ID_SENTINEL>",
+        "session ID -> <SYNTHETIC_NATIVE_SESSION_ID_SENTINEL>",
+        "project ID -> <SYNTHETIC_PROJECT_ID_SENTINEL>",
+        "absolute directory -> <PRIVATE_ABSOLUTE_PATH_SENTINEL>",
+        "relative project path -> <PRIVATE_RELATIVE_PATH_SENTINEL>"
+      ]
+    },
+    {
+      "path": "observed-sanitized/v2-empty-session-page.json",
+      "origin": "locally_observed_sanitized",
+      "source": "isolated installed OpenCode loopback GET /api/session?limit=2 with disposable HOME/XDG roots; cursor object omitted absent members",
+      "source_url": "https://opencode.ai/v2/docs/build/sdk",
+      "version": "1.18.28",
+      "redactions": []
+    },
+    {
+      "path": "observed-sanitized/v2-empty-session-page-null-cursors.json",
+      "origin": "locally_observed_sanitized",
+      "source": "repeat isolated installed OpenCode loopback GET /api/session?limit=2 with disposable HOME/XDG roots; cursor object serialized absent members as null",
+      "source_url": "https://opencode.ai/v2/docs/build/sdk",
+      "version": "1.18.28",
+      "redactions": []
+    },
+    {
+      "path": "documented-synthetic/v1-session-idle.json",
+      "origin": "documented_synthetic",
+      "source": "official plugin package root event type",
+      "source_url": "https://github.com/anomalyco/opencode/blob/v1.18.28/packages/plugin/src/index.ts",
+      "version": "1.18.28",
+      "redactions": []
+    },
+    {
+      "path": "documented-synthetic/v2-paginated-history.json",
+      "origin": "documented_synthetic",
+      "source": "official 1.18.28 V2 SDK session/message cursor, durable history, event, and assistant message declarations",
+      "source_url": "https://opencode.ai/v2/docs/build/sdk",
+      "version": "1.18.28",
+      "redactions": []
+    },
+    {
+      "path": "documented-synthetic/unknown-plugin-generation.json",
+      "origin": "documented_synthetic_drift_case",
+      "source": "Cutokyo forward-compatibility adversarial fixture, not claimed as observed OpenCode traffic",
+      "source_url": "https://opencode.ai/docs/plugins/",
+      "version": "future_unknown",
+      "redactions": []
+    },
+    {
+      "path": "documented-synthetic/finalization-snapshots.json",
+      "origin": "documented_synthetic_lifecycle_case",
+      "source": "OpenCode plugin async lifecycle limitation plus documented message history reconciliation",
+      "source_url": "https://github.com/anomalyco/opencode/issues/16879",
+      "version": "1.18.28",
+      "redactions": []
+    }
+  ],
+  "package_artifacts": [
+    {
+      "name": "@opencode-ai/plugin",
+      "version": "1.18.28",
+      "sha256": "37efb341b471660fec94f7455d5e7bdfc24f8b835b1c16c648cc7f3dbf669878",
+      "license": "MIT"
+    },
+    {
+      "name": "@opencode-ai/sdk",
+      "version": "1.18.28",
+      "sha256": "2592fb2b2861271290033320c1b975a347f3ee2cc3fc44fb777a066f23741745",
+      "license": "MIT"
+    }
+  ]
+}

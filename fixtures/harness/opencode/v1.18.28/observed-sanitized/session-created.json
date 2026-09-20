@@ -1,0 +1,29 @@
+{
+  "id": "<SYNTHETIC_NATIVE_EVENT_ID_SENTINEL>",
+  "type": "session.created",
+  "properties": {
+    "sessionID": "<SYNTHETIC_NATIVE_SESSION_ID_SENTINEL>",
+    "info": {
+      "id": "<SYNTHETIC_NATIVE_SESSION_ID_SENTINEL>",
+      "projectID": "<SYNTHETIC_PROJECT_ID_SENTINEL>",
+      "directory": "<PRIVATE_ABSOLUTE_PATH_SENTINEL>",
+      "path": "<PRIVATE_RELATIVE_PATH_SENTINEL>",
+      "title": "SYNTHETIC_TITLE_SENTINEL",
+      "version": "1.18.28",
+      "time": {
+        "created": 1789878729811,
+        "updated": 1789878729811
+      },
+      "cost": 0,
+      "tokens": {
+        "input": 0,
+        "output": 0,
+        "reasoning": 0,
+        "cache": {
+          "read": 0,
+          "write": 0
+        }
+      }
+    }
+  }
+}

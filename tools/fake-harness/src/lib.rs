@@ -5,11 +5,16 @@
 //! Builders can wrap the same deterministic state in whichever transport a
 //! behavioral test needs, without credentials or wall-clock dependence.
 
-use std::{collections::BTreeSet, sync::Mutex};
+use std::{
+    collections::{BTreeMap, BTreeSet, VecDeque},
+    sync::{Arc, Mutex},
+};
 
+use cutokyo_core::adapters::opencode::{OpenCodeProcessSpawner, OpenCodeServerTransport};
 use cutokyo_domain::{ContractError, ErrorCode, Harness, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use url::Url;
 
 /// Versioned fixture world shared across fake endpoints.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -204,6 +209,164 @@ pub struct Delivery {
     pub sequence: u64,
 }
 
+type FakeOpenCodeResponses = BTreeMap<String, VecDeque<Result<Vec<u8>>>>;
+type FakeOpenCodeProcessCall = (String, Vec<String>);
+
+/// Deterministic queued `OpenCode` loopback transport. Every exact URL has a FIFO
+/// response queue, allowing tests to model pagination, restarts, SSE reconnects,
+/// malformed generations, and finalization lag without timing or sockets.
+#[derive(Clone, Debug, Default)]
+pub struct FakeOpenCodeEndpoint {
+    responses: Arc<Mutex<FakeOpenCodeResponses>>,
+    calls: Arc<Mutex<Vec<FakeOpenCodeCall>>>,
+}
+
+/// One sanitized request received by the fake `OpenCode` endpoint.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FakeOpenCodeCall {
+    /// Exact loopback URL.
+    pub url: String,
+    /// Requested media type.
+    pub accept: String,
+    /// Adapter-provided response byte bound.
+    pub max_bytes: usize,
+}
+
+impl FakeOpenCodeEndpoint {
+    /// Adds one raw response to an exact URL's FIFO queue.
+    ///
+    /// # Errors
+    ///
+    /// Returns an internal error if deterministic state is unavailable.
+    pub fn enqueue(&self, url: &str, response: Result<Vec<u8>>) -> Result<()> {
+        let mut responses = self.responses.lock().map_err(|_| {
+            ContractError::new(
+                ErrorCode::Internal,
+                "fake OpenCode response queue is unavailable",
+            )
+        })?;
+        responses
+            .entry(url.to_owned())
+            .or_default()
+            .push_back(response);
+        Ok(())
+    }
+
+    /// Serializes and queues one JSON response.
+    ///
+    /// # Errors
+    ///
+    /// Returns an internal error for serialization or synchronization failure.
+    pub fn enqueue_json(&self, url: &str, response: &Value) -> Result<()> {
+        let bytes = serde_json::to_vec(response).map_err(|_| {
+            ContractError::new(
+                ErrorCode::Internal,
+                "fake OpenCode JSON response serialization failed",
+            )
+        })?;
+        self.enqueue(url, Ok(bytes))
+    }
+
+    /// Queues one sanitized server-unavailable response.
+    ///
+    /// # Errors
+    ///
+    /// Returns an internal error if deterministic state is unavailable.
+    pub fn enqueue_unavailable(&self, url: &str) -> Result<()> {
+        self.enqueue(
+            url,
+            Err(ContractError::new(
+                ErrorCode::CapabilityUnavailable,
+                "synthetic OpenCode endpoint unavailable",
+            )),
+        )
+    }
+
+    /// Returns the ordered request log.
+    ///
+    /// # Errors
+    ///
+    /// Returns an internal error if deterministic state is unavailable.
+    pub fn calls(&self) -> Result<Vec<FakeOpenCodeCall>> {
+        self.calls.lock().map(|calls| calls.clone()).map_err(|_| {
+            ContractError::new(
+                ErrorCode::Internal,
+                "fake OpenCode request log is unavailable",
+            )
+        })
+    }
+}
+
+impl OpenCodeServerTransport for FakeOpenCodeEndpoint {
+    fn get(&self, url: &Url, accept: &str, max_bytes: usize) -> Result<Vec<u8>> {
+        self.calls
+            .lock()
+            .map_err(|_| {
+                ContractError::new(
+                    ErrorCode::Internal,
+                    "fake OpenCode request log is unavailable",
+                )
+            })?
+            .push(FakeOpenCodeCall {
+                url: url.as_str().to_owned(),
+                accept: accept.to_owned(),
+                max_bytes,
+            });
+        let mut responses = self.responses.lock().map_err(|_| {
+            ContractError::new(
+                ErrorCode::Internal,
+                "fake OpenCode response queue is unavailable",
+            )
+        })?;
+        responses
+            .get_mut(url.as_str())
+            .and_then(VecDeque::pop_front)
+            .unwrap_or_else(|| {
+                Err(ContractError::new(
+                    ErrorCode::CapabilityUnavailable,
+                    "no synthetic OpenCode response was queued for this URL",
+                ))
+            })
+    }
+}
+
+/// Deterministic exact-resume process recorder.
+#[derive(Clone, Debug, Default)]
+pub struct FakeOpenCodeSpawner {
+    calls: Arc<Mutex<Vec<FakeOpenCodeProcessCall>>>,
+}
+
+impl FakeOpenCodeSpawner {
+    /// Returns ordered executable/argument calls.
+    ///
+    /// # Errors
+    ///
+    /// Returns an internal error if deterministic state is unavailable.
+    pub fn calls(&self) -> Result<Vec<(String, Vec<String>)>> {
+        self.calls.lock().map(|calls| calls.clone()).map_err(|_| {
+            ContractError::new(
+                ErrorCode::Internal,
+                "fake OpenCode process log is unavailable",
+            )
+        })
+    }
+}
+
+impl OpenCodeProcessSpawner for FakeOpenCodeSpawner {
+    fn spawn(&self, program: &str, arguments: &[String]) -> Result<()> {
+        self.calls
+            .lock()
+            .map_err(|_| {
+                ContractError::new(
+                    ErrorCode::Internal,
+                    "fake OpenCode process log is unavailable",
+                )
+            })?
+            .push((program.to_owned(), arguments.to_vec()));
+        Ok(())
+    }
+}
+
 /// Sanitized request accepted by the fake analysis provider.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -348,10 +511,20 @@ impl FakeMcpEndpoint {
 
 #[cfg(test)]
 mod tests {
-    use cutokyo_domain::Harness;
-    use serde_json::json;
+    use std::sync::{Arc, Barrier};
 
-    use super::{FakeMcpEndpoint, FakeMcpServer, FakeProviderEndpoint, FakeWorld, ProviderRequest};
+    use cutokyo_core::adapters::opencode::{
+        FinalizationStatus, OpenCodeFinalizationTracker, OpenCodeResumeLauncher,
+        OpenCodeServerClient, OpenCodeServerTransport, OpenCodeServerVersion, capture_plugin_event,
+    };
+    use cutokyo_domain::{Harness, NativeSessionId, ResumeLauncher as _, Timestamp};
+    use serde_json::{Value, json};
+    use url::Url;
+
+    use super::{
+        FakeMcpEndpoint, FakeMcpServer, FakeOpenCodeEndpoint, FakeOpenCodeSpawner,
+        FakeProviderEndpoint, FakeWorld, ProviderRequest,
+    };
 
     const WORLD: &str = include_str!("../../../fixtures/harness/scenarios.v1.json");
 
@@ -398,6 +571,235 @@ mod tests {
             assert_eq!(scenario.coverage, super::FixtureCoverage::UnknownVersion);
             assert!(!scenario.coverage_gaps.is_empty());
         }
+        Ok(())
+    }
+
+    #[test]
+    fn opencode_fixture_manifest_distinguishes_observed_and_synthetic_origins()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let manifest: Value = serde_json::from_str(include_str!(
+            "../../../fixtures/harness/opencode/v1.18.28/manifest.json"
+        ))?;
+        assert_eq!(manifest["observed_executable_version"], "1.18.28");
+        let entries = manifest["entries"].as_array();
+        assert!(entries.is_some());
+        if let Some(entries) = entries {
+            assert!(entries.iter().any(|entry| {
+                entry["origin"] == "locally_observed_sanitized"
+                    && entry["redactions"]
+                        .as_array()
+                        .is_some_and(|redactions| !redactions.is_empty())
+            }));
+            assert!(entries.iter().any(|entry| {
+                entry["origin"] == "documented_synthetic"
+                    || entry["origin"] == "documented_synthetic_lifecycle_case"
+            }));
+        }
+        let observed: Value = serde_json::from_str(include_str!(
+            "../../../fixtures/harness/opencode/v1.18.28/observed-sanitized/session-created.json"
+        ))?;
+        assert_eq!(
+            observed["properties"]["info"]["directory"],
+            "<PRIVATE_ABSOLUTE_PATH_SENTINEL>"
+        );
+        assert_eq!(
+            observed["properties"]["info"]["id"],
+            "<SYNTHETIC_NATIVE_SESSION_ID_SENTINEL>"
+        );
+        let observed_v2: Value = serde_json::from_str(include_str!(
+            "../../../fixtures/harness/opencode/v1.18.28/observed-sanitized/v2-empty-session-page.json"
+        ))?;
+        assert_eq!(observed_v2, json!({"data": [], "cursor": {}}));
+        let observed_v2_null_cursors: Value = serde_json::from_str(include_str!(
+            "../../../fixtures/harness/opencode/v1.18.28/observed-sanitized/v2-empty-session-page-null-cursors.json"
+        ))?;
+        assert_eq!(
+            observed_v2_null_cursors,
+            json!({"data": [], "cursor": {"previous": null, "next": null}})
+        );
+        let documented_v2: Value = serde_json::from_str(include_str!(
+            "../../../fixtures/harness/opencode/v1.18.28/documented-synthetic/v2-paginated-history.json"
+        ))?;
+        assert!(documented_v2["requests"][0]["response"]["data"].is_array());
+        assert_eq!(
+            documented_v2["session_events"]["event"]["data"]["sessionID"],
+            "ses_SYNTHETIC_PAGE_TWO"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn opencode_fake_models_paginated_history_and_server_events()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let endpoint = FakeOpenCodeEndpoint::default();
+        endpoint.enqueue_json(
+            "http://127.0.0.1:6100/api/session?limit=100",
+            &json!({"data": [{"id": "ses_SYNTHETIC_A"}], "cursor": {"next": "cursor_2"}}),
+        )?;
+        endpoint.enqueue_json(
+            "http://127.0.0.1:6100/api/session?limit=100&cursor=cursor_2",
+            &json!({"data": [{"id": "ses_SYNTHETIC_B"}], "cursor": {}}),
+        )?;
+        endpoint.enqueue(
+            "http://127.0.0.1:6100/event",
+            Ok(b"id: evt_SYNTHETIC\ndata: {\"id\":\"evt_SYNTHETIC\",\"type\":\"server.connected\",\"properties\":{}}\n\n".to_vec()),
+        )?;
+        let client = OpenCodeServerClient::new(endpoint.clone());
+        client.observe_endpoint("http://127.0.0.1:6100/")?;
+        let history = client.fetch_sessions()?;
+        assert_eq!(history.version, OpenCodeServerVersion::V2);
+        assert_eq!(history.items().len(), 2);
+        let subscription = client.subscribe_v1_events()?;
+        assert!(subscription.reconciliation_required);
+        assert_eq!(subscription.events.len(), 1);
+        assert_eq!(endpoint.calls()?.len(), 3);
+        Ok(())
+    }
+
+    #[test]
+    fn opencode_fake_models_lifecycle_lag_v1_v2_drift_and_exact_resume()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let captured_at = Timestamp::parse("2026-09-20T12:00:00Z")?;
+        let idle = capture_plugin_event(
+            json!({
+                "event": {
+                    "id": "evt_IDLE_SYNTHETIC",
+                    "type": "session.idle",
+                    "durable": {"aggregateID": "ses_EXACT_SYNTHETIC", "seq": 9, "version": 1},
+                    "data": {"sessionID": "ses_EXACT_SYNTHETIC"}
+                },
+                "server_url": "http://127.0.0.1:6200/",
+                "plugin_api": "v2",
+                "event_api": "v2"
+            }),
+            captured_at.clone(),
+        )?;
+        let tracker = OpenCodeFinalizationTracker::default();
+        tracker.observe_idle(&idle)?;
+        let target = NativeSessionId::parse("ses_EXACT_SYNTHETIC")?;
+        assert!(matches!(
+            tracker.observe_messages(
+                &target,
+                &json!([{"info": {"role": "assistant", "time": {"created": 1}}}])
+            )?,
+            FinalizationStatus::Pending { .. }
+        ));
+        let stable = json!([{
+            "info": {
+                "id": "msg_SYNTHETIC",
+                "role": "assistant",
+                "time": {"created": 1, "completed": 2}
+            }
+        }]);
+        assert!(matches!(
+            tracker.observe_messages(&target, &stable)?,
+            FinalizationStatus::Pending { .. }
+        ));
+        assert!(matches!(
+            tracker.observe_messages(&target, &stable)?,
+            FinalizationStatus::Finalized { .. }
+        ));
+
+        let unknown = capture_plugin_event(
+            json!({
+                "event": {"kind": "future", "payload": {"synthetic": true}},
+                "plugin_api": "v99"
+            }),
+            captured_at,
+        )?;
+        assert_eq!(
+            unknown.observation.source.coverage.state,
+            cutokyo_domain::CoverageState::UnknownVersion
+        );
+        assert_eq!(unknown.observation.payload["plugin_api"], "v99");
+
+        let spawner = FakeOpenCodeSpawner::default();
+        let launcher = OpenCodeResumeLauncher::new(spawner.clone());
+        launcher.resume(&target)?;
+        assert_eq!(
+            spawner.calls()?,
+            [(
+                "opencode".to_owned(),
+                vec!["--session".to_owned(), "ses_EXACT_SYNTHETIC".to_owned()]
+            )]
+        );
+        Ok(())
+    }
+
+    #[derive(Clone)]
+    struct BlockingFirstPage {
+        endpoint: FakeOpenCodeEndpoint,
+        entered: Arc<Barrier>,
+        release: Arc<Barrier>,
+    }
+
+    impl OpenCodeServerTransport for BlockingFirstPage {
+        fn get(
+            &self,
+            url: &Url,
+            accept: &str,
+            max_bytes: usize,
+        ) -> cutokyo_domain::Result<Vec<u8>> {
+            let response = self.endpoint.get(url, accept, max_bytes);
+            if url.port() == Some(6300) && url.query() == Some("limit=100") {
+                self.entered.wait();
+                self.release.wait();
+            }
+            response
+        }
+    }
+
+    #[test]
+    fn opencode_fake_restarts_pagination_after_mid_fetch_port_drift()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let endpoint = FakeOpenCodeEndpoint::default();
+        endpoint.enqueue_json(
+            "http://127.0.0.1:6300/api/session?limit=100",
+            &json!({
+                "data": [{"id": "ses_STALE_MUST_BE_DISCARDED"}],
+                "cursor": {"next": "stale_cursor"}
+            }),
+        )?;
+        endpoint.enqueue_json(
+            "http://127.0.0.1:6301/api/session?limit=100",
+            &json!({
+                "data": [{"id": "ses_FRESH_A"}],
+                "cursor": {"next": "fresh_cursor"}
+            }),
+        )?;
+        endpoint.enqueue_json(
+            "http://127.0.0.1:6301/api/session?limit=100&cursor=fresh_cursor",
+            &json!({"data": [{"id": "ses_FRESH_B"}], "cursor": {}}),
+        )?;
+        let entered = Arc::new(Barrier::new(2));
+        let release = Arc::new(Barrier::new(2));
+        let client = Arc::new(OpenCodeServerClient::new(BlockingFirstPage {
+            endpoint: endpoint.clone(),
+            entered: entered.clone(),
+            release: release.clone(),
+        }));
+        client.observe_endpoint("http://127.0.0.1:6300/")?;
+        let worker = {
+            let client = client.clone();
+            std::thread::spawn(move || client.fetch_sessions())
+        };
+        entered.wait();
+        assert_eq!(client.observe_endpoint("http://127.0.0.1:6301/")?, 2);
+        release.wait();
+        let fetch = worker
+            .join()
+            .map_err(|_| "synthetic fetch thread panicked")??;
+        assert_eq!(fetch.endpoint_generation, 2);
+        assert_eq!(fetch.items().len(), 2);
+        assert!(
+            fetch
+                .items()
+                .iter()
+                .all(|item| { item["id"] != "ses_STALE_MUST_BE_DISCARDED" })
+        );
+        let calls = endpoint.calls()?;
+        assert_eq!(calls.len(), 3);
+        assert!(!calls.iter().any(|call| call.url.contains("stale_cursor")));
         Ok(())
     }
 

@@ -36,8 +36,17 @@ independently restated and are corroborated by public documentation where possib
   <https://code.claude.com/docs/en/monitoring-usage>.
 - Codex app server and CLI: <https://developers.openai.com/codex/app-server>,
   <https://developers.openai.com/codex/cli>.
-- OpenCode plugins and SDK: <https://opencode.ai/v2/docs/build/plugins>,
-  <https://opencode.ai/v2/docs/build/sdk>.
+- OpenCode V1/V2 plugins, server, CLI, config, skills, MCP, SDK, and exact 1.18.28 source:
+  <https://opencode.ai/docs/plugins/>, <https://opencode.ai/v2/docs/build/plugins>,
+  <https://opencode.ai/v2/docs/build/plugins/migrate-v1>,
+  <https://dev.opencode.ai/docs/server/>, <https://dev.opencode.ai/docs/cli/>,
+  <https://dev.opencode.ai/docs/config/>, <https://opencode.ai/v2/docs/config>,
+  <https://opencode.ai/v2/docs/plugins>, <https://opencode.ai/v2/docs/skills>,
+  <https://opencode.ai/v2/docs/mcp-servers>, <https://opencode.ai/v2/docs/build/sdk>,
+  <https://github.com/anomalyco/opencode/blob/v1.18.28/packages/plugin/src/index.ts>,
+  <https://github.com/anomalyco/opencode/blob/v1.18.28/packages/opencode/src/plugin/index.ts>.
+- OpenCode plugin lifecycle non-awaited-promise report:
+  <https://github.com/anomalyco/opencode/issues/16879>.
 - Official Rust MCP SDK: <https://github.com/modelcontextprotocol/rust-sdk>.
 - cargo-dist npm installer:
   <https://axodotdev.github.io/cargo-dist/book/installers/npm.html>.
@@ -45,5 +54,11 @@ independently restated and are corroborated by public documentation where possib
 ## Fixture statement
 
 Foundation fixtures under `fixtures/` are synthetic and were authored from this
-contract. Dates, identifiers, payloads, ordering, and expected failures are invented.
-No reference fixture or production transcript was copied.
+contract. Dates, identifiers, payloads, ordering, and expected failures are invented,
+except the four files explicitly classified `locally_observed_sanitized` by
+`fixtures/harness/opencode/v1.18.28/manifest.json`. Those JSON values came from
+isolated, credential-free local OpenCode 1.18.28 loopback observations; every native ID
+and private path was replaced by an explicit sentinel, while the two empty V2 pages
+needed no redaction. The remaining OpenCode files
+are labelled documented-synthetic or adversarial and are not represented as observed
+traffic. No predecessor fixture or production transcript was copied.

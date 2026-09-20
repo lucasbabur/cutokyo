@@ -2,6 +2,9 @@
 
 use cutokyo_domain::CaptureChannel;
 
+/// OpenCode plugin/server, setup, inventory, and exact-resume adapter.
+pub mod opencode;
+
 /// Native capture channels ordered before any consented proxy fallback.
 pub const NATIVE_CAPTURE_ORDER: [CaptureChannel; 7] = [
     CaptureChannel::HookOrPlugin,

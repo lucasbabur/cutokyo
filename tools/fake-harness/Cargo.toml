@@ -9,9 +9,11 @@ repository.workspace = true
 publish = false
 
 [dependencies]
+cutokyo-core.workspace = true
 cutokyo-domain.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+url.workspace = true
 
 [lints]
 workspace = true

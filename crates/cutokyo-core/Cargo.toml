@@ -18,6 +18,9 @@ rusqlite.workspace = true
 rusqlite_migration.workspace = true
 fs4.workspace = true
 sha2.workspace = true
+json5.workspace = true
+ureq.workspace = true
+url.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

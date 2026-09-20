@@ -21,6 +21,9 @@ shipped until their feature implementation enables them.
 | rusqlite_migration | 2.6.0 | Apache-2.0 | Forward-only SQLite migration runner |
 | fs4 | 1.1.0 | MIT OR Apache-2.0 | Cross-platform database-writer and spool-publication file locks |
 | sha2 | 0.11.0 | MIT OR Apache-2.0 | SHA-256 observation identities and backup digests |
+| json5 | 1.3.1 | MIT | Structural read-only parsing of documented OpenCode JSON/JSONC configuration |
+| ureq | 3.4.2 | MIT OR Apache-2.0 | Blocking, bounded requests to validated OpenCode loopback app-server origins |
+| url | 2.5.8 | MIT OR Apache-2.0 | WHATWG parsing and encoded path/query construction for loopback URLs |
 | tauri | 2.11.5 | Apache-2.0 OR MIT | Optional desktop-runtime dependency; stable v2 |
 | tauri-build | 2.6.3 | Apache-2.0 OR MIT | Official Tauri build-context generator |
 
@@ -32,6 +35,21 @@ shipped until their feature implementation enables them.
 
 This row records a researched direction, not a claim that the corresponding feature
 is implemented or distributed. See ADR 0008.
+
+## OpenCode fixture reference artifacts
+
+These official npm packages were downloaded only to inspect the exact public type
+surface and create documented-synthetic fixtures. Their source is not copied or
+bundled by Cutokyo.
+
+| Package | Version | Artifact SHA-256 | License | Upstream |
+| --- | ---: | --- | --- | --- |
+| @opencode-ai/plugin | 1.18.28 | `37efb341b471660fec94f7455d5e7bdfc24f8b835b1c16c648cc7f3dbf669878` | MIT | <https://www.npmjs.com/package/@opencode-ai/plugin> |
+| @opencode-ai/sdk | 1.18.28 | `2592fb2b2861271290033320c1b975a347f3ee2cc3fc44fb777a066f23741745` | MIT | <https://www.npmjs.com/package/@opencode-ai/sdk> |
+
+Exact upstream tag `v1.18.28` resolved to commit
+`22006d97652839999596a34a48ff6be7dbb40c6e`; the fixture manifest records which
+shapes are package-derived versus locally observed.
 
 ## JavaScript development dependencies
 

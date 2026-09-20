@@ -1,0 +1,70 @@
+{
+  "requests": [
+    {
+      "path": "/api/session?limit=100",
+      "response": {
+        "data": [
+          {
+            "id": "ses_SYNTHETIC_PAGE_ONE",
+            "title": "SYNTHETIC_FIRST_SESSION"
+          }
+        ],
+        "cursor": {
+          "next": "cursor_SYNTHETIC_TWO"
+        }
+      }
+    },
+    {
+      "path": "/api/session?limit=100&cursor=cursor_SYNTHETIC_TWO",
+      "response": {
+        "data": [
+          {
+            "id": "ses_SYNTHETIC_PAGE_TWO",
+            "title": "SYNTHETIC_SECOND_SESSION"
+          }
+        ],
+        "cursor": {
+          "previous": "cursor_SYNTHETIC_ONE"
+        }
+      }
+    }
+  ],
+  "durable_history": [
+    {
+      "path": "/api/session/ses_SYNTHETIC_PAGE_TWO/history?limit=100",
+      "response": {
+        "data": [
+          {
+            "id": "evt_SYNTHETIC_DURABLE",
+            "type": "session.next.prompted",
+            "durable": {
+              "aggregateID": "ses_SYNTHETIC_PAGE_TWO",
+              "seq": 7,
+              "version": 1
+            },
+            "data": {
+              "sessionID": "ses_SYNTHETIC_PAGE_TWO"
+            }
+          }
+        ],
+        "hasMore": false
+      }
+    }
+  ],
+  "session_events": {
+    "path": "/api/session/ses_SYNTHETIC_PAGE_TWO/event?after=evt_SYNTHETIC_PREVIOUS",
+    "replayable": true,
+    "event": {
+      "id": "evt_SYNTHETIC_IDLE",
+      "type": "session.idle",
+      "durable": {
+        "aggregateID": "ses_SYNTHETIC_PAGE_TWO",
+        "seq": 8,
+        "version": 1
+      },
+      "data": {
+        "sessionID": "ses_SYNTHETIC_PAGE_TWO"
+      }
+    }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "idle_event": {
+    "id": "evt_SYNTHETIC_IDLE",
+    "type": "session.idle",
+    "durable": {
+      "aggregateID": "ses_SYNTHETIC_FINALIZATION",
+      "seq": 11,
+      "version": 1
+    },
+    "data": {
+      "sessionID": "ses_SYNTHETIC_FINALIZATION"
+    }
+  },
+  "server_snapshots": [
+    {
+      "data": [
+        {
+          "id": "msg_SYNTHETIC_FINAL",
+          "type": "assistant",
+          "time": {
+            "created": 1789878730000
+          },
+          "content": []
+        }
+      ],
+      "cursor": {}
+    },
+    {
+      "data": [
+        {
+          "id": "msg_SYNTHETIC_FINAL",
+          "type": "assistant",
+          "time": {
+            "created": 1789878730000,
+            "completed": 1789878731000
+          },
+          "content": []
+        }
+      ],
+      "cursor": {
+        "previous": "cursor_SYNTHETIC_ONE"
+      }
+    },
+    {
+      "data": [
+        {
+          "id": "msg_SYNTHETIC_FINAL",
+          "type": "assistant",
+          "time": {
+            "created": 1789878730000,
+            "completed": 1789878731000
+          },
+          "content": []
+        }
+      ],
+      "cursor": {
+        "previous": "cursor_SYNTHETIC_TWO"
+      }
+    }
+  ],
+  "expected": "finalize_only_after_third_snapshot_even_when_cursor_metadata_drifts"
+}
