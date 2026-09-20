@@ -100,7 +100,7 @@ jobs:
       - name: Build production frontend without tracked-source rewrites
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/frontend-build-source.json" -- pnpm --dir ui build
       - name: Install pinned cargo-dist for npm-wrapper tests
-        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/install-dist-source.json" -- cargo install cargo-dist --version "$CARGO_DIST_VERSION" --locked
+        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/install-dist-source.json" -- cargo install cargo-dist --version "${{ env.CARGO_DIST_VERSION }}" --locked
       - name: Build Rust workspace without tracked-source rewrites
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/build-source.json" -- cargo build --locked --workspace
       - name: Test Rust workspace without tracked-source rewrites

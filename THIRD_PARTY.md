@@ -42,6 +42,9 @@ Exact active versions are in `Cargo.lock`.
 | tar | 0.4.44 | MIT OR Apache-2.0 | Deterministic diagnostic archive construction |
 | flate2 | 1.1.9 | MIT OR Apache-2.0 | Gzip diagnostic archive compression; version shared with KeyHog's exact maintained dependency |
 | wait-timeout | 0.2.1 | MIT OR Apache-2.0 | Bounded release-artifact subprocess integration tests |
+| base64 | 0.22.1 | MIT OR Apache-2.0 | Strict decoding of Tauri's outer updater-signature encoding |
+| minisign-verify | 0.2.5 | MIT | Established Minisign parser and verifier used at release assembly |
+| minisign | 0.9.1 | MIT | Test-only generation of valid and deliberately mismatched updater signatures |
 | tauri | 2.11.5 | Apache-2.0 OR MIT | Optional desktop-runtime dependency; stable v2 |
 | tauri-build | 2.6.3 | Apache-2.0 OR MIT | Official Tauri build-context generator |
 | tauri-plugin-wdio-webdriver | 1.4.0 | MIT | Test-feature-only embedded native WebDriver server; release builds reject the feature |

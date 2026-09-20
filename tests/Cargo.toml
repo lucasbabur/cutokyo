@@ -24,6 +24,8 @@ sha2.workspace = true
 flate2.workspace = true
 tar.workspace = true
 wait-timeout.workspace = true
+base64.workspace = true
+minisign.workspace = true
 
 [[test]]
 name = "pipeline"

@@ -154,6 +154,7 @@ def main() -> int:
                     "package": package.name,
                     "product_readiness": False,
                     "product_readiness_exit": 69,
+                    "first_uninstall_exit": 0,
                     "repeat_uninstall_exit": 0,
                     "source_tree_shortcut": False,
                     "version": expected_version,

@@ -1,0 +1,16 @@
+[package]
+name = "cutokyo-updater-signature-verifier"
+description = "Strict Tauri-compatible updater signature verifier for Cutokyo releases"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+base64.workspace = true
+minisign-verify.workspace = true
+
+[lints]
+workspace = true

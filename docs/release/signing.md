@@ -47,23 +47,27 @@ actions outside ordinary test automation.
 
 Tag builds require:
 
-| Secret                               | Purpose                                  |
-| ------------------------------------ | ---------------------------------------- |
-| `NPM_TOKEN`                          | npm publication with provenance          |
-| `TAURI_SIGNING_PRIVATE_KEY`          | updater payload signatures               |
-| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | decrypt updater signing key              |
-| `APPLE_CERTIFICATE`                  | base64 PKCS#12 Developer ID certificate  |
-| `APPLE_CERTIFICATE_PASSWORD`         | import PKCS#12 into ephemeral keychain   |
-| `APPLE_SIGNING_IDENTITY`             | select Developer ID Application identity |
-| `APPLE_ID`                           | notarization account                     |
-| `APPLE_PASSWORD`                     | app-specific notarization password       |
-| `APPLE_TEAM_ID`                      | notarization team                        |
-| `WINDOWS_CERTIFICATE`                | base64 PKCS#12 Authenticode certificate  |
-| `WINDOWS_CERTIFICATE_PASSWORD`       | import Windows certificate               |
+| Protected value                       | Storage               | Purpose                                  |
+| ------------------------------------- | --------------------- | ---------------------------------------- |
+| `NPM_TOKEN`                           | environment secret    | npm publication with provenance          |
+| `TAURI_SIGNING_PRIVATE_KEY`           | environment secret    | updater payload signatures               |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`  | environment secret    | decrypt updater signing key              |
+| `TAURI_UPDATER_PUBLIC_KEY`            | repository variable   | reviewed updater verification anchor     |
+| `APPLE_CERTIFICATE`                   | environment secret    | base64 PKCS#12 Developer ID certificate  |
+| `APPLE_CERTIFICATE_PASSWORD`          | environment secret    | import PKCS#12 into ephemeral keychain   |
+| `APPLE_SIGNING_IDENTITY`              | environment secret    | select Developer ID Application identity |
+| `APPLE_ID`                            | environment secret    | notarization account                     |
+| `APPLE_PASSWORD`                      | environment secret    | app-specific notarization password       |
+| `APPLE_TEAM_ID`                       | environment secret    | notarization team                        |
+| `WINDOWS_CERTIFICATE`                 | environment secret    | base64 PKCS#12 Authenticode certificate  |
+| `WINDOWS_CERTIFICATE_PASSWORD`        | environment secret    | import Windows certificate               |
 
-Store these only in protected GitHub environments or repository secrets with
-least-privilege release access. Never place keys, passwords, or certificates in
-TOML, source, build logs, artifacts, diagnostic bundles, or workflow inputs.
+Store credentials only in protected GitHub environments or repository secrets
+with least-privilege release access. The public key is deliberately not a secret,
+but its repository-variable value is still a reviewed release trust anchor: two
+reviewers must compare it to the public half of the protected private key before
+enabling a tag. Never place private keys, passwords, or certificates in TOML,
+source, build logs, artifacts, diagnostic bundles, or workflow inputs.
 
 ## macOS signing and notarization
 
@@ -105,11 +109,16 @@ builds. Tauri signs each updater payload with the protected updater key. Release
 assembly refuses a tag release unless signed payloads exist for Linux, macOS,
 and Windows.
 
-`tools/release/create-manifest.py` pairs each bounded `.sig` with its payload and
-creates `latest.json` using immutable release URLs. It rejects orphaned,
-malformed, duplicate-platform, or missing required signatures. The app's updater
-public key is public configuration; the private key remains exclusively in the
-release environment.
+`tools/release/create-manifest.py` pairs each bounded `.sig` with an explicitly
+architectured payload and creates `latest.json` using immutable release URLs. It
+strictly decodes Tauri's outer Base64, parses the enclosed Minisign text, and uses
+the checked-in Rust verifier to verify every payload byte against the reviewed
+`TAURI_UPDATER_PUBLIC_KEY` repository variable. It rejects orphaned, malformed,
+duplicate-platform, mismatched, or missing required signatures. Tagged assembly
+fails before publication if the public anchor is absent or does not match the
+protected private key. The private key remains exclusively in the release
+environment; the workflow materializes the public anchor only in runner-temporary
+storage and removes that runner with the job.
 
 ## CLI, npm, checksums, and SBOM
 

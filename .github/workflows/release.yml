@@ -67,6 +67,7 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
@@ -77,7 +78,7 @@ jobs:
           WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         run: |
           missing=()
-          for name in NPM_TOKEN TAURI_SIGNING_PRIVATE_KEY TAURI_SIGNING_PRIVATE_KEY_PASSWORD APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID WINDOWS_CERTIFICATE WINDOWS_CERTIFICATE_PASSWORD; do
+          for name in NPM_TOKEN TAURI_SIGNING_PRIVATE_KEY TAURI_SIGNING_PRIVATE_KEY_PASSWORD TAURI_UPDATER_PUBLIC_KEY APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID WINDOWS_CERTIFICATE WINDOWS_CERTIFICATE_PASSWORD; do
             if [[ -z "${!name}" ]]; then missing+=("$name"); fi
           done
           if (( ${#missing[@]} )); then
@@ -129,7 +130,7 @@ jobs:
         with:
           python-version: "3.13"
       - name: Install pinned cargo-dist
-        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/install-dist-source.json" -- cargo install cargo-dist --version "$env:CARGO_DIST_VERSION" --locked
+        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/install-dist-source.json" -- cargo install cargo-dist --version "${{ env.CARGO_DIST_VERSION }}" --locked
         if: runner.os == 'Windows'
       - name: Install pinned cargo-dist
         run: python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/install-dist-source.json" -- cargo install cargo-dist --version "$CARGO_DIST_VERSION" --locked
@@ -189,8 +190,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            updater-platform: linux-x86_64
+            release-bundles: deb,appimage
+          - os: macos-14
+            updater-platform: darwin-aarch64
+            release-bundles: dmg
+          - os: windows-latest
+            updater-platform: windows-x86_64
+            release-bundles: msi
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/../cutokyo-tauri-target
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -241,20 +253,11 @@ jobs:
           $certificate = Import-PfxCertificate -FilePath $path -CertStoreLocation Cert:\CurrentUser\My -Password $password
           Remove-Item $path -Force
           "thumbprint=$($certificate.Thumbprint)" >> $env:GITHUB_OUTPUT
-      - name: Snapshot tracked source before Tauri packaging
-        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --capture "${{ runner.temp }}/tauri-source.json"
-      - name: Build unsigned dry-run Tauri package
+      - name: Build unsigned dry-run Tauri package without source rewrites
         if: needs.release-contract.outputs.publish != 'true'
-        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0, verified 2026-03-14
-        with:
-          projectPath: crates/cutokyo-desktop
-          tauriScript: pnpm exec tauri
-          args: --ci --debug --features desktop-runtime
-          includeDebug: true
-          includeRelease: false
-      - name: Build signed macOS or Linux updater package
+        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/tauri-dry-run-source.json" -- pnpm exec tauri build --ci --debug --features desktop-runtime
+      - name: Build signed macOS or Linux updater package without source rewrites
         if: runner.os != 'Windows' && needs.release-contract.outputs.publish == 'true'
-        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0, verified 2026-03-14
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
@@ -262,10 +265,7 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        with:
-          projectPath: crates/cutokyo-desktop
-          tauriScript: pnpm exec tauri
-          args: --ci --features desktop-runtime --config tauri.release.conf.json
+        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/tauri-signed-source.json" -- pnpm exec tauri build --ci --features desktop-runtime --bundles "${{ matrix.release-bundles }}" --config crates/cutokyo-desktop/tauri.release.conf.json
       - name: Prepare signed Windows updater configuration
         if: runner.os == 'Windows' && needs.release-contract.outputs.publish == 'true'
         shell: pwsh
@@ -273,19 +273,12 @@ jobs:
           $config = Join-Path $env:RUNNER_TEMP 'tauri.windows.release.json'
           $overlay = @{ bundle = @{ createUpdaterArtifacts = $true; windows = @{ certificateThumbprint = '${{ steps.windows-cert.outputs.thumbprint }}'; digestAlgorithm = 'sha256'; timestampUrl = 'http://timestamp.digicert.com' } } }
           $overlay | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 $config
-      - name: Build signed Windows updater package
+      - name: Build signed Windows updater package without source rewrites
         if: runner.os == 'Windows' && needs.release-contract.outputs.publish == 'true'
-        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0, verified 2026-03-14
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        with:
-          projectPath: crates/cutokyo-desktop
-          tauriScript: pnpm exec tauri
-          args: --ci --features desktop-runtime --config ${{ runner.temp }}/tauri.windows.release.json
-      - name: Verify Tauri packaging did not rewrite tracked source
-        if: always()
-        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --verify "${{ runner.temp }}/tauri-source.json" --manifest "${{ runner.temp }}/tauri-source-evidence.json"
+        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/tauri-signed-source.json" -- pnpm exec tauri build --ci --features desktop-runtime --bundles "${{ matrix.release-bundles }}" --config "${{ runner.temp }}/tauri.windows.release.json"
       - name: Remove temporary Apple signing material
         if: ${{ always() && runner.os == 'macOS' && needs.release-contract.outputs.publish == 'true' }}
         shell: bash
@@ -306,7 +299,7 @@ jobs:
           mkdir -p tauri-artifacts
           while IFS= read -r -d '' artifact; do
             cp "$artifact" tauri-artifacts/
-          done < <(find target -type f -path '*/bundle/*' \( \
+          done < <(find "$CARGO_TARGET_DIR" -type f -path '*/bundle/*' \( \
             -name '*.deb' -o -name '*.rpm' -o -name '*.AppImage' -o \
             -name '*.dmg' -o -name '*.msi' -o -name '*-setup.exe' -o \
             -name '*.app.tar.gz' -o -name '*.AppImage.tar.gz' -o \
@@ -322,7 +315,7 @@ jobs:
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/tauri-smoke-source.json" -- python tools/release/smoke-tauri-linux.py --artifacts tauri-artifacts --expected-version "${{ needs.release-contract.outputs.tag }}" > tauri-artifacts/package-smoke.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: tauri-${{ matrix.os }}
+          name: tauri-${{ matrix.updater-platform }}
           path: tauri-artifacts
           if-no-files-found: error
 
@@ -345,18 +338,65 @@ jobs:
           test -n "$native_archive" && test -n "$native_checksum"
           python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/npm-smoke-source.json" -- python3 tools/release/smoke-npm.py --npm-package "$npm_package" --native-archive "$native_archive" --native-checksum "$native_checksum" --dependency-package "$dependency_package" --expected-version "${{ needs.release-contract.outputs.tag }}" > release-artifacts/npm-smoke.json
           rm -f "$dependency_package"
-      - name: Build deterministic release and updater manifests
+      - name: Create meaningful local in-toto artifact inventory
         run: |
+          python3 tools/scripts/source-snapshot.py \
+            --root "${{ github.workspace }}" \
+            --manifest "$RUNNER_TEMP/provenance-source.json" \
+            -- python3 tools/release/create-provenance.py \
+              --artifacts release-artifacts \
+              --output release-artifacts/release-contract/release-build.intoto.jsonl \
+              --repository "${{ github.repository }}" \
+              --revision "${{ github.sha }}" \
+              --tag "${{ needs.release-contract.outputs.tag }}" \
+              --workflow-ref "${{ github.workflow_ref }}" \
+              --invocation-id "${{ github.run_id }}/${{ github.run_attempt }}"
+      - name: Build updater signature verifier without source rewrites
+        if: needs.release-contract.outputs.publish == 'true'
+        run: python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/updater-verifier-source.json" -- cargo build --locked -p cutokyo-updater-signature-verifier --target-dir "$RUNNER_TEMP/updater-verifier-target"
+      - name: Build and independently verify deterministic release manifests
+        shell: bash
+        env:
+          TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
+        run: |
+          set -euo pipefail
           (
             cd release-artifacts
             find . -type f ! -name SHA256SUMS ! -name release-manifest.json ! -name latest.json -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
           )
-          python3 tools/release/create-manifest.py \
-            --artifacts release-artifacts \
-            --tag "${{ needs.release-contract.outputs.tag }}" \
-            --repository "${{ github.repository }}" \
-            --output release-artifacts/release-manifest.json \
-            ${{ needs.release-contract.outputs.publish == 'true' && '--require-updater-signatures' || '' }}
+          manifest_args=(
+            --artifacts release-artifacts
+            --tag "${{ needs.release-contract.outputs.tag }}"
+            --repository "${{ github.repository }}"
+            --output release-artifacts/release-manifest.json
+          )
+          if [[ '${{ needs.release-contract.outputs.publish }}' == 'true' ]]; then
+            umask 077
+            public_key="$RUNNER_TEMP/tauri-updater-public-key.txt"
+            printf '%s' "$TAURI_UPDATER_PUBLIC_KEY" > "$public_key"
+            find_one() {
+              local root="$1" pattern="$2" label="$3"
+              mapfile -d '' matches < <(find "$root" -type f -name "$pattern" -print0)
+              if (( ${#matches[@]} != 1 )); then
+                printf 'Release refused: expected exactly one %s updater payload, found %s.\n' "$label" "${#matches[@]}" >&2
+                exit 78
+              fi
+              printf '%s' "${matches[0]#release-artifacts/}"
+            }
+            linux_payload="$(find_one release-artifacts/tauri-linux-x86_64 '*.AppImage.tar.gz' Linux)"
+            darwin_payload="$(find_one release-artifacts/tauri-darwin-aarch64 '*.app.tar.gz' macOS)"
+            windows_payload="$(find_one release-artifacts/tauri-windows-x86_64 '*.msi.zip' Windows)"
+            manifest_args+=(
+              --require-updater-signatures
+              --signature-verifier "$RUNNER_TEMP/updater-verifier-target/debug/cutokyo-updater-signature-verifier"
+              --updater-public-key "$public_key"
+              --updater-target "linux-x86_64=$linux_payload"
+              --updater-target "darwin-aarch64=$darwin_payload"
+              --updater-target "windows-x86_64=$windows_payload"
+            )
+          fi
+          python3 tools/release/create-manifest.py "${manifest_args[@]}"
+          python3 tools/release/create-manifest.py "${manifest_args[@]}" --verify-only
       - name: Attest dry-run or release artifacts with GitHub build provenance
         uses: actions/attest-build-provenance@96b4a1ef7235a096b17240c259729fdd70c83d45 # v2
         with:
