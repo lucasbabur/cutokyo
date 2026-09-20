@@ -1,0 +1,6 @@
+{"direction":"client_to_server","message":{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"clientInfo":{"name":"cutokyo-fixture-capture","title":"Cutokyo fixture capture","version":"0.1.0"}}}}
+{"direction":"client_to_server","message":{"jsonrpc":"2.0","method":"initialized","params":{}}}
+{"direction":"client_to_server","message":{"jsonrpc":"2.0","id":2,"method":"thread/list","params":{"limit":2}}}
+{"direction":"server_to_client","message":{"id":1,"result":{"userAgent":"<REDACTED_USER_AGENT>","codexHome":"<SYNTHETIC_CODEX_HOME>","platformFamily":"<REDACTED_PLATFORM_FAMILY>","platformOs":"<REDACTED_PLATFORM_OS>"}}}
+{"direction":"server_to_client","message":{"method":"remoteControl/status/changed","params":{"status":"disabled","serverName":"<REDACTED_SERVER_NAME>","installationId":"<REDACTED_INSTALLATION_ID>","environmentId":null},"emittedAtMs":"<REDACTED_OBSERVED_TIMESTAMP_MS>"}}
+{"direction":"server_to_client","message":{"id":2,"result":{"data":[],"nextCursor":null,"backwardsCursor":null}}}

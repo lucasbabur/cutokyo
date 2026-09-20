@@ -21,6 +21,7 @@ shipped until their feature implementation enables them.
 | rusqlite_migration | 2.6.0 | Apache-2.0 | Forward-only SQLite migration runner |
 | fs4 | 1.1.0 | MIT OR Apache-2.0 | Cross-platform database-writer and spool-publication file locks |
 | sha2 | 0.11.0 | MIT OR Apache-2.0 | SHA-256 observation identities and backup digests |
+| toml_edit | 0.25.15 | MIT OR Apache-2.0 | Structural ownership of reversible Codex TOML setup |
 | tauri | 2.11.5 | Apache-2.0 OR MIT | Optional desktop-runtime dependency; stable v2 |
 | tauri-build | 2.6.3 | Apache-2.0 OR MIT | Official Tauri build-context generator |
 

@@ -5,8 +5,15 @@
 //! Builders can wrap the same deterministic state in whichever transport a
 //! behavioral test needs, without credentials or wall-clock dependence.
 
-use std::{collections::BTreeSet, sync::Mutex};
+use std::{
+    collections::{BTreeSet, VecDeque},
+    ffi::{OsStr, OsString},
+    sync::{Arc, Mutex},
+};
 
+use cutokyo_core::adapters::codex::{
+    AppServerRequest, AppServerTransport, ProcessOutput, ProcessRunner,
+};
 use cutokyo_domain::{ContractError, ErrorCode, Harness, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -204,6 +211,310 @@ pub struct Delivery {
     pub sequence: u64,
 }
 
+const CODEX_APP_SERVER_FIXTURE: &str =
+    include_str!("../../../fixtures/codex/v1/synthetic/app-server-scenarios.v1.json");
+
+/// Deterministic scripted Codex App Server transport.
+#[derive(Clone, Debug)]
+pub struct FakeCodexAppServer {
+    adapter_version: String,
+    steps: VecDeque<CodexStep>,
+    requests: Vec<AppServerRequest>,
+}
+
+impl FakeCodexAppServer {
+    /// Loads one named versioned scenario from the repository fixture.
+    ///
+    /// # Errors
+    ///
+    /// Returns an invalid-contract error for malformed/incomplete fixtures and
+    /// not-found for an unknown scenario name.
+    pub fn scenario(name: &str) -> Result<Self> {
+        let fixture: CodexFixture =
+            serde_json::from_str(CODEX_APP_SERVER_FIXTURE).map_err(|error| {
+                ContractError::new(
+                    ErrorCode::InvalidContract,
+                    "Codex fake App Server fixture is malformed",
+                )
+                .at_field(
+                    "fixture",
+                    "versioned JSON",
+                    format!("malformed JSON at line {}", error.line()),
+                )
+            })?;
+        fixture.validate()?;
+        let scenario = fixture
+            .scenarios
+            .into_iter()
+            .find(|scenario| scenario.name == name)
+            .ok_or_else(|| {
+                ContractError::new(ErrorCode::NotFound, "Codex fake scenario was not found")
+                    .at_field("scenario", "registered scenario name", "unknown")
+            })?;
+        Ok(Self {
+            adapter_version: scenario.adapter_version,
+            steps: scenario.steps.into(),
+            requests: Vec::new(),
+        })
+    }
+
+    /// Executable/protocol version declared by this scenario.
+    #[must_use]
+    pub fn adapter_version(&self) -> &str {
+        &self.adapter_version
+    }
+
+    /// Exact requests received so far, including native resume parameters.
+    #[must_use]
+    pub fn requests(&self) -> &[AppServerRequest] {
+        &self.requests
+    }
+
+    /// Number of unconsumed request/notification steps.
+    #[must_use]
+    pub fn remaining_steps(&self) -> usize {
+        self.steps.len()
+    }
+
+    /// Proves the caller consumed the entire deterministic script.
+    ///
+    /// # Errors
+    ///
+    /// Returns invalid-contract when expected traffic remains.
+    pub fn assert_complete(&self) -> Result<()> {
+        if self.steps.is_empty() {
+            return Ok(());
+        }
+        Err(ContractError::new(
+            ErrorCode::InvalidContract,
+            "Codex fake App Server scenario has unconsumed steps",
+        )
+        .at_field("remaining_steps", "0", self.steps.len().to_string()))
+    }
+}
+
+impl AppServerTransport for FakeCodexAppServer {
+    fn request(&mut self, request: &AppServerRequest) -> Result<Vec<u8>> {
+        let step = self.steps.pop_front().ok_or_else(|| {
+            ContractError::new(
+                ErrorCode::InvalidContract,
+                "Codex fake App Server received an unexpected request",
+            )
+        })?;
+        let CodexStep::Request {
+            method,
+            params,
+            response,
+        } = step
+        else {
+            return Err(ContractError::new(
+                ErrorCode::InvalidContract,
+                "Codex fake App Server expected a notification before this request",
+            ));
+        };
+        if request.method != method || request.params != params {
+            return Err(ContractError::new(
+                ErrorCode::InvalidContract,
+                "Codex fake App Server request did not match the fixture",
+            )
+            .at_field(
+                "method_or_params",
+                "exact scripted request",
+                "different request",
+            ));
+        }
+        self.requests.push(request.clone());
+        match response {
+            CodexResponse::Result { value } => serialize_fake_response(&json!({
+                "jsonrpc": "2.0",
+                "id": request.id,
+                "result": value
+            })),
+            CodexResponse::NativeError { code } => serialize_fake_response(&json!({
+                "jsonrpc": "2.0",
+                "id": request.id,
+                "error": { "code": code, "message": "synthetic native error" }
+            })),
+            CodexResponse::Oversized { bytes } => Ok(vec![b'x'; bytes]),
+        }
+    }
+
+    fn notify(&mut self, method: &str, params: &Value) -> Result<()> {
+        let step = self.steps.pop_front().ok_or_else(|| {
+            ContractError::new(
+                ErrorCode::InvalidContract,
+                "Codex fake App Server received an unexpected notification",
+            )
+        })?;
+        let CodexStep::Notification {
+            method: expected_method,
+            params: expected_params,
+        } = step
+        else {
+            return Err(ContractError::new(
+                ErrorCode::InvalidContract,
+                "Codex fake App Server expected a request before this notification",
+            ));
+        };
+        if method != expected_method || params != &expected_params {
+            return Err(ContractError::new(
+                ErrorCode::InvalidContract,
+                "Codex fake App Server notification did not match the fixture",
+            ));
+        }
+        Ok(())
+    }
+}
+
+/// Deterministic Codex CLI process fake with exact resume-call evidence.
+#[derive(Clone, Debug)]
+pub struct FakeCodexProcessRunner {
+    expected_resume_target: String,
+    calls: Arc<Mutex<Vec<Vec<String>>>>,
+}
+
+impl FakeCodexProcessRunner {
+    /// Constructs a fake that succeeds only for one exact `thread.id`.
+    #[must_use]
+    pub fn new(expected_resume_target: impl Into<String>) -> Self {
+        Self {
+            expected_resume_target: expected_resume_target.into(),
+            calls: Arc::new(Mutex::new(Vec::new())),
+        }
+    }
+
+    /// Returns all credential-free argument vectors received by the fake.
+    ///
+    /// # Errors
+    ///
+    /// Returns an internal error when the request log is unavailable.
+    pub fn calls(&self) -> Result<Vec<Vec<String>>> {
+        self.calls.lock().map(|calls| calls.clone()).map_err(|_| {
+            ContractError::new(
+                ErrorCode::Internal,
+                "Codex fake process request log is unavailable",
+            )
+        })
+    }
+}
+
+impl ProcessRunner for FakeCodexProcessRunner {
+    fn run(&self, _program: &OsStr, args: &[OsString]) -> Result<ProcessOutput> {
+        let arguments = args
+            .iter()
+            .map(|argument| argument.to_string_lossy().into_owned())
+            .collect::<Vec<_>>();
+        self.calls
+            .lock()
+            .map_err(|_| {
+                ContractError::new(
+                    ErrorCode::Internal,
+                    "Codex fake process request log is unavailable",
+                )
+            })?
+            .push(arguments.clone());
+        let (exit_code, stdout) = match arguments.as_slice() {
+            [version] if version == "--version" => (0, b"codex-cli 0.153.4\n".to_vec()),
+            [login, status] if login == "login" && status == "status" => (
+                0,
+                b"Logged in using ChatGPT as <SYNTHETIC_ACCOUNT>\n".to_vec(),
+            ),
+            [resume, target] if resume == "resume" && target == &self.expected_resume_target => {
+                (0, Vec::new())
+            }
+            _ => (1, Vec::new()),
+        };
+        Ok(ProcessOutput {
+            exit_code,
+            stdout,
+            stderr: Vec::new(),
+        })
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CodexFixture {
+    fixture_version: u32,
+    protocol_schema_version: String,
+    scenarios: Vec<CodexScenario>,
+}
+
+impl CodexFixture {
+    fn validate(&self) -> Result<()> {
+        if self.fixture_version != 1 || self.protocol_schema_version != "codex-cli 0.153.4" {
+            return Err(ContractError::new(
+                ErrorCode::InvalidContract,
+                "unsupported Codex fake fixture version",
+            ));
+        }
+        let scenarios = self
+            .scenarios
+            .iter()
+            .map(|scenario| scenario.name.as_str())
+            .collect::<BTreeSet<_>>();
+        for required in [
+            "paginated_history",
+            "dropped_tool_result",
+            "incomplete_resumed_view",
+            "unknown_version",
+            "unavailable_resume",
+            "oversized_resume",
+            "missing_terminal_event",
+            "pagination_drift",
+            "inventory_paginated",
+        ] {
+            if !scenarios.contains(required) {
+                return Err(ContractError::new(
+                    ErrorCode::InvalidContract,
+                    "Codex fake fixture is missing a required drift scenario",
+                )
+                .at_field("scenario", required, "missing"));
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CodexScenario {
+    name: String,
+    adapter_version: String,
+    steps: Vec<CodexStep>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(tag = "step", rename_all = "snake_case")]
+enum CodexStep {
+    Request {
+        method: String,
+        params: Value,
+        response: CodexResponse,
+    },
+    Notification {
+        method: String,
+        params: Value,
+    },
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(tag = "response_kind", rename_all = "snake_case")]
+enum CodexResponse {
+    Result { value: Value },
+    NativeError { code: i64 },
+    Oversized { bytes: usize },
+}
+
+fn serialize_fake_response(value: &Value) -> Result<Vec<u8>> {
+    serde_json::to_vec(value).map_err(|_| {
+        ContractError::new(
+            ErrorCode::Internal,
+            "failed to serialize a Codex fake App Server response",
+        )
+    })
+}
+
 /// Sanitized request accepted by the fake analysis provider.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -348,12 +659,57 @@ impl FakeMcpEndpoint {
 
 #[cfg(test)]
 mod tests {
-    use cutokyo_domain::Harness;
-    use serde_json::json;
+    use std::ffi::OsStr;
 
-    use super::{FakeMcpEndpoint, FakeMcpServer, FakeProviderEndpoint, FakeWorld, ProviderRequest};
+    use cutokyo_core::adapters::codex::{
+        AccountState, AppServerLimits, CodexAppServerClient, CodexCliResumeLauncher, CodexDetector,
+        capture_otel_log,
+    };
+    use cutokyo_domain::{
+        ConfigItemKind, ConfigItemState, CoverageState, ErrorCode, Harness, NativeSessionId,
+        ResumeLauncher, Timestamp,
+    };
+    use serde_json::{Value, json};
+
+    use super::{
+        FakeCodexAppServer, FakeCodexProcessRunner, FakeMcpEndpoint, FakeMcpServer,
+        FakeProviderEndpoint, FakeWorld, ProviderRequest,
+    };
 
     const WORLD: &str = include_str!("../../../fixtures/harness/scenarios.v1.json");
+    const CODEX_PROVENANCE: &str = include_str!("../../../fixtures/codex/v1/provenance.v1.json");
+    const CODEX_OBSERVED: &str = include_str!(
+        "../../../fixtures/codex/v1/observed/app-server-handshake-empty-history.redacted.jsonl"
+    );
+    const CODEX_OTEL_SYNTHETIC: &str =
+        include_str!("../../../fixtures/codex/v1/synthetic/otel-events.v1.json");
+
+    fn codex_client(
+        scenario: &str,
+        page_size: u32,
+        max_pages: usize,
+        max_response_bytes: usize,
+    ) -> cutokyo_domain::Result<CodexAppServerClient<FakeCodexAppServer>> {
+        let transport = FakeCodexAppServer::scenario(scenario)?;
+        let version = transport.adapter_version().to_owned();
+        CodexAppServerClient::new(
+            transport,
+            version,
+            AppServerLimits {
+                max_response_bytes,
+                max_pages,
+                page_size,
+            },
+        )
+    }
+
+    fn codex_time() -> cutokyo_domain::Result<Timestamp> {
+        Timestamp::parse("2026-09-20T12:00:00Z")
+    }
+
+    fn codex_target() -> cutokyo_domain::Result<NativeSessionId> {
+        NativeSessionId::parse("0199-thread-exact")
+    }
 
     fn world() -> cutokyo_domain::Result<FakeWorld> {
         FakeWorld::from_json(WORLD)
@@ -386,6 +742,337 @@ mod tests {
                 Some("thread-session-beta")
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn codex_app_server_paginates_and_preserves_exact_identities() -> cutokyo_domain::Result<()> {
+        let mut client = codex_client("paginated_history", 1, 8, 65_536)?;
+        let capture = client.capture_resumed_history(&codex_target()?, &codex_time()?)?;
+        assert_eq!(capture.coverage.state, CoverageState::Complete);
+        assert_eq!(capture.sessions.len(), 1);
+        assert_eq!(capture.turns.len(), 2);
+        assert_eq!(capture.messages.len(), 2);
+        assert_eq!(
+            capture.sessions[0].native_resume_id.as_deref(),
+            Some("0199-thread-exact")
+        );
+        assert_eq!(
+            capture.sessions[0].native_session_key,
+            "0199-session-tree-independent"
+        );
+        let transport = client.into_transport();
+        transport.assert_complete()?;
+        let resume = transport
+            .requests()
+            .iter()
+            .find(|request| request.method == "thread/resume")
+            .ok_or_else(|| {
+                cutokyo_domain::ContractError::new(
+                    ErrorCode::Internal,
+                    "test did not observe Codex resume request",
+                )
+            })?;
+        assert_eq!(
+            resume.params,
+            json!({"threadId":"0199-thread-exact","excludeTurns":true})
+        );
+        assert!(
+            !resume
+                .params
+                .to_string()
+                .contains("0199-session-tree-independent")
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn codex_app_server_rejects_tree_id_as_resume_target() -> cutokyo_domain::Result<()> {
+        let mut client = codex_client("paginated_history", 1, 8, 65_536)?;
+        let tree_id = NativeSessionId::parse("0199-session-tree-independent")?;
+        let error = client
+            .capture_resumed_history(&tree_id, &codex_time()?)
+            .err()
+            .ok_or_else(|| {
+                cutokyo_domain::ContractError::new(
+                    ErrorCode::Internal,
+                    "tree identity unexpectedly resumed a Codex thread",
+                )
+            })?;
+        assert_eq!(error.code, ErrorCode::InvalidContract);
+        Ok(())
+    }
+
+    #[test]
+    fn codex_degraded_history_paths_are_deterministic() -> cutokyo_domain::Result<()> {
+        for (scenario, expected_gap) in [
+            ("dropped_tool_result", "missing its result field"),
+            ("missing_terminal_event", "has no terminal event"),
+        ] {
+            let mut client = codex_client(scenario, 100, 8, 65_536)?;
+            let capture = client.capture_resumed_history(&codex_target()?, &codex_time()?)?;
+            assert_eq!(capture.coverage.state, CoverageState::Partial);
+            assert!(
+                capture
+                    .coverage
+                    .gaps
+                    .iter()
+                    .any(|gap| gap.contains(expected_gap))
+            );
+            client.into_transport().assert_complete()?;
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn codex_incomplete_item_pagination_stays_partial() -> cutokyo_domain::Result<()> {
+        let mut client = codex_client("incomplete_resumed_view", 1, 1, 65_536)?;
+        let capture = client.capture_resumed_history(&codex_target()?, &codex_time()?)?;
+        assert_eq!(capture.coverage.state, CoverageState::Partial);
+        assert!(
+            capture
+                .coverage
+                .gaps
+                .iter()
+                .any(|gap| gap.contains("incomplete resumed view"))
+        );
+        assert!(capture.messages.is_empty());
+        client.into_transport().assert_complete()?;
+        Ok(())
+    }
+
+    #[test]
+    fn codex_unavailable_resume_returns_actionable_exact_target_error() -> cutokyo_domain::Result<()>
+    {
+        let mut client = codex_client("unavailable_resume", 100, 8, 65_536)?;
+        let error = client
+            .capture_resumed_history(&codex_target()?, &codex_time()?)
+            .err()
+            .ok_or_else(|| {
+                cutokyo_domain::ContractError::new(
+                    ErrorCode::Internal,
+                    "unavailable Codex target unexpectedly resumed",
+                )
+            })?;
+        assert_eq!(error.code, ErrorCode::CapabilityUnavailable);
+        assert!(error.message.contains("exact native thread"));
+        assert_eq!(error.field.as_deref(), Some("native_session_id"));
+        assert_eq!(
+            error.expected.as_deref(),
+            Some("an available exact Codex thread.id")
+        );
+        client.into_transport().assert_complete()?;
+        Ok(())
+    }
+
+    #[test]
+    fn codex_oversized_resume_is_rejected_before_parsing() -> cutokyo_domain::Result<()> {
+        let mut client = codex_client("oversized_resume", 100, 8, 1_024)?;
+        let error = client
+            .capture_resumed_history(&codex_target()?, &codex_time()?)
+            .err()
+            .ok_or_else(|| {
+                cutokyo_domain::ContractError::new(
+                    ErrorCode::Internal,
+                    "oversized Codex response unexpectedly succeeded",
+                )
+            })?;
+        assert_eq!(error.code, ErrorCode::CapacityReached);
+        client.into_transport().assert_complete()?;
+        Ok(())
+    }
+
+    #[test]
+    fn codex_repeated_cursor_deduplicates_identical_raw_pages() -> cutokyo_domain::Result<()> {
+        let mut client = codex_client("pagination_drift", 100, 8, 65_536)?;
+        let capture = client.list_threads(&codex_time()?)?;
+        assert_eq!(capture.coverage.state, CoverageState::Partial);
+        assert!(
+            capture
+                .coverage
+                .gaps
+                .iter()
+                .any(|gap| gap.contains("repeated cursor"))
+        );
+        assert_eq!(capture.observations.len(), 1);
+        assert!(capture.sessions.is_empty());
+        client.into_transport().assert_complete()?;
+        Ok(())
+    }
+
+    #[test]
+    fn codex_unknown_version_preserves_raw_without_projection() -> cutokyo_domain::Result<()> {
+        let mut client = codex_client("unknown_version", 100, 8, 65_536)?;
+        let capture = client.list_threads(&codex_time()?)?;
+        assert_eq!(capture.coverage.state, CoverageState::UnknownVersion);
+        assert_eq!(capture.observations.len(), 1);
+        assert!(capture.sessions.is_empty());
+        assert!(capture.turns.is_empty());
+        assert!(capture.messages.is_empty());
+        assert!(capture.tool_calls.is_empty());
+        client.into_transport().assert_complete()?;
+        Ok(())
+    }
+
+    #[test]
+    fn codex_inventory_paginates_with_evidence_qualified_states() -> cutokyo_domain::Result<()> {
+        let mut client = codex_client("inventory_paginated", 1, 8, 65_536)?;
+        let capture =
+            client.capture_inventory(&["/synthetic/project".to_owned()], &codex_time()?)?;
+        assert_eq!(capture.coverage.state, CoverageState::Complete);
+        let snapshot = capture.snapshot.ok_or_else(|| {
+            cutokyo_domain::ContractError::new(
+                ErrorCode::Internal,
+                "recognized Codex inventory did not project",
+            )
+        })?;
+        assert_eq!(snapshot.items.len(), 5);
+        assert!(snapshot.items.iter().any(|item| {
+            item.kind == ConfigItemKind::Mcp
+                && item.native_id == "connected-mcp"
+                && item.state == ConfigItemState::Enabled
+                && item.origin.contains("loaded=true")
+        }));
+        assert!(snapshot.items.iter().any(|item| {
+            item.kind == ConfigItemKind::Mcp
+                && item.native_id == "configured-mcp"
+                && item.state == ConfigItemState::Unknown
+                && item.origin.contains("loaded=false")
+        }));
+        assert!(
+            snapshot
+                .items
+                .iter()
+                .filter(|item| item.kind == ConfigItemKind::Plugin)
+                .all(|item| {
+                    item.origin.contains("installed=true")
+                        && item.origin.contains("loaded=unproven")
+                })
+        );
+        client.into_transport().assert_complete()?;
+        Ok(())
+    }
+
+    #[test]
+    fn codex_cli_detection_and_resume_are_credential_free_and_exact() -> cutokyo_domain::Result<()>
+    {
+        let runner = FakeCodexProcessRunner::new("0199-thread-exact");
+        let detection = CodexDetector::new(&runner, OsStr::new("codex")).detect()?;
+        assert_eq!(detection.version.as_deref(), Some("0.153.4"));
+        assert_eq!(detection.account_state, AccountState::Authenticated);
+        let launcher = CodexCliResumeLauncher::new(runner.clone(), "codex");
+        launcher.resume(&codex_target()?)?;
+        assert_eq!(
+            runner.calls()?,
+            vec![
+                vec!["--version".to_owned()],
+                vec!["login".to_owned(), "status".to_owned()],
+                vec!["resume".to_owned(), "0199-thread-exact".to_owned()]
+            ]
+        );
+        let serialized = serde_json::to_string(&detection).map_err(|error| {
+            cutokyo_domain::ContractError::new(
+                ErrorCode::Internal,
+                format!("failed to serialize detection: {error}"),
+            )
+        })?;
+        assert!(!serialized.contains("SYNTHETIC_ACCOUNT"));
+        Ok(())
+    }
+
+    #[test]
+    fn codex_otel_fixture_covers_documented_and_forward_drift_records() -> cutokyo_domain::Result<()>
+    {
+        let fixture: Value = serde_json::from_str(CODEX_OTEL_SYNTHETIC).map_err(|error| {
+            cutokyo_domain::ContractError::new(
+                ErrorCode::InvalidContract,
+                format!("invalid synthetic Codex OTel fixture: {error}"),
+            )
+        })?;
+        assert_eq!(fixture["fixture_version"], 1);
+        let records = fixture["records"].as_array().ok_or_else(|| {
+            cutokyo_domain::ContractError::new(
+                ErrorCode::InvalidContract,
+                "synthetic Codex OTel fixture has no records",
+            )
+        })?;
+        assert_eq!(records.len(), 2);
+        let captures = records
+            .iter()
+            .map(|record| {
+                let version = record["adapter_version"].as_str().ok_or_else(|| {
+                    cutokyo_domain::ContractError::new(
+                        ErrorCode::InvalidContract,
+                        "synthetic Codex OTel record has no adapter version",
+                    )
+                })?;
+                let observed_at = record["observed_at"].as_str().ok_or_else(|| {
+                    cutokyo_domain::ContractError::new(
+                        ErrorCode::InvalidContract,
+                        "synthetic Codex OTel record has no timestamp",
+                    )
+                })?;
+                capture_otel_log(
+                    record["payload"].clone(),
+                    version,
+                    Timestamp::parse(observed_at)?,
+                )
+            })
+            .collect::<cutokyo_domain::Result<Vec<_>>>()?;
+        assert_eq!(captures[0].source.coverage.state, CoverageState::Complete);
+        assert_eq!(
+            captures[0].source.native.session_key,
+            "synthetic-conversation-tree-001"
+        );
+        assert!(captures[0].source.native.resume_id.is_none());
+        assert_eq!(
+            captures[1].source.coverage.state,
+            CoverageState::UnknownVersion
+        );
+        assert_eq!(captures[1].payload["future"]["opaque"], true);
+        Ok(())
+    }
+
+    #[test]
+    fn codex_fixture_provenance_distinguishes_observed_and_synthetic() -> cutokyo_domain::Result<()>
+    {
+        let provenance: Value = serde_json::from_str(CODEX_PROVENANCE).map_err(|error| {
+            cutokyo_domain::ContractError::new(
+                ErrorCode::InvalidContract,
+                format!("invalid Codex provenance fixture: {error}"),
+            )
+        })?;
+        assert_eq!(
+            provenance
+                .pointer("/fixtures/0/classification")
+                .and_then(Value::as_str),
+            Some("locally_observed_with_explicit_redactions")
+        );
+        assert_eq!(
+            provenance
+                .pointer("/fixtures/1/classification")
+                .and_then(Value::as_str),
+            Some("synthetic_schema_derived")
+        );
+        assert_eq!(
+            provenance
+                .pointer("/fixtures/2/classification")
+                .and_then(Value::as_str),
+            Some("synthetic_documentation_derived")
+        );
+        for line in CODEX_OBSERVED.lines().filter(|line| !line.is_empty()) {
+            let _: Value = serde_json::from_str(line).map_err(|error| {
+                cutokyo_domain::ContractError::new(
+                    ErrorCode::InvalidContract,
+                    format!("invalid observed Codex JSONL fixture: {error}"),
+                )
+            })?;
+        }
+        assert!(CODEX_OBSERVED.contains("<SYNTHETIC_CODEX_HOME>"));
+        assert!(CODEX_OBSERVED.contains("<REDACTED_INSTALLATION_ID>"));
+        assert!(!CODEX_OBSERVED.contains("/home/"));
+        assert!(!CODEX_OBSERVED.contains('@'));
+        FakeCodexAppServer::scenario("paginated_history")?;
         Ok(())
     }
 

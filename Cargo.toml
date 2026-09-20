@@ -30,6 +30,7 @@ rusqlite = { version = "=0.40.2", features = ["backup", "bundled"] }
 rusqlite_migration = "=2.6.0"
 fs4 = "=1.1.0"
 sha2 = "=0.11.0"
+toml_edit = { version = "=0.25.15", features = ["parse"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

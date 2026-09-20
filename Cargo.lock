@@ -519,6 +519,7 @@ dependencies = [
  "sha2 0.11.0",
  "tempfile",
  "time",
+ "toml_edit 0.25.15+spec-1.1.0",
  "uuid",
 ]
 
@@ -870,6 +871,7 @@ dependencies = [
 name = "fake-harness"
 version = "0.1.0"
 dependencies = [
+ "cutokyo-core",
  "cutokyo-domain",
  "serde",
  "serde_json",
@@ -3886,6 +3888,7 @@ dependencies = [
  "indexmap 2.14.2",
  "toml_datetime 1.1.1+spec-1.1.0",
  "toml_parser",
+ "toml_writer",
  "winnow 1.0.4",
 ]
 

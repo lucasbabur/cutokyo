@@ -2,6 +2,9 @@
 
 use cutokyo_domain::CaptureChannel;
 
+/// Native Codex integration, normalization, resume, inventory, and reversible setup.
+pub mod codex;
+
 /// Native capture channels ordered before any consented proxy fallback.
 pub const NATIVE_CAPTURE_ORDER: [CaptureChannel; 7] = [
     CaptureChannel::HookOrPlugin,

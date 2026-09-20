@@ -1,0 +1,53 @@
+{
+  "fixture_version": 1,
+  "origin": "synthetic_from_documented_codex_otel_attribute_contract",
+  "records": [
+    {
+      "adapter_version": "0.153.4",
+      "observed_at": "2026-09-20T12:00:00Z",
+      "payload": {
+        "body": {
+          "stringValue": "synthetic request completed"
+        },
+        "attributes": [
+          {
+            "key": "event.name",
+            "value": {
+              "stringValue": "codex.api_request"
+            }
+          },
+          {
+            "key": "event.id",
+            "value": {
+              "stringValue": "synthetic-otel-event-001"
+            }
+          },
+          {
+            "key": "conversation.id",
+            "value": {
+              "stringValue": "synthetic-conversation-tree-001"
+            }
+          },
+          {
+            "key": "http.response.status_code",
+            "value": {
+              "intValue": "200"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "adapter_version": "99.0.0",
+      "observed_at": "2026-09-20T12:00:01Z",
+      "payload": {
+        "event.name": "codex.future_event",
+        "conversation.id": "synthetic-future-tree-001",
+        "private_input": "<SYNTHETIC_PRIVATE_INPUT_NOT_FROM_USER>",
+        "future": {
+          "opaque": true
+        }
+      }
+    }
+  ]
+}
