@@ -1,0 +1,28 @@
+{
+  "record_version": 1,
+  "record_type": "projected_fact",
+  "record": {
+    "derive_version": 1,
+    "session_id": "session:codex:42",
+    "fact_kind": "quota_remaining",
+    "value": null,
+    "raw_observation_ids": ["obs:codex:quota:42"],
+    "provenance": {
+      "channel": "harness_cli",
+      "captured_at": "2026-09-19T11:00:00Z",
+      "native": {
+        "event_id": null,
+        "resume_id": "thread-42",
+        "session_key": "codex:tree:9",
+        "sequence": null
+      },
+      "parser_version": "fixture-1",
+      "confidence": "unknown",
+      "coverage": {
+        "state": "unavailable",
+        "scope": "quota remaining",
+        "gaps": ["provider did not report a quota"]
+      }
+    }
+  }
+}

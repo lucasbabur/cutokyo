@@ -1,0 +1,10 @@
+{
+  "protocol_major": 2,
+  "kind": "handshake",
+  "request_id": "req:unknown-major",
+  "payload": {
+    "plugin_id": "plugin:future",
+    "plugin_kind": "processor",
+    "capabilities": []
+  }
+}

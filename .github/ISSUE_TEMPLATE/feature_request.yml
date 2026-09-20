@@ -1,0 +1,44 @@
+name: Feature request
+description: Propose a public local-first community capability
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: Explain the local workflow or truth gap without prescribing cloud tenancy.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+    validations:
+      required: true
+  - type: dropdown
+    id: egress
+    attributes:
+      label: Does this require data to leave the machine?
+      options:
+        - No
+        - Yes, with explicit preview and consent
+        - Unknown and needs design
+    validations:
+      required: true
+  - type: textarea
+    id: provenance
+    attributes:
+      label: Provenance and coverage implications
+      description: Which raw evidence, native identity, uncertainty, or unavailable state is involved?
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope confirmation
+      options:
+        - label: This is proposed as an Apache-2.0 community feature, not a proprietary placeholder.
+          required: true
+        - label: I did not attach predecessor material or private user data.
+          required: true

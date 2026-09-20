@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-linux:
+    name: Lint and contracts once on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22.22.3"
+          cache: pnpm
+      - name: Enable pinned pnpm
+        run: corepack enable && corepack prepare pnpm@11.25.0 --activate
+      - name: Install TypeScript workspace
+        run: pnpm install --frozen-lockfile
+      - name: Static verifier selftest and repository gates
+        run: |
+          python3 tools/fleet/cutokyo-gates.py selftest
+          python3 tools/fleet/cutokyo-gates.py all --root .
+      - name: cargo fmt --check
+        run: cargo fmt --check
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: TypeScript checks
+        run: |
+          pnpm --dir ui exec tsc --noEmit
+          pnpm --dir ui exec oxlint src
+          pnpm --dir ui exec prettier --check .
+          pnpm --dir ui exec vitest run
+      - name: cargo deny check licenses bans
+        uses: EmbarkStudios/cargo-deny-action@b66acf5e9fe20f8aba065be86778a8a4c846f902 # v2
+        with:
+          command: check licenses bans
+      - name: typos
+        uses: crate-ci/typos@68c865732f1410b4c54c201789de2b2f914ef2ec # v1
+
+  build-test:
+    name: Build and test (${{ matrix.os }})
+    needs: lint-linux
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Build workspace
+        run: cargo build --workspace
+      - name: cargo test
+        run: cargo test --workspace

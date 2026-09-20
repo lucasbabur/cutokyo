@@ -1,0 +1,46 @@
+[workspace]
+members = [
+  "crates/cutokyo-domain",
+  "crates/cutokyo-core",
+  "crates/cutokyo-cli",
+  "crates/cutokyo-desktop",
+  "tools/fake-harness",
+  "tests",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98.1"
+license = "Apache-2.0"
+repository = "https://github.com/lucasbabur/cutokyo"
+authors = ["Cutokyo contributors"]
+
+[workspace.dependencies]
+cutokyo-domain = { path = "crates/cutokyo-domain", version = "0.1.0" }
+cutokyo-core = { path = "crates/cutokyo-core", version = "0.1.0" }
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.151"
+thiserror = "=2.0.20"
+time = { version = "=0.3.55", features = ["formatting", "parsing", "serde"] }
+uuid = { version = "=1.26.1", features = ["serde"] }
+tempfile = "=3.27.0"
+jsonschema = { version = "=0.56.0", default-features = false }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+unreachable_pub = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

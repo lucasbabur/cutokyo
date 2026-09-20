@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.cutokyo.dev/spool-line/v1",
+  "title": "Cutokyo atomic spool line v1",
+  "description": "One complete JSON value followed by one newline in one atomically renamed file.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "observation_id",
+    "harness",
+    "session_key",
+    "observed_at",
+    "kind",
+    "payload",
+    "provenance"
+  ],
+  "properties": {
+    "format_version": { "const": 1 },
+    "observation_id": { "$ref": "#/$defs/identifier" },
+    "harness": { "enum": ["claude_code", "codex", "opencode"] },
+    "session_key": { "$ref": "#/$defs/identifier" },
+    "observed_at": { "type": "string", "format": "date-time" },
+    "kind": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "payload": {
+      "description": "Immutable raw JSON evidence. Unknown fields and kinds are preserved.",
+      "type": ["object", "array", "string", "number", "boolean", "null"]
+    },
+    "provenance": { "$ref": "#/$defs/provenance" }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9_.:/@-]+$"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "channel",
+        "captured_at",
+        "native_identity",
+        "parser_version",
+        "confidence",
+        "coverage"
+      ],
+      "properties": {
+        "channel": {
+          "enum": [
+            "hook_or_plugin",
+            "local_api",
+            "open_telemetry",
+            "harness_cli",
+            "local_state",
+            "file_watch_trigger",
+            "provider_usage_api",
+            "consented_proxy",
+            "tui_scrape",
+            "user_declaration"
+          ]
+        },
+        "captured_at": { "type": "string", "format": "date-time" },
+        "native_identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["event_id", "resume_id", "session_key", "sequence"],
+          "properties": {
+            "event_id": { "type": ["string", "null"], "maxLength": 256 },
+            "resume_id": { "type": ["string", "null"], "maxLength": 256 },
+            "session_key": { "$ref": "#/$defs/identifier" },
+            "sequence": { "type": ["integer", "null"], "minimum": 0 }
+          }
+        },
+        "parser_version": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "confidence": {
+          "enum": ["observed", "estimated", "user_declared", "conflicting", "unknown"]
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "scope", "gaps"],
+          "properties": {
+            "state": {
+              "enum": ["complete", "partial", "disabled", "unavailable", "unknown_version"]
+            },
+            "scope": { "type": "string", "minLength": 1, "maxLength": 512 },
+            "gaps": {
+              "type": "array",
+              "maxItems": 32,
+              "items": { "type": "string", "minLength": 1, "maxLength": 256 }
+            }
+          }
+        }
+      }
+    }
+  }
+}

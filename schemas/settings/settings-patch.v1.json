@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.cutokyo.dev/settings/patch/v1",
+  "title": "Cutokyo settings patch v1",
+  "description": "Omitted properties are unchanged. Null retention_days restores keep-until-deleted.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "proxy_enabled": { "type": "boolean", "default": false },
+    "outgoing_guard_enabled": { "type": "boolean", "default": false },
+    "search_mcp_enabled": { "type": "boolean", "default": true },
+    "retention_days": {
+      "type": ["integer", "null"],
+      "minimum": 1,
+      "maximum": 36500,
+      "default": null
+    }
+  }
+}

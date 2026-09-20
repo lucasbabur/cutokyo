@@ -1,0 +1,17 @@
+pre-commit:
+  parallel: true
+  commands:
+    rust-format:
+      glob: "*.rs"
+      run: cargo fmt --check
+    prettier:
+      glob: "*.{json,md,yaml,yml,ts,tsx}"
+      run: pnpm --dir ui exec prettier --check {staged_files}
+    static-contract:
+      glob: "{Cargo.toml,crates/**,schemas/**,fixtures/**,docs/**,.github/**}"
+      run: python3 tools/fleet/cutokyo-gates.py all --root .
+
+commit-msg:
+  commands:
+    dco-reminder:
+      run: python3 tools/scripts/check-commit-message.py {1}

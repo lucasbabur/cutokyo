@@ -1,0 +1,11 @@
+{
+  "protocol_major": 1,
+  "kind": "handshake",
+  "request_id": "req:extra-field",
+  "payload": {
+    "plugin_id": "plugin:unsafe",
+    "plugin_kind": "source",
+    "capabilities": ["network"],
+    "database_path": "/private/history.db"
+  }
+}

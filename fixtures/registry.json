@@ -1,0 +1,38 @@
+{
+  "registry_version": 1,
+  "contracts": [
+    {
+      "name": "spool-line-v1",
+      "schema": "schemas/spool-line.v1.json",
+      "good": ["fixtures/spool/v1/good/claude-duplicate-source.jsonl"],
+      "bad": [
+        "fixtures/spool/v1/bad/unknown-format.jsonl",
+        "fixtures/spool/v1/bad/truncated.jsonl"
+      ]
+    },
+    {
+      "name": "plugin-protocol-v1",
+      "schema": "schemas/plugin-protocol.v1.json",
+      "good": ["fixtures/plugin/v1/good/processor-handshake.json"],
+      "bad": [
+        "fixtures/plugin/v1/bad/unknown-major.json",
+        "fixtures/plugin/v1/bad/undeclared-field.json"
+      ]
+    },
+    {
+      "name": "domain-record-v1",
+      "schema": "schemas/domain/records.v1.json",
+      "good": ["fixtures/domain/v1/good/projected-unknown-usage.json"],
+      "bad": ["fixtures/domain/v1/bad/projection-without-evidence.json"]
+    },
+    {
+      "name": "settings-patch-v1",
+      "schema": "schemas/settings/settings-patch.v1.json",
+      "good": [
+        "fixtures/settings/v1/good/one-field-patch.json",
+        "fixtures/settings/v1/good/clear-retention.json"
+      ],
+      "bad": ["fixtures/settings/v1/bad/unknown-field.json"]
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cutokyo Foundation Contract</title>
+  </head>
+  <body>
+    <main>
+      <h1>Cutokyo foundation contract</h1>
+      <p>
+        This pre-1.0 native shell proves the Tauri-to-application boundary. The
+        product dashboard is intentionally not claimed complete.
+      </p>
+      <pre id="contract" aria-live="polite">Loading application contract…</pre>
+    </main>
+    <script>
+      async function showContract() {
+        const output = document.querySelector("#contract");
+        try {
+          const serialized =
+            await window.__TAURI__.core.invoke("contract_snapshot");
+          output.textContent = JSON.stringify(JSON.parse(serialized), null, 2);
+        } catch (error) {
+          output.textContent = `Native contract unavailable: ${String(error)}`;
+        }
+      }
+      void showContract();
+    </script>
+  </body>
+</html>

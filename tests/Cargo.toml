@@ -1,0 +1,37 @@
+[package]
+name = "cutokyo-integration-tests"
+description = "Cross-crate architecture, contract, pipeline, and upgrade tests"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+cutokyo-core.workspace = true
+cutokyo-domain.workspace = true
+fake-harness = { path = "../tools/fake-harness", version = "0.1.0" }
+jsonschema.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tempfile.workspace = true
+
+[[test]]
+name = "pipeline"
+path = "pipeline.rs"
+
+[[test]]
+name = "e2e"
+path = "e2e.rs"
+
+[[test]]
+name = "upgrade"
+path = "upgrade.rs"
+
+[[test]]
+name = "architecture"
+path = "architecture.rs"
+
+[lints]
+workspace = true

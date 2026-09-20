@@ -1,0 +1,40 @@
+{
+  "fixture_version": 1,
+  "clock_start": "2026-09-19T09:00:00Z",
+  "harnesses": [
+    {
+      "harness": "claude_code",
+      "cutokyo_session_id": "session:claude:alpha",
+      "native_resume_id": "claude-resume-alpha",
+      "coverage": "partial",
+      "coverage_gaps": ["quota remaining"],
+      "deliveries": [
+        { "observation_id": "obs:claude:2", "native_event_id": "evt-2", "sequence": 2 },
+        { "observation_id": "obs:claude:1", "native_event_id": "evt-1", "sequence": 1 },
+        { "observation_id": "obs:claude:1", "native_event_id": "evt-1", "sequence": 1 }
+      ]
+    },
+    {
+      "harness": "codex",
+      "cutokyo_session_id": "session:codex:beta",
+      "native_resume_id": "thread-beta",
+      "native_tree_id": "thread-session-beta",
+      "coverage": "partial",
+      "coverage_gaps": ["history page 2 not yet delivered"],
+      "deliveries": [
+        { "observation_id": "obs:codex:4", "native_event_id": null, "sequence": 4 },
+        { "observation_id": "obs:codex:3", "native_event_id": null, "sequence": 3 }
+      ]
+    },
+    {
+      "harness": "opencode",
+      "cutokyo_session_id": "session:opencode:gamma",
+      "native_resume_id": "opencode-session-gamma",
+      "coverage": "unknown_version",
+      "coverage_gaps": ["plugin event generation"],
+      "deliveries": [
+        { "observation_id": "obs:opencode:8", "native_event_id": "event-8", "sequence": 8 }
+      ]
+    }
+  ]
+}

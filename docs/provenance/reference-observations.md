@@ -1,0 +1,49 @@
+# Reference observation ledger
+
+These are behavior-only observations supplied by the authoritative Fleet context.
+They are not permission to consult the predecessor, and no expression, schema,
+fixture, UI, asset, test, or implementation was copied. All requirements below were
+independently restated and are corroborated by public documentation where possible.
+
+| Key | Independently stated reference observation | Why retained | Public corroboration |
+| --- | --- | --- | --- |
+| RO-001 | Local services should bind to loopback and distinguish approved provider destinations. | Prevent accidental remote exposure and confused egress. | Tauri capability guidance; standard loopback and URL validation practices. |
+| RO-002 | Persist recovery intent before changing another tool's configuration; roll back independently owned subsystems independently. | Crashes and uninstall must not destroy neighboring user config. | Atomic-file patterns and provider configuration documentation. |
+| RO-003 | Provider-bound traffic and persisted or telemetry payloads are different protection boundaries. | Redacting logs must not be advertised as changing model requests. | Provider API and OpenTelemetry documentation. |
+| RO-004 | Subsystem degradation must be durable and visible after restart. | In-memory green status can conceal failed persistence or quarantine. | SQLite durability and health-check practice. |
+| RO-005 | Quarantine malformed input durably before acknowledging or advancing a cursor. | A crash must not lose the only copy of rejected evidence. | Transactional queue and SQLite durability principles. |
+| RO-006 | Files, lines, payloads, queues, plugin output, and diagnostics need explicit bounds. | External producers can otherwise exhaust memory or disk. | MCP/JSON-RPC transport guidance and secure parser practice. |
+| RO-007 | Session projection needs stable attributable identity and idempotent ingest. | Duplicate hooks and identity drift must not double count or resume the wrong target. | Claude Code hooks, Codex app-server, and OpenCode plugin documentation. |
+| RO-008 | Overlapping reads and stale responses must not overwrite newer session/project state. | UI truth should follow request ordering rather than network timing. | General cancellation and stale-response handling practice. |
+| RO-009 | Process liveness and product readiness are distinct. | A running shell can still have an unavailable database, spool, or plugin plane. | Health endpoint conventions and Tauri startup behavior. |
+| RO-010 | Package smoke tests must launch the package, not a source-tree binary. | Source success does not prove installer or wrapper correctness. | cargo-dist npm and Tauri distribution documentation. |
+| RO-011 | Health failures must remain independent and current versus lifetime quarantine must be distinct. | One successful write cannot erase unrelated backup, integrity, or retention faults. | Newly authored bounded health contract. |
+| RO-012 | Uninstall with no activation state is a successful no-op; partial recovery remains diagnosable. | Fresh or repeated uninstall should not become a product trap. | Idempotent cleanup practice and host config ownership rules. |
+
+## Public sources
+
+- Tauri capabilities, distribution, updater, and native testing:
+  <https://tauri.app/security/capabilities/>,
+  <https://v2.tauri.app/distribute/>,
+  <https://v2.tauri.app/plugin/updater/>,
+  <https://v2.tauri.app/develop/tests/webdriver/>.
+- SQLite WAL, transactions, backup, FTS5, and network-filesystem guidance:
+  <https://www.sqlite.org/wal.html>, <https://www.sqlite.org/lang_transaction.html>,
+  <https://www.sqlite.org/backup.html>, <https://www.sqlite.org/fts5.html>,
+  <https://www.sqlite.org/useovernet.html>.
+- Claude Code hooks and monitoring:
+  <https://code.claude.com/docs/en/hooks>,
+  <https://code.claude.com/docs/en/monitoring-usage>.
+- Codex app server and CLI: <https://developers.openai.com/codex/app-server>,
+  <https://developers.openai.com/codex/cli>.
+- OpenCode plugins and SDK: <https://opencode.ai/v2/docs/build/plugins>,
+  <https://opencode.ai/v2/docs/build/sdk>.
+- Official Rust MCP SDK: <https://github.com/modelcontextprotocol/rust-sdk>.
+- cargo-dist npm installer:
+  <https://axodotdev.github.io/cargo-dist/book/installers/npm.html>.
+
+## Fixture statement
+
+Foundation fixtures under `fixtures/` are synthetic and were authored from this
+contract. Dates, identifiers, payloads, ordering, and expected failures are invented.
+No reference fixture or production transcript was copied.

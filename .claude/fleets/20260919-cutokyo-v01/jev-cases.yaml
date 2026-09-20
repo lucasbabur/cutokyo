@@ -1,0 +1,72 @@
+url: http://127.0.0.1:4173
+concurrency: 4
+timeout: 300
+max_steps: 20
+screenshots: steps
+cases:
+  - name: onboarding-empty-history
+    path: /?jev_case=onboarding-empty
+    steps:
+      - do: Complete local-only onboarding without enabling proxy capture or AI analysis
+        expect: The dashboard opens with local-only status and proxy and AI egress visibly disabled
+      - do: Open Session history
+        expect: A specific useful empty-history explanation and capture setup action appear without fake zero-valued analytics
+
+  - name: search-detail-resume
+    path: /?jev_case=search-resume
+    steps:
+      - do: Open Sessions and search for "JEV exact resume needle 73A9"
+        expect: Exactly one Claude Code fixture session appears with source and coverage labels
+      - do: Open that session and choose Resume
+        expect: The confirmation identifies native session "claude-jev-73A9" and does not select a neighboring session
+
+  - name: retention-delete-confirmation
+    path: /?jev_case=retention-delete
+    steps:
+      - do: Open data retention and preview a 30-day policy
+        expect: The preview names the exact fixture sessions and counts that would be deleted without changing history
+      - do: Delete fixture session "delete-me-73A9" and confirm only that session
+        expect: The selected session disappears while neighboring session "keep-me-73A9" remains searchable and the UI does not promise physical secure erasure
+      - do: Start Delete all and cancel at the confirmation
+        expect: All remaining history stays present
+
+  - name: guard-proxy-coverage-language
+    path: /?jev_case=guards-proxy
+    steps:
+      - do: Open Guards and capture coverage
+        expect: Telemetry and on-disk redaction are described separately from provider-bound inspection and unavailable channels are not shown as zero findings
+      - do: Begin enabling proxy capture and stop before confirming consent
+        expect: The preview states what will be inspected and no active-proxy status appears
+
+  - name: analysis-preview-cancel
+    path: /?jev_case=analysis-cancel
+    steps:
+      - do: Choose Analyze for fixture session "analysis-73A9"
+        expect: A preview names the session, redacted payload scope, provider, and model before any send
+      - do: Cancel the analysis preview
+        expect: The preview closes, no summary appears, and the fixture records no outbound request
+
+  - name: degraded-health-recovery
+    path: /?jev_case=health-degraded
+    steps:
+      - do: Open System health
+        expect: Writer lock and quarantine are independently degraded with current and lifetime counts plus the first affected observation
+      - do: Run the offered safe retry for the writer lock
+        expect: Writer-lock health recovers while the unrelated quarantine degradation remains visible
+
+  - name: mcp-plugin-inventory
+    path: /?jev_case=mcp-plugin-inventory
+    steps:
+      - do: Open the unified inventory and disable fixture MCP server "docs-73A9"
+        expect: The server is disabled for Claude Code, Codex, and OpenCode while the unrelated plugin and search MCP remain unchanged
+      - do: Open plugin verification details for "fixture-processor-73A9"
+        expect: The verifier shows protocol version, declared capabilities, bounds, and fixture evidence without claiming a portable sandbox
+
+  - name: visual-keyboard-consistency
+    path: /?jev_case=visual-keyboard
+    steps:
+      - do: Press Tab from the loaded dashboard
+        key: Tab
+        expect: A visible focus indicator lands on the first meaningful control in a coherent graphite and warm-paper interface
+      - do: Continue keyboard navigation to the Sessions destination and activate it
+        expect: Session history opens without a pointer and focus moves to the page heading or primary action

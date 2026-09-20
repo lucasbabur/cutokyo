@@ -1,0 +1,673 @@
+{
+  "title": "Cutokyo v0.x — local history, observability, resume, extensions and control for coding agents",
+  "summary": "Build the first usable public Cutokyo release from an empty repository: a local-first Rust core and CLI, Tauri desktop app, one SQLite evidence store, native-first capture for Claude Code/Codex/OpenCode, exact session search and resume, usage and inventory dashboards, reversible setup, a versioned plugin protocol and verifier, read-only Cutokyo MCP plus a central MCP broker, secret guards, explicit proxy fallback, consented AI summaries, diagnostics, and cross-platform release automation. The workflow establishes contracts and self-testing gates first, proves a durable vertical slice, fans out six isolated feature units, integrates them, then requires deterministic checks, real CLI/browser/native-Tauri journeys, a required Haiku JEV browser batch with inspected screenshots, safe installed-harness probes, and independent technical review. Design only: no product agent has been dispatched, no product commit exists, and nothing will be pushed, published, or released without a later approved run.",
+  "status": "ready",
+  "workflow": {
+    "path": "../../workflows/cutokyo-v01.js",
+    "implemented": true
+  },
+  "agents": [
+    {
+      "id": "architect",
+      "path": "../../agents/cutokyo-architect.md",
+      "skills": []
+    },
+    {
+      "id": "core",
+      "path": "../../agents/cutokyo-core-builder.md",
+      "skills": []
+    },
+    {
+      "id": "harness",
+      "path": "../../agents/cutokyo-harness-builder.md",
+      "skills": []
+    },
+    {
+      "id": "extensions",
+      "path": "../../agents/cutokyo-extension-builder.md",
+      "skills": []
+    },
+    {
+      "id": "cli-ops",
+      "path": "../../agents/cutokyo-cli-ops-builder.md",
+      "skills": []
+    },
+    {
+      "id": "desktop",
+      "path": "../../agents/cutokyo-desktop-builder.md",
+      "skills": [
+        {
+          "path": "/home/lucas/.claude/skills/agent-browser/SKILL.md",
+          "mode": "routed",
+          "reason": "Exercises browser-mode journeys and captures early representative screenshots; native Tauri evidence remains separate."
+        },
+        {
+          "path": "/home/lucas/.agents/skills/fleet-ui-review/SKILL.md",
+          "mode": "routed",
+          "reason": "Structures the builder's visual self-review against the selected Cutokyo direction before handoff."
+        }
+      ]
+    },
+    {
+      "id": "gatekeeper",
+      "path": "../../agents/cutokyo-gatekeeper.md",
+      "skills": []
+    },
+    {
+      "id": "product-qa",
+      "path": "../../agents/cutokyo-product-qa.md",
+      "skills": [
+        {
+          "path": "/home/lucas/.claude/skills/agent-browser/SKILL.md",
+          "mode": "routed",
+          "reason": "Drives integrated browser journeys, keyboard paths, accessibility probes, and screenshot capture."
+        },
+        {
+          "path": "/home/lucas/.agents/skills/fleet-ui-review/SKILL.md",
+          "mode": "routed",
+          "reason": "Guides independent visual and interaction judgment from real screenshots and clicks."
+        }
+      ]
+    },
+    {
+      "id": "jev-checker",
+      "path": "../../agents/cutokyo-jev-checker.md",
+      "skills": [
+        {
+          "path": "/home/lucas/.codex/skills/jev-qa/SKILL.md",
+          "mode": "routed",
+          "reason": "Required for this role: runs the installed pinned JEV browser executor from a validated YAML batch and requires screenshot inspection for every result."
+        }
+      ]
+    },
+    {
+      "id": "technical-reviewer",
+      "path": "../../agents/cutokyo-technical-reviewer.md",
+      "skills": []
+    }
+  ],
+  "units": [
+    {
+      "id": "u-foundation",
+      "name": "Executable product contract and first commit",
+      "agent": "architect",
+      "description": "Resolve scope and architecture into an English product spec, ADRs, pure-domain ports, workspace skeleton, JSON Schemas, golden fixtures, fake-harness contracts, Apache-2.0/DCO project files, and mutation-tested static gates. Establish HEAD deliberately so isolated worktrees can exist.",
+      "output": "Committed foundation whose contracts compile, whose gate selftests prove a complete known-good fixture and one targeted known-bad mutation per gate, and whose docs make local-only, proxy consent, provenance and version rules explicit.",
+      "depends_on": [],
+      "criteria": ["C01", "C02", "C03", "C18", "C20"],
+      "status": "planned"
+    },
+    {
+      "id": "u-core",
+      "name": "Durable domain, SQLite, spool and search core",
+      "agent": "core",
+      "description": "Implement the real observation-to-spool-to-SQLite-to-FTS pipeline, normalized projections, reconciliation, one-writer locking, health, migrations, historical readers, caps, quarantine and online backup.",
+      "output": "A tested core worktree and committed branch with real SQLite evidence, integrity results and a usable app-service API.",
+      "depends_on": ["u-foundation"],
+      "criteria": ["C02", "C03", "C04", "C05", "C06"],
+      "status": "planned"
+    },
+    {
+      "id": "u-core-merge",
+      "name": "Core integration checkpoint",
+      "agent": "architect",
+      "description": "Merge and prove the durable vertical slice before any feature fan-out, so every later worktree consumes real app/store ports instead of invented mocks.",
+      "output": "Primary branch with passing fake observation → spool → SQLite/FTS → search and architecture/migration checks.",
+      "depends_on": ["u-core"],
+      "criteria": ["C02", "C03", "C04", "C05"],
+      "status": "planned"
+    },
+    {
+      "id": "u-claude",
+      "name": "Claude Code adapter, setup, inventory and resume",
+      "agent": "harness",
+      "description": "Use documented hooks, OTel, CLI and state tiers with coverage truth; handle duplicate resume hooks, session-ID drift, changing transcript formats, subagents and disabled persistence.",
+      "output": "Versioned observed/synthetic fixtures, fake-harness behavior, reversible temporary-HOME setup and exact native resume proof for Claude Code.",
+      "depends_on": ["u-core-merge"],
+      "criteria": ["C06", "C07", "C10"],
+      "status": "planned"
+    },
+    {
+      "id": "u-codex",
+      "name": "Codex adapter, app-server setup, inventory and resume",
+      "agent": "harness",
+      "description": "Use app server/local API and OTel before state files; preserve thread.id for resume and thread.sessionId for session-tree identity; detect incomplete/paginated history.",
+      "output": "Versioned fixtures, fake-harness behavior, reversible temporary-HOME setup and exact native resume proof for Codex.",
+      "depends_on": ["u-core-merge"],
+      "criteria": ["C06", "C08", "C10"],
+      "status": "planned"
+    },
+    {
+      "id": "u-opencode",
+      "name": "OpenCode plugin/server adapter, setup, inventory and resume",
+      "agent": "harness",
+      "description": "Use documented plugin and SDK/server APIs; handle asynchronous finalization, restarts/port drift, event subscription and V1/V2 plugin drift.",
+      "output": "Versioned fixtures, fake-harness behavior, reversible temporary-HOME setup and exact native resume proof for OpenCode.",
+      "depends_on": ["u-core-merge"],
+      "criteria": ["C06", "C09", "C10"],
+      "status": "planned"
+    },
+    {
+      "id": "u-extensions",
+      "name": "Plugin, MCP, guards, proxy and AI-analysis plane",
+      "agent": "extensions",
+      "description": "Implement the versioned out-of-process plugin SDK/verifier/examples, read-only Cutokyo MCP, central upstream broker, synthetic-secret guard corpus, visible consented proxy and previewed/idempotent AI analysis.",
+      "output": "Protocol/tool manifests, passing good examples, rejected bad mutations, fake MCP/provider evidence, and a leak-free egress path.",
+      "depends_on": ["u-core-merge"],
+      "criteria": ["C11", "C12", "C13", "C14", "C15"],
+      "status": "planned"
+    },
+    {
+      "id": "u-cli-ops",
+      "name": "CLI, configuration, diagnostics and distribution",
+      "agent": "cli-ops",
+      "description": "Build human/JSON CLI workflows, origin-aware configuration, setup commands, logging/crash health, doctor/bundle/backup, npm native wrapper, CI matrix and dry-run release automation.",
+      "output": "A usable native CLI, leak-safe diagnostics, locally installable npm package, complete docs and non-publishing distro evidence.",
+      "depends_on": ["u-core-merge"],
+      "criteria": ["C06", "C10", "C16", "C18", "C19"],
+      "status": "planned"
+    },
+    {
+      "id": "u-desktop",
+      "name": "Tauri desktop product and dashboard",
+      "agent": "desktop",
+      "description": "Implement onboarding, coverage, dashboards, history/search/detail/resume, inventory/MCP control, plugin and guard health, analysis consent, diagnostics and settings in the approved observability-console direction.",
+      "output": "Accessible React/Tauri application with browser and native tests plus screenshots at three required desktop window sizes.",
+      "depends_on": ["u-core-merge"],
+      "criteria": ["C03", "C06", "C13", "C14", "C15", "C17"],
+      "status": "planned"
+    },
+    {
+      "id": "u-integration",
+      "name": "Feature branch integration",
+      "agent": "architect",
+      "description": "Merge all six feature branches in dependency order, preserve every unit, reconcile shared ports/manifests/fixtures/Tauri bindings, and rerun the integrated suite.",
+      "output": "One reviewable primary-branch revision with all features and owner-routed defects rather than silently dropped behavior.",
+      "depends_on": ["u-claude", "u-codex", "u-opencode", "u-extensions", "u-cli-ops", "u-desktop"],
+      "criteria": ["C01", "C02", "C18", "C20"],
+      "status": "planned"
+    },
+    {
+      "id": "u-gates",
+      "name": "Integrated deterministic acceptance",
+      "agent": "gatekeeper",
+      "description": "Run selftests first, then static, Rust, TypeScript, fixture, fake-harness, protocol, leak, setup, doctor, bundle, package and dry-run release commands without editing anything.",
+      "output": "Machine-readable command evidence with pass/fail/void/warn status, exact exit codes and stable owner keys.",
+      "depends_on": ["u-integration"],
+      "criteria": ["C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09", "C10", "C11", "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20"],
+      "status": "planned"
+    },
+    {
+      "id": "u-qa",
+      "name": "Real CLI, browser and native-Tauri product QA",
+      "agent": "product-qa",
+      "description": "Use the integrated product against deterministic adverse worlds and safe installed-harness probes, reconcile dashboards, exercise exact resume, capture screenshots and independently judge visual/interaction quality.",
+      "output": "Step-by-step journey evidence, native-versus-browser coverage, screenshots, design verdict, installed-harness limits and routable findings.",
+      "depends_on": ["u-integration"],
+      "criteria": ["C06", "C07", "C08", "C09", "C12", "C13", "C14", "C15", "C16", "C17", "C19"],
+      "status": "planned"
+    },
+    {
+      "id": "u-jev",
+      "name": "Haiku JEV browser journey checks",
+      "agent": "jev-checker",
+      "description": "Use the installed jev-qa skill to validate and run the checked-in concise concurrent browser batch over eight critical Cutokyo interactions, then inspect every screenshot without treating browser evidence as native proof.",
+      "output": "Same-revision validation/report for jev-cases.yaml, PASS/ERROR/BLOCKED case records, action evidence and individually inspected screenshots with routable failures.",
+      "depends_on": ["u-integration"],
+      "criteria": ["C06", "C12", "C13", "C14", "C15", "C16", "C17", "C20"],
+      "status": "planned"
+    },
+    {
+      "id": "u-review",
+      "name": "Independent technical and intent review",
+      "agent": "technical-reviewer",
+      "description": "Judge every criterion by inspecting code, tests, protocols, built artifacts, commands, product QA and Haiku JEV evidence; audit the traps most likely to survive green tests.",
+      "output": "A C01-C20 pass/fail/undetermined table with citations plus product/check/conflict/dependency findings routed to owners.",
+      "depends_on": ["u-gates", "u-qa", "u-jev"],
+      "criteria": ["C20"],
+      "status": "planned"
+    },
+    {
+      "id": "u-report",
+      "name": "Accepted evidence report",
+      "agent": "architect",
+      "description": "Only after all blockers pass, update evidence statuses, summarize final independent verdicts, render the Fleet review and open it locally without publishing anything.",
+      "output": "Final report, rendered index and revision/environment traceability for every accepted condition.",
+      "depends_on": ["u-review"],
+      "criteria": ["C20"],
+      "status": "planned"
+    }
+  ],
+  "feedback": [
+    {"from": "u-gates", "to": "u-foundation"},
+    {"from": "u-gates", "to": "u-core"},
+    {"from": "u-gates", "to": "u-claude"},
+    {"from": "u-gates", "to": "u-codex"},
+    {"from": "u-gates", "to": "u-opencode"},
+    {"from": "u-gates", "to": "u-extensions"},
+    {"from": "u-gates", "to": "u-cli-ops"},
+    {"from": "u-gates", "to": "u-desktop"},
+    {"from": "u-qa", "to": "u-core"},
+    {"from": "u-qa", "to": "u-claude"},
+    {"from": "u-qa", "to": "u-codex"},
+    {"from": "u-qa", "to": "u-opencode"},
+    {"from": "u-qa", "to": "u-extensions"},
+    {"from": "u-qa", "to": "u-cli-ops"},
+    {"from": "u-qa", "to": "u-desktop"},
+    {"from": "u-jev", "to": "u-core"},
+    {"from": "u-jev", "to": "u-extensions"},
+    {"from": "u-jev", "to": "u-cli-ops"},
+    {"from": "u-jev", "to": "u-desktop"},
+    {"from": "u-review", "to": "u-foundation"},
+    {"from": "u-review", "to": "u-core"},
+    {"from": "u-review", "to": "u-claude"},
+    {"from": "u-review", "to": "u-codex"},
+    {"from": "u-review", "to": "u-opencode"},
+    {"from": "u-review", "to": "u-extensions"},
+    {"from": "u-review", "to": "u-cli-ops"},
+    {"from": "u-review", "to": "u-desktop"},
+    {"from": "u-integration", "to": "u-core"},
+    {"from": "u-integration", "to": "u-claude"},
+    {"from": "u-integration", "to": "u-codex"},
+    {"from": "u-integration", "to": "u-opencode"},
+    {"from": "u-integration", "to": "u-extensions"},
+    {"from": "u-integration", "to": "u-cli-ops"},
+    {"from": "u-integration", "to": "u-desktop"}
+  ],
+  "criteria": [
+    {
+      "id": "C01",
+      "title": "The public project has an explicit local-only community scope and enforceable Apache-2.0 + DCO boundary",
+      "description": "The repository must say what Cutokyo is and refuses to be, keep every specified feature public, include Apache-2.0/NOTICE/trademark/contribution material, enforce DCO, and prove clean-room authorship from behavior-only requirements rather than the unlicensed predecessor.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["architect", "cli-ops", "technical-reviewer"],
+      "scope": "Product spec, README, legal files, THIRD_PARTY, three provenance ledgers, contributor workflow, commit history, assets/fonts and release documentation.",
+      "pass_condition": "Static gates pass; DCO is enforced by a pinned action; every integrated commit has a matching sign-off; provenance records independently authored requirements, schemas, fixtures, tests, UI and third-party licenses; no predecessor expression, enterprise/cloud/tenancy placeholder or unsupported trademark asset is presented as community functionality.",
+      "procedure": ["Run legal and scope gates after their selftest.", "Inspect action pinning and every integrated commit trailer.", "Trace representative implementation and test artifacts through the clean-room decision ledger and third-party notices.", "Reviewer compares the shipped product/spec to the original scope and non-goals without reading the predecessor source."],
+      "failure_cases": ["Apache is named but the actual license text is absent.", "DCO appears in CONTRIBUTING but CI does not enforce it.", "Code, schemas, tests, prose, UI, assets, fonts or workflows are copied from the unlicensed predecessor.", "Third-party or trademark material lacks license/provenance evidence.", "A specified feature is deferred to a proprietary edition.", "A cloud account or telemetry path appears without scope approval."],
+      "command": "python3 tools/fleet/cutokyo-gates.py selftest && python3 tools/fleet/cutokyo-gates.py legal --root . && python3 tools/fleet/cutokyo-gates.py scope --root . && git log --format='%H%n%B'",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c01-open-source.log", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/technical-review.json", "status": "planned"}]
+    },
+    {
+      "id": "C02",
+      "title": "The compiler-enforced boundary keeps domain pure and all I/O behind core ports",
+      "description": "cutokyo-domain contains values, rules and ports only; app wires ingest/store/adapters; CLI, desktop, hooks, MCP and plugins cannot bypass the application boundary to write SQLite; one canonical machine-readable contract prevents Rust/TypeScript settings drift.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["architect", "core", "technical-reviewer"],
+      "scope": "Cargo workspace, crate dependencies, Rust imports, public interfaces, generated/patch settings contracts and all direct store call sites.",
+      "pass_condition": "Architecture gate and mutation selftests reject fs/http/sql/process/Tauri dependencies in domain; architecture tests prove only approved modules open the database or spool; generated types or patch commands ensure omitted UI fields cannot reset unrelated settings; reviewer finds no dependency inversion escape hatch.",
+      "procedure": ["Run architecture gate and tests.", "Inject forbidden rusqlite/std::fs imports in selftest fixtures and observe failure.", "Inspect cargo metadata and direct connection/open calls."],
+      "failure_cases": ["A pure-looking wrapper hides SQL inside domain.", "Desktop imports store internals.", "A plugin or MCP handler receives a DB path.", "A whole-object UI write omits and resets an unrelated guard setting.", "Rust and TypeScript hand-maintain divergent settings shapes.", "A false-positive-prone grep passes only because code was renamed."],
+      "command": "python3 tools/fleet/cutokyo-gates.py architecture --root . && cargo test -p cutokyo-integration-tests --test architecture && cargo metadata --format-version 1 --no-deps",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c02-architecture.log", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/technical-review.json", "status": "planned"}]
+    },
+    {
+      "id": "C03",
+      "title": "Raw observations, projections, usage, cost, quota and coverage remain attributable and reconcile without double counting",
+      "description": "Every derived fact points to immutable raw evidence with source tier, native identity, capture/parser version and coverage; unknown, estimated and user-declared values stay distinct.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["core", "desktop", "technical-reviewer"],
+      "scope": "Domain model, resolver precedence, pricing snapshots, quota windows, coverage, dashboard/CLI projections and fixture reconciliation.",
+      "pass_condition": "Fixture expectations exactly match CLI and dashboard totals; conflicting tiers do not double count; stale pricing is time-bounded; unknown values are not shown as zero or authority; every projection is traceable to raw observations.",
+      "procedure": ["Run domain and reconciliation tests against multi-source fixtures.", "Compare independent fixture totals to CLI JSON and dashboard data.", "Reviewer follows representative projections back to raw rows."],
+      "failure_cases": ["Hook and proxy token counts are summed twice.", "A missing quota is displayed as 0% remaining.", "A current cost uses a price snapshot from another interval.", "Dashboard hides provenance or uncertainty."],
+      "command": "cargo test -p cutokyo-domain provenance && cargo test -p cutokyo-core reconciliation && cargo test -p cutokyo-integration-tests --test pipeline dashboard_reconciles",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c03-reconciliation.log", "status": "planned"}, {"kind": "Browser", "path": "evidence/final/screens/dashboard-provenance.png", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/technical-review.json", "status": "planned"}]
+    },
+    {
+      "id": "C04",
+      "title": "SQLite remains durable under contention, migration, downgrade, backup and restore",
+      "description": "The one local database uses WAL, foreign keys, NORMAL sync and a five-second timeout on every connection; one writer, short transactions, safe checkpointing, local-disk validation, bounded persisted health and digested online backups protect the only copy of history.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["core", "technical-reviewer"],
+      "scope": "Connection factory, process lock, migrations, bundled SQLite/FTS5, concurrency, bounded health projection, backup/restore and integrity tooling.",
+      "pass_condition": "Real temporary-DB tests prove every pragma, concurrent reads/one writer, actionable lock diagnostics, checkpoint progress, migration from every fixture DB, old-binary refusal, digested online backup, tamper refusal before replacement, recovery after failed restore, retained prior copy until integrity succeeds and integrity_check=ok on a safe bundled SQLite version; health reads remain bounded under large history.",
+      "procedure": ["Run store, concurrency, upgrade, health and backup suites against real SQLite.", "Tamper with a backup and interrupt staged restore; prove current data survives and the service recovers.", "Run doctor on healthy and intentionally broken DB fixtures plus large history.", "Reviewer checks transactions do not span network/user work or derive ordinary health by full-history scan."],
+      "failure_cases": ["busy_timeout is set on only one pool connection.", "A live .db file is copied without WAL.", "Backup bytes replace current state before digest verification.", "Failed extraction leaves neither old nor restored data usable.", "A routine health read scans all observations.", "Long reads starve checkpoints indefinitely.", "An old binary opens a newer schema best-effort.", "Database on a network/cloud-sync path is accepted silently."],
+      "command": "cargo test -p cutokyo-core store && cargo test -p cutokyo-integration-tests --test upgrade && cargo test -p cutokyo-integration-tests --test pipeline sqlite_concurrency_backup_integrity",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c04-sqlite.log", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/technical-review.json", "status": "planned"}]
+    },
+    {
+      "id": "C05",
+      "title": "Atomic spool ingestion is idempotent, bounded, quarantine-safe and backward-readable",
+      "description": "Hooks create one event file by atomic rename, never open SQLite, and the core can ingest any released spool format after downtime without duplicate insertion or drain-loop crashes.",
+      "verifiers": ["Command"],
+      "owners": ["core", "gatekeeper"],
+      "scope": "Hook writer, spool naming/schema, ingest cursors, quarantine, deletion, 30-day/500-MB caps and historical readers.",
+      "pass_condition": "Pipeline tests replay duplicate/out-of-order/month-old events, malformed/truncated files, interrupted drains and caps; each observation inserts once, malformed input is durably quarantined before its cursor advances, rolled files delete only after full ingest, current/lifetime quarantine remain distinct, and cap activation is visible.",
+      "procedure": ["Run spool unit and pipeline integration tests.", "Replay every golden spool version twice.", "Mutate a half-written file and crash between quarantine and checkpoint; verify durable quarantine, idempotent continuation and accurate current/lifetime counts."],
+      "failure_cases": ["Concurrent append writes interleave on Windows.", "Sequence-only IDs duplicate a resumed hook.", "Cursor advances before a rejected record is durably quarantined.", "One malformed line crashes the drain.", "Current quarantine is confused with cumulative history.", "Cap silently deletes old history.", "Upgrade forgets an old spool reader."],
+      "command": "cargo test -p cutokyo-core ingest && cargo test -p cutokyo-integration-tests --test pipeline spool_replay_quarantine_caps && cargo test -p cutokyo-integration-tests --test upgrade historical_spool_formats",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c05-spool.log", "status": "planned"}]
+    },
+    {
+      "id": "C06",
+      "title": "Users can search, resume and deliberately delete exact sessions across all three harnesses",
+      "description": "Content/project/branch/harness/date/tool/skill/agent filters return attributable sessions; CLI and desktop resume the recorded native target rather than a nearby identifier; previewed retention and explicit deletion remove the selected raw, derived, FTS and summary state without pretending existing backups or SSD blocks were securely erased.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["core", "harness", "cli-ops", "desktop", "product-qa"],
+      "scope": "FTS/filter queries, session details, native resume records, keep-until-deleted default, retention preview/apply, one-session deletion, confirmed delete-all, CLI output and desktop search/detail/resume/delete journeys.",
+      "pass_condition": "Fake harnesses prove each filter and exact resume ID; installed-harness dry runs confirm supported command/API shapes; unavailable/deleted targets produce actionable errors; deletion transactionally removes exactly the selected raw observations, projections, FTS rows and summaries; retention preview equals apply, delete-all requires confirmation, unrelated sessions survive, and UI/CLI disclose that existing backups/WAL/SSD blocks are not securely erased; the optional search MCP can be disabled and never injects context automatically.",
+      "procedure": ["Run session search/resume E2E for each fake harness.", "Inspect CLI JSON target and captured launched command/API request.", "Preview then apply retention; delete one session and verify every linked table/index plus neighboring session; exercise cancelled and confirmed delete-all.", "Click search → detail → resume/delete/retention in browser and native Tauri; capture evidence and deletion wording.", "Perform safe installed-harness dry runs."],
+      "failure_cases": ["Resume opens the newest session in the project instead of the chosen ID.", "Codex thread.sessionId is used where thread.id is required.", "Search silently omits old pages.", "Session deletion leaves searchable FTS or summary rows.", "Retention apply deletes more than its preview.", "Delete-all proceeds without explicit confirmation.", "UI promises physical secure erasure or implies old backups changed.", "Disabled search skill remains exposed."],
+      "command": "cargo test -p cutokyo-integration-tests --test e2e session_search_resume_all_harnesses && cargo test -p cutokyo-integration-tests --test e2e session_delete_retention_delete_all && cargo run -p cutokyo-cli -- sessions search --fixture all --json",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c06-search-resume.log", "status": "planned"}, {"kind": "Browser", "path": "evidence/final/screens/session-resume.png", "status": "planned"}, {"kind": "Production dry run", "path": "evidence/final/installed-harness-resume.json", "status": "planned"}]
+    },
+    {
+      "id": "C07",
+      "title": "Claude Code capture survives duplicate hooks, resume identity drift and transcript format changes",
+      "description": "The adapter uses documented native tiers, records source/version/coverage, preserves raw unknowns, discovers installed infrastructure and never treats an internal transcript format as stable.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["harness", "product-qa", "technical-reviewer"],
+      "scope": "Claude Code adapter, fixtures, hook setup/uninstall, OTel/state readers, inventory, fake-harness behavior and installed dry run.",
+      "pass_condition": "Observed/versioned fixtures and fake events prove duplicate SessionStart, wrong resumed session IDs, subagents, disabled persistence, truncated/unknown JSONL and exact resume; unknown versions reduce coverage without corrupting projections; setup round-trips in disposable HOME.",
+      "procedure": ["Run Claude adapter and fake-harness tests.", "Run setup/dry-run/repeat/interrupted/uninstall in disposable HOME and byte-compare unmanaged config.", "Probe installed Claude Code read-only and record version/operations/limits."],
+      "failure_cases": ["Duplicate SessionStart creates two sessions.", "A wrong resumed hook ID overwrites the original session.", "An unknown JSONL entry is discarded rather than preserved.", "Test mutates the operator's real settings."],
+      "command": "cargo test -p cutokyo-core claude_code && cargo test -p fake-harness claude_code && cargo test -p cutokyo-integration-tests --test e2e claude_setup_roundtrip",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c07-claude.log", "status": "planned"}, {"kind": "Production dry run", "path": "evidence/final/installed-claude.json", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/technical-review.json", "status": "planned"}]
+    },
+    {
+      "id": "C08",
+      "title": "Codex capture handles app-server identity, pagination and incomplete resume histories",
+      "description": "The adapter prefers documented app-server/OTel surfaces, preserves thread.id and thread.sessionId semantics, and detects missing or oversized history rather than silently accepting a partial session.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["harness", "product-qa", "technical-reviewer"],
+      "scope": "Codex adapter, app-server client, OTel/state tiers, fixtures, setup, inventory, fake harness and installed dry run.",
+      "pass_condition": "Tests cover paginated/oversized resume responses, dropped tool results, incomplete historical views, thread identity, exact resume and unknown versions; setup round-trips in disposable HOME and installed read-only probe records limits.",
+      "procedure": ["Run Codex adapter and fake app-server tests.", "Run setup round-trip in disposable HOME.", "Probe installed Codex CLI/app-server read-only and record version/operations/limits."],
+      "failure_cases": ["Only the first history page is indexed.", "thread.sessionId is persisted as resume target.", "Missing tool results look complete.", "A format drift is normalized with the old parser."],
+      "command": "cargo test -p cutokyo-core codex && cargo test -p fake-harness codex && cargo test -p cutokyo-integration-tests --test e2e codex_setup_roundtrip",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c08-codex.log", "status": "planned"}, {"kind": "Production dry run", "path": "evidence/final/installed-codex.json", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/technical-review.json", "status": "planned"}]
+    },
+    {
+      "id": "C09",
+      "title": "OpenCode capture handles plugin lifecycle timing, server drift and API generations",
+      "description": "The adapter uses documented plugin/server SDK events, waits or recovers around finalization, survives restart/port changes, and labels V1/V2/unknown plugin shapes.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["harness", "product-qa", "technical-reviewer"],
+      "scope": "OpenCode adapter, plugin/server client, fixtures, setup, inventory, fake harness and installed dry run.",
+      "pass_condition": "Tests prove idle/finalization ordering, restart/port drift, event subscription, V1/V2 migration, exact resume and unknown-version coverage; disposable-HOME setup round-trips and installed probe records limits.",
+      "procedure": ["Run OpenCode adapter and fake server/plugin tests.", "Run setup round-trip in disposable HOME.", "Probe installed OpenCode read-only and record version/operations/limits."],
+      "failure_cases": ["Fire-and-forget finalization loses the last turn.", "A server port change hides existing sessions.", "V1 event is parsed as V2 without reduced coverage.", "Uninstall removes another plugin."],
+      "command": "cargo test -p cutokyo-core opencode && cargo test -p fake-harness opencode && cargo test -p cutokyo-integration-tests --test e2e opencode_setup_roundtrip",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c09-opencode.log", "status": "planned"}, {"kind": "Production dry run", "path": "evidence/final/installed-opencode.json", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/technical-review.json", "status": "planned"}]
+    },
+    {
+      "id": "C10",
+      "title": "Configuration and setup are reversible, origin-aware, permission-safe and idempotent",
+      "description": "Defaults/file/env/CLI precedence is inspectable; config writes are atomic; secrets stay out of TOML; setup persists recovery intent before mutation, backs up once and owns only identifiable Cutokyo content.",
+      "verifiers": ["Command"],
+      "owners": ["harness", "cli-ops", "gatekeeper"],
+      "scope": "Cross-platform config/data paths, canonical settings contract, precedence, keychain fallback, setup dry-run/apply/repeat/interrupted/uninstall/no-state recovery, target file types and permissions.",
+      "pass_condition": "Fixture round-trips preserve all unmanaged bytes/structure and permissions, create one backup, recheck snapshots before writes, refuse symlink/non-regular targets, never duplicate owned entries, recover interrupted/partial edits, tolerate concurrent user edits, make missing/empty state and repeated restore successful no-ops, isolate subsystem cleanup failures, report each value's origin and enforce 0600 where supported; omitted UI settings cannot reset unrelated values.",
+      "procedure": ["Run config precedence/permission/generated-contract tests on platform abstractions.", "Run each harness setup lifecycle in disposable HOME, including install-never-activated, missing/empty/corrupt state and repeated restore.", "Exercise concurrent edits, symlink/non-regular targets and one cleanup subsystem failing while another succeeds.", "Compare before/after trees, permissions, recovery intent and backup manifests."],
+      "failure_cases": ["Repeated setup duplicates hooks.", "Recovery intent is written after the first external mutation.", "A symlink target is followed or a concurrent user edit is overwritten.", "Strict JSON is corrupted by managed comments.", "No managed state blocks restore or uninstall.", "One cleanup failure prevents an independent safe cleanup.", "Uninstall removes a user's neighboring MCP.", "An API key appears in config.toml.", "An omitted UI field disables a guard.", "show-origin reports only the final value."],
+      "command": "cargo test -p cutokyo-core config && cargo test -p cutokyo-integration-tests --test e2e setup_all_harnesses_roundtrip && cargo test -p cutokyo-integration-tests --test e2e setup_restore_adversarial_worlds && cargo test -p cutokyo-cli keychain_and_permissions",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c10-config-setup.log", "status": "planned"}]
+    },
+    {
+      "id": "C11",
+      "title": "The plugin protocol is versioned, capability-gated, idempotent and pleasant for model-written plugins",
+      "description": "Machine-readable schemas, golden fixtures and field-level diagnostics are the SDK; source and processor examples in TypeScript/Python must pass the actual verifier while bad mutations fail.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["extensions", "technical-reviewer"],
+      "scope": "Protocol schema/major handshake, bidirectional runtime validation, subprocess host, explicit line/message/field/telemetry/output bounds, capability grants, timeouts/cancellation, plugin verify and both examples.",
+      "pass_condition": "Every inbound and outbound message is runtime-validated; unknown majors, malformed/oversized output, non-idempotent sources, undeclared transcript/network access and protocol-side store writes are rejected clearly without wedging the host; valid examples pass from a clean environment; plugins never receive DB path/handle and docs do not claim portable sandboxing that is not enforced.",
+      "procedure": ["Run schema/golden conformance and mutation suite across every message direction and bound.", "Feed malformed output followed by a valid plugin run and prove host recovery.", "Execute plugin verify on both examples from clean envs.", "Reviewer inspects host capabilities, cancellation, error output and sandbox wording."],
+      "failure_cases": ["Verifier accepts an unknown major.", "Host casts parsed JSON without runtime validation.", "Output-size or telemetry bounds are documented but unenforced.", "Malformed output poisons later plugin runs.", "Example passes by bypassing the real verifier.", "Processor opens the database.", "Network access occurs without approval.", "Documentation promises filesystem/network isolation on unsupported platforms.", "Error says only invalid plugin with no field context."],
+      "command": "cargo test -p cutokyo-core plugin_protocol && cargo run -p cutokyo-cli -- plugin verify examples/plugins/ts-processor && cargo run -p cutokyo-cli -- plugin verify examples/plugins/py-source",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c11-plugins.log", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/technical-review.json", "status": "planned"}]
+    },
+    {
+      "id": "C12",
+      "title": "Synthetic secrets are redacted everywhere without broadly destroying benign content",
+      "description": "A maintained scanner or justified equivalent projects raw findings into sanitized types before logging and covers spool, projections, logs, proxy, crash files, bundles and AI egress.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["extensions", "cli-ops", "product-qa", "technical-reviewer"],
+      "scope": "Guard engine, redaction corpus, every persisted/emitted artifact and visible coverage state.",
+      "pass_condition": "Synthetic keys in headers, URLs, nested JSON, tool output, multiline and split streams never survive into scanned artifacts; benign entropy controls remain; an enabled outgoing guard blocks channels it cannot inspect and reports coverage; UI text distinguishes telemetry/on-disk/bundle redaction from provider-bound blocking or mutation.",
+      "procedure": ["Run redaction property/corpus tests.", "Execute end-to-end sentinel flow and scan spool/DB/log/crash/proxy/bundle/outbound request/screenshots.", "Assert coverage copy for inspected, unavailable and disabled channels.", "Reviewer inspects dependency, sanitized logging boundary and user-facing claims."],
+      "failure_cases": ["Raw match appears in a tracing field.", "Split-stream key evades redaction.", "Bundle excludes transcripts but leaks a secret in logs.", "Every UUID is destroyed as high entropy.", "Telemetry redacted is presented as provider request modified.", "Unavailable inspection appears as zero findings or protected."],
+      "command": "cargo test -p cutokyo-core guards && cargo test -p cutokyo-integration-tests --test e2e synthetic_secret_leak_scan && cargo test -p cutokyo-cli bundle_has_no_content_or_secret",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c12-redaction.log", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/technical-review.json", "status": "planned"}]
+    },
+    {
+      "id": "C13",
+      "title": "Native capture wins and proxy fallback is explicit, visible, secret-safe and honest about unavailable context",
+      "description": "Proxy is used only for facts native sources cannot establish, requires consent, binds locally, never persists credentials, fails open for harness operation and never invents context breakdown.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["extensions", "desktop", "product-qa", "technical-reviewer"],
+      "scope": "Source resolver, proxy lifecycle, consent UI/CLI, failure paths, context/rate-limit capture, logs and coverage.",
+      "pass_condition": "Tests prove source precedence, no auto-start, persistent visible active state, no credential logging, fail-open instrumentation, fail-closed behavior only for a specifically enabled outgoing guard on an uninspectable channel, stopped/failed states and absent context breakdown without proxy; QA captures consent and degraded screens whose copy distinguishes capture from provider mutation.",
+      "procedure": ["Run fake-provider proxy/precedence tests.", "Exercise disabled, consented, failing, guarded-uninspectable and stopped proxy journeys.", "Inspect captured traffic and logs for credentials.", "Capture desktop coverage states and assert exact protection wording."],
+      "failure_cases": ["Hook outage silently starts proxy.", "Instrumentation failure blocks Claude/Codex/OpenCode.", "Outgoing guard silently allows an enabled channel it cannot inspect.", "Context breakdown shows zeros without proxy.", "Authorization header lands in a log.", "Proxy capture is described as provider payload mutation.", "Consent is buried in setup defaults."],
+      "command": "cargo test -p cutokyo-core proxy && cargo test -p cutokyo-integration-tests --test e2e proxy_consent_precedence_fail_open",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c13-proxy.log", "status": "planned"}, {"kind": "Browser", "path": "evidence/final/screens/proxy-consent-and-coverage.png", "status": "planned"}]
+    },
+    {
+      "id": "C14",
+      "title": "The read-only Cutokyo MCP and the central upstream broker remain separate and reliable",
+      "description": "Cutokyo's own server exposes no mutation tools; the broker routes approved stdio/HTTP upstreams consistently across harnesses, namespaces tools, contains failures and restores config.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["extensions", "desktop", "product-qa", "technical-reviewer"],
+      "scope": "MCP server manifest, broker transports/routing, enable-disable state, setup/uninstall and UI inventory/control.",
+      "pass_condition": "Manifest inspection finds read operations only; fake MCP tests route enabled servers, hide disabled ones, survive one failed server and enforce timeouts/namespacing; all harness configs agree and uninstall restores them.",
+      "procedure": ["Dump and inspect Cutokyo MCP tool manifest.", "Run fake stdio and streamable-HTTP broker integration with one failure.", "Toggle servers in UI and verify all fake harness configs.", "Run uninstall restore."],
+      "failure_cases": ["cutokyo mcp exposes config mutation.", "One dead upstream takes down every tool.", "Two servers collide on tool name.", "Disabled tool remains cached in one harness.", "Uninstall removes a user-owned MCP."],
+      "command": "cargo test -p cutokyo-core mcp && cargo test -p cutokyo-integration-tests --test e2e mcp_broker_all_harnesses && cargo run -p cutokyo-cli -- mcp manifest --json",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c14-mcp.log", "status": "planned"}, {"kind": "Browser", "path": "evidence/final/screens/mcp-control.png", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/technical-review.json", "status": "planned"}]
+    },
+    {
+      "id": "C15",
+      "title": "AI analysis previews and controls egress, redacts first and writes idempotent attributable summaries",
+      "description": "The user sees exactly which sessions/content leave the machine and which provider/model receives them, then can confirm, cancel, retry and inspect the resulting provenance.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["extensions", "desktop", "product-qa", "technical-reviewer"],
+      "scope": "Analysis app use case, keychain, fake provider, consent UI, redaction, cancellation/retry and Summary records.",
+      "pass_condition": "Fake-provider tests and journeys prove preview-before-send, redaction, no request on cancel, safe retry, idempotent DB write, and stored provider/model/prompt version/source IDs/time/coverage; credentials never enter TOML/logs.",
+      "procedure": ["Run fake-provider integration including timeout/retry/duplicate response.", "Capture outbound sanitized request and DB summary record.", "Exercise preview/cancel/error/success in desktop."],
+      "failure_cases": ["Analyze all sends immediately.", "Retry creates duplicate summaries.", "Prompt text appears in log or config.", "Stored summary cannot identify source sessions/model.", "Cancel closes UI but request continues."],
+      "command": "cargo test -p cutokyo-core analysis && cargo test -p cutokyo-integration-tests --test e2e analysis_preview_cancel_retry_idempotency",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c15-analysis.log", "status": "planned"}, {"kind": "Browser", "path": "evidence/final/screens/analysis-consent.png", "status": "planned"}]
+    },
+    {
+      "id": "C16",
+      "title": "Doctor, bundle, logs and crash handling make local failures diagnosable without exporting private content",
+      "description": "Structured bounded logs and persisted health support a doctor that identifies real failures; bundle previews a deliberately safe manifest and crash records are opt-in.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["cli-ops", "product-qa", "technical-reviewer"],
+      "scope": "Tracing/rotation, bounded persisted health projection, shared CLI/desktop/doctor snapshot, doctor checks and exit codes, bundle manifest/redaction/permissions, panic record and next-launch flow.",
+      "pass_condition": "Every intentionally broken fixture receives the specific nonzero diagnosis; the shared snapshot independently reports current degradation, last successful persistence/failure/category, current/lifetime quarantine, first affected observation, health-persistence status, spool cap/drain, writer lock, schema/derive, integrity/rebuild and backup/restore; one successful dimension cannot clear another; restart and large-history reads remain correct and bounded; logs rotate; bundle contains only documented safe artifacts and no prompts/transcripts/secrets/full paths; panic record is bounded and offered, not uploaded.",
+      "procedure": ["Run doctor against healthy and each broken world, including health-file corruption and restart.", "Compare CLI JSON, desktop and doctor snapshots byte/field-for-field after independent simultaneous failures and a partial recovery.", "Measure ordinary health reads with large history and prove no full event scan.", "Generate bundle after synthetic content/secret/path sentinel and scan archive.", "Force log rotation and controlled panic; inspect next-launch behavior."],
+      "failure_cases": ["Doctor prints healthy after failed plugin or corrupt DB.", "One successful write clears unrelated quarantine, retention, backup or integrity failure.", "CLI and desktop disagree on current versus lifetime quarantine.", "Health persistence fails without itself becoming degraded.", "Ordinary status scans all history.", "Bundle includes transcript rows or home path.", "Crash file grows without bound.", "A command error returns exit 0.", "Health exists only in memory and disappears before doctor."],
+      "command": "cargo test -p cutokyo-cli doctor && cargo test -p cutokyo-cli bundle && cargo test -p cutokyo-integration-tests --test e2e logging_crash_bundle_safety && cargo test -p cutokyo-integration-tests --test e2e persisted_health_restart_reconciliation",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c16-diagnostics.log", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/technical-review.json", "status": "planned"}]
+    },
+    {
+      "id": "C17",
+      "title": "The desktop is a coherent, accessible native product across required journeys and window sizes",
+      "description": "The graphite/warm-paper/vermilion observability console must make provenance, health, search, resume, deletion/retention, recovery, inventory, MCP, guards and analysis understandable in real use—not only component snapshots.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["desktop", "product-qa", "jev-checker", "technical-reviewer"],
+      "scope": "Every route/state including deletion/retention/recovery and honest storage wording, generated settings binding, keyboard and screen-reader behavior, browser E2E, a supplemental Haiku JEV batch, WebdriverIO native Tauri E2E, Linux package startup and validated Windows/macOS build-test workflow contracts; actual remote artifacts remain a separately authorized release gate.",
+      "pass_condition": "Type/lint/unit/a11y/browser/native suites pass on the available Linux host; the actual Linux Tauri package starts and completes representative journeys including one-session deletion, retention/delete-all confirmation and degraded recovery; the validated Haiku JEV batch reports PASS for all eight required cases with every screenshot independently read; UI and CLI consume the same health/settings contract; screenshots at 1280×800, 1536×960 and 900×700 show no overflow, hidden action or inconsistent state; Windows/macOS jobs, Tauri configuration and action inputs validate without claiming remote artifacts ran; independent QA passes design and interaction quality.",
+      "procedure": ["Run frontend checks and browser journeys, including omitted-setting preservation.", "Validate and run the checked-in jev-cases.yaml unchanged once with isolated state; read every PASS/ERROR/BLOCKED screenshot and preserve report/action evidence.", "Run WebdriverIO Tauri-service journeys against packaged app; JEV browser output cannot substitute for this native evidence.", "Capture required routes/states/sizes plus deletion, retention and backup/restore disclosure; inspect keyboard/focus/contrast/reduced-motion.", "Validate the Windows/macOS CI matrix, action inputs and Tauri configuration; record actual remote artifact execution as a release gate rather than fabricated Fleet evidence."],
+      "failure_cases": ["Browser mode or JEV passes while native window is blank.", "JEV reports PASS without a validated batch or readable screenshot for every case.", "A 900×700 window hides Resume or destructive-action confirmation.", "Charts have no accessible values or reconcile incorrectly.", "Desktop health disagrees with doctor or hides first affected observation.", "UI promises secure erasure or application-level database encryption that v0.x does not provide.", "Loading/empty/error states are generic or absent.", "Design review accepts a written description instead of screenshots."],
+      "command": "pnpm --dir ui typecheck && pnpm --dir ui lint && pnpm --dir ui test && pnpm --dir ui test:e2e:web && pnpm --dir ui test:e2e:tauri",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c17-desktop.log", "status": "planned"}, {"kind": "Browser", "path": "evidence/final/screens/dashboard-1280x800.png", "status": "planned"}, {"kind": "Browser", "path": "evidence/final/screens/history-900x700.png", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/jev-qa.json", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/product-qa.json", "status": "planned"}]
+    },
+    {
+      "id": "C18",
+      "title": "Blocking static/test checks and non-blocking drift checks match the declared quality policy on all three OSes",
+      "description": "Lint runs once on Linux; build/test runs on Linux/macOS/Windows; fake harnesses are deterministic; scheduled real drift opens issues without gating PRs; warnings remain visible but do not fail unrelated PRs.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["architect", "cli-ops", "gatekeeper", "technical-reviewer"],
+      "scope": "Local commands, lefthook, CI/release/drift workflows, action pinning, fixture provenance and warning/blocking semantics.",
+      "pass_condition": "Static CI gate passes; workflow/action syntax validates; required command matrix is present; locally runnable suites pass; drift workflow uses genuine installed harness probes and issue output without a required check; warnings cannot disappear silently.",
+      "procedure": ["Run static CI gate after selftest.", "Run the exact local blocking suite.", "Validate workflows and inspect permissions/action pins.", "Run fake harness E2E and dry-run drift logic."],
+      "failure_cases": ["Lint is paid three times across matrix.", "Linux success is presented as cross-platform support.", "Drift installs mocks rather than real harnesses.", "Advisory warning is swallowed.", "A missing tool returns success."],
+      "command": "python3 tools/fleet/cutokyo-gates.py ci --root . && cargo fmt --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace && cargo deny check licenses bans && pnpm --dir ui check",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c18-quality-ci.log", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/technical-review.json", "status": "planned"}]
+    },
+    {
+      "id": "C19",
+      "title": "Built CLI/npm and Tauri artifacts install and start, with checksums, SBOM, provenance and honest signing boundaries",
+      "description": "cargo-dist produces one native CLI and npm wrapper; Tauri produces platform bundles; tag workflow is signing-ready but this Fleet performs only local/dry-run packaging and never publishes.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["cli-ops", "desktop", "product-qa", "technical-reviewer"],
+      "scope": "cargo-dist config, npm pack/install, Tauri bundles/uninstall, updater manifest, release workflow, hashes, CycloneDX SBOM, provenance inputs, liveness/readiness probes and clean-machine quickstart.",
+      "pass_condition": "Tracked source is byte-identical before/after every build/package command; locally packed npm installs and launches the built native CLI; the Linux Tauri package starts from the installed artifact, distinguishes process liveness from product readiness, and uninstalls successfully before activation and after repeated/no-state restore; CI build/test plans cover macOS/Windows without claiming those artifacts ran; dry-run release emits expected artifact manifest/checksums/SBOM and fails clearly—not silently—without updater/platform signing secrets; actions are pinned.",
+      "procedure": ["Snapshot tracked files, run cargo-dist plan/build dry run and fail on any source mutation.", "Pack npm wrapper, install in temp prefix and invoke the installed version/doctor binary.", "Build/install/start the Linux Tauri package; verify liveness/readiness separately, uninstall-never-activated and repeated no-state restore.", "Validate release manifest, updater signatures contract, separate platform signing/notarization gates, SBOM and checksums."],
+      "failure_cases": ["A build temporarily rewrites tracked routes or leaves source dirty after interruption.", "npm contains a divergent JS implementation.", "Package test runs cargo source instead of installed binary.", "Fresh install cannot uninstall because no recovery manifest exists.", "Liveness is used as readiness.", "Tauri workflow parses but no Linux artifact is actually launched.", "Linux success is called Windows/macOS artifact evidence.", "Updater signature is confused with platform code signing.", "Missing signing secrets cause unsigned publish."],
+      "command": "dist plan && cargo test -p cutokyo-integration-tests --test e2e artifact_source_immutability && cargo test -p cutokyo-integration-tests --test e2e npm_wrapper_install && cargo tauri build --debug && cargo test -p cutokyo-integration-tests --test e2e release_artifact_manifest",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c19-distribution.log", "status": "planned"}, {"kind": "Production dry run", "path": "evidence/final/release-dry-run.json", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/technical-review.json", "status": "planned"}]
+    },
+    {
+      "id": "C20",
+      "title": "The integrated revision passes independent acceptance without gate evasion, missing evidence or builder self-approval",
+      "description": "Command gates, real product QA/design review, supplemental Haiku JEV browser checks and technical intent review must all pass the same revision; repairs return to owners and affected checks rerun, with at most three attempts on the same blocker.",
+      "verifiers": ["Command", "LLM"],
+      "owners": ["gatekeeper", "product-qa", "jev-checker", "technical-reviewer", "architect"],
+      "scope": "Entire integrated diff, deterministic/QA/JEV evidence tree, C01-C20 verdicts, repair history and final report.",
+      "pass_condition": "Gate selftests and all blocking commands pass; diffguard finds no unjustified evasion; native/browser/CLI QA passes with screenshots and real steps; the validated same-revision Haiku JEV batch has exactly eight PASS cases, nonempty action evidence and screenshots all read; technical reviewer cites every criterion; no required journey/input is silently omitted; final report names revision/environment and honest limitations.",
+      "procedure": ["Run both verifier selftests before scans.", "Scan integrated diff for suppressions/skips/unsafe casts/threshold edits/fixture substitution.", "Require command, product-QA, Haiku-JEV and technical structured passes on the exact gate revision.", "Verify JEV ERROR/BLOCKED outcomes become routable failures and browser evidence is not reused as native proof.", "If triage demonstrates that a check itself is invalid, stop and present the contradiction/evidence to the human instead of editing the check.", "After any product repair, rerun affected and aggregate checks before reusing evidence."],
+      "failure_cases": ["Builder summary substitutes for independent inspection.", "A JEV ERROR/BLOCKED or missing screenshot is counted as pass.", "JEV browser evidence is presented as native Tauri evidence.", "Review and commands target different revisions.", "Test is skipped or threshold lowered.", "A suspect check is auto-repaired or weakened without the requested human decision.", "Three retries loop on the same unresolved blocker.", "Final report omits native-app or installed-harness gap."],
+      "command": "python3 /home/lucas/.claude/fleet-tools/diffguard/diffguard.py selftest && python3 /home/lucas/.claude/fleet-tools/diffguard/diffguard.py scan --repo . --base HEAD~1 --json",
+      "status": "implemented",
+      "evidence": [{"kind": "Command", "path": "evidence/final/c20-diffguard.log", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/jev-qa.json", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/product-qa.json", "status": "planned"}, {"kind": "LLM", "path": "evidence/final/technical-review.json", "status": "planned"}]
+    }
+  ],
+  "tools": [
+    {
+      "name": "cutokyo-gates",
+      "purpose": "Protect repository layout, pure-domain boundaries, schema contracts, Apache-2.0/DCO files, CI matrix and explicit product scope before expensive tests or review.",
+      "status": "built",
+      "path": "../../../tools/fleet/cutokyo-gates.py",
+      "usage": "cutokyo-gates selftest; then cutokyo-gates <all|layout|architecture|contracts|legal|ci|scope> --root <repo> [--json]. Exit 0 passes; any nonzero result fails. Exact missing-root exit behavior is outside acceptance. Registered as 20260919-cutokyo-v01/cutokyo-gates.",
+      "validation": "Selftest passes a complete known-good fixture and rejects one targeted bad mutation for each of six gates. The current empty product baseline fails every gate; missing-root CLI behavior is not part of this verifier contract."
+    },
+    {
+      "name": "diffguard",
+      "purpose": "Scan added lines for gate evasions: suppressions, skipped/focused tests, unsafe casts, weakened thresholds, destructive SQL patterns and fixture substitution.",
+      "status": "reused",
+      "path": "/home/lucas/.claude/fleet-tools/diffguard/diffguard.py",
+      "usage": "diffguard selftest before trust; diffguard scan --repo <path> --base <ref> [--json]. Exit 0 clean, 1 unjustified hits, 2 unusable input.",
+      "validation": "Registered reusable command 20260907-acquirer-routing/diffguard; the Fleet reruns its selftest before every integrated scan."
+    },
+    {
+      "name": "fake-harness",
+      "purpose": "Behave like Claude Code, Codex and OpenCode with deterministic hooks, state, local APIs, resume targets, drift and failure cases for credential-free E2E.",
+      "status": "planned",
+      "usage": "Built by the foundation and extended by each harness unit; exercised by cargo tests and the integrated E2E suite.",
+      "validation": "Must demonstrate duplicate, out-of-order, missing, paginated, truncated, unknown-version and exact-resume worlds before acceptance."
+    },
+    {
+      "name": "native-tauri-qa",
+      "purpose": "Drive the packaged Tauri app with WebdriverIO's Tauri service so browser-only rendering cannot masquerade as native desktop support.",
+      "status": "planned",
+      "usage": "Project package script test:e2e:tauri against an integrated built artifact; captures revisioned screenshots and logs.",
+      "validation": "Known-bad blank/failed startup and missing native artifact must fail or block, never fall back silently to browser mode."
+    },
+    {
+      "name": "jev-qa",
+      "purpose": "Give a Haiku checker a concise declarative browser batch for critical interactions, parallel case isolation and screenshot-backed PASS/ERROR/BLOCKED evidence.",
+      "status": "reused",
+      "path": "/home/lucas/.codex/skills/jev-qa/run.mjs",
+      "usage": "Validate .claude/fleets/20260919-cutokyo-v01/jev-cases.yaml with run.mjs, run that unchanged batch once using /home/lucas/.config/jev-qa.env, then inspect every screenshot; browser results supplement rather than replace native Tauri QA.",
+      "validation": "Workflow acceptance requires the exact eight case keys, validated batch/report paths, PASS status, nonempty action evidence and screenshots all explicitly read."
+    }
+  ],
+  "decisions": [
+    {
+      "title": "One pure domain crate, one I/O core crate",
+      "decision": "Use the repository tree's separate cutokyo-domain crate; keep app/ingest/store/adapters inside cutokyo-core.",
+      "reason": "The compiler can enforce domain purity while app remains the only sibling wiring point.",
+      "change_cost": "High after feature work because every port/import and test fixture depends on it."
+    },
+    {
+      "title": "Atomic rename replaces concurrent JSONL append",
+      "decision": "Each hook writes one one-line event file via temp creation, flush and atomic rename.",
+      "reason": "One append call is not a sufficient cross-platform multi-process integrity contract; per-event files eliminate interleaving and simplify retry.",
+      "change_cost": "Low now; high after hooks and ingest cursors ship."
+    },
+    {
+      "title": "Native capture precedes explicit proxy consent",
+      "decision": "Automatic fallthrough ends before proxy; users must opt in and see persistent active coverage.",
+      "reason": "Proxy fidelity carries a qualitatively higher trust cost and cannot be an invisible fallback.",
+      "change_cost": "Moderate because setup, coverage, UI and source resolution all encode it."
+    },
+    {
+      "title": "One native CLI distributed through cargo-dist and npm",
+      "decision": "The npm package downloads the platform binary rather than implementing commands in TypeScript.",
+      "reason": "A second CLI would drift in behavior, schema and security while violating the requested simple install intent.",
+      "change_cost": "Low before package publication, high afterward."
+    },
+    {
+      "title": "Read-only agent MCP is separate from the central MCP broker",
+      "decision": "Cutokyo data tools cannot mutate; upstream routing/configuration lives in a separately controlled broker surface.",
+      "reason": "Combining them would accidentally grant setup/config mutation to any agent allowed to search history.",
+      "change_cost": "Moderate; manifests and harness setup depend on the split."
+    },
+    {
+      "title": "No predecessor data migration",
+      "decision": "Use a clean v0.x database/config namespace and import no old installation automatically.",
+      "reason": "The new public contract changes storage, identity and provenance fundamentally; the user said the predecessor is not intended for continued use.",
+      "change_cost": "Low now; importing later becomes an explicit one-way tool if real demand exists."
+    },
+    {
+      "title": "Privacy minimum ships despite deferred enterprise security",
+      "decision": "Local/no-telemetry defaults, keychain secrets, consented egress, redaction and safe bundles are release blockers; enterprise DLP/tenancy is not.",
+      "reason": "Durable transcripts, plugins and a proxy create unavoidable baseline obligations even when advanced security is out of scope.",
+      "change_cost": "Very high if postponed because every persistence and logging boundary would need retrofit."
+    },
+    {
+      "title": "Native Tauri evidence is mandatory",
+      "decision": "Browser screenshots and Playwright/WebDriver browser tests are supplemented by WebdriverIO Tauri-service journeys and packaged startup.",
+      "reason": "Tauri can render correctly in a browser while its native webview is blank or inaccessible on a target OS.",
+      "change_cost": "Low as a design constraint; expensive if added after UI architecture hardens."
+    },
+    {
+      "title": "Release automation is built and dry-run, not published",
+      "decision": "The Fleet produces installable artifacts and validates release plans but creates no tag, npm publication, GitHub release or updater.",
+      "reason": "Building the product authorizes implementation and verification, not irreversible publication or use of signing credentials.",
+      "change_cost": "None; publishing can follow a separately approved release."
+    },
+    {
+      "title": "Ten roles, six parallel feature branches",
+      "decision": "Foundation/core are sequential; Claude, Codex, OpenCode, extensions, CLI/ops and desktop fan out only after the core merges; command, product and technical acceptance remain independent.",
+      "reason": "This maximizes parallelism without letting builders invent incompatible storage/app contracts or approve their own work.",
+      "change_cost": "Moderate; role ownership and feedback routing are encoded in the workflow."
+    },
+    {
+      "title": "The predecessor is behavior-only clean-room input",
+      "decision": "No predecessor code, schema, test, fixture, prose, UI, asset, workflow, generated artifact, history or data is donated or migrated; builders work from independently worded contracts, public documentation and newly authored synthetic evidence.",
+      "reason": "The local predecessor has no repository-wide license grant, while its failure modes remain valuable requirements and threat-model evidence.",
+      "change_cost": "Low before implementation; potentially prohibitive after copied expression enters history, so provenance is a foundation gate."
+    },
+    {
+      "title": "Haiku JEV is a required supplemental browser judge",
+      "decision": "A dedicated Haiku role loads the installed jev-qa skill, validates and runs eight critical browser cases once per verification round, reads every screenshot, and blocks acceptance on ERROR, BLOCKED or incomplete evidence without replacing native QA.",
+      "reason": "A second inexpensive probabilistic observer catches interaction and visual inconsistencies independently while preserving the stronger native-Tauri and product-QA evidence boundaries.",
+      "change_cost": "Low in the design; removing it later would change the independent acceptance contract and evidence graph."
+    }
+  ]
+}

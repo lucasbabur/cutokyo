@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.cutokyo.dev/plugin-protocol/v1",
+  "title": "Cutokyo plugin JSON-line message v1",
+  "description": "Bidirectional subprocess envelope. Hosts validate every line before dispatch.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_major", "kind", "request_id", "payload"],
+  "properties": {
+    "protocol_major": { "const": 1 },
+    "kind": {
+      "enum": ["handshake", "request", "response", "cancel", "telemetry", "error"]
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_.:@/-]+$"
+    },
+    "payload": {
+      "type": "object",
+      "maxProperties": 64
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "const": "handshake" } }, "required": ["kind"] },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["plugin_id", "plugin_kind", "capabilities"],
+            "properties": {
+              "plugin_id": { "$ref": "#/$defs/identifier" },
+              "plugin_kind": { "enum": ["source", "processor"] },
+              "capabilities": {
+                "type": "array",
+                "uniqueItems": true,
+                "maxItems": 8,
+                "items": {
+                  "enum": ["transcript_read", "network", "emit_observation", "emit_derived_fact"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "cancel" } }, "required": ["kind"] },
+      "then": {
+        "properties": { "payload": { "type": "object", "maxProperties": 0 } }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9_.:/@-]+$"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+target
+node_modules
+ui/coverage
+ui/dist
+Cargo.lock
+LICENSE
+.claude/fleets/**/index.html

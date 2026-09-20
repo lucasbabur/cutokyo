@@ -1,0 +1,67 @@
+name: Bug report
+description: Report reproducible incorrect Cutokyo behavior using synthetic evidence
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include secrets, prompts, transcripts, provider headers, full local paths, or predecessor material. Security issues follow SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: Cutokyo version or revision
+      placeholder: 0.x.y or full commit
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - CLI
+        - Desktop
+        - Claude Code capture
+        - Codex capture
+        - OpenCode capture
+        - SQLite or spool
+        - Plugin or MCP
+        - Proxy, guard, or analysis
+        - Build or packaging
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Synthetic reproduction
+      description: Give exact steps using invented or redacted data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and coverage state
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform and architecture
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: I removed secrets, transcripts, provider headers, and full personal paths.
+          required: true
+        - label: This is not a confidential security report.
+          required: true

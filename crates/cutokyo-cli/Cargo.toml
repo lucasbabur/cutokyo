@@ -1,0 +1,20 @@
+[package]
+name = "cutokyo-cli"
+description = "Native command-line frontend for Cutokyo"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[[bin]]
+name = "cutokyo"
+path = "src/main.rs"
+
+[dependencies]
+cutokyo-core.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

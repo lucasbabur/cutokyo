@@ -1,0 +1,21 @@
+{
+  "name": "@cutokyo/ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "generate:settings": "node ../tools/generate-settings-types.mjs",
+    "check:settings": "node ../tools/generate-settings-types.mjs --check",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint src",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "check": "pnpm check:settings && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test"
+  },
+  "devDependencies": {
+    "oxlint": "1.83.0",
+    "prettier": "3.9.8",
+    "typescript": "7.0.2",
+    "vitest": "5.0.1"
+  }
+}

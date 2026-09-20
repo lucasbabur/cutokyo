@@ -1,0 +1,14 @@
+/target/
+/node_modules/
+/ui/node_modules/
+/ui/coverage/
+/ui/dist/
+*.log
+__pycache__/
+*.py[cod]
+.DS_Store
+.idea/
+.vscode/
+.env
+.env.*
+!.env.example

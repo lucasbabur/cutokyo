@@ -1,0 +1,28 @@
+{
+  "record_version": 1,
+  "record_type": "projected_fact",
+  "record": {
+    "derive_version": 1,
+    "session_id": "session:opencode:4",
+    "fact_kind": "tokens",
+    "value": 0,
+    "raw_observation_ids": [],
+    "provenance": {
+      "channel": "local_state",
+      "captured_at": "2026-09-19T12:00:00Z",
+      "native": {
+        "event_id": null,
+        "resume_id": null,
+        "session_key": "opencode:4",
+        "sequence": null
+      },
+      "parser_version": "fixture-1",
+      "confidence": "estimated",
+      "coverage": {
+        "state": "partial",
+        "scope": "synthetic usage",
+        "gaps": ["raw evidence link"]
+      }
+    }
+  }
+}

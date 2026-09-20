@@ -1,0 +1,31 @@
+# Independent implementation and test decision ledger
+
+This ledger traces requirements to newly authored implementation and test locations.
+“Pending independent review” is deliberate: foundation authorship is not reviewer
+approval. Review status must be updated only from an actual review.
+
+| Key | Independently written requirement | New author/source | Implementation locations | Test/evidence locations | Review status |
+| --- | --- | --- | --- | --- | --- |
+| DL-001 | Pure domain values and ports have no I/O capabilities. | Foundation architect from product contract and public Rust boundaries. | `crates/cutokyo-domain/`, `crates/cutokyo-core/src/app.rs` | `tests/architecture.rs`, static architecture gate mutation | Pending independent review |
+| DL-002 | Central errors expose stable safe codes and field context. | Foundation architect. | `crates/cutokyo-domain/src/error.rs` | Domain/core tests and later CLI JSON tests | Pending independent review |
+| DL-003 | Native capture wins; proxy requires explicit consent. | Foundation architect from capture contract. | `crates/cutokyo-core/src/adapters.rs`, ADR 0002 | Core adapter tests, `tests/pipeline.rs` | Pending independent review |
+| DL-004 | Raw evidence and every projection retain provenance and uncertainty. | Foundation architect from truth model. | `crates/cutokyo-domain/src/model.rs`, domain schema | Domain tests and domain good/bad fixtures | Pending independent review |
+| DL-005 | Hooks write one flushed event by atomic rename; quarantine precedes cursor. | Foundation architect from spool contract. | `crates/cutokyo-core/src/ingest.rs`, spool schema, ADR 0004 | Spool good/bad fixtures; concrete pipeline deferred to core unit | Pending independent review |
+| DL-006 | One owner writes SQLite with fixed pragmas and online backup. | Foundation architect from SQLite public docs and contract. | `crates/cutokyo-core/src/store.rs`, ADR 0001 | Foundation snapshot test; real SQLite/concurrency tests deferred to core unit | Pending independent review |
+| DL-007 | Settings writes are omission-preserving patches from one schema. | Foundation architect. | settings schema, `settings.rs`, generated TypeScript type and generator | Rust and Vitest patch tests; schema fixtures | Pending independent review |
+| DL-008 | Plugin protocol has a major handshake, capabilities, runtime validation, and bounds. | Foundation architect from public MCP/process patterns and contract. | plugin schema, ADR 0006, `docs/plugin-authoring.md` | plugin good/bad fixtures; host mutation suite deferred to extensions unit | Pending independent review |
+| DL-009 | Fake worlds model duplicates, out-of-order delivery, exact native resume IDs, and coverage. | Foundation architect using invented synthetic values. | `tools/fake-harness`, synthetic harness fixture | fake-harness unit tests and `tests/e2e.rs` | Pending independent review |
+| DL-010 | Fake provider and MCP endpoints are deterministic and credential-free. | Foundation architect using invented synthetic values. | `tools/fake-harness/src/lib.rs` | endpoint tests and `tests/e2e.rs` | Pending independent review |
+| DL-011 | Persisted/public version surfaces evolve independently. | Foundation architect. | ADR 0007, app contract snapshot, schemas | `tests/upgrade.rs`, unknown-major fixture | Pending independent review |
+| DL-012 | Static gates reject missing layout, domain I/O, broken contracts, legal gaps, CI gaps, and scope gaps. | Fleet design plus foundation architect selftest extensions. | `tools/fleet/cutokyo-gates.py` | built-in complete-good and per-gate targeted mutation selftests | Pending independent review |
+| DL-013 | Foundation source and documentation are clean-room authored. | Foundation architect from Fleet context and public references only. | all product/docs files in initial commit | legal/scope gates and this ledger | Pending independent review |
+| DL-014 | Dependency choices use maintained libraries rather than custom substitutes. | Foundation architect from registry/upstream research on 2026-09-19. | workspace manifests, ADR 0008, `THIRD_PARTY.md` | Cargo metadata, cargo-deny, lockfile | Pending independent review |
+| DL-015 | CLI and desktop composition roots invoke application services rather than store internals. | Foundation architect. | `crates/cutokyo-cli`, `crates/cutokyo-desktop` | architecture tests and Cargo metadata | Pending independent review |
+| DL-016 | Golden fixture registry fails on missing fixtures and bad/good inversions. | Foundation architect using synthetic data. | `fixtures/registry.json`, schemas and fixtures | `tests/pipeline.rs`, static contract gate selftests | Pending independent review |
+
+## Update rule
+
+Every behavior addition records a new row or extends an existing row in the same
+commit. An implementation path without a meaningful behavioral test is marked
+deferred and cannot be reported complete. Reviewer approval includes reviewer role,
+revision, and date; it is never inferred from a passing author-run command.

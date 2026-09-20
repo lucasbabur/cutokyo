@@ -1,0 +1,76 @@
+name: Release plan and authorized build
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Plan only; publication remains separately authorized
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  release-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Require dry-run mode until signing and publication are separately approved
+        run: test "${{ inputs.dry_run }}" = "true"
+      - name: Validate cargo-dist release plan without publishing
+        run: |
+          cargo install cargo-dist --version 0.32.0 --locked
+          dist plan --output-format=json > cargo-dist-plan.json
+      - name: Build SBOM input graph
+        run: |
+          cargo metadata --format-version=1 > sbom-cargo-metadata.json
+          printf '%s\n' 'sbom generation is completed by the distribution unit before release' > sbom-status.txt
+      - name: Compute sha256 plan checksums
+        run: sha256sum cargo-dist-plan.json sbom-cargo-metadata.json > sha256.txt
+      - name: Preserve dry-run plans
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-plan-only
+          path: |
+            cargo-dist-plan.json
+            sbom-cargo-metadata.json
+            sbom-status.txt
+            sha256.txt
+      - name: Build provenance for dry-run plans
+        uses: actions/attest-build-provenance@96b4a1ef7235a096b17240c259729fdd70c83d45 # v2
+        with:
+          subject-path: cargo-dist-plan.json
+
+  native-desktop-dry-run:
+    name: Native desktop dry run (${{ matrix.os }})
+    needs: release-contract
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22.22.3"
+          cache: pnpm
+      - name: Enable pinned pnpm
+        run: corepack enable && corepack prepare pnpm@11.25.0 --activate
+      - name: Install locked Tauri CLI
+        run: pnpm install --frozen-lockfile
+      - name: Install Linux native desktop prerequisites
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - name: Build unsigned native package without publishing
+        uses: tauri-apps/tauri-action@fce9c6108b31ea247710505d3aaaa893ee6768d4 # v0
+        with:
+          projectPath: crates/cutokyo-desktop
+          tauriScript: pnpm --dir ../.. tauri
+          args: --debug --features desktop-runtime

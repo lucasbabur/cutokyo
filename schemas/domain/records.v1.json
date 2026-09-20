@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.cutokyo.dev/domain/records/v1",
+  "title": "Cutokyo serialized domain record v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["record_version", "record_type", "record"],
+  "properties": {
+    "record_version": { "const": 1 },
+    "record_type": { "enum": ["raw_observation", "projected_fact"] },
+    "record": { "type": "object" }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "record_type": { "const": "raw_observation" },
+        "record": { "$ref": "#/$defs/rawObservation" }
+      }
+    },
+    {
+      "properties": {
+        "record_type": { "const": "projected_fact" },
+        "record": { "$ref": "#/$defs/projectedFact" }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9_.:/@-]+$"
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "scope", "gaps"],
+      "properties": {
+        "state": {
+          "enum": ["complete", "partial", "disabled", "unavailable", "unknown_version"]
+        },
+        "scope": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "gaps": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "type": "string", "minLength": 1, "maxLength": 256 }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "channel",
+        "captured_at",
+        "native",
+        "parser_version",
+        "confidence",
+        "coverage"
+      ],
+      "properties": {
+        "channel": {
+          "enum": [
+            "hook_or_plugin",
+            "local_api",
+            "open_telemetry",
+            "harness_cli",
+            "local_state",
+            "file_watch_trigger",
+            "provider_usage_api",
+            "consented_proxy",
+            "tui_scrape",
+            "user_declaration"
+          ]
+        },
+        "captured_at": { "type": "string", "format": "date-time" },
+        "native": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["event_id", "resume_id", "session_key", "sequence"],
+          "properties": {
+            "event_id": { "type": ["string", "null"], "maxLength": 256 },
+            "resume_id": { "type": ["string", "null"], "maxLength": 256 },
+            "session_key": { "$ref": "#/$defs/identifier" },
+            "sequence": { "type": ["integer", "null"], "minimum": 0 }
+          }
+        },
+        "parser_version": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "confidence": {
+          "enum": ["observed", "estimated", "user_declared", "conflicting", "unknown"]
+        },
+        "coverage": { "$ref": "#/$defs/coverage" }
+      }
+    },
+    "rawObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observation_id",
+        "harness",
+        "observed_at",
+        "kind",
+        "source",
+        "payload"
+      ],
+      "properties": {
+        "observation_id": { "$ref": "#/$defs/identifier" },
+        "harness": { "enum": ["claude_code", "codex", "opencode"] },
+        "observed_at": { "type": "string", "format": "date-time" },
+        "kind": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "source": { "$ref": "#/$defs/provenance" },
+        "payload": {
+          "type": ["object", "array", "string", "number", "boolean", "null"]
+        }
+      }
+    },
+    "projectedFact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "derive_version",
+        "session_id",
+        "fact_kind",
+        "value",
+        "raw_observation_ids",
+        "provenance"
+      ],
+      "properties": {
+        "derive_version": { "type": "integer", "minimum": 1 },
+        "session_id": { "$ref": "#/$defs/identifier" },
+        "fact_kind": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "value": {
+          "description": "JSON null means unknown and must not be displayed as zero.",
+          "type": ["object", "array", "string", "number", "boolean", "null"]
+        },
+        "raw_observation_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    }
+  }
+}
