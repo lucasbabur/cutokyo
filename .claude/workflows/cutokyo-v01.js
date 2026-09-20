@@ -418,8 +418,13 @@ if (!coreMerge || !coreMerge.done) {
 }
 
 phase('Feature build')
-log('Building harness adapters, extension plane, CLI/operations, and desktop from the same integrated core.')
-const features = await parallel([
+const resumedFeatures = args?.features
+if (resumedFeatures) {
+  log('Reusing six recovered feature handoffs after coordinator recovery.')
+} else {
+  log('Building harness adapters, extension plane, CLI/operations, and desktop from the same integrated core.')
+}
+const features = resumedFeatures ?? await parallel([
   () => agent(
     `${commonAssignment('harness-claude')}
 
