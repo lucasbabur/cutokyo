@@ -23,6 +23,18 @@ pub enum Harness {
     OpenCode,
 }
 
+impl Harness {
+    /// Returns the stable serialized harness key.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::ClaudeCode => "claude_code",
+            Self::Codex => "codex",
+            Self::OpenCode => "opencode",
+        }
+    }
+}
+
 /// Ordered capture channels; smaller priorities outrank larger priorities.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -119,6 +131,33 @@ pub struct Coverage {
     pub gaps: Vec<String>,
 }
 
+impl Coverage {
+    /// Validates bounded, non-secret coverage labels.
+    ///
+    /// # Errors
+    ///
+    /// Returns invalid input for an empty scope, too many gaps, or an empty or
+    /// oversized gap label.
+    pub fn validate(&self) -> Result<()> {
+        validate_text("coverage.scope", &self.scope, 1, 512)?;
+        if self.gaps.len() > 32 {
+            return Err(ContractError::new(
+                ErrorCode::InvalidInput,
+                "coverage may contain at most 32 gaps",
+            )
+            .at_field(
+                "coverage.gaps",
+                "at most 32 entries",
+                self.gaps.len().to_string(),
+            ));
+        }
+        for gap in &self.gaps {
+            validate_text("coverage.gaps[]", gap, 1, 256)?;
+        }
+        Ok(())
+    }
+}
+
 /// Native identities preserved independently from Cutokyo projection IDs.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -131,6 +170,26 @@ pub struct NativeIdentity {
     pub session_key: String,
     /// Native sequence number, which is not sufficient as an observation ID.
     pub sequence: Option<u64>,
+}
+
+impl NativeIdentity {
+    /// Validates portable session identity and bounded native IDs.
+    ///
+    /// # Errors
+    ///
+    /// Returns invalid input when a known ID exceeds its serialized contract or
+    /// the session key is not a portable identifier.
+    pub fn validate(&self) -> Result<()> {
+        SessionId::parse(self.session_key.clone()).map_err(|_| {
+            ContractError::new(
+                ErrorCode::InvalidInput,
+                "native session key is not a portable identifier",
+            )
+            .at_field("native.session_key", "portable identifier", "invalid")
+        })?;
+        validate_optional_text("native.event_id", self.event_id.as_deref(), 256)?;
+        validate_optional_text("native.resume_id", self.resume_id.as_deref(), 256)
+    }
 }
 
 /// Provenance required on every raw observation and normalized fact.
@@ -149,6 +208,19 @@ pub struct SourceProvenance {
     pub confidence: Confidence,
     /// Surface coverage, including unknown and unavailable states.
     pub coverage: Coverage,
+}
+
+impl SourceProvenance {
+    /// Validates all bounded native, parser, and coverage metadata.
+    ///
+    /// # Errors
+    ///
+    /// Returns invalid input when provenance cannot satisfy the wire contract.
+    pub fn validate(&self) -> Result<()> {
+        self.native.validate()?;
+        validate_text("parser_version", &self.parser_version, 1, 64)?;
+        self.coverage.validate()
+    }
 }
 
 /// Immutable evidence accepted from a capture boundary.
@@ -188,7 +260,7 @@ impl RawObservation {
                 format!("{} bytes", self.kind.len()),
             ));
         }
-        Ok(())
+        self.source.validate()
     }
 }
 
@@ -217,14 +289,35 @@ impl ProjectedFact {
     ///
     /// Returns an invalid-contract error when no raw observation is linked.
     pub fn validate(&self) -> Result<()> {
-        if self.raw_observation_ids.is_empty() {
+        if self.derive_version == 0 {
             return Err(ContractError::new(
                 ErrorCode::InvalidContract,
-                "projected fact must reference at least one raw observation",
-            )
-            .at_field("raw_observation_ids", "one or more IDs", "empty"));
+                "projected fact derive version must be positive",
+            ));
         }
-        Ok(())
+        validate_text("fact_kind", &self.fact_kind, 1, 128)?;
+        if self.raw_observation_ids.is_empty() || self.raw_observation_ids.len() > 128 {
+            return Err(ContractError::new(
+                ErrorCode::InvalidContract,
+                "projected fact must reference between 1 and 128 raw observations",
+            )
+            .at_field(
+                "raw_observation_ids",
+                "1 to 128 unique IDs",
+                self.raw_observation_ids.len().to_string(),
+            ));
+        }
+        let unique = self
+            .raw_observation_ids
+            .iter()
+            .collect::<std::collections::BTreeSet<_>>();
+        if unique.len() != self.raw_observation_ids.len() {
+            return Err(ContractError::new(
+                ErrorCode::InvalidContract,
+                "projected fact raw observation IDs must be unique",
+            ));
+        }
+        self.provenance.validate()
     }
 }
 
@@ -275,9 +368,31 @@ pub enum DomainRecord {
     ProjectedFact(ProjectedFact),
 }
 
+fn validate_text(label: &str, value: &str, minimum: usize, maximum: usize) -> Result<()> {
+    if value.len() < minimum || value.len() > maximum {
+        return Err(ContractError::new(
+            ErrorCode::InvalidInput,
+            format!("{label} must contain {minimum} to {maximum} bytes"),
+        )
+        .at_field(
+            label,
+            format!("{minimum} to {maximum} bytes"),
+            format!("{} bytes", value.len()),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_optional_text(label: &str, value: Option<&str>, maximum: usize) -> Result<()> {
+    if let Some(value) = value {
+        validate_text(label, value, 1, maximum)?;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{CaptureChannel, Confidence};
+    use super::{CaptureChannel, Confidence, NativeIdentity};
 
     #[test]
     fn provenance_precedence_is_stable() {
@@ -292,5 +407,16 @@ mod tests {
     fn unknown_is_not_equal_to_an_estimate() {
         assert_ne!(Confidence::Unknown, Confidence::Estimated);
         assert_ne!(Confidence::UserDeclared, Confidence::Observed);
+    }
+
+    #[test]
+    fn known_native_ids_cannot_be_empty() {
+        let native = NativeIdentity {
+            event_id: Some(String::new()),
+            resume_id: None,
+            session_key: "session:test".to_owned(),
+            sequence: None,
+        };
+        assert!(native.validate().is_err());
     }
 }

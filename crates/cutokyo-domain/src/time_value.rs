@@ -8,7 +8,7 @@ use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 use crate::{ContractError, ErrorCode, Result};
 
 /// An RFC 3339 timestamp preserved in its input representation.
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(transparent)]
 pub struct Timestamp(String);
 
@@ -31,6 +31,32 @@ impl Timestamp {
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+
+    /// Returns this instant as a Unix timestamp for ordering and interval checks.
+    ///
+    /// This cannot fail because construction and deserialization validate RFC 3339.
+    #[must_use]
+    pub fn unix_timestamp(&self) -> i64 {
+        OffsetDateTime::parse(&self.0, &Rfc3339)
+            .map_or(i64::MIN, time::OffsetDateTime::unix_timestamp)
+    }
+
+    /// Creates a canonical UTC timestamp from a Unix timestamp.
+    ///
+    /// # Errors
+    ///
+    /// Returns invalid input if the timestamp is outside the supported date range.
+    pub fn from_unix_timestamp(value: i64) -> Result<Self> {
+        let timestamp =
+            OffsetDateTime::from_unix_timestamp(value).map_err(|_| {
+                ContractError::new(ErrorCode::InvalidInput, "Unix timestamp is out of range")
+                    .at_field("timestamp", "supported Unix timestamp", "out of range")
+            })?;
+        let formatted = timestamp
+            .format(&Rfc3339)
+            .map_err(|_| ContractError::new(ErrorCode::Internal, "timestamp formatting failed"))?;
+        Ok(Self(formatted))
     }
 }
 

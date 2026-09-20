@@ -5,7 +5,7 @@ This foundation ships no copied fonts, images, icons, or predecessor assets.
 
 ## Direct Rust dependencies
 
-Metadata was verified from crates.io and each upstream repository on 2026-09-19.
+Metadata was verified from crates.io and each upstream repository on 2026-09-20.
 Exact active versions are in `Cargo.lock`; optional researched dependencies are not
 shipped until their feature implementation enables them.
 
@@ -16,21 +16,21 @@ shipped until their feature implementation enables them.
 | time | 0.3.55 | MIT OR Apache-2.0 | RFC 3339 parsing without I/O |
 | jsonschema | 0.56.0 | MIT | Draft 2020-12 fixture validation; remote resolution disabled |
 | tempfile | 3.27.0 | MIT OR Apache-2.0 | Isolated architecture mutation tests |
+| uuid | 1.26.1 | Apache-2.0 OR MIT | Collision-resistant temporary and spool filenames |
+| rusqlite | 0.40.2 | MIT | Bundled SQLite, FTS5, pragmas, and the online backup API |
+| rusqlite_migration | 2.6.0 | Apache-2.0 | Forward-only SQLite migration runner |
+| fs4 | 1.1.0 | MIT OR Apache-2.0 | Cross-platform database-writer and spool-publication file locks |
+| sha2 | 0.11.0 | MIT OR Apache-2.0 | SHA-256 observation identities and backup digests |
 | tauri | 2.11.5 | Apache-2.0 OR MIT | Optional desktop-runtime dependency; stable v2 |
 | tauri-build | 2.6.3 | Apache-2.0 OR MIT | Official Tauri build-context generator |
-
-`uuid` 1.26.1 (Apache-2.0 OR MIT) and `thiserror` 2.0.20 (MIT OR Apache-2.0)
-are pinned workspace choices but are not active foundation dependencies yet.
 
 ## Researched feature dependencies
 
 | Package | Planned version | License | Decision |
 | --- | ---: | --- | --- |
-| rusqlite | 0.40.2 | MIT | Use for bundled SQLite, FTS5, and online backup instead of custom FFI |
-| rusqlite_migration | 2.6.0 | Apache-2.0 | Use for forward-only schema migrations instead of a custom runner |
 | rmcp | 3.4.0 | Apache-2.0 | Use the official Rust MCP SDK instead of a custom MCP stack |
 
-These rows record a researched direction, not a claim that the corresponding feature
+This row records a researched direction, not a claim that the corresponding feature
 is implemented or distributed. See ADR 0008.
 
 ## JavaScript development dependencies
