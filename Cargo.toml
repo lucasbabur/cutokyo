@@ -20,6 +20,7 @@ authors = ["Cutokyo contributors"]
 [workspace.dependencies]
 cutokyo-domain = { path = "crates/cutokyo-domain", version = "0.1.0" }
 cutokyo-core = { path = "crates/cutokyo-core", version = "0.1.0" }
+cutokyo-cli = { path = "crates/cutokyo-cli", version = "0.1.0" }
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = "=1.0.150"
 time = { version = "=0.3.55", features = ["formatting", "parsing", "serde"] }

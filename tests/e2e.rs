@@ -1,8 +1,9 @@
 //! Deterministic fake endpoint and adverse-world integration checks.
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     fs,
+    io::{self, Read as _},
     sync::{
         Arc, Mutex, PoisonError,
         atomic::{AtomicUsize, Ordering},
@@ -10,6 +11,10 @@ use std::{
     time::Duration,
 };
 
+use cutokyo_cli::{
+    bundle as cli_bundle,
+    logging::{self as cli_logging, CRASH_RECORD_MAX_BYTES, LogOptions, PENDING_CRASH_NOTICE},
+};
 use cutokyo_core::{
     adapters::{
         CaptureDecision,
@@ -32,7 +37,10 @@ use cutokyo_core::{
         AnalysisService, AnalysisSummarySink, CredentialOrigin, CredentialSource,
         ProviderCredential,
     },
-    app::{Application, DELETE_ALL_CONFIRMATION, LocalCore, SessionSearch},
+    app::{
+        Application, DELETE_ALL_CONFIRMATION, LocalCore, RuntimePaths, SessionSearch,
+        SettingsOverrides,
+    },
     bundle::{BundleDiagnostic, build_diagnostic_bundle},
     guards::{BufferedSecretGuard, GuardChannel, REDACTION_MARKER, SecretGuard},
     mcp::{
@@ -45,7 +53,10 @@ use cutokyo_core::{
         ProviderTransport, ProxyConfig, ProxyConsent, ProxyErrorCode, ProxyFactAvailability,
         ProxyListenerReceipt, ProxyRoute, ProxyTrace, ProxyTraceSink,
     },
-    store::{DiagnosticRowCounts, LockOwner, RetentionPlan, SearchQuery, SearchResult},
+    store::{
+        DATABASE_SCHEMA_VERSION, DERIVE_VERSION, DiagnosticRowCounts, HealthDimension,
+        HealthSnapshot, HealthStatus, LockOwner, RetentionPlan, SearchQuery, SearchResult,
+    },
 };
 use cutokyo_domain::{
     Attribution, CaptureChannel, Confidence, Coverage, CoverageState, ErrorCode, Harness,
@@ -58,6 +69,7 @@ use fake_harness::{
     FakeCodexProcessRunner, FakeMcpEndpoint, FakeMcpServer, FakeOpenCodeSpawner,
     FakeProviderEndpoint, FakeWorld, FixtureCoverage, HarnessScenario, ProviderRequest,
 };
+use flate2::read::GzDecoder;
 use rmcp::model::{CallToolResult, ContentBlock, Tool, ToolAnnotations};
 use serde_json::{Map, Value, json};
 use tokio_util::sync::CancellationToken;
@@ -2253,5 +2265,813 @@ async fn analysis_preview_cancel_retry_idempotency() -> Result<(), Box<dyn std::
             .as_slice(),
         [receipt.summary]
     );
+    Ok(())
+}
+
+fn c16_observation(id: &str, sequence: u64, text: &str) -> TestResult<RawObservation> {
+    Ok(raw_session_observation(RawSessionSpec {
+        observation_id: id,
+        harness: Harness::ClaudeCode,
+        session_id: "session:c16:health",
+        native_session_key: "native:c16:health",
+        native_resume_id: "resume:c16:health",
+        observed_at: "2026-09-20T12:30:00Z",
+        native_event_id: Some(format!("event:c16:{sequence}")),
+        sequence: Some(sequence),
+        coverage: complete_coverage("C16 persisted-health integration fixture"),
+        payload: json!({
+            "message_id": format!("message:c16:{sequence}"),
+            "text": text,
+            "project": "c16-fixture",
+            "project_path": "/synthetic/c16-fixture"
+        }),
+    })?)
+}
+
+fn read_bundle_entries(path: &std::path::Path) -> TestResult<BTreeMap<String, Vec<u8>>> {
+    let input = fs::File::open(path)?;
+    let mut archive = tar::Archive::new(GzDecoder::new(input));
+    let mut entries = BTreeMap::new();
+    for entry in archive.entries()? {
+        let mut entry = entry?;
+        if !entry.header().entry_type().is_file() {
+            continue;
+        }
+        let name = entry.path()?.to_string_lossy().into_owned();
+        let mut bytes = Vec::new();
+        entry.read_to_end(&mut bytes)?;
+        if entries.insert(name.clone(), bytes).is_some() {
+            return Err(
+                io::Error::other(format!("diagnostic bundle repeated entry {name}")).into(),
+            );
+        }
+    }
+    Ok(entries)
+}
+
+fn health_dimension<'a>(
+    snapshot: &'a HealthSnapshot,
+    key: &str,
+) -> TestResult<&'a HealthDimension> {
+    snapshot
+        .dimensions
+        .get(key)
+        .ok_or_else(|| io::Error::other(format!("health dimension {key} is missing")).into())
+}
+
+const PROMPT_SENTINEL: &str = "PromptContentC16-9f31";
+const TRANSCRIPT_SENTINEL: &str = "TranscriptContentC16-7a42";
+const RAW_SECRET_SENTINEL: &str = "github_pat_C16SyntheticSecret_1234567890abcdef";
+const DATABASE_SENTINEL: &str = "DatabaseBytesC16-5c64";
+const BACKUP_SENTINEL: &str = "BackupBytesC16-4d75";
+const SPOOL_SENTINEL: &str = "SpoolBytesC16-3e86";
+const OVERSIZED_SENTINEL: &str = "OversizedEventC16-2f97";
+const SYNTHETIC_FULL_PATH: &str = "/synthetic/private/c16-project/session.jsonl";
+const MALFORMED_HEALTH_ENTRY: &str = "c16-malformed-health.jsonl";
+
+fn exercise_bounded_logs(root: &std::path::Path, paths: &RuntimePaths) -> TestResult {
+    let (guard, dispatch) = cli_logging::build_dispatch(paths, LogOptions::bounded(768, 2)?)?;
+    let unsafe_log_value = format!(
+        "{PROMPT_SENTINEL} {TRANSCRIPT_SENTINEL} {RAW_SECRET_SENTINEL} {SYNTHETIC_FULL_PATH} {} {DATABASE_SENTINEL} {BACKUP_SENTINEL} {SPOOL_SENTINEL}",
+        root.display()
+    );
+    tracing::dispatcher::with_default(&dispatch, || {
+        let padding = "rotation-padding".repeat(13);
+        for index in 0_u64..14 {
+            tracing::info!(
+                target: "cutokyo_c16",
+                command = "drain", status = "finished", attempted = index,
+                source_detail = %padding, "bounded rotation fixture"
+            );
+        }
+        tracing::info!(
+            target: "cutokyo_c16",
+            command = "bundle", status = "unsafe-source",
+            source_detail = %unsafe_log_value,
+            "content that the bundle projection must discard"
+        );
+        let oversized = format!("{OVERSIZED_SENTINEL}{}", "x".repeat(4_096));
+        tracing::info!(
+            target: "cutokyo_c16",
+            command = "bundle", status = "oversized", source_detail = %oversized,
+            "oversized event"
+        );
+        tracing::info!(
+            target: "cutokyo_c16",
+            command = "doctor", status = "finished", attempted = 1_u64,
+            "writer remains usable after the oversized event"
+        );
+    });
+    guard.flush();
+    drop(dispatch);
+    drop(guard);
+
+    let log_paths = [
+        paths.log_dir.join("cutokyo.jsonl"),
+        paths.log_dir.join("cutokyo.jsonl.1"),
+        paths.log_dir.join("cutokyo.jsonl.2"),
+    ];
+    assert!(log_paths.iter().all(|path| path.is_file()));
+    assert!(!paths.log_dir.join("cutokyo.jsonl.3").exists());
+    let mut source_logs = Vec::new();
+    for path in log_paths {
+        let bytes = fs::read(&path)?;
+        assert!(
+            bytes.len() <= 768,
+            "{} exceeded its byte bound",
+            path.display()
+        );
+        source_logs.extend_from_slice(&bytes);
+    }
+    let source_logs = String::from_utf8(source_logs)?;
+    for expected in [
+        PROMPT_SENTINEL,
+        TRANSCRIPT_SENTINEL,
+        RAW_SECRET_SENTINEL,
+        SYNTHETIC_FULL_PATH,
+        "writer remains usable after the oversized event",
+    ] {
+        assert!(source_logs.contains(expected));
+    }
+    assert!(source_logs.contains(&root.display().to_string()));
+    assert!(!source_logs.contains(OVERSIZED_SENTINEL));
+    Ok(())
+}
+
+fn exercise_crash_record(root: &std::path::Path, paths: &RuntimePaths) -> TestResult {
+    let previous_hook = std::panic::take_hook();
+    cli_logging::install_panic_hook(paths);
+    let panic_payload = format!(
+        "{PROMPT_SENTINEL} {TRANSCRIPT_SENTINEL} {RAW_SECRET_SENTINEL} {}",
+        root.display()
+    );
+    let panic_result = std::panic::catch_unwind(|| {
+        assert!(std::hint::black_box(false), "{panic_payload}");
+    });
+    std::panic::set_hook(previous_hook);
+    assert!(panic_result.is_err());
+
+    let crash_bytes = fs::read(&paths.crash_file)?;
+    assert!(crash_bytes.len() <= CRASH_RECORD_MAX_BYTES);
+    let crash: Value = serde_json::from_slice(&crash_bytes)?;
+    let crash_keys = crash
+        .as_object()
+        .ok_or_else(|| io::Error::other("crash record is not an object"))?
+        .keys()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let expected_keys = [
+        "app_version",
+        "category",
+        "location_file",
+        "location_line",
+        "pid",
+        "schema_version",
+        "thread",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect();
+    assert_eq!(crash_keys, expected_keys);
+    assert_eq!(crash["category"], "panic");
+    let rendered_crash = String::from_utf8(crash_bytes)?;
+    let dynamic_root = root.display().to_string();
+    for forbidden in [
+        PROMPT_SENTINEL,
+        TRANSCRIPT_SENTINEL,
+        RAW_SECRET_SENTINEL,
+        SYNTHETIC_FULL_PATH,
+        dynamic_root.as_str(),
+    ] {
+        assert!(!rendered_crash.contains(forbidden));
+    }
+    #[cfg(unix)]
+    assert_eq!(config_mode(&paths.crash_file)?, Some(0o600));
+
+    let next_launch = RuntimePaths::discover(
+        Some(root.join("config/config.toml")),
+        Some(root.join("data")),
+    )?;
+    assert_eq!(next_launch, *paths);
+    assert!(cli_logging::pending_crash(&next_launch));
+    assert_eq!(
+        cli_logging::pending_crash_notice(&next_launch, false, false),
+        Some(PENDING_CRASH_NOTICE)
+    );
+    assert_eq!(
+        cli_logging::pending_crash_notice(&next_launch, true, false),
+        None
+    );
+    assert_eq!(
+        cli_logging::pending_crash_notice(&next_launch, false, true),
+        None
+    );
+    Ok(())
+}
+
+fn seed_bundle_sources(
+    app: &Application,
+    root: &std::path::Path,
+    paths: &RuntimePaths,
+) -> TestResult {
+    let core = app.open_local(
+        &paths.database_file,
+        &paths.spool_dir,
+        LockOwner::current("c16-bundle", None)?,
+    )?;
+    core.capture(&c16_observation(
+        "obs:c16:bundle:database",
+        10_001,
+        &format!("{PROMPT_SENTINEL} {TRANSCRIPT_SENTINEL} {DATABASE_SENTINEL} {BACKUP_SENTINEL}"),
+    )?)?;
+    assert_eq!(core.drain()?.inserted, 1);
+    let online_backup = root.join("outside-data/online-backup.sqlite3");
+    assert_eq!(core.backup(&online_backup)?.integrity_result, "ok");
+    assert!(fs::read(&paths.database_file)?.starts_with(b"SQLite format 3\0"));
+    assert!(fs::read(&online_backup)?.starts_with(b"SQLite format 3\0"));
+    fs::write(
+        paths.data_dir.join("retained-database-bytes.fixture"),
+        format!("SQLite format 3\0{DATABASE_SENTINEL}"),
+    )?;
+    fs::write(
+        paths.data_dir.join("retained-backup-bytes.fixture"),
+        format!("SQLite format 3\0{BACKUP_SENTINEL}"),
+    )?;
+    core.capture(&c16_observation(
+        "obs:c16:bundle:spool",
+        10_002,
+        &format!("{SPOOL_SENTINEL} {RAW_SECRET_SENTINEL}"),
+    )?)?;
+    let pending_spool = fs::read_dir(&paths.spool_dir)?
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .find(|path| {
+            path.extension()
+                .is_some_and(|extension| extension == "jsonl")
+        })
+        .ok_or_else(|| io::Error::other("pending spool fixture was not written"))?;
+    let spool_bytes = fs::read(pending_spool)?;
+    assert!(
+        spool_bytes
+            .windows(SPOOL_SENTINEL.len())
+            .any(|window| window == SPOOL_SENTINEL.as_bytes())
+    );
+    Ok(())
+}
+
+fn create_bundle_variants(
+    app: &Application,
+    root: &std::path::Path,
+    paths: &RuntimePaths,
+) -> TestResult<BTreeMap<String, Vec<u8>>> {
+    let overrides = SettingsOverrides::default();
+    let config = app.resolve_settings(paths, &overrides)?;
+    let doctor = app.doctor(paths, &overrides);
+    let contract = app.contract_snapshot();
+
+    let without_crash_preview = cli_bundle::preview(paths, false);
+    assert!(!without_crash_preview.crash_record_included);
+    assert!(
+        !without_crash_preview
+            .entries
+            .iter()
+            .any(|entry| entry == "crash/record.json")
+    );
+    assert_eq!(
+        without_crash_preview.excluded,
+        [
+            "prompts",
+            "transcripts",
+            "raw_observations",
+            "raw_secrets",
+            "full_project_paths",
+            "database_bytes",
+            "spool_payloads",
+        ]
+        .into_iter()
+        .map(str::to_owned)
+        .collect::<Vec<_>>()
+    );
+    let without_crash_path = root.join("bundles/without-crash.tar.gz");
+    let without_crash = cli_bundle::create(
+        paths,
+        &without_crash_path,
+        false,
+        &contract,
+        &config,
+        &doctor,
+    )?;
+    assert!(!without_crash.manifest.crash_record_included);
+    assert!(cli_logging::pending_crash(paths));
+    assert!(!read_bundle_entries(&without_crash_path)?.contains_key("crash/record.json"));
+
+    let include_preview = cli_bundle::preview(paths, true);
+    assert!(include_preview.crash_record_included);
+    assert!(
+        include_preview
+            .entries
+            .iter()
+            .any(|entry| entry == "crash/record.json")
+    );
+    let blocked_parent = root.join("not-a-directory");
+    fs::write(
+        &blocked_parent,
+        b"bundle publication must fail below this file",
+    )?;
+    assert!(
+        cli_bundle::create(
+            paths,
+            &blocked_parent.join("failed.tar.gz"),
+            true,
+            &contract,
+            &config,
+            &doctor,
+        )
+        .is_err()
+    );
+    assert!(cli_logging::pending_crash(paths));
+
+    let included_path = root.join("bundles/with-crash.tar.gz");
+    let included = cli_bundle::create(paths, &included_path, true, &contract, &config, &doctor)?;
+    assert!(included.manifest.crash_record_included);
+    assert_eq!(included.sha256.len(), 64);
+    assert!(included.byte_length > 0);
+    assert!(cli_logging::pending_crash(paths));
+    #[cfg(unix)]
+    assert_eq!(config_mode(&included_path)?, Some(0o600));
+    let entries = read_bundle_entries(&included_path)?;
+    let expected = [
+        "coverage.json",
+        "crash/record.json",
+        "doctor.json",
+        "logs/redacted.jsonl",
+        "manifest.json",
+        "row-counts.json",
+        "safe-config.json",
+        "versions.json",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect::<BTreeSet<_>>();
+    assert_eq!(entries.keys().cloned().collect::<BTreeSet<_>>(), expected);
+    Ok(entries)
+}
+
+fn assert_bundle_redaction(
+    root: &std::path::Path,
+    entries: &BTreeMap<String, Vec<u8>>,
+) -> TestResult {
+    let redacted_logs = String::from_utf8(
+        entries
+            .get("logs/redacted.jsonl")
+            .ok_or_else(|| io::Error::other("redacted log projection is missing"))?
+            .clone(),
+    )?;
+    assert!(redacted_logs.contains("doctor"));
+    assert!(redacted_logs.contains("finished"));
+    assert!(!redacted_logs.contains("source_detail"));
+    let safe_crash: Value = serde_json::from_slice(
+        entries
+            .get("crash/record.json")
+            .ok_or_else(|| io::Error::other("safe crash projection is missing"))?,
+    )?;
+    assert_eq!(safe_crash["category"], "panic");
+    assert!(safe_crash.get("payload").is_none());
+
+    let dynamic_root = root.display().to_string();
+    let forbidden = [
+        PROMPT_SENTINEL,
+        TRANSCRIPT_SENTINEL,
+        RAW_SECRET_SENTINEL,
+        DATABASE_SENTINEL,
+        BACKUP_SENTINEL,
+        SPOOL_SENTINEL,
+        SYNTHETIC_FULL_PATH,
+        dynamic_root.as_str(),
+        "SQLite format 3",
+    ];
+    for (name, bytes) in entries {
+        let rendered = String::from_utf8_lossy(bytes);
+        for sentinel in forbidden {
+            assert!(
+                !rendered.contains(sentinel),
+                "bundle entry {name} leaked {sentinel}"
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn logging_crash_bundle_safety() -> TestResult {
+    let temporary = tempfile::tempdir()?;
+    let root = temporary.path();
+    let app = Application::new();
+    let paths = app.runtime_paths(
+        Some(root.join("config/config.toml")),
+        Some(root.join("data")),
+    )?;
+
+    exercise_bounded_logs(root, &paths)?;
+
+    exercise_crash_record(root, &paths)?;
+
+    seed_bundle_sources(&app, root, &paths)?;
+
+    let entries = create_bundle_variants(&app, root, &paths)?;
+    assert_bundle_redaction(root, &entries)?;
+
+    cli_logging::remove_crash(&paths)?;
+    assert!(!cli_logging::pending_crash(&paths));
+    assert_eq!(
+        cli_logging::pending_crash_notice(&paths, false, false),
+        None
+    );
+    Ok(())
+}
+
+fn assert_health_status(
+    snapshot: &HealthSnapshot,
+    dimension: &str,
+    expected: HealthStatus,
+) -> TestResult {
+    assert_eq!(health_dimension(snapshot, dimension)?.status, expected);
+    Ok(())
+}
+
+fn seed_health_failures(
+    app: &Application,
+    root: &std::path::Path,
+    paths: &RuntimePaths,
+) -> TestResult<HealthSnapshot> {
+    let core = app.open_local(
+        &paths.database_file,
+        &paths.spool_dir,
+        LockOwner::current("c16-health-initial", None)?,
+    )?;
+    for index in 0_u64..128 {
+        core.capture(&c16_observation(
+            &format!("obs:c16:health:{index}"),
+            index,
+            &format!("persisted health history row {index}"),
+        )?)?;
+    }
+    let history_drain = core.drain()?;
+    assert_eq!(
+        (history_drain.inserted, history_drain.quarantined),
+        (128, 0)
+    );
+
+    fs::write(paths.spool_dir.join(MALFORMED_HEALTH_ENTRY), b"{truncated")?;
+    assert_eq!(core.drain()?.quarantined, 1);
+    assert!(core.backup(&paths.database_file).is_err());
+    assert!(core.restore(root.join("missing-backup.sqlite3")).is_err());
+    assert_eq!(core.integrity_check()?, "ok");
+    core.capture(&c16_observation(
+        "obs:c16:health:pending",
+        10_000,
+        "pending observation keeps spool drain independently degraded",
+    )?)?;
+    let sparse_cap = paths.spool_dir.join("zz-c16-byte-cap.jsonl");
+    fs::File::create(sparse_cap)?.set_len(cutokyo_core::ingest::SPOOL_MAX_BYTES)?;
+
+    let snapshot = core.health()?;
+    assert_eq!(snapshot.dimensions.len(), 11);
+    assert_eq!(
+        (
+            snapshot.current_quarantine_count,
+            snapshot.lifetime_quarantine_count
+        ),
+        (1, 1)
+    );
+    assert_eq!(
+        snapshot.first_affected_observation_id.as_deref(),
+        Some(MALFORMED_HEALTH_ENTRY)
+    );
+    assert_eq!(snapshot.drain_pending_count, 2);
+    assert!(snapshot.drain_pending_bytes >= cutokyo_core::ingest::SPOOL_MAX_BYTES);
+    assert_eq!(snapshot.spool_cap_reason.as_deref(), Some("bytes"));
+    for dimension in [
+        "quarantine",
+        "spool_cap",
+        "spool_drain",
+        "backup",
+        "restore",
+    ] {
+        assert_health_status(&snapshot, dimension, HealthStatus::Degraded)?;
+    }
+    assert_health_status(&snapshot, "integrity", HealthStatus::Healthy)?;
+    for dimension in ["writer_lock", "schema", "derive"] {
+        assert_health_status(&snapshot, dimension, HealthStatus::Healthy)?;
+    }
+    assert_eq!(
+        health_dimension(&snapshot, "backup")?
+            .failure_category
+            .as_deref(),
+        Some("online_backup_failed")
+    );
+    Ok(snapshot)
+}
+
+fn restart_and_verify_health(
+    app: &Application,
+    paths: &RuntimePaths,
+    before: &HealthSnapshot,
+) -> TestResult<(LocalCore, HealthSnapshot)> {
+    let sidecar = paths.database_file.with_extension("health.json");
+    fs::write(
+        &sidecar,
+        serde_json::to_vec(&json!({
+            "failed_at_epoch": 1_789_925_400_i64,
+            "category": "synthetic_restart_reconciliation"
+        }))?,
+    )?;
+    let core = app.open_local(
+        &paths.database_file,
+        &paths.spool_dir,
+        LockOwner::current("c16-health-restart", None)?,
+    )?;
+    assert!(!sidecar.exists());
+    let snapshot = core.health()?;
+    assert_eq!(
+        (
+            snapshot.current_quarantine_count,
+            snapshot.lifetime_quarantine_count
+        ),
+        (1, 1)
+    );
+    assert_eq!(snapshot.drain_pending_count, 2);
+    assert_eq!(snapshot.spool_cap_reason.as_deref(), Some("bytes"));
+    for dimension in [
+        "quarantine",
+        "spool_cap",
+        "spool_drain",
+        "backup",
+        "restore",
+    ] {
+        assert_eq!(
+            health_dimension(&snapshot, dimension)?.status,
+            health_dimension(before, dimension)?.status,
+            "{dimension} changed across restart"
+        );
+    }
+    let persistence = health_dimension(&snapshot, "health_persistence")?;
+    assert_eq!(persistence.status, HealthStatus::Degraded);
+    assert_eq!(
+        persistence.failure_category.as_deref(),
+        Some("synthetic_restart_reconciliation")
+    );
+    assert_eq!(
+        health_dimension(&snapshot, "integrity")?,
+        health_dimension(before, "integrity")?
+    );
+    assert!(
+        health_dimension(&snapshot, "writer_lock")?
+            .detail
+            .as_deref()
+            .is_some_and(|detail| detail.contains("c16-health-restart"))
+    );
+    assert_eq!(snapshot.schema_version, DATABASE_SCHEMA_VERSION);
+    assert_eq!(snapshot.derive_version, DERIVE_VERSION);
+    assert_eq!(snapshot.last_integrity_result.as_deref(), Some("ok"));
+    let queries = core.queries();
+    let generation = queries.health()?.query_generation;
+    for _ in 0..12 {
+        assert_eq!(queries.health()?.query_generation, generation);
+    }
+    Ok((core, snapshot))
+}
+
+fn prove_health_reads_ignore_history(
+    app: &Application,
+    root: &std::path::Path,
+    core: &LocalCore,
+    before_backup: &HealthSnapshot,
+) -> TestResult {
+    let history_probe = root.join("history-unavailable.sqlite3");
+    core.backup(&history_probe)?;
+    let after_backup = core.queries().health()?;
+    let backup = health_dimension(&after_backup, "backup")?;
+    assert_eq!(backup.status, HealthStatus::Healthy);
+    assert_eq!(
+        backup.last_failure_at_epoch,
+        health_dimension(before_backup, "backup")?.last_failure_at_epoch
+    );
+    assert_eq!(
+        backup.failure_category.as_deref(),
+        Some("online_backup_failed")
+    );
+    for dimension in [
+        "health_persistence",
+        "quarantine",
+        "spool_cap",
+        "spool_drain",
+        "restore",
+    ] {
+        assert_eq!(
+            health_dimension(&after_backup, dimension)?.status,
+            health_dimension(before_backup, dimension)?.status,
+            "successful backup cleared unrelated {dimension} state"
+        );
+    }
+
+    let connection = rusqlite::Connection::open(&history_probe)?;
+    connection.execute_batch(
+        "PRAGMA foreign_keys=OFF; ALTER TABLE raw_observations RENAME TO raw_observations_unavailable;",
+    )?;
+    assert!(
+        connection
+            .prepare("SELECT count(*) FROM raw_observations")
+            .is_err()
+    );
+    connection.close().map_err(|(_, error)| error)?;
+    let queries = app.open_read_only(&history_probe)?;
+    let snapshot = queries.health()?;
+    assert_eq!(
+        (
+            snapshot.current_quarantine_count,
+            snapshot.lifetime_quarantine_count
+        ),
+        (1, 1)
+    );
+    assert_health_status(&snapshot, "spool_cap", HealthStatus::Degraded)?;
+    assert_eq!(
+        health_dimension(&snapshot, "backup")?.status,
+        HealthStatus::Degraded,
+        "the online backup captures state before marking its own success"
+    );
+    let generation = snapshot.query_generation;
+    for _ in 0..12 {
+        assert_eq!(queries.health()?.query_generation, generation);
+    }
+    Ok(())
+}
+
+fn repair_health_dimensions(
+    paths: &RuntimePaths,
+    core: &LocalCore,
+    before: &HealthSnapshot,
+) -> TestResult {
+    fs::remove_file(paths.spool_dir.join("zz-c16-byte-cap.jsonl"))?;
+    let cap_repaired = core.health()?;
+    assert_eq!(cap_repaired.spool_cap_reason, None);
+    assert_health_status(&cap_repaired, "spool_cap", HealthStatus::Healthy)?;
+    for dimension in ["spool_drain", "quarantine", "restore", "health_persistence"] {
+        assert_health_status(&cap_repaired, dimension, HealthStatus::Degraded)?;
+    }
+
+    core.acknowledge_quarantine(MALFORMED_HEALTH_ENTRY)?;
+    let quarantine_repaired = core.queries().health()?;
+    assert_eq!(quarantine_repaired.current_quarantine_count, 0);
+    assert_eq!(quarantine_repaired.lifetime_quarantine_count, 1);
+    assert_eq!(quarantine_repaired.first_affected_observation_id, None);
+    assert_health_status(&quarantine_repaired, "quarantine", HealthStatus::Healthy)?;
+    assert_health_status(&quarantine_repaired, "spool_drain", HealthStatus::Degraded)?;
+    assert_health_status(&quarantine_repaired, "restore", HealthStatus::Degraded)?;
+
+    let final_drain = core.drain()?;
+    assert_eq!((final_drain.inserted, final_drain.quarantined), (1, 0));
+    let repaired = core.queries().health()?;
+    assert_eq!(
+        (repaired.drain_pending_count, repaired.drain_pending_bytes),
+        (0, 0)
+    );
+    for dimension in ["spool_drain", "integrity", "backup"] {
+        assert_health_status(&repaired, dimension, HealthStatus::Healthy)?;
+    }
+    for dimension in ["health_persistence", "restore"] {
+        assert_health_status(&repaired, dimension, HealthStatus::Degraded)?;
+    }
+    assert_eq!(
+        health_dimension(&repaired, "backup")?.last_failure_at_epoch,
+        health_dimension(before, "backup")?.last_failure_at_epoch
+    );
+    Ok(())
+}
+
+fn assert_stable_health_restart(app: &Application, paths: &RuntimePaths) -> TestResult {
+    let core = app.open_local(
+        &paths.database_file,
+        &paths.spool_dir,
+        LockOwner::current("c16-health-stable", None)?,
+    )?;
+    let snapshot = core.queries().health()?;
+    assert_eq!(
+        (
+            snapshot.current_quarantine_count,
+            snapshot.lifetime_quarantine_count
+        ),
+        (0, 1)
+    );
+    for dimension in [
+        "quarantine",
+        "spool_cap",
+        "spool_drain",
+        "backup",
+        "integrity",
+    ] {
+        assert_health_status(&snapshot, dimension, HealthStatus::Healthy)?;
+    }
+    for dimension in ["health_persistence", "restore"] {
+        assert_health_status(&snapshot, dimension, HealthStatus::Degraded)?;
+    }
+    assert_eq!(snapshot.schema_version, DATABASE_SCHEMA_VERSION);
+    assert_eq!(snapshot.derive_version, DERIVE_VERSION);
+    assert_eq!(snapshot.last_integrity_result.as_deref(), Some("ok"));
+    assert!(
+        health_dimension(&snapshot, "writer_lock")?
+            .detail
+            .as_deref()
+            .is_some_and(|detail| detail.contains("c16-health-stable"))
+    );
+    Ok(())
+}
+
+fn corrupt_and_reconcile_health(app: &Application, paths: &RuntimePaths) -> TestResult {
+    let connection = rusqlite::Connection::open(&paths.database_file)?;
+    connection.execute("DELETE FROM health_state WHERE singleton=1", [])?;
+    connection.execute("DELETE FROM health_dimensions", [])?;
+    connection.execute(
+        "INSERT INTO health_dimensions(dimension, status, updated_at_epoch) VALUES ('unexpected_dimension', 'healthy', 0)",
+        [],
+    )?;
+    connection.close().map_err(|(_, error)| error)?;
+
+    let core = app.open_local(
+        &paths.database_file,
+        &paths.spool_dir,
+        LockOwner::current("c16-health-reconciled", None)?,
+    )?;
+    let snapshot = core.queries().health()?;
+    assert_eq!(snapshot.dimensions.len(), 11);
+    assert!(!snapshot.dimensions.contains_key("unexpected_dimension"));
+    assert_eq!(
+        (
+            snapshot.current_quarantine_count,
+            snapshot.lifetime_quarantine_count
+        ),
+        (0, 1)
+    );
+    let persistence = health_dimension(&snapshot, "health_persistence")?;
+    assert_eq!(persistence.status, HealthStatus::Degraded);
+    assert_eq!(
+        persistence.failure_category.as_deref(),
+        Some("projection_corrupt")
+    );
+    assert_health_status(&snapshot, "quarantine", HealthStatus::Healthy)?;
+    for dimension in ["writer_lock", "schema", "derive"] {
+        assert_health_status(&snapshot, dimension, HealthStatus::Healthy)?;
+    }
+    for dimension in [
+        "spool_cap",
+        "spool_drain",
+        "integrity",
+        "rebuild",
+        "backup",
+        "restore",
+    ] {
+        assert_eq!(
+            health_dimension(&snapshot, dimension)?.status,
+            HealthStatus::Unknown,
+            "projection repair invented healthy {dimension} state"
+        );
+        assert_eq!(
+            health_dimension(&snapshot, dimension)?
+                .failure_category
+                .as_deref(),
+            Some("projection_corrupt")
+        );
+    }
+    assert_eq!(snapshot.schema_version, DATABASE_SCHEMA_VERSION);
+    assert_eq!(snapshot.derive_version, DERIVE_VERSION);
+    assert_eq!(snapshot.last_integrity_result, None);
+    let generation = snapshot.query_generation;
+    for _ in 0..12 {
+        assert_eq!(core.queries().health()?.query_generation, generation);
+    }
+    Ok(())
+}
+
+#[test]
+fn persisted_health_restart_reconciliation() -> TestResult {
+    let temporary = tempfile::tempdir()?;
+    let root = temporary.path();
+    let app = Application::new();
+    let paths = app.runtime_paths(
+        Some(root.join("config/config.toml")),
+        Some(root.join("data")),
+    )?;
+    let before_restart = seed_health_failures(&app, root, &paths)?;
+
+    let (restarted, after_restart) = restart_and_verify_health(&app, &paths, &before_restart)?;
+
+    prove_health_reads_ignore_history(&app, root, &restarted, &after_restart)?;
+
+    repair_health_dimensions(&paths, &restarted, &after_restart)?;
+    drop(restarted);
+
+    assert_stable_health_restart(&app, &paths)?;
+
+    corrupt_and_reconcile_health(&app, &paths)?;
     Ok(())
 }

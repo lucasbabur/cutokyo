@@ -12,15 +12,62 @@ use tracing_subscriber::fmt::MakeWriter;
 const DEFAULT_MAX_BYTES: u64 = 2 * 1024 * 1024;
 const MAX_CONFIGURED_BYTES: u64 = 64 * 1024 * 1024;
 const DEFAULT_GENERATIONS: usize = 5;
-const CRASH_MAX_BYTES: usize = 16 * 1024;
+/// Maximum size of a persisted crash record.
+pub const CRASH_RECORD_MAX_BYTES: usize = 16 * 1024;
+/// Human-facing notice offered on the launch after a crash.
+pub const PENDING_CRASH_NOTICE: &str = "A bounded crash record is waiting. Review `cutokyo bundle` and explicitly add --include-crash if you want it included.";
 
+/// Validated bounds for a rotating JSONL log.
+#[derive(Clone, Copy, Debug)]
+pub struct LogOptions {
+    max_bytes: u64,
+    generations: usize,
+}
+
+impl LogOptions {
+    /// Construct bounded logging options.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the byte or generation bound is outside the supported
+    /// operational range.
+    pub fn bounded(max_bytes: u64, generations: usize) -> Result<Self, String> {
+        if !(256..=MAX_CONFIGURED_BYTES).contains(&max_bytes) {
+            return Err(format!(
+                "log byte bound must be between 256 and {MAX_CONFIGURED_BYTES}"
+            ));
+        }
+        if !(1..=32).contains(&generations) {
+            return Err("log generations must be between 1 and 32".to_owned());
+        }
+        Ok(Self {
+            max_bytes,
+            generations,
+        })
+    }
+
+    fn from_environment() -> Self {
+        let max_bytes = std::env::var("CUTOKYO_LOG_MAX_BYTES")
+            .ok()
+            .and_then(|value| value.parse::<u64>().ok())
+            .filter(|value| (256..=MAX_CONFIGURED_BYTES).contains(value))
+            .unwrap_or(DEFAULT_MAX_BYTES);
+        Self {
+            max_bytes,
+            generations: DEFAULT_GENERATIONS,
+        }
+    }
+}
+
+/// Flush handle for a configured bounded log writer.
 #[derive(Clone, Debug)]
-pub(crate) struct LogGuard {
+pub struct LogGuard {
     writer: BoundedMakeWriter,
 }
 
 impl LogGuard {
-    pub(crate) fn flush(&self) {
+    /// Flush and synchronize buffered JSONL output.
+    pub fn flush(&self) {
         if let Ok(mut state) = self.writer.state.lock() {
             let _ignored = state.file.flush();
             let _ignored = state.file.sync_data();
@@ -84,15 +131,36 @@ impl<'a> MakeWriter<'a> for BoundedMakeWriter {
     }
 }
 
-pub(crate) fn initialize(paths: &RuntimePaths) -> Result<LogGuard, String> {
+/// Install the process-wide production subscriber using the configured byte bound.
+///
+/// # Errors
+///
+/// Returns an error when the private log destination cannot be prepared or another
+/// process-wide tracing subscriber has already been installed.
+pub fn initialize(paths: &RuntimePaths) -> Result<LogGuard, String> {
+    let (guard, dispatch) = build_dispatch(paths, LogOptions::from_environment())?;
+    tracing::dispatcher::set_global_default(dispatch)
+        .map_err(|error| format!("install tracing subscriber: {error}"))?;
+    Ok(guard)
+}
+
+/// Build the production JSON subscriber without installing it process-wide.
+///
+/// Native frontends can install the returned dispatch globally. Tests and embedded
+/// frontends can instead scope it with `tracing::dispatcher::with_default`, avoiding
+/// process-global subscriber interference while exercising the exact same writer.
+///
+/// # Errors
+///
+/// Returns an error when the private log directory or append-only log file cannot
+/// be created, opened, inspected, or permission-hardened.
+pub fn build_dispatch(
+    paths: &RuntimePaths,
+    options: LogOptions,
+) -> Result<(LogGuard, tracing::Dispatch), String> {
     fs::create_dir_all(&paths.log_dir).map_err(|error| format!("create log directory: {error}"))?;
     set_private_directory(&paths.log_dir)
         .map_err(|error| format!("secure log directory: {error}"))?;
-    let max_bytes = std::env::var("CUTOKYO_LOG_MAX_BYTES")
-        .ok()
-        .and_then(|value| value.parse::<u64>().ok())
-        .filter(|value| (256..=MAX_CONFIGURED_BYTES).contains(value))
-        .unwrap_or(DEFAULT_MAX_BYTES);
     let path = paths.log_dir.join("cutokyo.jsonl");
     let file = open_log(&path).map_err(|error| format!("open bounded log: {error}"))?;
     let bytes = file.metadata().map_or(0, |metadata| metadata.len());
@@ -101,8 +169,8 @@ pub(crate) fn initialize(paths: &RuntimePaths) -> Result<LogGuard, String> {
             path,
             file,
             bytes,
-            max_bytes,
-            generations: DEFAULT_GENERATIONS,
+            max_bytes: options.max_bytes,
+            generations: options.generations,
         })),
     };
     let subscriber = tracing_subscriber::fmt()
@@ -113,9 +181,7 @@ pub(crate) fn initialize(paths: &RuntimePaths) -> Result<LogGuard, String> {
         .with_target(true)
         .with_writer(writer.clone())
         .finish();
-    tracing::subscriber::set_global_default(subscriber)
-        .map_err(|error| format!("install tracing subscriber: {error}"))?;
-    Ok(LogGuard { writer })
+    Ok((LogGuard { writer }, tracing::Dispatch::new(subscriber)))
 }
 
 fn rotate(state: &mut WriterState) -> io::Result<()> {
@@ -166,7 +232,8 @@ struct CrashRecord<'a> {
     category: &'a str,
 }
 
-pub(crate) fn install_panic_hook(paths: &RuntimePaths) {
+/// Install the metadata-only bounded panic-record hook.
+pub fn install_panic_hook(paths: &RuntimePaths) {
     let crash_path = paths.crash_file.clone();
     std::panic::set_hook(Box::new(move |information| {
         let record = CrashRecord {
@@ -190,17 +257,34 @@ pub(crate) fn install_panic_hook(paths: &RuntimePaths) {
             category: "panic",
         };
         if let Ok(mut bytes) = serde_json::to_vec_pretty(&record) {
-            bytes.truncate(CRASH_MAX_BYTES);
+            bytes.truncate(CRASH_RECORD_MAX_BYTES);
             let _ignored = write_crash_atomic(&crash_path, &bytes);
         }
     }));
 }
 
-pub(crate) fn pending_crash(paths: &RuntimePaths) -> bool {
+/// Return whether a crash record is waiting for an explicit bundle decision.
+#[must_use]
+pub fn pending_crash(paths: &RuntimePaths) -> bool {
     paths.crash_file.is_file()
 }
 
-pub(crate) fn remove_crash(paths: &RuntimePaths) -> io::Result<()> {
+/// Return the human disclosure shown on the next applicable launch.
+#[must_use]
+pub fn pending_crash_notice(
+    paths: &RuntimePaths,
+    machine_readable: bool,
+    bundle_command: bool,
+) -> Option<&'static str> {
+    (pending_crash(paths) && !machine_readable && !bundle_command).then_some(PENDING_CRASH_NOTICE)
+}
+
+/// Remove a crash record after an explicitly requested successful bundle.
+///
+/// # Errors
+///
+/// Returns an I/O error when an existing crash record cannot be removed.
+pub fn remove_crash(paths: &RuntimePaths) -> io::Result<()> {
     match fs::remove_file(&paths.crash_file) {
         Ok(()) => Ok(()),
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
@@ -250,7 +334,9 @@ mod tests {
 
     use cutokyo_core::app::RuntimePaths;
 
-    use super::{BoundedMakeWriter, CRASH_MAX_BYTES, WriterState, install_panic_hook, open_log};
+    use super::{
+        BoundedMakeWriter, CRASH_RECORD_MAX_BYTES, WriterState, install_panic_hook, open_log,
+    };
 
     #[test]
     fn bounded_log_rotates_and_keeps_fixed_generations() -> Result<(), Box<dyn std::error::Error>> {
@@ -321,7 +407,7 @@ mod tests {
 
         assert!(panic_result.is_err());
         let bytes = fs::read(&paths.crash_file)?;
-        assert!(bytes.len() <= CRASH_MAX_BYTES);
+        assert!(bytes.len() <= CRASH_RECORD_MAX_BYTES);
         let record: serde_json::Value = serde_json::from_slice(&bytes)?;
         assert_eq!(record["category"], "panic");
         assert!(record.get("payload").is_none());

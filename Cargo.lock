@@ -1136,17 +1136,21 @@ dependencies = [
 name = "cutokyo-integration-tests"
 version = "0.1.0"
 dependencies = [
+ "cutokyo-cli",
  "cutokyo-core",
  "cutokyo-domain",
  "fake-harness",
+ "flate2",
  "jsonschema",
  "rmcp",
  "rusqlite",
  "serde",
  "serde_json",
+ "tar",
  "tempfile",
  "tokio",
  "tokio-util",
+ "tracing",
 ]
 
 [[package]]

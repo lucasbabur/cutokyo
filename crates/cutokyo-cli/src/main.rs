@@ -1,9 +1,6 @@
 //! Native Cutokyo CLI. The npm package installs this binary; there is no
 //! TypeScript command implementation.
 
-mod bundle;
-mod logging;
-
 use std::{
     fs,
     io::{self, Read as _, Write as _},
@@ -14,6 +11,7 @@ use std::{
 };
 
 use clap::{Args, CommandFactory as _, Parser, Subcommand, error::ErrorKind};
+use cutokyo_cli::{bundle, logging};
 use cutokyo_core::app::{
     Application, DoctorOutcome, LockOwner, RetentionOverride, RuntimePaths, SessionSearch,
     SettingsOverrides,
@@ -376,7 +374,7 @@ fn main() -> ExitCode {
         Err(error) => return render_failure("startup", &error, cli.json, pending_crash),
     };
 
-    offer_pending_crash(pending_crash, cli.json, cli.command.as_ref());
+    offer_pending_crash(&paths, cli.json, cli.command.as_ref());
     let command_name = command_name(cli.command.as_ref());
     info!(
         command = command_name,
@@ -413,11 +411,11 @@ fn main() -> ExitCode {
     exit
 }
 
-fn offer_pending_crash(pending_crash: bool, json: bool, command: Option<&CliCommand>) {
-    if pending_crash && !json && !matches!(command, Some(CliCommand::Bundle(_))) {
-        eprintln!(
-            "A bounded crash record is waiting. Review `cutokyo bundle` and explicitly add --include-crash if you want it included."
-        );
+fn offer_pending_crash(paths: &RuntimePaths, json: bool, command: Option<&CliCommand>) {
+    if let Some(notice) =
+        logging::pending_crash_notice(paths, json, matches!(command, Some(CliCommand::Bundle(_))))
+    {
+        eprintln!("{notice}");
     }
 }
 

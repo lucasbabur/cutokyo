@@ -14,19 +14,29 @@ use sha2::{Digest as _, Sha256};
 const ENTRY_LIMIT: u64 = 2 * 1024 * 1024;
 const REDACTED_LOG_LIMIT: usize = 512 * 1024;
 
+/// Allowlisted diagnostic archive manifest shown before creation.
 #[derive(Clone, Debug, Serialize)]
-pub(crate) struct BundlePreview {
+pub struct BundlePreview {
+    /// Bundle manifest contract version.
     pub schema_version: u32,
+    /// Exact archive entry allowlist for this invocation.
     pub entries: Vec<String>,
+    /// Content categories deliberately excluded from every archive.
     pub excluded: Vec<String>,
+    /// Whether an existing crash record will be projected into the archive.
     pub crash_record_included: bool,
 }
 
+/// Receipt for a successfully published diagnostic archive.
 #[derive(Clone, Debug, Serialize)]
-pub(crate) struct BundleReceipt {
+pub struct BundleReceipt {
+    /// Published archive path.
     pub output: PathBuf,
+    /// SHA-256 digest of the closed archive bytes.
     pub sha256: String,
+    /// Closed archive byte length.
     pub byte_length: u64,
+    /// Manifest used to construct the archive.
     pub manifest: BundlePreview,
 }
 
@@ -37,7 +47,9 @@ struct SafeConfig<'a> {
     effective: &'a BTreeMap<String, cutokyo_core::app::EffectiveValue>,
 }
 
-pub(crate) fn preview(paths: &RuntimePaths, include_crash: bool) -> BundlePreview {
+/// Preview the exact archive allowlist without reading content into the archive.
+#[must_use]
+pub fn preview(paths: &RuntimePaths, include_crash: bool) -> BundlePreview {
     let mut entries = vec![
         "manifest.json".to_owned(),
         "versions.json".to_owned(),
@@ -67,7 +79,13 @@ pub(crate) fn preview(paths: &RuntimePaths, include_crash: bool) -> BundlePrevie
     }
 }
 
-pub(crate) fn create(
+/// Create and atomically publish an allowlisted, redacted diagnostic archive.
+///
+/// # Errors
+///
+/// Returns a bounded diagnostic when archive serialization, filesystem access,
+/// compression, atomic publication, permission hardening, or digesting fails.
+pub fn create(
     paths: &RuntimePaths,
     output: &Path,
     include_crash: bool,

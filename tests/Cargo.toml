@@ -11,6 +11,7 @@ publish = false
 [dependencies]
 cutokyo-core.workspace = true
 cutokyo-domain.workspace = true
+cutokyo-cli.workspace = true
 fake-harness = { path = "../tools/fake-harness", version = "0.1.0" }
 jsonschema.workspace = true
 serde.workspace = true
@@ -20,6 +21,9 @@ rusqlite.workspace = true
 rmcp.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
+tracing.workspace = true
+tar.workspace = true
+flate2.workspace = true
 
 [[test]]
 name = "pipeline"
