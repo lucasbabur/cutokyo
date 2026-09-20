@@ -374,7 +374,11 @@ if (!foundation || !foundation.done || !foundation.commits.length) {
 }
 
 phase('Core')
-const core = await agent(
+const resumedCore = args?.core
+if (resumedCore) {
+  log(`Reusing recovered core revision ${resumedCore.revision} after coordinator recovery.`)
+}
+const core = resumedCore ?? await agent(
   `${commonAssignment('core')}
 
 Build the durable core from the committed foundation. The minimum handoff is a real fake-observation -> atomic spool -> idempotent ingest -> SQLite/FTS -> app search pipeline, plus all storage, migration, concurrency, backup, health, and provenance criteria in your role. Report your generated worktree branch exactly; the architect will merge it.`,
