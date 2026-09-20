@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "command": "sessions.show",
+  "ok": false,
+  "error": {
+    "code": "capability_unavailable",
+    "message": "database is unavailable before setup"
+  },
+  "meta": {
+    "app_version": "0.1.0",
+    "pending_crash_record": false
+  }
+}

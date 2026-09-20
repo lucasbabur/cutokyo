@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cutokyo.dev/schemas/cli-output.v1.json",
+  "title": "Cutokyo CLI JSON envelope v1",
+  "type": "object",
+  "required": ["schema_version", "command", "ok", "meta"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "command": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "ok": { "type": "boolean" },
+    "data": true,
+    "error": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "enum": [
+            "invalid_input",
+            "invalid_contract",
+            "unsupported_protocol_major",
+            "capability_unavailable",
+            "writer_already_owned",
+            "capacity_reached",
+            "not_found",
+            "unhealthy",
+            "cancelled",
+            "internal"
+          ]
+        },
+        "message": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "field": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "expected": { "type": "string", "maxLength": 1024 },
+        "actual": { "type": "string", "maxLength": 1024 }
+      },
+      "additionalProperties": false
+    },
+    "meta": {
+      "type": "object",
+      "required": ["app_version", "pending_crash_record"],
+      "properties": {
+        "app_version": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "pending_crash_record": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "ok": { "const": true } }, "required": ["ok"] },
+      "then": { "required": ["data"], "not": { "required": ["error"] } },
+      "else": { "required": ["error"], "not": { "required": ["data"] } }
+    }
+  ],
+  "additionalProperties": false
+}

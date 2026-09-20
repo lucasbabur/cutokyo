@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "command": "version",
+  "ok": true,
+  "data": {
+    "app_version": "0.1.0",
+    "structured_cli_schema": "1.0.0"
+  },
+  "meta": {
+    "app_version": "0.1.0",
+    "pending_crash_record": false
+  }
+}

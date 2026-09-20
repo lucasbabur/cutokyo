@@ -18,9 +18,12 @@ rusqlite.workspace = true
 rusqlite_migration.workspace = true
 fs4.workspace = true
 sha2.workspace = true
+directories.workspace = true
+toml.workspace = true
+tempfile.workspace = true
+keyring.workspace = true
 
 [dev-dependencies]
-tempfile.workspace = true
 
 [lints]
 workspace = true

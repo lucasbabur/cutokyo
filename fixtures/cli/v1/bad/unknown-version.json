@@ -1,0 +1,10 @@
+{
+  "schema_version": "2.0.0",
+  "command": "version",
+  "ok": true,
+  "data": {},
+  "meta": {
+    "app_version": "0.1.0",
+    "pending_crash_record": false
+  }
+}

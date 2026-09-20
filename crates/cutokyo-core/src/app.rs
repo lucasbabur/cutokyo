@@ -1,6 +1,11 @@
 //! Application-service contracts and the sole sibling composition boundary.
 
-use std::{path::Path, time::SystemTime};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    process::Command,
+    time::SystemTime,
+};
 
 use cutokyo_domain::{
     CaptureChannel, ContractError, ErrorCode, Harness, InstallationSnapshot, ObservationSink as _,
@@ -11,11 +16,23 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     adapters::{CaptureDecision, CaptureResolver},
+    config,
     ingest::{IngestContract, Spool, SpoolCapReason, SpoolStatus},
     store::{
-        BackupManifest, CheckpointMode, CheckpointResult, DeletionReceipt, HealthSnapshot,
-        LockOwner, ReadStore, RestoreReceipt, RetentionPlan, SearchQuery, SearchResult,
-        StoreContract, UsageTotals, WriterStore,
+        ReadStore, SearchQuery, StoreContract, WriterStore, health_persistence_marker_present,
+    },
+};
+
+pub use crate::{
+    config::{
+        EffectiveValue, OriginCandidate, ResolvedSettings, RetentionOverride, RuntimePaths,
+        SecretBackend, SecretBackendPreference, SecretReceipt, SettingsOverrides, SetupAction,
+        SetupPlan, UninstallReceipt,
+    },
+    store::{
+        BackupManifest, CheckpointMode, CheckpointResult, ConnectionEvidence,
+        DELETE_ALL_CONFIRMATION, DELETION_DISCLOSURE, DeletionReceipt, DiagnosticRowCounts,
+        HealthSnapshot, LockOwner, RestoreReceipt, RetentionPlan, SearchResult, UsageTotals,
     },
 };
 
@@ -44,6 +61,109 @@ pub struct ContractSnapshot {
     pub single_writer: bool,
     /// Whether proxy selection requires prior explicit consent.
     pub proxy_requires_explicit_consent: bool,
+}
+
+/// Stable frontend-level search request. Strings are parsed and validated by
+/// the application boundary before reaching the store.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct SessionSearch {
+    /// Transcript text.
+    pub text: Option<String>,
+    /// Exact project identity, name, or path.
+    pub project: Option<String>,
+    /// Exact branch.
+    pub branch: Option<String>,
+    /// Stable harness key.
+    pub harness: Option<String>,
+    /// Inclusive RFC 3339 start.
+    pub from: Option<String>,
+    /// Exclusive RFC 3339 end.
+    pub until: Option<String>,
+    /// Exact tool name.
+    pub tool: Option<String>,
+    /// Exact skill name.
+    pub skill: Option<String>,
+    /// Exact agent name.
+    pub agent: Option<String>,
+    /// Bounded result count (`0` selects the contract default).
+    pub limit: u32,
+}
+
+/// An exact native resume launch plan. Previewing this value never launches a
+/// harness; execution remains an explicit frontend action.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ResumePlan {
+    /// Cutokyo session identity.
+    pub session_id: String,
+    /// Stable harness key.
+    pub harness: String,
+    /// Exact recorded native resume identity.
+    pub native_resume_id: String,
+    /// Native executable name.
+    pub executable: String,
+    /// Exact argument vector, excluding the executable.
+    pub arguments: Vec<String>,
+    /// Optional project directory when it was safely established.
+    pub working_directory: Option<PathBuf>,
+}
+
+/// Stable doctor check state.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DoctorCheckStatus {
+    /// The checked contract is satisfied.
+    Pass,
+    /// An optional capability is absent or not yet initialized.
+    Warn,
+    /// A present required subsystem violates its contract.
+    Fail,
+}
+
+/// One bounded, non-secret doctor diagnosis.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct DoctorCheck {
+    /// Stable check identifier.
+    pub id: String,
+    /// Check result.
+    pub status: DoctorCheckStatus,
+    /// Safe diagnosis without full local paths.
+    pub message: String,
+    /// Optional stable remediation hint.
+    pub remediation: Option<String>,
+}
+
+/// Overall doctor classification used for exit-code mapping.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DoctorOutcome {
+    /// Required initialized subsystems are ready.
+    Healthy,
+    /// Setup or another required capability is absent.
+    CapabilityUnavailable,
+    /// An initialized subsystem is degraded or invalid.
+    Unhealthy,
+}
+
+/// Bounded doctor result shared by CLI, desktop, and bundles.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct DoctorReport {
+    /// The current process is alive enough to produce this report.
+    pub process_liveness: bool,
+    /// Product readiness is separate from process liveness.
+    pub product_readiness: bool,
+    /// Exit-code classification.
+    pub outcome: DoctorOutcome,
+    /// Every required check, in stable order.
+    pub checks: Vec<DoctorCheck>,
+    /// Shared bounded health projection when available.
+    pub health: Option<HealthSnapshot>,
+    /// Safe SQLite runtime evidence when available.
+    pub sqlite: Option<ConnectionEvidence>,
+    /// Content-free row counts when available.
+    pub row_counts: Option<DiagnosticRowCounts>,
 }
 
 /// Small application composition root shared by CLI and desktop frontends.
@@ -124,6 +244,123 @@ impl Application {
         Ok(current)
     }
 
+    /// Discovers platform-native runtime paths with CLI path flags taking
+    /// precedence over Cutokyo path environment variables.
+    ///
+    /// # Errors
+    ///
+    /// Returns capability-unavailable when user directories cannot be found.
+    pub fn runtime_paths(
+        &self,
+        config_file: Option<PathBuf>,
+        data_dir: Option<PathBuf>,
+    ) -> Result<RuntimePaths> {
+        RuntimePaths::discover(config_file, data_dir)
+    }
+
+    /// Resolves defaults → file → environment → CLI with an explanation for
+    /// every effective non-secret value.
+    ///
+    /// # Errors
+    ///
+    /// Rejects malformed, unknown, or newer configuration contracts.
+    pub fn resolve_settings(
+        &self,
+        paths: &RuntimePaths,
+        overrides: &SettingsOverrides,
+    ) -> Result<ResolvedSettings> {
+        config::resolve(paths, overrides)
+    }
+
+    /// Atomically persists an omission-preserving non-secret settings patch.
+    ///
+    /// # Errors
+    ///
+    /// Rejects secrets, unknown fields, unsafe targets, and invalid values.
+    pub fn write_settings_patch(
+        &self,
+        paths: &RuntimePaths,
+        patch: &SettingsPatch,
+    ) -> Result<Settings> {
+        config::write_patch(paths, patch)
+    }
+
+    /// Validates a public configuration key before a frontend parses its value.
+    ///
+    /// # Errors
+    ///
+    /// Rejects unknown and secret-like names.
+    pub fn validate_public_setting_key(&self, key: &str) -> Result<()> {
+        config::validate_public_setting_key(key)
+    }
+
+    /// Stores an opaque secret in the OS keychain or an explicitly approved
+    /// owner-only fallback, never in TOML.
+    ///
+    /// # Errors
+    ///
+    /// Fails closed for unavailable backends, invalid input, or unsafe permissions.
+    pub fn store_secret(
+        &self,
+        paths: &RuntimePaths,
+        key: &str,
+        secret: &str,
+        preference: SecretBackendPreference,
+    ) -> Result<SecretReceipt> {
+        config::store_secret(paths, key, secret, preference)
+    }
+
+    /// Loads an opaque secret through the same explicit backend policy.
+    ///
+    /// # Errors
+    ///
+    /// Returns not-found or capability-unavailable without disclosing secret data.
+    pub fn load_secret(
+        &self,
+        paths: &RuntimePaths,
+        key: &str,
+        preference: SecretBackendPreference,
+    ) -> Result<(String, SecretReceipt)> {
+        config::load_secret(paths, key, preference)
+    }
+
+    /// Previews or applies local setup, persisting recovery intent before the
+    /// first configuration mutation.
+    ///
+    /// # Errors
+    ///
+    /// Refuses unsafe targets and propagates durable filesystem failures.
+    pub fn setup(&self, paths: &RuntimePaths, dry_run: bool) -> Result<SetupPlan> {
+        config::setup(paths, dry_run)
+    }
+
+    /// Removes only Cutokyo-owned setup metadata. Missing state is success.
+    ///
+    /// # Errors
+    ///
+    /// Rejects corrupt/newer ownership state and unsafe targets.
+    pub fn uninstall(&self, paths: &RuntimePaths) -> Result<UninstallReceipt> {
+        config::uninstall(paths)
+    }
+
+    /// Runs bounded readiness diagnostics without claiming the writer lock or
+    /// reading prompt/transcript content.
+    #[must_use]
+    pub fn doctor(&self, paths: &RuntimePaths, overrides: &SettingsOverrides) -> DoctorReport {
+        doctor_report(self, paths, overrides)
+    }
+
+    /// Opens the hook-only atomic spool surface without touching SQLite.
+    ///
+    /// # Errors
+    ///
+    /// Returns a filesystem or permission error if the spool is unavailable.
+    pub fn open_capture(&self, spool_path: impl AsRef<Path>) -> Result<CaptureUseCases> {
+        Ok(CaptureUseCases {
+            spool: Spool::open(spool_path)?,
+        })
+    }
+
     /// Opens the local core composition used by CLI and desktop commands. The
     /// returned value is the only public write-use-case boundary; surfaces never
     /// receive a SQLite connection or store handle.
@@ -170,6 +407,33 @@ pub struct DrainReport {
     pub status: SpoolStatus,
 }
 
+/// Hook-only application surface. It can publish one atomic spool entry and has
+/// no database capability.
+#[derive(Clone, Debug)]
+pub struct CaptureUseCases {
+    spool: Spool,
+}
+
+impl CaptureUseCases {
+    /// Publishes one validated observation with create-new, flush, and atomic rename.
+    ///
+    /// # Errors
+    ///
+    /// Returns invalid-contract, capacity, permission, or filesystem errors.
+    pub fn capture(&self, observation: &RawObservation) -> Result<SpoolReceipt> {
+        self.spool.append(observation)
+    }
+
+    /// Returns current bounded spool status without opening SQLite.
+    ///
+    /// # Errors
+    ///
+    /// Returns a filesystem error if spool metadata cannot be read.
+    pub fn status(&self) -> Result<SpoolStatus> {
+        self.spool.status_at(SystemTime::now())
+    }
+}
+
 /// Query-only use cases available to a second frontend while another process owns
 /// writes. This wrapper deliberately does not expose its `ReadStore`.
 #[derive(Clone, Debug)]
@@ -188,6 +452,33 @@ impl QueryUseCases {
         self.store.health_snapshot()
     }
 
+    /// Proves SQLite pragmas, bundled version, and FTS5 on a fresh read connection.
+    ///
+    /// # Errors
+    ///
+    /// Returns unhealthy or a store read error when the runtime contract fails.
+    pub fn connection_evidence(&self) -> Result<ConnectionEvidence> {
+        self.store.connection_evidence()
+    }
+
+    /// Runs a read-only SQLite integrity check.
+    ///
+    /// # Errors
+    ///
+    /// Returns unhealthy unless SQLite reports `ok`.
+    pub fn integrity_check(&self) -> Result<String> {
+        self.store.integrity_check()
+    }
+
+    /// Returns content-free row counts for diagnostic bundles.
+    ///
+    /// # Errors
+    ///
+    /// Returns a store read error.
+    pub fn diagnostic_row_counts(&self) -> Result<DiagnosticRowCounts> {
+        self.store.diagnostic_row_counts()
+    }
+
     /// Searches attributable local history.
     ///
     /// # Errors
@@ -195,6 +486,37 @@ impl QueryUseCases {
     /// Returns invalid input for malformed filters or a store read error.
     pub fn search(&self, query: &SearchQuery) -> Result<Vec<SearchResult>> {
         self.store.search(query)
+    }
+
+    /// Searches from stable frontend strings after parsing at the app boundary.
+    ///
+    /// # Errors
+    ///
+    /// Returns invalid-input for malformed harness/date filters or a store error.
+    pub fn search_sessions(&self, request: &SessionSearch) -> Result<Vec<SearchResult>> {
+        self.store.search(&search_query(request)?)
+    }
+
+    /// Looks up one exact Cutokyo session identity.
+    ///
+    /// # Errors
+    ///
+    /// Returns invalid-input for malformed identity or a store read error.
+    pub fn session(&self, session_id: &str) -> Result<Option<SearchResult>> {
+        self.store.session(&SessionId::parse(session_id)?)
+    }
+
+    /// Builds an exact native resume plan without launching a process.
+    ///
+    /// # Errors
+    ///
+    /// Returns not-found for the selected session or capability-unavailable when
+    /// the source never established an exact native resume identity.
+    pub fn resume_plan(&self, session_id: &str) -> Result<ResumePlan> {
+        let result = self
+            .session(session_id)?
+            .ok_or_else(|| ContractError::new(ErrorCode::NotFound, "session was not found"))?;
+        resume_plan_from_result(&result)
     }
 
     /// Returns deduplicated usage without replacing unknown metrics with zero.
@@ -346,6 +668,24 @@ impl LocalCore {
         self.store.health_snapshot()
     }
 
+    /// Proves SQLite pragmas, bundled version, and FTS5 on a fresh connection.
+    ///
+    /// # Errors
+    ///
+    /// Returns unhealthy or a store error when the runtime contract fails.
+    pub fn connection_evidence(&self) -> Result<ConnectionEvidence> {
+        self.store.connection_evidence()
+    }
+
+    /// Returns content-free row counts for diagnostic bundles.
+    ///
+    /// # Errors
+    ///
+    /// Returns a store read error.
+    pub fn diagnostic_row_counts(&self) -> Result<DiagnosticRowCounts> {
+        self.store.diagnostic_row_counts()
+    }
+
     /// Searches attributable local history.
     ///
     /// # Errors
@@ -353,6 +693,36 @@ impl LocalCore {
     /// Returns invalid input for malformed filters or a store read error.
     pub fn search(&self, query: &SearchQuery) -> Result<Vec<SearchResult>> {
         self.store.search(query)
+    }
+
+    /// Searches from stable frontend strings after parsing at the app boundary.
+    ///
+    /// # Errors
+    ///
+    /// Returns invalid-input for malformed harness/date filters or a store error.
+    pub fn search_sessions(&self, request: &SessionSearch) -> Result<Vec<SearchResult>> {
+        self.store.search(&search_query(request)?)
+    }
+
+    /// Looks up one exact session.
+    ///
+    /// # Errors
+    ///
+    /// Returns invalid-input for malformed identity or a store read error.
+    pub fn session(&self, session_id: &str) -> Result<Option<SearchResult>> {
+        self.store.session(&SessionId::parse(session_id)?)
+    }
+
+    /// Builds an exact native resume plan without launching a process.
+    ///
+    /// # Errors
+    ///
+    /// Returns not-found or capability-unavailable when exact resume is absent.
+    pub fn resume_plan(&self, session_id: &str) -> Result<ResumePlan> {
+        let result = self
+            .session(session_id)?
+            .ok_or_else(|| ContractError::new(ErrorCode::NotFound, "session was not found"))?;
+        resume_plan_from_result(&result)
     }
 
     /// Returns deduplicated usage.
@@ -498,6 +868,607 @@ impl LocalCore {
             status.cap_reason.map(spool_cap_name),
         )
     }
+}
+
+#[derive(Default)]
+struct DoctorFindings {
+    checks: Vec<DoctorCheck>,
+    unavailable: bool,
+    health: Option<HealthSnapshot>,
+    sqlite: Option<ConnectionEvidence>,
+    row_counts: Option<DiagnosticRowCounts>,
+}
+
+fn doctor_report(
+    app: &Application,
+    paths: &RuntimePaths,
+    overrides: &SettingsOverrides,
+) -> DoctorReport {
+    let mut findings = DoctorFindings::default();
+
+    check_configuration(app, paths, overrides, &mut findings);
+
+    check_spool(paths, &mut findings);
+    check_health_persistence_marker(paths, &mut findings);
+
+    check_database(app, paths, &mut findings);
+
+    for (id, executable) in [
+        ("harness_claude_code", "claude"),
+        ("harness_codex", "codex"),
+        ("harness_opencode", "opencode"),
+    ] {
+        findings.checks.push(harness_version_check(id, executable));
+    }
+    findings.checks.push(plugin_check(app, &paths.plugin_dir));
+
+    let failed = findings
+        .checks
+        .iter()
+        .any(|check| check.status == DoctorCheckStatus::Fail);
+    let outcome = if failed {
+        DoctorOutcome::Unhealthy
+    } else if findings.unavailable {
+        DoctorOutcome::CapabilityUnavailable
+    } else {
+        DoctorOutcome::Healthy
+    };
+    DoctorReport {
+        process_liveness: true,
+        product_readiness: outcome == DoctorOutcome::Healthy,
+        outcome,
+        checks: findings.checks,
+        health: findings.health,
+        sqlite: findings.sqlite,
+        row_counts: findings.row_counts,
+    }
+}
+
+fn check_configuration(
+    app: &Application,
+    paths: &RuntimePaths,
+    overrides: &SettingsOverrides,
+    findings: &mut DoctorFindings,
+) {
+    match app.resolve_settings(paths, overrides) {
+        Ok(_) if paths.config_file.is_file() => findings.checks.push(doctor_pass(
+            "config",
+            "configuration version and values are valid",
+        )),
+        Ok(_) => {
+            findings.unavailable = true;
+            findings.checks.push(doctor_warn(
+                "config",
+                "user configuration is absent; built-in defaults are active",
+                "run `cutokyo setup` to create the private user file",
+            ));
+        }
+        Err(error) => findings.checks.push(doctor_fail(
+            "config",
+            &format!("configuration is invalid ({:?})", error.code),
+            "repair or replace the user configuration with `config_version = 1`",
+        )),
+    }
+
+    check_owner_permissions(
+        "config_permissions",
+        &paths.config_file,
+        &mut findings.checks,
+    );
+    check_owner_permissions(
+        "database_permissions",
+        &paths.database_file,
+        &mut findings.checks,
+    );
+    check_owner_permissions("spool_permissions", &paths.spool_dir, &mut findings.checks);
+}
+
+fn check_spool(paths: &RuntimePaths, findings: &mut DoctorFindings) {
+    if !paths.spool_dir.is_dir() {
+        findings.unavailable = true;
+        findings.checks.push(doctor_warn(
+            "spool",
+            "spool directory is unavailable before setup",
+            "run `cutokyo setup`",
+        ));
+        findings.checks.push(doctor_warn(
+            "quarantine",
+            "quarantine status is unavailable before setup",
+            "run `cutokyo setup`",
+        ));
+        return;
+    }
+
+    let (pending, quarantined) = spool_file_counts(&paths.spool_dir);
+    findings.checks.push(if pending == 0 {
+        doctor_pass("spool", "atomic spool has no pending entries")
+    } else {
+        doctor_warn(
+            "spool",
+            &format!("{pending} atomic spool entries await drain"),
+            "run `cutokyo drain`",
+        )
+    });
+    findings.checks.push(if quarantined == 0 {
+        doctor_pass("quarantine", "no durable quarantine entries are present")
+    } else {
+        doctor_fail(
+            "quarantine",
+            &format!("{quarantined} durable quarantine entries require review"),
+            "inspect doctor health and explicitly acknowledge repaired entries",
+        )
+    });
+}
+
+fn check_health_persistence_marker(paths: &RuntimePaths, findings: &mut DoctorFindings) {
+    match health_persistence_marker_present(&paths.database_file) {
+        Ok(false) => findings.checks.push(doctor_pass(
+            "health_persistence_file",
+            "no unreconciled health-persistence failure marker is present",
+        )),
+        Ok(true) => findings.checks.push(doctor_fail(
+            "health_persistence_file",
+            "a prior persisted-health write failed and awaits writer restart reconciliation",
+            "stop other writers, run `cutokyo drain`, then re-run doctor",
+        )),
+        Err(error) => findings.checks.push(doctor_fail(
+            "health_persistence_file",
+            &format!(
+                "health-persistence failure marker is invalid ({:?})",
+                error.code
+            ),
+            "preserve the marker for diagnosis and repair it before trusting readiness",
+        )),
+    }
+}
+
+fn check_database(app: &Application, paths: &RuntimePaths, findings: &mut DoctorFindings) {
+    if !paths.database_file.is_file() {
+        findings.unavailable = true;
+        for (id, message) in [
+            (
+                "sqlite_fts5",
+                "SQLite/FTS5 is unproven before database initialization",
+            ),
+            (
+                "database_integrity",
+                "database integrity is unavailable before initialization",
+            ),
+            (
+                "schema",
+                "database schema is unavailable before initialization",
+            ),
+            (
+                "persisted_health",
+                "persisted health is unavailable before initialization",
+            ),
+            (
+                "writer_lock",
+                "writer ownership is unavailable before initialization",
+            ),
+        ] {
+            findings
+                .checks
+                .push(doctor_warn(id, message, "run `cutokyo drain` after setup"));
+        }
+        return;
+    }
+
+    match app.open_read_only(&paths.database_file) {
+        Ok(queries) => {
+            check_sqlite_runtime(&queries, findings);
+            check_database_integrity(&queries, findings);
+            check_database_health(&queries, findings);
+            check_row_counts(&queries, findings);
+        }
+        Err(error) => {
+            for id in [
+                "sqlite_fts5",
+                "database_integrity",
+                "schema",
+                "persisted_health",
+                "writer_lock",
+            ] {
+                findings.checks.push(doctor_fail(
+                    id,
+                    &format!("database could not be opened safely ({:?})", error.code),
+                    "inspect the specific database, schema, local-disk, or lock diagnosis",
+                ));
+            }
+        }
+    }
+}
+
+fn check_sqlite_runtime(queries: &QueryUseCases, findings: &mut DoctorFindings) {
+    match queries.connection_evidence() {
+        Ok(evidence) => {
+            let runtime_ready = evidence.fts5_available
+                && evidence.foreign_keys
+                && evidence.journal_mode.eq_ignore_ascii_case("wal")
+                && evidence.synchronous == 1
+                && evidence.busy_timeout_millis == 5_000;
+            findings.checks.push(if runtime_ready {
+                doctor_pass(
+                    "sqlite_fts5",
+                    &format!(
+                        "bundled SQLite {} has FTS5 and required pragmas",
+                        evidence.sqlite_version
+                    ),
+                )
+            } else {
+                doctor_fail(
+                    "sqlite_fts5",
+                    "bundled SQLite, FTS5, or connection pragmas violate the contract",
+                    "reinstall the matching native Cutokyo binary",
+                )
+            });
+            findings.sqlite = Some(evidence);
+        }
+        Err(error) => findings.checks.push(doctor_fail(
+            "sqlite_fts5",
+            &format!("SQLite runtime validation failed ({:?})", error.code),
+            "reinstall or run backup recovery before writing",
+        )),
+    }
+}
+
+fn check_database_integrity(queries: &QueryUseCases, findings: &mut DoctorFindings) {
+    match queries.integrity_check() {
+        Ok(_) => findings
+            .checks
+            .push(doctor_pass("database_integrity", "integrity_check is ok")),
+        Err(error) => findings.checks.push(doctor_fail(
+            "database_integrity",
+            &format!("database integrity failed ({:?})", error.code),
+            "stop writers and restore a verified online backup",
+        )),
+    }
+}
+
+fn check_database_health(queries: &QueryUseCases, findings: &mut DoctorFindings) {
+    match queries.health() {
+        Ok(snapshot) => {
+            let schema_ready = snapshot.schema_version == crate::store::DATABASE_SCHEMA_VERSION
+                && snapshot.derive_version == crate::store::DERIVE_VERSION;
+            findings.checks.push(if schema_ready {
+                doctor_pass(
+                    "schema",
+                    &format!(
+                        "schema {} and derive {} are current",
+                        snapshot.schema_version, snapshot.derive_version
+                    ),
+                )
+            } else {
+                doctor_fail(
+                    "schema",
+                    "schema or derived projection version is not current",
+                    "run the newer Cutokyo binary to migrate forward and rebuild",
+                )
+            });
+            let degraded = snapshot
+                .dimensions
+                .values()
+                .filter(|dimension| dimension.status == crate::store::HealthStatus::Degraded)
+                .map(|dimension| dimension.dimension.clone())
+                .collect::<Vec<_>>();
+            findings.checks.push(if degraded.is_empty() {
+                doctor_pass(
+                    "persisted_health",
+                    "no persisted health dimension is degraded",
+                )
+            } else {
+                doctor_fail(
+                    "persisted_health",
+                    &format!("degraded dimensions: {}", degraded.join(", ")),
+                    "follow the specific dimension remediation before trusting readiness",
+                )
+            });
+            findings.checks.push(if snapshot.writer_owner.is_some() {
+                doctor_pass("writer_lock", "writer ownership metadata is present")
+            } else {
+                doctor_warn(
+                    "writer_lock",
+                    "no active writer owner is recorded",
+                    "a finite CLI command may claim ownership when mutation is requested",
+                )
+            });
+            findings.health = Some(snapshot);
+        }
+        Err(error) => findings.checks.push(doctor_fail(
+            "persisted_health",
+            &format!("bounded health projection is unreadable ({:?})", error.code),
+            "restore a verified backup or rebuild the health projection",
+        )),
+    }
+}
+
+fn check_row_counts(queries: &QueryUseCases, findings: &mut DoctorFindings) {
+    match queries.diagnostic_row_counts() {
+        Ok(counts) => findings.row_counts = Some(counts),
+        Err(error) => findings.checks.push(doctor_fail(
+            "row_counts",
+            &format!("safe row counts are unavailable ({:?})", error.code),
+            "repair database readability",
+        )),
+    }
+}
+
+fn doctor_pass(id: &str, message: &str) -> DoctorCheck {
+    DoctorCheck {
+        id: id.to_owned(),
+        status: DoctorCheckStatus::Pass,
+        message: message.to_owned(),
+        remediation: None,
+    }
+}
+
+fn doctor_warn(id: &str, message: &str, remediation: &str) -> DoctorCheck {
+    DoctorCheck {
+        id: id.to_owned(),
+        status: DoctorCheckStatus::Warn,
+        message: message.to_owned(),
+        remediation: Some(remediation.to_owned()),
+    }
+}
+
+fn doctor_fail(id: &str, message: &str, remediation: &str) -> DoctorCheck {
+    DoctorCheck {
+        id: id.to_owned(),
+        status: DoctorCheckStatus::Fail,
+        message: message.to_owned(),
+        remediation: Some(remediation.to_owned()),
+    }
+}
+
+fn spool_file_counts(root: &Path) -> (u64, u64) {
+    let pending = fs::read_dir(root).map_or(0, |entries| {
+        entries
+            .filter_map(std::result::Result::ok)
+            .filter(|entry| {
+                entry.file_type().is_ok_and(|kind| kind.is_file())
+                    && entry.file_name().to_string_lossy().ends_with(".jsonl")
+            })
+            .count()
+    });
+    let quarantined = fs::read_dir(root.join("quarantine")).map_or(0, |entries| {
+        entries
+            .filter_map(std::result::Result::ok)
+            .filter(|entry| entry.file_name().to_string_lossy().ends_with(".bad"))
+            .count()
+    });
+    (
+        u64::try_from(pending).unwrap_or(u64::MAX),
+        u64::try_from(quarantined).unwrap_or(u64::MAX),
+    )
+}
+
+fn harness_version_check(id: &str, executable: &str) -> DoctorCheck {
+    match Command::new(executable).arg("--version").output() {
+        Ok(output) if output.status.success() => {
+            let version = String::from_utf8_lossy(&output.stdout);
+            let bounded = version
+                .trim()
+                .chars()
+                .filter(|character| !character.is_control())
+                .take(160)
+                .collect::<String>();
+            doctor_pass(id, &format!("installed harness reports {bounded}"))
+        }
+        Ok(_) => doctor_warn(
+            id,
+            "installed harness did not report a usable version",
+            "repair that harness installation; other harnesses remain independent",
+        ),
+        Err(_) => doctor_warn(
+            id,
+            "harness executable is not available on PATH",
+            "install the harness only if its sessions should be captured",
+        ),
+    }
+}
+
+fn plugin_check(app: &Application, directory: &Path) -> DoctorCheck {
+    const MAX_DIRECTORY_ENTRIES: usize = 1_024;
+    const MAX_MANIFEST_BYTES: u64 = 64 * 1_024;
+
+    let metadata = match fs::symlink_metadata(directory) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return doctor_pass("plugins", "no external plugin directory is configured");
+        }
+        Err(_) => {
+            return doctor_fail(
+                "plugins",
+                "plugin directory metadata is unreadable",
+                "repair the owner-only plugin directory and re-run doctor",
+            );
+        }
+    };
+    if metadata.file_type().is_symlink() || !metadata.file_type().is_dir() {
+        return doctor_fail(
+            "plugins",
+            "plugin directory is a symlink or is not a directory",
+            "replace it with an owner-controlled directory",
+        );
+    }
+    let Ok(entries) = fs::read_dir(directory) else {
+        return doctor_fail(
+            "plugins",
+            "plugin directory cannot be enumerated",
+            "repair plugin directory ownership and permissions",
+        );
+    };
+
+    let mut invalid = 0_u64;
+    let mut manifests = 0_u64;
+    for (index, entry) in entries.enumerate() {
+        if index >= MAX_DIRECTORY_ENTRIES {
+            return doctor_fail(
+                "plugins",
+                "plugin directory exceeds the bounded entry limit",
+                "remove stale entries and keep at most 1024 plugin directory entries",
+            );
+        }
+        let Ok(entry) = entry else {
+            invalid = invalid.saturating_add(1);
+            continue;
+        };
+        let path = entry.path();
+        if path.extension().and_then(|value| value.to_str()) != Some("json") {
+            continue;
+        }
+        manifests = manifests.saturating_add(1);
+        let major = fs::symlink_metadata(&path)
+            .ok()
+            .filter(|metadata| metadata.file_type().is_file())
+            .filter(|metadata| metadata.len() <= MAX_MANIFEST_BYTES)
+            .and_then(|_| fs::read(&path).ok())
+            .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
+            .and_then(|value| {
+                value
+                    .get("protocol_major")
+                    .and_then(serde_json::Value::as_u64)
+            })
+            .and_then(|value| u32::try_from(value).ok());
+        if major.is_none_or(|value| app.validate_plugin_major(value).is_err()) {
+            invalid = invalid.saturating_add(1);
+        }
+    }
+    if invalid == 0 {
+        doctor_pass(
+            "plugins",
+            &format!("{manifests} plugin manifests use the supported protocol major"),
+        )
+    } else {
+        doctor_fail(
+            "plugins",
+            &format!("{invalid} plugin manifests are malformed or use an unsupported major"),
+            "run `cutokyo plugin verify PATH` for field-level diagnostics",
+        )
+    }
+}
+
+#[cfg(unix)]
+fn check_owner_permissions(id: &str, path: &Path, checks: &mut Vec<DoctorCheck>) {
+    use std::{io, os::unix::fs::PermissionsExt as _};
+
+    match fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.file_type().is_symlink() => checks.push(doctor_fail(
+            id,
+            "the private runtime target is a symbolic link",
+            "replace it with an owner-controlled regular file or directory",
+        )),
+        Ok(metadata) => {
+            let mode = metadata.permissions().mode() & 0o777;
+            if mode.trailing_zeros() >= 6 {
+                checks.push(doctor_pass(id, "owner-only permissions are enforced"));
+            } else {
+                checks.push(doctor_fail(
+                    id,
+                    &format!("permissions {mode:03o} expose local data beyond the owner"),
+                    "restrict the target to mode 0600 for files or 0700 for directories",
+                ));
+            }
+        }
+        Err(error) if error.kind() == io::ErrorKind::NotFound => checks.push(doctor_warn(
+            id,
+            "permission state is unavailable because the target does not exist",
+            "run `cutokyo setup` and re-run doctor",
+        )),
+        Err(_) => checks.push(doctor_fail(
+            id,
+            "permission metadata could not be inspected",
+            "repair target ownership and access, then re-run doctor",
+        )),
+    }
+}
+
+#[cfg(not(unix))]
+fn check_owner_permissions(id: &str, path: &Path, checks: &mut Vec<DoctorCheck>) {
+    match fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.file_type().is_symlink() => checks.push(doctor_fail(
+            id,
+            "the private runtime target is a symbolic link",
+            "replace it with an owner-controlled regular file or directory",
+        )),
+        Ok(_) => checks.push(doctor_pass(
+            id,
+            "platform ACL inspection is delegated to the operating system",
+        )),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => checks.push(doctor_warn(
+            id,
+            "permission state is unavailable because the target does not exist",
+            "run `cutokyo setup` and re-run doctor",
+        )),
+        Err(_) => checks.push(doctor_fail(
+            id,
+            "permission metadata could not be inspected",
+            "repair target ownership and access, then re-run doctor",
+        )),
+    }
+}
+
+fn search_query(request: &SessionSearch) -> Result<SearchQuery> {
+    Ok(SearchQuery {
+        text: request.text.clone(),
+        project: request.project.clone(),
+        branch: request.branch.clone(),
+        harness: request.harness.as_deref().map(parse_harness).transpose()?,
+        from: request.from.as_deref().map(Timestamp::parse).transpose()?,
+        until: request.until.as_deref().map(Timestamp::parse).transpose()?,
+        tool: request.tool.clone(),
+        skill: request.skill.clone(),
+        agent: request.agent.clone(),
+        limit: request.limit,
+    })
+}
+
+fn parse_harness(value: &str) -> Result<Harness> {
+    match value {
+        "claude_code" | "claude" => Ok(Harness::ClaudeCode),
+        "codex" => Ok(Harness::Codex),
+        "opencode" => Ok(Harness::OpenCode),
+        _ => Err(
+            ContractError::new(ErrorCode::InvalidInput, "unknown harness filter").at_field(
+                "harness",
+                "claude_code, codex, or opencode",
+                "unknown",
+            ),
+        ),
+    }
+}
+
+fn resume_plan_from_result(result: &SearchResult) -> Result<ResumePlan> {
+    let native_resume_id = result.native_resume_id.clone().ok_or_else(|| {
+        ContractError::new(
+            ErrorCode::CapabilityUnavailable,
+            "the selected session has no exact native resume target",
+        )
+    })?;
+    let (executable, arguments) = match result.harness {
+        Harness::ClaudeCode => (
+            "claude".to_owned(),
+            vec!["--resume".to_owned(), native_resume_id.clone()],
+        ),
+        Harness::Codex => (
+            "codex".to_owned(),
+            vec!["resume".to_owned(), native_resume_id.clone()],
+        ),
+        Harness::OpenCode => (
+            "opencode".to_owned(),
+            vec!["--session".to_owned(), native_resume_id.clone()],
+        ),
+    };
+    Ok(ResumePlan {
+        session_id: result.session_id.as_str().to_owned(),
+        harness: result.harness.as_str().to_owned(),
+        native_resume_id,
+        executable,
+        arguments,
+        // Search results deliberately omit full local project paths. A future
+        // harness adapter may supply a validated private working directory.
+        working_directory: None,
+    })
 }
 
 fn spool_cap_name(reason: SpoolCapReason) -> &'static str {

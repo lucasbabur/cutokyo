@@ -3,6 +3,7 @@
 /ui/node_modules/
 /ui/coverage/
 /ui/dist/
+/crates/cutokyo-desktop/gen/
 *.log
 __pycache__/
 *.py[cod]

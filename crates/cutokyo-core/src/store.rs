@@ -343,6 +343,24 @@ pub struct UsageTotals {
     pub provider_cost_micros: Option<u64>,
 }
 
+/// Safe aggregate row counts permitted in diagnostic bundles.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct DiagnosticRowCounts {
+    /// Immutable observations.
+    pub raw_observations: u64,
+    /// Session projections.
+    pub sessions: u64,
+    /// Transcript message projections (content is never returned).
+    pub messages: u64,
+    /// Search-index rows.
+    pub fts_rows: u64,
+    /// Attributable summaries (content is never returned).
+    pub summaries: u64,
+    /// Current quarantine records.
+    pub current_quarantines: u64,
+}
+
 /// Stable retention plan. Applying it deletes exactly these sessions even if
 /// new sessions arrive between preview and confirmation.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -808,6 +826,24 @@ impl WriterStore {
     /// Returns invalid input for malformed filters or a store read error.
     pub fn search(&self, query: &SearchQuery) -> Result<Vec<SearchResult>> {
         self.reader().search(query)
+    }
+
+    /// Looks up one exact session projection.
+    ///
+    /// # Errors
+    ///
+    /// Returns a store or contract-decoding error.
+    pub fn session(&self, session_id: &SessionId) -> Result<Option<SearchResult>> {
+        self.reader().session(session_id)
+    }
+
+    /// Returns safe aggregate row counts for diagnostics.
+    ///
+    /// # Errors
+    ///
+    /// Returns a store read error.
+    pub fn diagnostic_row_counts(&self) -> Result<DiagnosticRowCounts> {
+        self.reader().diagnostic_row_counts()
     }
 
     /// Returns deduplicated usage totals for one session.
@@ -1532,6 +1568,26 @@ impl ReadStore {
         connection_evidence(&connection)
     }
 
+    /// Runs SQLite integrity checking without taking write ownership.
+    ///
+    /// # Errors
+    ///
+    /// Returns unhealthy when SQLite reports anything other than `ok`.
+    pub fn integrity_check(&self) -> Result<String> {
+        let connection = open_read_connection(&self.path)?;
+        let result = integrity_check_connection(&connection)?;
+        if result != "ok" {
+            return Err(
+                ContractError::new(ErrorCode::Unhealthy, "SQLite integrity check failed").at_field(
+                    "integrity_check",
+                    "ok",
+                    result,
+                ),
+            );
+        }
+        Ok(result)
+    }
+
     /// Reads a fixed singleton and fixed dimension set; no history table appears
     /// in this query path.
     ///
@@ -1612,6 +1668,48 @@ impl ReadStore {
         validate_search_query(query)?;
         let connection = open_read_connection(&self.path)?;
         search_connection(&connection, query)
+    }
+
+    /// Looks up one exact session projection without relying on a bounded list scan.
+    ///
+    /// # Errors
+    ///
+    /// Returns a store or contract-decoding error.
+    pub fn session(&self, session_id: &SessionId) -> Result<Option<SearchResult>> {
+        let connection = open_read_connection(&self.path)?;
+        session_connection(&connection, session_id)
+    }
+
+    /// Returns safe aggregate row counts without reading content columns.
+    ///
+    /// # Errors
+    ///
+    /// Returns a store read error.
+    pub fn diagnostic_row_counts(&self) -> Result<DiagnosticRowCounts> {
+        let connection = open_read_connection(&self.path)?;
+        let count = |table: &str| -> Result<u64> {
+            let value: i64 = connection
+                .query_row(&format!("SELECT count(*) FROM {table}"), [], |row| {
+                    row.get(0)
+                })
+                .map_err(|error| sqlite_error("read diagnostic row count", &error))?;
+            Ok(nonnegative_i64_to_u64(value))
+        };
+        let current_quarantines: i64 = connection
+            .query_row(
+                "SELECT count(*) FROM quarantines WHERE acknowledged_at_epoch IS NULL",
+                [],
+                |row| row.get(0),
+            )
+            .map_err(|error| sqlite_error("read current quarantine count", &error))?;
+        Ok(DiagnosticRowCounts {
+            raw_observations: count("raw_observations")?,
+            sessions: count("sessions")?,
+            messages: count("messages")?,
+            fts_rows: count("message_fts")?,
+            summaries: count("summaries")?,
+            current_quarantines: nonnegative_i64_to_u64(current_quarantines),
+        })
     }
 
     /// Returns totals from one winning row per native usage key and metric.
@@ -1858,6 +1956,38 @@ enum RestoreFault {
 struct HealthWriteSidecar {
     failed_at_epoch: i64,
     category: String,
+}
+
+pub(crate) fn health_persistence_marker_present(database_path: &Path) -> Result<bool> {
+    let path = database_path.with_extension("health.json");
+    let metadata = match fs::symlink_metadata(&path) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+        Err(error) => return Err(io_error("inspect health persistence marker", &error)),
+    };
+    if metadata.file_type().is_symlink() || !metadata.file_type().is_file() {
+        return Err(ContractError::new(
+            ErrorCode::InvalidContract,
+            "health persistence marker is not a regular file",
+        ));
+    }
+    if metadata.len() == 0 || metadata.len() > 16 * 1024 {
+        return Err(ContractError::new(
+            ErrorCode::InvalidContract,
+            "health persistence marker has an invalid bounded size",
+        ));
+    }
+    let bytes =
+        fs::read(path).map_err(|error| io_error("read health persistence marker", &error))?;
+    let marker: HealthWriteSidecar = serde_json::from_slice(&bytes)
+        .map_err(|error| serialization_error("parse health persistence marker", &error))?;
+    if marker.failed_at_epoch < 0 || marker.category.is_empty() || marker.category.len() > 160 {
+        return Err(ContractError::new(
+            ErrorCode::InvalidContract,
+            "health persistence marker fields are invalid",
+        ));
+    }
+    Ok(true)
 }
 
 // --- Connection, migration, and local-disk policy ---------------------------------
@@ -3414,6 +3544,48 @@ fn load_raw_observations(connection: &Connection) -> Result<Vec<RawObservation>>
 }
 
 // --- Search and provenance ---------------------------------------------------------
+
+fn session_connection(
+    connection: &Connection,
+    session_id: &SessionId,
+) -> Result<Option<SearchResult>> {
+    let row = connection
+        .query_row(
+            "SELECT s.harness, s.native_resume_id, s.project_id, p.name, s.branch, s.title, s.started_at, s.winning_observation_id FROM sessions s LEFT JOIN projects p ON p.project_id=s.project_id WHERE s.session_id=?1",
+            [session_id.as_str()],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, Option<String>>(1)?,
+                    row.get::<_, Option<String>>(2)?,
+                    row.get::<_, Option<String>>(3)?,
+                    row.get::<_, Option<String>>(4)?,
+                    row.get::<_, Option<String>>(5)?,
+                    row.get::<_, String>(6)?,
+                    row.get::<_, String>(7)?,
+                ))
+            },
+        )
+        .optional()
+        .map_err(|error| sqlite_error("query exact session", &error))?;
+    let Some(row) = row else {
+        return Ok(None);
+    };
+    let evidence = projection_evidence(connection, "session", session_id.as_str())?;
+    let winning = load_observation_provenance(connection, &row.7)?;
+    Ok(Some(SearchResult {
+        session_id: session_id.clone(),
+        harness: parse_harness(&row.0)?,
+        native_resume_id: row.1,
+        project_id: row.2,
+        project_name: row.3,
+        branch: row.4,
+        title: row.5,
+        started_at: Timestamp::parse(row.6)?,
+        observation_ids: evidence,
+        provenance: winning,
+    }))
+}
 
 fn search_connection(connection: &Connection, query: &SearchQuery) -> Result<Vec<SearchResult>> {
     let mut sql = String::from(

@@ -30,6 +30,14 @@ rusqlite = { version = "=0.40.2", features = ["backup", "bundled"] }
 rusqlite_migration = "=2.6.0"
 fs4 = "=1.1.0"
 sha2 = "=0.11.0"
+clap = { version = "=4.5.48", features = ["derive", "env"] }
+directories = "=6.0.0"
+toml = "=0.9.7"
+tracing = "=0.1.41"
+tracing-subscriber = { version = "=0.3.20", features = ["env-filter", "fmt", "json"] }
+tar = "=0.4.44"
+flate2 = "=1.1.2"
+keyring = "=4.2.0"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
@@ -43,7 +51,27 @@ unwrap_used = "deny"
 expect_used = "deny"
 panic = "deny"
 
+[workspace.metadata.dist]
+cargo-dist-version = "0.32.0"
+ci = "github"
+installers = ["shell", "powershell", "npm"]
+npm-package = "cutokyo"
+npm-shrinkwrap = true
+pr-run-mode = "plan"
+# The release workflow layers pinned actions, signing preflight, Tauri, SBOM, and
+# provenance jobs over cargo-dist's plan. It is intentionally maintained here.
+allow-dirty = ["ci"]
+targets = [
+  "aarch64-apple-darwin",
+  "x86_64-apple-darwin",
+  "x86_64-unknown-linux-gnu",
+  "x86_64-pc-windows-msvc",
+]
+
 [profile.release]
 lto = "thin"
 codegen-units = 1
 strip = "symbols"
+
+[profile.dist]
+inherits = "release"

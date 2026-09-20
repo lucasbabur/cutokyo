@@ -3,6 +3,7 @@
 ## Contents
 
 - [Status](#status)
+- [Manifest and static verification](#manifest-and-static-verification)
 - [Transport and handshake](#transport-and-handshake)
 - [Plugin kinds](#plugin-kinds)
 - [Capabilities](#capabilities)
@@ -12,10 +13,46 @@
 
 ## Status
 
-The v1 schema and golden fixtures are foundation contracts. The subprocess host,
-verifier, and executable examples are not yet implemented and are not claimed by
-this document. Their implementation must conform to this contract rather than invent
-an alternate wire format.
+The v1 schema, golden fixtures, bounded manifest parser, protocol-major check, and
+contained-entrypoint validation are implemented. `cutokyo plugin verify` currently
+reports `runtime_validation: false`: it does **not** yet spawn the plugin or prove the
+bidirectional handshake, timeout, cancellation, malformed-output recovery, or every
+message bound. That subprocess conformance suite is a release blocker, not an implied
+sandbox or a success hidden behind manifest validation.
+
+A manifest-only success proves only the scope named in the JSON receipt. Authors can
+use the wire contract below while the real host is completed; they must not describe
+their plugin as runtime-verified yet.
+
+## Manifest and static verification
+
+Place an exact `cutokyo-plugin.json` at the plugin root:
+
+```json
+{
+  "protocol_major": 1,
+  "id": "example.safe-source",
+  "name": "Safe source example",
+  "kind": "source",
+  "entrypoint": "plugin.py",
+  "capabilities": ["emit_observation"]
+}
+```
+
+Unknown fields are rejected. IDs are bounded to 128 bytes, names to 256 bytes, and
+the manifest to 64 KiB. `kind` is `source` or `processor`. Capabilities use the exact
+wire names `emit_observation`, `emit_derived_fact`, `transcript_read`, and `network`;
+the latter two still require separate user grants.
+
+The entrypoint must canonicalize to a regular file beneath the plugin root. A symlink
+or `../` escape does not become trusted because it appears in a manifest. Run:
+
+```bash
+cutokyo plugin verify ./my-plugin --json
+```
+
+Inspect `verification_scope` and `runtime_validation` rather than treating `valid` as
+a broader claim. Plugin manifests are configuration, not an operating-system sandbox.
 
 ## Transport and handshake
 
@@ -57,20 +94,20 @@ keychain handle, or unrestricted app object.
 
 The host implementation must enforce these v1 ceilings in both directions:
 
-| Boundary | v1 ceiling |
-| --- | ---: |
-| UTF-8 JSON line | 1 MiB including newline |
-| request ID | 128 bytes |
-| plugin ID | 256 bytes |
-| payload object | 64 top-level fields |
-| capabilities | 8 unique values |
-| telemetry per message | 64 KiB |
-| emitted observations per response | 1,000 |
-| emitted derived facts per response | 1,000 |
-| concurrent requests per process | 32 |
-| ordinary request timeout | 30 seconds |
-| cancellation grace before termination | 2 seconds |
-| process output after cancellation | 1 MiB |
+| Boundary                              |              v1 ceiling |
+| ------------------------------------- | ----------------------: |
+| UTF-8 JSON line                       | 1 MiB including newline |
+| request ID                            |               128 bytes |
+| plugin ID                             |               256 bytes |
+| payload object                        |     64 top-level fields |
+| capabilities                          |         8 unique values |
+| telemetry per message                 |                  64 KiB |
+| emitted observations per response     |                   1,000 |
+| emitted derived facts per response    |                   1,000 |
+| concurrent requests per process       |                      32 |
+| ordinary request timeout              |              30 seconds |
+| cancellation grace before termination |               2 seconds |
+| process output after cancellation     |                   1 MiB |
 
 The verifier must mutate each boundary and prove rejection. Timeouts and cancellation
 are protocol outcomes. A malformed, oversized, timed-out, or cancelled run is cleaned
@@ -87,8 +124,9 @@ expected contract, and sanitized actual description. Raw transcript text, secret
 provider headers, and unbounded plugin output are never embedded in errors or logs.
 
 Golden fixtures live under `fixtures/plugin/v1`. Good fixtures must validate; every
-bad fixture must fail for its named reason. `cutokyo plugin verify` will execute the
-real plugin and protocol host rather than accepting a manifest-only declaration.
+bad fixture must fail for its named reason. The release-complete verifier must execute
+the real plugin and protocol host rather than accepting a manifest-only declaration;
+the current JSON receipt explicitly identifies that missing runtime scope.
 
 ## Security boundary
 

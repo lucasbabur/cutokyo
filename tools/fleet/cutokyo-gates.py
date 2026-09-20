@@ -14,11 +14,11 @@ import json
 import shutil
 import sys
 import tempfile
-import tomllib
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
+import tomllib
 
 REQUIRED_PATHS = (
     "Cargo.toml",
@@ -127,6 +127,7 @@ SCHEMA_CONTRACTS = {
         "record",
     },
     "schemas/settings/settings-patch.v1.json": set(),
+    "schemas/cli-output.v1.json": {"schema_version", "command", "ok", "meta"},
 }
 
 CI_TOKENS = {
@@ -146,7 +147,7 @@ CI_TOKENS = {
     ),
     ".github/workflows/release.yml": (
         "cargo-dist",
-        "tauri-action",
+        "tauri-apps/tauri-action@",
         "attest-build-provenance",
         "sha256",
         "sbom",
