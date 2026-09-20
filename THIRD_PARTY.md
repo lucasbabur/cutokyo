@@ -23,6 +23,7 @@ shipped until their feature implementation enables them.
 | sha2 | 0.11.0 | MIT OR Apache-2.0 | SHA-256 observation identities and backup digests |
 | tauri | 2.11.5 | Apache-2.0 OR MIT | Optional desktop-runtime dependency; stable v2 |
 | tauri-build | 2.6.3 | Apache-2.0 OR MIT | Official Tauri build-context generator |
+| tauri-plugin-wdio-webdriver | 1.4.0 | MIT | Test-feature-only embedded native WebDriver server; release builds reject the feature |
 
 ## Researched feature dependencies
 
@@ -40,10 +41,23 @@ runtime application code.
 
 | Package | Version | License |
 | --- | ---: | --- |
+| @tauri-apps/api | 2.11.1 | Apache-2.0 OR MIT |
+| React / React DOM | 19.3.0 | MIT |
+| Lucide React | 1.47.0 | ISC |
 | TypeScript | 7.0.2 | Apache-2.0 |
+| Vite / React plugin | 8.3.0 / 6.1.1 | MIT |
 | Vitest | 5.0.1 | MIT |
+| Testing Library React / user-event | 16.3.3 / 14.6.7 | MIT |
+| Playwright Test | 1.63.0 | Apache-2.0 |
+| axe-core / axe Playwright adapter | 4.13.0 | MPL-2.0 |
+| WebdriverIO CLI, runner, Mocha framework, and client | 9.31.9 | MIT |
+| @wdio/globals / @wdio/types | 9.31.3 / 9.30.1 | MIT |
+| @wdio/tauri-service | 1.4.0 | MIT |
+| jsdom | 30.1.0 | MIT |
+| Knip | 6.37.0 | ISC |
 | Oxlint | 1.83.0 | MIT |
 | Prettier | 3.9.8 | MIT |
+| tsx | 4.23.13 | MIT |
 | @tauri-apps/cli | 2.11.4 | Apache-2.0 OR MIT |
 
 ## Build and policy tools

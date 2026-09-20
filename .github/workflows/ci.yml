@@ -18,6 +18,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install Linux desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22.22.3"
@@ -36,10 +45,14 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: TypeScript checks
         run: |
+          pnpm --dir ui check:settings
           pnpm --dir ui exec tsc --noEmit
-          pnpm --dir ui exec oxlint src
+          pnpm --dir ui exec oxlint src tests scripts vite.config.ts vitest.config.ts playwright.config.ts wdio.conf.ts
           pnpm --dir ui exec prettier --check .
           pnpm --dir ui exec vitest run
+          pnpm --dir ui knip
+      - name: Browser journeys and accessibility
+        run: pnpm --dir ui test:e2e:web
       - name: cargo deny check licenses bans
         uses: EmbarkStudios/cargo-deny-action@b66acf5e9fe20f8aba065be86778a8a4c846f902 # v2
         with:
@@ -48,7 +61,7 @@ jobs:
         uses: crate-ci/typos@68c865732f1410b4c54c201789de2b2f914ef2ec # v1
 
   build-test:
-    name: Build and test (${{ matrix.os }})
+    name: Build and test Tauri (${{ matrix.os }})
     needs: lint-linux
     strategy:
       fail-fast: false
@@ -57,7 +70,33 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Build workspace
+      - name: Install Linux desktop and native-test dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            xvfb
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22.22.3"
+          cache: pnpm
+      - name: Enable pinned pnpm
+        run: corepack enable && corepack prepare pnpm@11.25.0 --activate
+      - name: Install TypeScript workspace
+        run: pnpm install --frozen-lockfile
+      - name: Build production frontend
+        run: pnpm --dir ui build
+      - name: Build Rust workspace
         run: cargo build --workspace
-      - name: cargo test
+      - name: Test Rust workspace
         run: cargo test --workspace
+      - name: Build actual Tauri application
+        run: pnpm tauri build --debug --no-bundle
+      - name: Exercise native Tauri journey on Linux
+        if: runner.os == 'Linux'
+        run: xvfb-run -a pnpm --dir ui test:e2e:tauri

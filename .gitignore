@@ -3,6 +3,8 @@
 /ui/node_modules/
 /ui/coverage/
 /ui/dist/
+/ui/playwright-report/
+/ui/test-results/
 *.log
 __pycache__/
 *.py[cod]
