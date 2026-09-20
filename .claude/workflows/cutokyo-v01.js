@@ -353,8 +353,11 @@ Work only in the destination the harness gives you. Finish behavior, tests, docu
 }
 
 phase('Foundation')
-log('Establishing contracts and the first commit before isolated worktrees exist.')
-const foundation = await agent(
+const resumedFoundation = args?.foundation
+if (resumedFoundation) {
+  log(`Reusing verified foundation revision ${resumedFoundation.revision} after coordinator recovery.`)
+}
+const foundation = resumedFoundation ?? await agent(
   `${commonAssignment('foundation')}
 
 The repository has no product commit. Create the executable foundation described by your role, including the existing Fleet design files and self-testing verifier. This is the only unit allowed to establish HEAD. Run verifier selftests and prove the complete known-good fixture plus one targeted known-bad mutation for each gate. Exact missing-root CLI exit behavior is outside acceptance. Do not implement fake feature stubs that claim acceptance. Return done=false for any missing foundation criterion.`,
