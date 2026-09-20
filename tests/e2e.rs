@@ -1,5 +1,7 @@
 //! Deterministic fake endpoint and adverse-world integration checks.
 
+use std::fs;
+
 use cutokyo_core::{
     adapters::{
         claude_code::{
@@ -7,17 +9,33 @@ use cutokyo_core::{
             TESTED_CLAUDE_VERSION,
         },
         codex::{AppServerLimits, CodexAppServerClient, CodexSetup, CodexSetupSpec, SetupPhase},
+        opencode::{
+            OPENCODE_PLUGIN_SOURCE, OpenCodeSetup, SetupFault, SetupMode, SetupSubsystemStatus,
+        },
     },
     app::Application,
     store::{LockOwner, SearchQuery},
 };
-use cutokyo_domain::{Harness, NativeSessionId, ResumeLauncher as _, Timestamp};
+use cutokyo_domain::{ErrorCode, Harness, NativeSessionId, ResumeLauncher as _, Timestamp};
 use cutokyo_integration_tests::repository_root;
 use fake_harness::{
     FAKE_CLAUDE_RESUME_ID, FakeClaudeCode, FakeClaudeTranscriptRevision, FakeCodexAppServer,
     FakeMcpEndpoint, FakeMcpServer, FakeProviderEndpoint, FakeWorld, ProviderRequest,
 };
 use serde_json::json;
+
+fn config_mode(path: &std::path::Path) -> std::io::Result<Option<u32>> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        fs::metadata(path).map(|metadata| Some(metadata.permissions().mode() & 0o777))
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = path;
+        Ok(None)
+    }
+}
 
 #[test]
 fn fake_harness_contract_models_adverse_delivery_and_exact_resume()
@@ -261,5 +279,81 @@ fn codex_setup_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(std::fs::read(&hooks_path)?, unmanaged_hooks);
     assert_eq!(std::fs::read(&config_path)?, unmanaged_config);
     assert!(!setup.uninstall()?.changed);
+    Ok(())
+}
+
+#[test]
+fn opencode_setup_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
+    let temporary_home = tempfile::TempDir::new()?;
+    let config = temporary_home.path().join(".config/opencode");
+    let state = temporary_home.path().join(".local/state/cutokyo");
+    fs::create_dir_all(&config)?;
+    let unmanaged_config = config.join("opencode.jsonc");
+    let unmanaged_bytes =
+        b"{\n  // operator-owned bytes must survive exactly\n  \"model\": \"synthetic/model\"\n}\n";
+    fs::write(&unmanaged_config, unmanaged_bytes)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        fs::set_permissions(&unmanaged_config, fs::Permissions::from_mode(0o640))?;
+    }
+    let original_mode = config_mode(&unmanaged_config)?;
+    let setup = OpenCodeSetup::new(&config, &state);
+
+    let dry_run = setup.run(SetupMode::DryRun, SetupFault::None)?;
+    assert!(!dry_run.changed);
+    assert_eq!(dry_run.plugin, SetupSubsystemStatus::Planned);
+    assert!(!setup.plugin_path().exists());
+
+    let applied = setup.run(SetupMode::Apply, SetupFault::None)?;
+    assert!(applied.changed);
+    assert_eq!(
+        fs::read_to_string(setup.plugin_path())?,
+        OPENCODE_PLUGIN_SOURCE
+    );
+    assert!(!setup.run(SetupMode::Apply, SetupFault::None)?.changed);
+
+    let uninstall = setup.run(SetupMode::Uninstall, SetupFault::None)?;
+    assert_eq!(uninstall.plugin, SetupSubsystemStatus::Removed);
+    assert!(!setup.plugin_path().exists());
+    assert!(!setup.run(SetupMode::Uninstall, SetupFault::None)?.changed);
+    assert_eq!(fs::read(&unmanaged_config)?, unmanaged_bytes);
+    assert_eq!(config_mode(&unmanaged_config)?, original_mode);
+    Ok(())
+}
+
+#[test]
+fn opencode_setup_roundtrip_recovers_interruption_and_concurrent_drift()
+-> Result<(), Box<dyn std::error::Error>> {
+    let temporary_home = tempfile::TempDir::new()?;
+    let setup = OpenCodeSetup::new(
+        temporary_home.path().join(".config/opencode"),
+        temporary_home.path().join(".local/state/cutokyo"),
+    );
+    let interrupted = setup.run(SetupMode::Apply, SetupFault::AfterPluginWrite);
+    assert_eq!(
+        interrupted.err().map(|error| error.code),
+        Some(ErrorCode::Cancelled)
+    );
+    assert!(setup.plugin_path().is_file());
+    let recovered = setup.run(SetupMode::Recover, SetupFault::None)?;
+    assert_eq!(recovered.plugin, SetupSubsystemStatus::Recovered);
+
+    let plan = setup.plan(SetupMode::Uninstall)?;
+    fs::write(
+        setup.plugin_path(),
+        "// synthetic concurrent operator edit\n",
+    )?;
+    assert_eq!(
+        setup
+            .execute(&plan, SetupFault::None)
+            .err()
+            .map(|error| error.code),
+        Some(ErrorCode::Unhealthy)
+    );
+    assert_eq!(
+        fs::read_to_string(setup.plugin_path())?,
+        "// synthetic concurrent operator edit\n"
+    );
     Ok(())
 }

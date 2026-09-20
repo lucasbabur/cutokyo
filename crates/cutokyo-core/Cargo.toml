@@ -20,6 +20,9 @@ fs4.workspace = true
 sha2.workspace = true
 jsonc-parser.workspace = true
 toml_edit.workspace = true
+json5.workspace = true
+ureq.workspace = true
+url.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

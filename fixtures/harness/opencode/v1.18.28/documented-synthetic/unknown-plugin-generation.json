@@ -1,0 +1,11 @@
+{
+  "plugin_api": "v99",
+  "server_url": "http://127.0.0.1:65530/",
+  "event": {
+    "kind": "future.lifecycle.shape",
+    "payload": {
+      "synthetic": true,
+      "must_remain_raw": "SYNTHETIC_UNKNOWN_FIELD_SENTINEL"
+    }
+  }
+}
