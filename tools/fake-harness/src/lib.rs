@@ -11,6 +11,12 @@ use cutokyo_domain::{ContractError, ErrorCode, Harness, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
+pub mod claude_code;
+pub use claude_code::{
+    FAKE_CLAUDE_DRIFT_ID, FAKE_CLAUDE_PROJECT_SENTINEL, FAKE_CLAUDE_RESUME_ID, FakeClaudeCode,
+    FakeClaudeExecutable, FakeClaudeStatePaths, FakeClaudeTranscriptRevision,
+};
+
 /// Versioned fixture world shared across fake endpoints.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]

@@ -1,0 +1,12 @@
+{
+  "session_id": "11111111-1111-4111-8111-111111111111",
+  "transcript_path": "<SYNTHETIC_HOME>/.claude/projects/<SYNTHETIC_PROJECT_KEY>/11111111-1111-4111-8111-111111111111.jsonl",
+  "cwd": "<SYNTHETIC_PROJECT_PATH>",
+  "hook_event_name": "SessionStart",
+  "source": "resume",
+  "model": "<SYNTHETIC_MODEL>",
+  "seconds_since_last_response": 5400,
+  "context_tokens": 182340,
+  "prompt_cache_likely_expired": true,
+  "estimated_cache_write_usd": 1.1396
+}
