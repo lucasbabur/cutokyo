@@ -4,21 +4,27 @@
   "version": "0.1.0",
   "identifier": "dev.cutokyo.desktop",
   "build": {
-    "frontendDist": "../../ui/foundation"
+    "beforeBuildCommand": "pnpm --dir ui build",
+    "beforeDevCommand": "pnpm --dir ui dev --host 127.0.0.1 --port 1420",
+    "devUrl": "http://127.0.0.1:1420",
+    "frontendDist": "../../ui/dist"
   },
   "app": {
-    "withGlobalTauri": true,
+    "withGlobalTauri": false,
     "windows": [
       {
+        "label": "main",
         "title": "Cutokyo",
         "width": 1280,
         "height": 800,
         "minWidth": 900,
-        "minHeight": 700
+        "minHeight": 700,
+        "resizable": true,
+        "fullscreen": false
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost"
+      "csp": "default-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ipc: http://ipc.localhost"
     }
   },
   "bundle": {

@@ -18,6 +18,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install Linux desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22.22.3"
@@ -26,6 +35,8 @@ jobs:
         run: corepack enable && corepack prepare pnpm@11.25.0 --activate
       - name: Install TypeScript workspace without tracked-source rewrites
         run: python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/pnpm-install-source.json" -- pnpm install --frozen-lockfile
+      - name: Install browser test runtime
+        run: pnpm --dir ui exec playwright install --with-deps chromium
       - name: Static verifier selftest and repository gates
         run: |
           python3 tools/fleet/cutokyo-gates.py selftest
@@ -36,10 +47,14 @@ jobs:
         run: python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/clippy-source.json" -- cargo clippy --locked --workspace --all-targets -- -D warnings
       - name: TypeScript checks
         run: |
+          pnpm --dir ui check:settings
           pnpm --dir ui exec tsc --noEmit
-          pnpm --dir ui exec oxlint src
+          pnpm --dir ui exec oxlint src tests scripts vite.config.ts vitest.config.ts playwright.config.ts wdio.conf.ts
           pnpm --dir ui exec prettier --check .
           pnpm --dir ui exec vitest run
+          pnpm --dir ui knip
+      - name: Browser journeys and accessibility
+        run: pnpm --dir ui test:e2e:web
       - name: cargo deny check licenses bans
         uses: EmbarkStudios/cargo-deny-action@b66acf5e9fe20f8aba065be86778a8a4c846f902 # v2
         with:
@@ -48,7 +63,7 @@ jobs:
         uses: crate-ci/typos@68c865732f1410b4c54c201789de2b2f914ef2ec # v1
 
   build-test:
-    name: Build and test (${{ matrix.os }})
+    name: Build and test Tauri (${{ matrix.os }})
     needs: lint-linux
     strategy:
       fail-fast: false
@@ -57,13 +72,39 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install Linux desktop and native-test dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            xvfb
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.13"
-      - name: Build workspace without tracked-source rewrites
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22.22.3"
+          cache: pnpm
+      - name: Enable pinned pnpm
+        run: corepack enable && corepack prepare pnpm@11.25.0 --activate
+      - name: Install TypeScript workspace without tracked-source rewrites
+        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/pnpm-install-source.json" -- pnpm install --frozen-lockfile
+      - name: Build production frontend
+        run: pnpm --dir ui build
+      - name: Build Rust workspace without tracked-source rewrites
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/build-source.json" -- cargo build --locked --workspace
-      - name: Test workspace without tracked-source rewrites
+      - name: Test Rust workspace without tracked-source rewrites
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/test-source.json" -- cargo test --locked --workspace
+      - name: Build actual Tauri application
+        run: pnpm tauri build --debug --no-bundle
+      - name: Exercise native Tauri journey on Linux
+        if: runner.os == 'Linux'
+        run: xvfb-run -a pnpm --dir ui test:e2e:tauri
 
   advisory-warnings:
     name: Visible non-blocking dependency and architecture warnings

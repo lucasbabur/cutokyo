@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main-window",
+  "description": "Minimum core IPC capability for the sole Cutokyo desktop window.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

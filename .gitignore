@@ -3,6 +3,8 @@
 /ui/node_modules/
 /ui/coverage/
 /ui/dist/
+/ui/playwright-report/
+/ui/test-results/
 /crates/cutokyo-desktop/gen/
 *.log
 __pycache__/
