@@ -15,16 +15,28 @@ fn contract_snapshot() -> Result<String, String> {
         .map_err(|error| error.to_string())
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn desktop_bootstrap(state: tauri::State<'_, DesktopService>) -> Result<Value, String> {
     state.bootstrap()
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn onboarding_status(state: tauri::State<'_, DesktopService>) -> Result<Value, String> {
     state.onboarding_status()
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn complete_onboarding(
     state: tauri::State<'_, DesktopService>,
@@ -33,11 +45,19 @@ fn complete_onboarding(
     state.complete_onboarding(request)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn dashboard_query(state: tauri::State<'_, DesktopService>) -> Result<Value, String> {
     state.dashboard()
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri `CommandArg` requires owned `State` and `SessionFilters` extractors"
+)]
 #[tauri::command]
 fn search_sessions(
     state: tauri::State<'_, DesktopService>,
@@ -46,90 +66,138 @@ fn search_sessions(
     state.search_sessions(&filters)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn session_detail(
     state: tauri::State<'_, DesktopService>,
-    session_id: String,
+    session_id: &str,
 ) -> Result<Value, String> {
-    state.session_detail(&session_id)
+    state.session_detail(session_id)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn preview_resume(
     state: tauri::State<'_, DesktopService>,
-    session_id: String,
+    session_id: &str,
 ) -> Result<Value, String> {
-    state.preview_resume(&session_id)
+    state.preview_resume(session_id)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn resume_session(
     state: tauri::State<'_, DesktopService>,
-    session_id: String,
+    session_id: &str,
 ) -> Result<Value, String> {
-    state.resume_session(&session_id)
+    state.resume_session(session_id)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn preview_session_deletion(
     state: tauri::State<'_, DesktopService>,
-    session_id: String,
+    session_id: &str,
 ) -> Result<Value, String> {
-    state.preview_session_deletion(&session_id)
+    state.preview_session_deletion(session_id)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn delete_session(
     state: tauri::State<'_, DesktopService>,
-    session_id: String,
-    preview_token: String,
+    session_id: &str,
+    preview_token: &str,
 ) -> Result<Value, String> {
-    state.delete_session(&session_id, &preview_token)
+    state.delete_session(session_id, preview_token)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn preview_retention(state: tauri::State<'_, DesktopService>, days: u32) -> Result<Value, String> {
     state.preview_retention(days)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn apply_retention(
     state: tauri::State<'_, DesktopService>,
-    preview_token: String,
+    preview_token: &str,
 ) -> Result<Value, String> {
-    state.apply_retention(&preview_token)
+    state.apply_retention(preview_token)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn delete_all_history(
     state: tauri::State<'_, DesktopService>,
-    confirmation: String,
+    confirmation: &str,
 ) -> Result<Value, String> {
-    state.delete_all(&confirmation)
+    state.delete_all(confirmation)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn inventory_query(state: tauri::State<'_, DesktopService>) -> Result<Value, String> {
     state.inventory()
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn set_mcp_enabled(
     state: tauri::State<'_, DesktopService>,
-    item_id: String,
+    item_id: &str,
     enabled: bool,
 ) -> Result<Value, String> {
-    state.set_mcp_enabled(&item_id, enabled)
+    state.set_mcp_enabled(item_id, enabled)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn plugin_verification(
     state: tauri::State<'_, DesktopService>,
-    item_id: String,
+    item_id: &str,
 ) -> Result<Value, String> {
-    state.plugin_verification(&item_id)
+    state.plugin_verification(item_id)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn guard_coverage(state: tauri::State<'_, DesktopService>) -> Result<Value, String> {
     state.guards()
@@ -140,15 +208,23 @@ fn preview_proxy_consent() -> Value {
     DesktopService::preview_proxy()
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn set_proxy_enabled(
     state: tauri::State<'_, DesktopService>,
     enabled: bool,
-    consent_token: Option<String>,
+    consent_token: Option<&str>,
 ) -> Result<Value, String> {
-    state.set_proxy_enabled(enabled, consent_token.as_deref())
+    state.set_proxy_enabled(enabled, consent_token)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn set_outgoing_guard_enabled(
     state: tauri::State<'_, DesktopService>,
@@ -157,11 +233,19 @@ fn set_outgoing_guard_enabled(
     state.set_outgoing_guard_enabled(enabled)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn analysis_candidates(state: tauri::State<'_, DesktopService>) -> Result<Value, String> {
     state.analysis_candidates()
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn preview_analysis(
     state: tauri::State<'_, DesktopService>,
@@ -170,35 +254,55 @@ fn preview_analysis(
     state.preview_analysis(session_ids)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn run_analysis(
     state: tauri::State<'_, DesktopService>,
-    preview_token: String,
+    preview_token: &str,
 ) -> Result<Value, String> {
-    state.run_analysis(&preview_token)
+    state.run_analysis(preview_token)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn cancel_analysis(
     state: tauri::State<'_, DesktopService>,
-    request_id: String,
+    request_id: &str,
 ) -> Result<Value, String> {
-    state.cancel_analysis(&request_id)
+    state.cancel_analysis(request_id)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn health_snapshot(state: tauri::State<'_, DesktopService>) -> Result<Value, String> {
     state.health()
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn retry_health_dimension(
     state: tauri::State<'_, DesktopService>,
-    dimension_id: String,
+    dimension_id: &str,
 ) -> Result<Value, String> {
-    state.retry_health(&dimension_id)
+    state.retry_health(dimension_id)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn run_doctor(state: tauri::State<'_, DesktopService>) -> Result<Value, String> {
     state.doctor()
@@ -209,16 +313,28 @@ fn preview_diagnostic_bundle() -> Value {
     DesktopService::preview_bundle()
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn create_diagnostic_bundle(state: tauri::State<'_, DesktopService>) -> Result<Value, String> {
     state.create_bundle()
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
+)]
 #[tauri::command]
 fn settings_query(state: tauri::State<'_, DesktopService>) -> Result<Value, String> {
     state.settings()
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri `CommandArg` requires owned `State` and `SettingsPatch` extractors"
+)]
 #[tauri::command]
 fn patch_settings(
     state: tauri::State<'_, DesktopService>,
@@ -227,6 +343,10 @@ fn patch_settings(
     state.patch_settings(&patch)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri `CommandArg` requires owned `State` and `DesktopPreferencesPatch` extractors"
+)]
 #[tauri::command]
 fn patch_desktop_preferences(
     state: tauri::State<'_, DesktopService>,
@@ -329,7 +449,5 @@ fn desktop_data_root(app: &tauri::App) -> Result<PathBuf, Box<dyn std::error::Er
         }
         return Ok(candidate);
     }
-    app.path()
-        .app_local_data_dir()
-        .map_err(|error| error.into())
+    app.path().app_local_data_dir().map_err(Into::into)
 }
