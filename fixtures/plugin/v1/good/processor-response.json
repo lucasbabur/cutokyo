@@ -1,0 +1,17 @@
+{
+  "protocol_major": 1,
+  "kind": "response",
+  "request_id": "processor-1",
+  "payload": {
+    "status": "completed",
+    "used_capabilities": ["emit_derived_fact"],
+    "tags": ["fixture"],
+    "derived_facts": [
+      {
+        "fact_kind": "fixture.classification",
+        "value": "synthetic",
+        "source_observation_ids": ["obs:fixture:source:1"]
+      }
+    ]
+  }
+}

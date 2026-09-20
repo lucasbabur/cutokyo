@@ -1,11 +1,11 @@
 {
   "protocol_major": 1,
   "kind": "handshake",
-  "request_id": "req:handshake:1",
+  "request_id": "handshake",
   "payload": {
-    "plugin_id": "plugin:synthetic-processor",
+    "plugin_id": "fixture:processor",
     "plugin_kind": "processor",
-    "capabilities": ["emit_derived_fact"],
+    "capabilities": ["emit_derived_fact", "database_write"],
     "cursor_idempotent": false
   }
 }

@@ -1,0 +1,16 @@
+{
+  "protocol_major": 1,
+  "kind": "request",
+  "request_id": "processor-1",
+  "payload": {
+    "operation": "process_records",
+    "granted_capabilities": ["emit_derived_fact"],
+    "records": [
+      {
+        "record_id": "record:fixture:1",
+        "record_type": "normalized_session",
+        "source_observation_ids": ["obs:fixture:source:1"]
+      }
+    ]
+  }
+}

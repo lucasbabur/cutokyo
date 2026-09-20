@@ -1,0 +1,11 @@
+{
+  "manifest_version": 1,
+  "protocol_major": 1,
+  "plugin_id": "example:py-source",
+  "plugin_kind": "source",
+  "runtime": "python3",
+  "entrypoint": "source.py",
+  "args": [],
+  "capabilities": ["emit_observation"],
+  "timeout_ms": 5000
+}

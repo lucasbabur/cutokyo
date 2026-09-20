@@ -21,20 +21,29 @@ authors = ["Cutokyo contributors"]
 cutokyo-domain = { path = "crates/cutokyo-domain", version = "0.1.0" }
 cutokyo-core = { path = "crates/cutokyo-core", version = "0.1.0" }
 serde = { version = "=1.0.229", features = ["derive"] }
-serde_json = "=1.0.151"
+serde_json = "=1.0.150"
 time = { version = "=0.3.55", features = ["formatting", "parsing", "serde"] }
 uuid = { version = "=1.26.1", features = ["serde"] }
 tempfile = "=3.27.0"
 jsonschema = { version = "=0.56.0", default-features = false }
+jsonc-parser = { version = "=0.33.2", features = ["cst", "serde_json"] }
+keyhog-core = { version = "=0.5.86", git = "https://github.com/santhreal/keyhog.git", rev = "058b28911fbe9db4b0957f13be003f5fb36eb1a4" }
+keyhog-scanner = { version = "=0.5.86", git = "https://github.com/santhreal/keyhog.git", rev = "058b28911fbe9db4b0957f13be003f5fb36eb1a4", default-features = false, features = ["decode", "entropy", "ml", "multiline"] }
+keyring = "=4.2.0"
 rusqlite = { version = "=0.40.2", features = ["backup", "bundled"] }
 rusqlite_migration = "=2.6.0"
 fs4 = "=1.1.0"
+rmcp = { version = "=3.4.0", default-features = false, features = ["client", "macros", "server", "transport-child-process", "transport-io", "transport-streamable-http-client-reqwest"] }
+reqwest = { version = "=0.13.5", default-features = false }
+schemars = "=1.2.1"
 sha2 = "=0.11.0"
-jsonc-parser = { version = "=0.33.2", features = ["cst", "serde_json"] }
 toml_edit = { version = "=0.25.15", features = ["parse"] }
 json5 = "=1.3.1"
 ureq = { version = "=3.4.2", default-features = false, features = ["json"] }
 url = "=2.5.8"
+tokio = { version = "=1.53.1", features = ["fs", "io-std", "io-util", "macros", "process", "rt-multi-thread", "sync", "time"] }
+tokio-util = { version = "=0.7.19", features = ["rt"] }
+zeroize = "=1.8.2"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
@@ -47,6 +56,14 @@ pedantic = { level = "warn", priority = -1 }
 unwrap_used = "deny"
 expect_used = "deny"
 panic = "deny"
+
+[profile.dev]
+debug = 0
+incremental = false
+
+[profile.test]
+debug = 0
+incremental = false
 
 [profile.release]
 lto = "thin"

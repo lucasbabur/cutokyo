@@ -1,0 +1,10 @@
+{
+  "protocol_major": 1,
+  "kind": "telemetry",
+  "request_id": "processor-1",
+  "payload": {
+    "name": "records.processed",
+    "value": 1,
+    "unit": "records"
+  }
+}

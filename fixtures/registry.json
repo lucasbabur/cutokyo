@@ -13,10 +13,26 @@
     {
       "name": "plugin-protocol-v1",
       "schema": "schemas/plugin-protocol.v1.json",
-      "good": ["fixtures/plugin/v1/good/processor-handshake.json"],
+      "good": [
+        "fixtures/plugin/v1/good/processor-handshake.json",
+        "fixtures/plugin/v1/good/source-handshake.json",
+        "fixtures/plugin/v1/good/source-request.json",
+        "fixtures/plugin/v1/good/source-response.json",
+        "fixtures/plugin/v1/good/processor-request.json",
+        "fixtures/plugin/v1/good/processor-response.json",
+        "fixtures/plugin/v1/good/telemetry.json",
+        "fixtures/plugin/v1/good/cancel.json",
+        "fixtures/plugin/v1/good/structured-error.json"
+      ],
       "bad": [
         "fixtures/plugin/v1/bad/unknown-major.json",
-        "fixtures/plugin/v1/bad/undeclared-field.json"
+        "fixtures/plugin/v1/bad/undeclared-field.json",
+        "fixtures/plugin/v1/bad/non-idempotent-source-handshake.json",
+        "fixtures/plugin/v1/bad/missing-source-capability.json",
+        "fixtures/plugin/v1/bad/malformed-response.json",
+        "fixtures/plugin/v1/bad/unknown-capability.json",
+        "fixtures/plugin/v1/bad/source-request-with-records.json",
+        "fixtures/plugin/v1/bad/processor-request-with-source-fields.json"
       ]
     },
     {

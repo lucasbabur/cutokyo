@@ -23,6 +23,16 @@ toml_edit.workspace = true
 json5.workspace = true
 ureq.workspace = true
 url.workspace = true
+jsonschema.workspace = true
+keyhog-core.workspace = true
+keyhog-scanner.workspace = true
+keyring.workspace = true
+rmcp.workspace = true
+reqwest.workspace = true
+schemars.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+zeroize.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

@@ -12,31 +12,31 @@ shipped until their feature implementation enables them.
 | Package | Foundation version | License | Purpose/status |
 | --- | ---: | --- | --- |
 | serde | 1.0.229 | MIT OR Apache-2.0 | Serialization used by domain and contracts |
-| serde_json | 1.0.151 | MIT OR Apache-2.0 | JSON values and boundary serialization |
+| serde_json | 1.0.150 | MIT OR Apache-2.0 | JSON values and boundary serialization |
 | time | 0.3.55 | MIT OR Apache-2.0 | RFC 3339 parsing without I/O |
 | jsonschema | 0.56.0 | MIT | Draft 2020-12 fixture validation; remote resolution disabled |
+| jsonc-parser | 0.33.2 | MIT | CST edits that preserve unmanaged JSON and JSONC bytes |
+| keyhog-core | 0.5.86, git `058b28911fbe9db4b0957f13be003f5fb36eb1a4` | MIT OR Apache-2.0 | Secret finding types projected into Cutokyo's sanitized guard model |
+| keyhog-scanner | 0.5.86, git `058b28911fbe9db4b0957f13be003f5fb36eb1a4` | MIT OR Apache-2.0 | Maintained secret scanner with decode, entropy, ML, and multiline features |
+| keyring | 4.2.0 | MIT OR Apache-2.0 | OS credential-store access for analysis provider keys |
 | tempfile | 3.27.0 | MIT OR Apache-2.0 | Isolated architecture mutation tests |
 | uuid | 1.26.1 | Apache-2.0 OR MIT | Collision-resistant temporary and spool filenames |
 | rusqlite | 0.40.2 | MIT | Bundled SQLite, FTS5, pragmas, and the online backup API |
 | rusqlite_migration | 2.6.0 | Apache-2.0 | Forward-only SQLite migration runner |
 | fs4 | 1.1.0 | MIT OR Apache-2.0 | Cross-platform database-writer and spool-publication file locks |
+| rmcp | 3.4.0 | Apache-2.0 | Official Rust MCP SDK for Cutokyo's read server and upstream broker |
+| reqwest | 0.13.5 | MIT OR Apache-2.0 | Parsed HTTPS endpoints for MCP and analysis providers |
+| schemars | 1.2.1 | MIT | MCP tool input schemas |
 | sha2 | 0.11.0 | MIT OR Apache-2.0 | SHA-256 observation identities and backup digests |
-| jsonc-parser | 0.33.2 | MIT | Structural Claude settings edits that preserve unmanaged JSON content ([upstream](https://github.com/dprint/jsonc-parser)) |
-| toml_edit | 0.25.15 | MIT OR Apache-2.0 | Structural ownership of reversible Codex TOML setup |
+| toml_edit | 0.25.15 | MIT OR Apache-2.0 | Structure-preserving Codex and managed broker configuration edits |
 | json5 | 1.3.1 | MIT | Structural read-only parsing of documented OpenCode JSON/JSONC configuration |
 | ureq | 3.4.2 | MIT OR Apache-2.0 | Blocking, bounded requests to validated OpenCode loopback app-server origins |
 | url | 2.5.8 | MIT OR Apache-2.0 | WHATWG parsing and encoded path/query construction for loopback URLs |
+| tokio | 1.53.1 | MIT | Bounded subprocess, timeout, cancellation, and MCP async runtime |
+| tokio-util | 0.7.19 | MIT | Cancellation tokens for analysis requests |
+| zeroize | 1.8.2 | Apache-2.0 OR MIT | Provider credential memory cleanup |
 | tauri | 2.11.5 | Apache-2.0 OR MIT | Optional desktop-runtime dependency; stable v2 |
 | tauri-build | 2.6.3 | Apache-2.0 OR MIT | Official Tauri build-context generator |
-
-## Researched feature dependencies
-
-| Package | Planned version | License | Decision |
-| --- | ---: | --- | --- |
-| rmcp | 3.4.0 | Apache-2.0 | Use the official Rust MCP SDK instead of a custom MCP stack |
-
-This row records a researched direction, not a claim that the corresponding feature
-is implemented or distributed. See ADR 0008.
 
 ## OpenCode fixture reference artifacts
 
@@ -52,6 +52,7 @@ bundled by Cutokyo.
 Exact upstream tag `v1.18.28` resolved to commit
 `22006d97652839999596a34a48ff6be7dbb40c6e`; the fixture manifest records which
 shapes are package-derived versus locally observed.
+
 
 ## JavaScript development dependencies
 

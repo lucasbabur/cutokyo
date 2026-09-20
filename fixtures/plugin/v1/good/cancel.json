@@ -1,0 +1,6 @@
+{
+  "protocol_major": 1,
+  "kind": "cancel",
+  "request_id": "processor-1",
+  "payload": {}
+}

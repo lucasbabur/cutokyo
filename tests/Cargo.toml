@@ -17,6 +17,9 @@ serde.workspace = true
 serde_json.workspace = true
 tempfile.workspace = true
 rusqlite.workspace = true
+rmcp.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
 
 [[test]]
 name = "pipeline"
