@@ -14,12 +14,16 @@ use cutokyo_core::{
     adapters::{
         CaptureDecision,
         claude_code::{
-            ClaudeResumeLauncher, ClaudeSetup, ClaudeTranscriptReader, SetupAction, SetupOperation,
-            TESTED_CLAUDE_VERSION,
+            ClaudeResumeLauncher, ClaudeSetup, ClaudeTranscriptReader, SetupAction, SetupIssue,
+            SetupOperation, TESTED_CLAUDE_VERSION,
         },
-        codex::{AppServerLimits, CodexAppServerClient, CodexSetup, CodexSetupSpec, SetupPhase},
+        codex::{
+            AppServerLimits, CodexAppServerClient, CodexCliResumeLauncher, CodexSetup,
+            CodexSetupSpec, SetupPhase,
+        },
         opencode::{
-            OPENCODE_PLUGIN_SOURCE, OpenCodeSetup, SetupFault, SetupMode, SetupSubsystemStatus,
+            OPENCODE_PLUGIN_SOURCE, OpenCodeResumeLauncher, OpenCodeSetup, SetupFault, SetupMode,
+            SetupSubsystemStatus,
         },
     },
     analysis::{
@@ -28,7 +32,7 @@ use cutokyo_core::{
         AnalysisService, AnalysisSummarySink, CredentialOrigin, CredentialSource,
         ProviderCredential,
     },
-    app::Application,
+    app::{Application, DELETE_ALL_CONFIRMATION, LocalCore, SessionSearch},
     bundle::{BundleDiagnostic, build_diagnostic_bundle},
     guards::{BufferedSecretGuard, GuardChannel, REDACTION_MARKER, SecretGuard},
     mcp::{
@@ -41,21 +45,24 @@ use cutokyo_core::{
         ProviderTransport, ProxyConfig, ProxyConsent, ProxyErrorCode, ProxyFactAvailability,
         ProxyListenerReceipt, ProxyRoute, ProxyTrace, ProxyTraceSink,
     },
-    store::{LockOwner, SearchQuery},
+    store::{DiagnosticRowCounts, LockOwner, RetentionPlan, SearchQuery, SearchResult},
 };
 use cutokyo_domain::{
     Attribution, CaptureChannel, Confidence, Coverage, CoverageState, ErrorCode, Harness,
-    NativeIdentity, NativeSessionId, ObservationId, ResumeLauncher as _, SessionId,
-    SourceProvenance, Summary, Timestamp,
+    NativeIdentity, NativeSessionId, ObservationId, RawObservation, ResumeLauncher as _, SessionId,
+    SourceProvenance, Summary, SummaryId, Timestamp,
 };
 use cutokyo_integration_tests::repository_root;
 use fake_harness::{
     FAKE_CLAUDE_RESUME_ID, FakeClaudeCode, FakeClaudeTranscriptRevision, FakeCodexAppServer,
-    FakeMcpEndpoint, FakeMcpServer, FakeProviderEndpoint, FakeWorld, ProviderRequest,
+    FakeCodexProcessRunner, FakeMcpEndpoint, FakeMcpServer, FakeOpenCodeSpawner,
+    FakeProviderEndpoint, FakeWorld, FixtureCoverage, HarnessScenario, ProviderRequest,
 };
 use rmcp::model::{CallToolResult, ContentBlock, Tool, ToolAnnotations};
 use serde_json::{Map, Value, json};
 use tokio_util::sync::CancellationToken;
+
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn config_mode(path: &std::path::Path) -> std::io::Result<Option<u32>> {
     #[cfg(unix)]
@@ -388,6 +395,1265 @@ fn opencode_setup_roundtrip_recovers_interruption_and_concurrent_drift()
         fs::read_to_string(setup.plugin_path())?,
         "// synthetic concurrent operator edit\n"
     );
+    Ok(())
+}
+
+struct RawSessionSpec<'a> {
+    observation_id: &'a str,
+    harness: Harness,
+    session_id: &'a str,
+    native_session_key: &'a str,
+    native_resume_id: &'a str,
+    observed_at: &'a str,
+    native_event_id: Option<String>,
+    sequence: Option<u64>,
+    coverage: Coverage,
+    payload: Value,
+}
+
+fn raw_session_observation(spec: RawSessionSpec<'_>) -> cutokyo_domain::Result<RawObservation> {
+    let confidence = if matches!(
+        spec.coverage.state,
+        CoverageState::UnknownVersion | CoverageState::Unavailable
+    ) {
+        Confidence::Unknown
+    } else {
+        Confidence::Observed
+    };
+    Ok(RawObservation {
+        observation_id: ObservationId::parse(spec.observation_id)?,
+        harness: spec.harness,
+        observed_at: Timestamp::parse(spec.observed_at)?,
+        kind: "synthetic_message".to_owned(),
+        source: SourceProvenance {
+            channel: CaptureChannel::HookOrPlugin,
+            captured_at: Timestamp::parse(spec.observed_at)?,
+            native: NativeIdentity {
+                event_id: spec.native_event_id,
+                resume_id: Some(spec.native_resume_id.to_owned()),
+                session_key: spec.native_session_key.to_owned(),
+                sequence: spec.sequence,
+            },
+            parser_version: "e2e-session-v1".to_owned(),
+            confidence,
+            coverage: spec.coverage,
+        },
+        payload: match spec.payload {
+            Value::Object(mut object) => {
+                object.insert("session_id".to_owned(), json!(spec.session_id));
+                Value::Object(object)
+            }
+            value => value,
+        },
+    })
+}
+
+fn complete_coverage(scope: &str) -> Coverage {
+    Coverage {
+        state: CoverageState::Complete,
+        scope: scope.to_owned(),
+        gaps: Vec::new(),
+    }
+}
+
+fn scenario_coverage(scenario: &HarnessScenario) -> Coverage {
+    let state = match scenario.coverage {
+        FixtureCoverage::Complete => CoverageState::Complete,
+        FixtureCoverage::Partial => CoverageState::Partial,
+        FixtureCoverage::UnknownVersion => CoverageState::UnknownVersion,
+        FixtureCoverage::Unavailable => CoverageState::Unavailable,
+    };
+    Coverage {
+        state,
+        scope: format!("fake {} delivery contract", scenario.harness.as_str()),
+        gaps: scenario.coverage_gaps.clone(),
+    }
+}
+
+#[derive(Clone, Copy)]
+struct SearchFixtureFields {
+    from: &'static str,
+    until: &'static str,
+    text: &'static str,
+    project: &'static str,
+    branch: &'static str,
+    tool: &'static str,
+    skill: &'static str,
+}
+
+fn search_fixture_fields(harness: Harness) -> SearchFixtureFields {
+    let fields = match harness {
+        Harness::ClaudeCode => [
+            "2026-09-19T09:00:00Z",
+            "2026-09-19T09:01:00Z",
+            "claude projection needle",
+            "project-claude",
+            "feature/claude-search",
+            "ClaudeRead",
+            "claude-contract",
+        ],
+        Harness::Codex => [
+            "2026-09-19T09:10:00Z",
+            "2026-09-19T09:11:00Z",
+            "codex projection needle",
+            "project-codex",
+            "feature/codex-search",
+            "CodexShell",
+            "codex-contract",
+        ],
+        Harness::OpenCode => [
+            "2026-09-19T09:20:00Z",
+            "2026-09-19T09:21:00Z",
+            "opencode projection needle",
+            "project-opencode",
+            "feature/opencode-search",
+            "OpenCodeEdit",
+            "opencode-contract",
+        ],
+    };
+    SearchFixtureFields {
+        from: fields[0],
+        until: fields[1],
+        text: fields[2],
+        project: fields[3],
+        branch: fields[4],
+        tool: fields[5],
+        skill: fields[6],
+    }
+}
+
+fn expected_resume_command(harness: Harness, target: &str) -> (&'static str, Vec<String>) {
+    match harness {
+        Harness::ClaudeCode => ("claude", vec!["--resume".to_owned(), target.to_owned()]),
+        Harness::Codex => ("codex", vec!["resume".to_owned(), target.to_owned()]),
+        Harness::OpenCode => ("opencode", vec!["--session".to_owned(), target.to_owned()]),
+    }
+}
+
+fn open_test_core(root: &std::path::Path, label: &str) -> TestResult<LocalCore> {
+    Ok(Application::new().open_local(
+        root.join("cutokyo.sqlite3"),
+        root.join("spool"),
+        LockOwner::current(label, Some(format!("local://{label}")))?,
+    )?)
+}
+
+fn capture_fake_world(core: &LocalCore, world: &FakeWorld) -> TestResult {
+    let mut delivered = 0_u64;
+    let mut expected_unique = 0_u64;
+    for scenario in &world.harnesses {
+        let fields = search_fixture_fields(scenario.harness);
+        let agent = format!("{}-agent", scenario.harness.as_str());
+        let native_session_key = scenario
+            .native_tree_id
+            .as_deref()
+            .unwrap_or(&scenario.cutokyo_session_id);
+        for delivery in &scenario.deliveries {
+            core.capture(&raw_session_observation(RawSessionSpec {
+                observation_id: &delivery.observation_id,
+                harness: scenario.harness,
+                session_id: &scenario.cutokyo_session_id,
+                native_session_key,
+                native_resume_id: &scenario.native_resume_id,
+                observed_at: fields.from,
+                native_event_id: delivery.native_event_id.clone(),
+                sequence: Some(delivery.sequence),
+                coverage: scenario_coverage(scenario),
+                payload: json!({
+                    "session_started_at": fields.from,
+                    "project_id": format!("project:e2e:{}", scenario.harness.as_str()),
+                    "project": fields.project,
+                    "project_path": format!("/synthetic/{}", fields.project),
+                    "branch": fields.branch,
+                    "title": format!("{} searchable session", scenario.harness.as_str()),
+                    "text": fields.text,
+                    "message_id": format!("message:{}", delivery.observation_id),
+                    "role": "assistant",
+                    "tool_name": fields.tool,
+                    "skill_name": fields.skill,
+                    "agent_name": agent,
+                }),
+            })?)?;
+            delivered += 1;
+        }
+        expected_unique += u64::try_from(scenario.unique_observation_count())?;
+    }
+    let drained = core.drain()?;
+    assert_eq!(drained.attempted, delivered);
+    assert_eq!(drained.inserted, expected_unique);
+    assert_eq!(drained.duplicates, delivered - expected_unique);
+    assert_eq!(drained.quarantined, 0);
+    Ok(())
+}
+
+fn search_cases(
+    scenario: &HarnessScenario,
+    fields: SearchFixtureFields,
+    agent: &str,
+) -> [(&'static str, SessionSearch); 8] {
+    [
+        (
+            "content",
+            SessionSearch {
+                text: Some(fields.text.to_owned()),
+                ..SessionSearch::default()
+            },
+        ),
+        (
+            "project",
+            SessionSearch {
+                project: Some(fields.project.to_owned()),
+                ..SessionSearch::default()
+            },
+        ),
+        (
+            "branch",
+            SessionSearch {
+                branch: Some(fields.branch.to_owned()),
+                ..SessionSearch::default()
+            },
+        ),
+        (
+            "harness",
+            SessionSearch {
+                harness: Some(scenario.harness.as_str().to_owned()),
+                ..SessionSearch::default()
+            },
+        ),
+        (
+            "date",
+            SessionSearch {
+                from: Some(fields.from.to_owned()),
+                until: Some(fields.until.to_owned()),
+                ..SessionSearch::default()
+            },
+        ),
+        (
+            "tool",
+            SessionSearch {
+                tool: Some(fields.tool.to_owned()),
+                ..SessionSearch::default()
+            },
+        ),
+        (
+            "skill",
+            SessionSearch {
+                skill: Some(fields.skill.to_owned()),
+                ..SessionSearch::default()
+            },
+        ),
+        (
+            "agent",
+            SessionSearch {
+                agent: Some(agent.to_owned()),
+                ..SessionSearch::default()
+            },
+        ),
+    ]
+}
+
+fn assert_attributable_result(result: &SearchResult, scenario: &HarnessScenario, label: &str) {
+    assert_eq!(
+        result.session_id.as_str(),
+        scenario.cutokyo_session_id,
+        "{label} filter selected the wrong session"
+    );
+    assert_eq!(result.harness, scenario.harness);
+    assert_eq!(
+        result.native_resume_id.as_deref(),
+        Some(scenario.native_resume_id.as_str())
+    );
+    assert_eq!(
+        result.observation_ids.len(),
+        scenario.unique_observation_count()
+    );
+    assert_eq!(
+        result.provenance.native.resume_id.as_deref(),
+        Some(scenario.native_resume_id.as_str())
+    );
+    assert_eq!(
+        result.provenance.native.session_key,
+        scenario
+            .native_tree_id
+            .as_deref()
+            .unwrap_or(&scenario.cutokyo_session_id)
+    );
+    assert_eq!(
+        result.provenance.coverage.state,
+        scenario_coverage(scenario).state
+    );
+    assert_eq!(result.provenance.coverage.gaps, scenario.coverage_gaps);
+}
+
+fn assert_scenario_search_and_plan(core: &LocalCore, scenario: &HarnessScenario) -> TestResult {
+    let fields = search_fixture_fields(scenario.harness);
+    let agent = format!("{}-agent", scenario.harness.as_str());
+    for (label, request) in search_cases(scenario, fields, &agent) {
+        let results = core.search_sessions(&request)?;
+        assert_eq!(results.len(), 1, "{label} filter must select one session");
+        assert_attributable_result(&results[0], scenario, label);
+    }
+    let combined = core.search_sessions(&SessionSearch {
+        text: Some(fields.text.to_owned()),
+        project: Some(format!("/synthetic/{}", fields.project)),
+        branch: Some(fields.branch.to_owned()),
+        harness: Some(scenario.harness.as_str().to_owned()),
+        from: Some(fields.from.to_owned()),
+        until: Some(fields.until.to_owned()),
+        tool: Some(fields.tool.to_owned()),
+        skill: Some(fields.skill.to_owned()),
+        agent: Some(agent),
+        limit: 1,
+    })?;
+    assert_eq!(combined.len(), 1);
+    assert_eq!(combined[0].session_id.as_str(), scenario.cutokyo_session_id);
+
+    let plan = core.resume_plan(&scenario.cutokyo_session_id)?;
+    let (program, arguments) =
+        expected_resume_command(scenario.harness, &scenario.native_resume_id);
+    assert_eq!(plan.harness, scenario.harness.as_str());
+    assert_eq!(plan.native_resume_id, scenario.native_resume_id);
+    assert_eq!(plan.executable, program);
+    assert_eq!(plan.arguments, arguments);
+    scenario.assert_resume_target(&plan.native_resume_id)?;
+    assert!(scenario.assert_resume_target("nearby-session").is_err());
+    Ok(())
+}
+
+fn assert_native_resume_launchers(core: &LocalCore, world: &FakeWorld) -> TestResult {
+    let codex = world
+        .scenario(Harness::Codex)
+        .ok_or("Codex fixture missing")?;
+    let native_tree_id = codex
+        .native_tree_id
+        .as_deref()
+        .ok_or("Codex native session-tree identity missing")?;
+    assert_ne!(codex.native_resume_id, native_tree_id);
+    assert!(codex.assert_resume_target(native_tree_id).is_err());
+    let codex_plan = core.resume_plan(&codex.cutokyo_session_id)?;
+    assert_eq!(codex_plan.native_resume_id, "thread-beta");
+    assert_ne!(codex_plan.native_resume_id, "thread-session-beta");
+    assert_eq!(codex_plan.arguments, ["resume", "thread-beta"]);
+    let codex_runner = FakeCodexProcessRunner::new(&codex.native_resume_id);
+    let codex_calls = codex_runner.clone();
+    CodexCliResumeLauncher::new(codex_runner, "codex")
+        .resume(&NativeSessionId::parse(codex.native_resume_id.clone())?)?;
+    assert_eq!(
+        codex_calls.calls()?,
+        vec![vec!["resume".to_owned(), "thread-beta".to_owned()]]
+    );
+
+    let opencode = world
+        .scenario(Harness::OpenCode)
+        .ok_or("OpenCode fixture missing")?;
+    let opencode_spawner = FakeOpenCodeSpawner::default();
+    let opencode_calls = opencode_spawner.clone();
+    OpenCodeResumeLauncher::new(opencode_spawner)
+        .resume(&NativeSessionId::parse(opencode.native_resume_id.clone())?)?;
+    assert_eq!(
+        opencode_calls.calls()?,
+        vec![(
+            "opencode".to_owned(),
+            vec!["--session".to_owned(), opencode.native_resume_id.clone()]
+        )]
+    );
+    Ok(())
+}
+
+#[test]
+fn session_search_resume_all_harnesses() -> TestResult {
+    let root = repository_root()?;
+    let world = FakeWorld::from_json(&fs::read_to_string(
+        root.join("fixtures/harness/scenarios.v1.json"),
+    )?)?;
+    let temporary = tempfile::tempdir()?;
+    let core = open_test_core(temporary.path(), "session-search-e2e")?;
+    capture_fake_world(&core, &world)?;
+    for scenario in &world.harnesses {
+        assert_scenario_search_and_plan(&core, scenario)?;
+    }
+    assert_native_resume_launchers(&core, &world)
+}
+
+fn deletion_observation(
+    observation_id: &str,
+    session_id: &str,
+    observed_at: &str,
+    text: &str,
+) -> cutokyo_domain::Result<RawObservation> {
+    raw_session_observation(RawSessionSpec {
+        observation_id,
+        harness: Harness::ClaudeCode,
+        session_id,
+        native_session_key: session_id,
+        native_resume_id: &format!("resume:{session_id}"),
+        observed_at,
+        native_event_id: Some(format!("event:{observation_id}")),
+        sequence: Some(1),
+        coverage: complete_coverage("retention and deletion integration evidence"),
+        payload: json!({
+            "session_started_at": observed_at,
+            "project_id": "project:e2e:deletion",
+            "project": "deletion-e2e",
+            "branch": "test/deletion",
+            "text": text,
+            "message_id": format!("message:{observation_id}"),
+            "role": "assistant",
+            "tool_name": "DeleteProof",
+            "skill_name": "retention-contract",
+            "agent_name": "integration-agent"
+        }),
+    })
+}
+
+fn linked_summary(
+    summary_id: &str,
+    session_id: &str,
+    observation: &RawObservation,
+) -> cutokyo_domain::Result<Summary> {
+    Ok(Summary {
+        summary_id: SummaryId::parse(summary_id)?,
+        source_session_ids: vec![SessionId::parse(session_id)?],
+        provider: "synthetic-provider".to_owned(),
+        model: "deterministic-model".to_owned(),
+        prompt_version: "deletion-e2e-v1".to_owned(),
+        idempotency_key: format!("idempotency:{summary_id}"),
+        text: format!("summary linked to {session_id}"),
+        created_at: Timestamp::parse("2026-09-19T00:00:00Z")?,
+        attribution: Attribution {
+            observation_ids: vec![observation.observation_id.clone()],
+            source: observation.source.clone(),
+        },
+    })
+}
+
+fn row_counts(counts: &DiagnosticRowCounts) -> (u64, u64, u64, u64, u64) {
+    (
+        counts.raw_observations,
+        counts.sessions,
+        counts.messages,
+        counts.fts_rows,
+        counts.summaries,
+    )
+}
+
+fn seed_deletion_contract(core: &LocalCore) -> TestResult {
+    let delete_target = deletion_observation(
+        "obs:e2e:delete-one",
+        "session:e2e:delete-one",
+        "2026-07-01T00:00:00Z",
+        "one-session deletion needle",
+    )?;
+    let retention_target = deletion_observation(
+        "obs:e2e:retention-target",
+        "session:e2e:retention-target",
+        "2026-07-10T00:00:00Z",
+        "retention deletion needle",
+    )?;
+    let boundary = deletion_observation(
+        "obs:e2e:retention-boundary",
+        "session:e2e:retention-boundary",
+        "2026-08-20T00:00:00Z",
+        "retention boundary survives",
+    )?;
+    let recent = deletion_observation(
+        "obs:e2e:retention-recent",
+        "session:e2e:retention-recent",
+        "2026-09-18T00:00:00Z",
+        "recent session survives",
+    )?;
+    for observation in [&delete_target, &retention_target, &boundary, &recent] {
+        core.capture(observation)?;
+    }
+    let drain = core.drain()?;
+    assert_eq!(
+        (drain.inserted, drain.duplicates, drain.quarantined),
+        (4, 0, 0)
+    );
+    core.put_summary(&linked_summary(
+        "summary:e2e:delete-one",
+        "session:e2e:delete-one",
+        &delete_target,
+    )?)?;
+    core.put_summary(&linked_summary(
+        "summary:e2e:retention-target",
+        "session:e2e:retention-target",
+        &retention_target,
+    )?)?;
+    assert_eq!(row_counts(&core.diagnostic_row_counts()?), (4, 4, 4, 4, 2));
+    Ok(())
+}
+
+fn assert_one_session_deletion(core: &LocalCore) -> TestResult {
+    let delete_id = SessionId::parse("session:e2e:delete-one")?;
+    let preview = core.preview_session_deletion(&delete_id)?;
+    assert_eq!(
+        (
+            preview.sessions,
+            preview.raw_observations,
+            preview.messages,
+            preview.fts_rows,
+            preview.summaries,
+        ),
+        (1, 1, 1, 1, 1)
+    );
+    assert_eq!(core.delete_session(&delete_id)?, preview);
+    assert_eq!(row_counts(&core.diagnostic_row_counts()?), (3, 3, 3, 3, 1));
+    assert!(core.session(delete_id.as_str())?.is_none());
+    assert!(
+        core.search(&SearchQuery {
+            text: Some("one-session deletion needle".to_owned()),
+            ..SearchQuery::default()
+        })?
+        .is_empty()
+    );
+    for survivor in [
+        "session:e2e:retention-target",
+        "session:e2e:retention-boundary",
+        "session:e2e:retention-recent",
+    ] {
+        assert!(core.session(survivor)?.is_some());
+    }
+    Ok(())
+}
+
+fn preview_retention_contract(core: &LocalCore) -> TestResult<RetentionPlan> {
+    let plan = core.preview_retention(30, &Timestamp::parse("2026-09-19T00:00:00Z")?)?;
+    assert_eq!(
+        plan.session_ids
+            .iter()
+            .map(SessionId::as_str)
+            .collect::<Vec<_>>(),
+        ["session:e2e:retention-target"]
+    );
+    assert_eq!(
+        (
+            plan.raw_observations,
+            plan.messages,
+            plan.fts_rows,
+            plan.summaries,
+        ),
+        (1, 1, 1, 1)
+    );
+    assert!(!plan.plan_digest.is_empty());
+    Ok(plan)
+}
+
+fn assert_frozen_retention_apply(core: &LocalCore, plan: &RetentionPlan) -> TestResult {
+    let late_old = deletion_observation(
+        "obs:e2e:late-old",
+        "session:e2e:late-old",
+        "2026-07-15T00:00:00Z",
+        "late arrival survives frozen plan",
+    )?;
+    core.capture(&late_old)?;
+    assert_eq!(core.drain()?.inserted, 1);
+    let before = core.diagnostic_row_counts()?;
+    let retained = core.apply_retention(plan)?;
+    assert_eq!(retained.sessions, u64::try_from(plan.session_ids.len())?);
+    assert_eq!(retained.raw_observations, plan.raw_observations);
+    assert_eq!(retained.messages, plan.messages);
+    assert_eq!(retained.fts_rows, plan.fts_rows);
+    assert_eq!(retained.summaries, plan.summaries);
+
+    let after = core.diagnostic_row_counts()?;
+    assert_eq!(
+        row_counts(&after),
+        (
+            before.raw_observations - plan.raw_observations,
+            before.sessions - u64::try_from(plan.session_ids.len())?,
+            before.messages - plan.messages,
+            before.fts_rows - plan.fts_rows,
+            before.summaries - plan.summaries,
+        )
+    );
+    assert!(core.session("session:e2e:retention-target")?.is_none());
+    assert!(
+        core.search(&SearchQuery {
+            text: Some("retention deletion needle".to_owned()),
+            ..SearchQuery::default()
+        })?
+        .is_empty()
+    );
+    for survivor in [
+        "session:e2e:retention-boundary",
+        "session:e2e:retention-recent",
+        "session:e2e:late-old",
+    ] {
+        assert!(
+            core.session(survivor)?.is_some(),
+            "{survivor} was over-deleted"
+        );
+    }
+    assert_eq!(after.summaries, 0);
+    Ok(())
+}
+
+fn assert_delete_all_contract(core: &LocalCore) -> TestResult {
+    let before_refusal = core.diagnostic_row_counts()?;
+    let refused = core
+        .delete_all("delete all local history")
+        .err()
+        .ok_or("delete-all accepted an inexact confirmation phrase")?;
+    assert_eq!(refused.code, ErrorCode::InvalidInput);
+    assert_eq!(core.diagnostic_row_counts()?, before_refusal);
+
+    let all = core.delete_all(DELETE_ALL_CONFIRMATION)?;
+    assert_eq!(all.sessions, before_refusal.sessions);
+    assert_eq!(all.raw_observations, before_refusal.raw_observations);
+    assert_eq!(all.messages, before_refusal.messages);
+    assert_eq!(all.fts_rows, before_refusal.fts_rows);
+    assert_eq!(all.summaries, before_refusal.summaries);
+    assert!(all.disclosure.contains("backups"));
+    assert_eq!(row_counts(&core.diagnostic_row_counts()?), (0, 0, 0, 0, 0));
+    assert!(core.search(&SearchQuery::default())?.is_empty());
+    Ok(())
+}
+
+#[test]
+fn session_delete_retention_delete_all() -> TestResult {
+    let temporary = tempfile::tempdir()?;
+    let core = open_test_core(temporary.path(), "session-delete-e2e")?;
+    seed_deletion_contract(&core)?;
+    assert_one_session_deletion(&core)?;
+    let plan = preview_retention_contract(&core)?;
+    assert_frozen_retention_apply(&core, &plan)?;
+    assert_delete_all_contract(&core)
+}
+
+fn flat_directory_files(
+    path: &std::path::Path,
+) -> Result<BTreeMap<String, Vec<u8>>, Box<dyn std::error::Error>> {
+    let mut files = BTreeMap::new();
+    if !path.exists() {
+        return Ok(files);
+    }
+    for entry in fs::read_dir(path)? {
+        let entry = entry?;
+        if entry.file_type()?.is_file() {
+            files.insert(
+                entry.file_name().to_string_lossy().into_owned(),
+                fs::read(entry.path())?,
+            );
+        }
+    }
+    Ok(files)
+}
+
+fn assert_claude_setup_roundtrip(home: &std::path::Path, data: &std::path::Path) -> TestResult {
+    let config = home.join(".claude/settings.json");
+    fs::create_dir_all(config.parent().ok_or("Claude config has no parent")?)?;
+    let original = b"{\n  \"theme\": \"synthetic-dark\",\n  \"hooks\": {\n    \"Stop\": [{\"hooks\":[{\"type\":\"command\",\"command\":\"operator-hook\"}]}]\n  }\n}\n";
+    fs::write(&config, original)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        fs::set_permissions(&config, fs::Permissions::from_mode(0o640))?;
+    }
+    let original_mode = config_mode(&config)?;
+    let state = data.join("claude");
+    let setup = ClaudeSetup::new(&config, &state, "/synthetic/bin/cutokyo hook claude-code")?;
+    let plan = setup.dry_run(SetupOperation::Install)?;
+    assert!(plan.would_change);
+    assert_eq!(
+        plan.actions.first(),
+        Some(&SetupAction::PersistRecoveryIntent)
+    );
+    assert!(plan.actions.contains(&SetupAction::CreateBackup));
+    assert!(plan.actions.contains(&SetupAction::AddManagedHooks));
+    assert!(!state.exists(), "Claude dry-run mutated setup state");
+    assert_eq!(fs::read(&config)?, original);
+
+    let applied = setup.apply()?;
+    assert!(applied.changed);
+    assert_eq!(
+        applied.actions.first(),
+        Some(&SetupAction::PersistRecoveryIntent)
+    );
+    let backup_position = applied
+        .actions
+        .iter()
+        .position(|action| *action == SetupAction::CreateBackup)
+        .ok_or("Claude backup action missing")?;
+    let mutation_position = applied
+        .actions
+        .iter()
+        .position(|action| *action == SetupAction::AddManagedHooks)
+        .ok_or("Claude hook mutation action missing")?;
+    assert!(backup_position < mutation_position);
+    let backup = state.join("claude-settings.backup");
+    assert_eq!(fs::read(&backup)?, original);
+    let first_backup = fs::read(&backup)?;
+    assert!(fs::read_to_string(&config)?.contains("--cutokyo-owner=cutokyo-claude-v1:"));
+    assert_eq!(config_mode(&config)?, original_mode);
+    assert!(!setup.apply()?.changed);
+    assert_eq!(fs::read(&backup)?, first_backup);
+    assert!(setup.uninstall()?.changed);
+    assert_eq!(fs::read(&config)?, original);
+    assert_eq!(config_mode(&config)?, original_mode);
+    assert!(!setup.uninstall()?.changed);
+    Ok(())
+}
+
+fn assert_codex_setup_roundtrip(home: &std::path::Path, data: &std::path::Path) -> TestResult {
+    let directory = home.join(".codex");
+    fs::create_dir_all(&directory)?;
+    let hooks = directory.join("hooks.json");
+    let config = directory.join("config.toml");
+    let hooks_original = b"{\"description\":\"operator-owned\",\"hooks\":{}}\n";
+    let config_original = b"model = \"gpt-5\"\napproval_policy = \"never\"\n";
+    fs::write(&hooks, hooks_original)?;
+    fs::write(&config, config_original)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        fs::set_permissions(&hooks, fs::Permissions::from_mode(0o640))?;
+        fs::set_permissions(&config, fs::Permissions::from_mode(0o600))?;
+    }
+    let hooks_mode = config_mode(&hooks)?;
+    let config_mode_before = config_mode(&config)?;
+    let mut spec =
+        CodexSetupSpec::for_home(home, data, "/synthetic/bin/cutokyo hook codex --managed-v1");
+    spec.enable_otel = true;
+    spec.otel_http_endpoint = Some("http://127.0.0.1:4318/v1/logs".to_owned());
+    let state = spec.state_path.clone();
+    let backups = spec.backup_dir.clone();
+    let setup = CodexSetup::new(spec);
+    let plan = setup.dry_run()?;
+    assert_eq!(plan.phase, SetupPhase::Planned);
+    assert!(!state.exists());
+    assert!(!backups.exists());
+    assert_eq!(fs::read(&hooks)?, hooks_original);
+    assert_eq!(fs::read(&config)?, config_original);
+
+    let applied = setup.apply(&plan)?;
+    assert_eq!(applied.phase, SetupPhase::Active);
+    assert!(applied.changed);
+    let state_json: Value = serde_json::from_slice(&fs::read(&state)?)?;
+    assert_eq!(state_json["phase"], "active");
+    let first_backups = flat_directory_files(&backups)?;
+    assert_eq!(first_backups.len(), 2);
+    assert!(first_backups.values().any(|bytes| bytes == hooks_original));
+    assert!(first_backups.values().any(|bytes| bytes == config_original));
+    assert!(fs::read_to_string(&hooks)?.contains("managed-v1"));
+    assert!(fs::read_to_string(&config)?.contains("log_user_prompt = false"));
+    assert_eq!(config_mode(&hooks)?, hooks_mode);
+    assert_eq!(config_mode(&config)?, config_mode_before);
+    assert!(!setup.apply(&plan)?.changed);
+    assert_eq!(flat_directory_files(&backups)?, first_backups);
+    assert_eq!(setup.uninstall()?.phase, SetupPhase::Restored);
+    assert_eq!(fs::read(&hooks)?, hooks_original);
+    assert_eq!(fs::read(&config)?, config_original);
+    assert_eq!(config_mode(&hooks)?, hooks_mode);
+    assert_eq!(config_mode(&config)?, config_mode_before);
+    assert!(!setup.uninstall()?.changed);
+    Ok(())
+}
+
+fn assert_opencode_setup_roundtrip(
+    config_root: &std::path::Path,
+    data: &std::path::Path,
+) -> TestResult {
+    let config = config_root.join("opencode");
+    let state = data.join("opencode");
+    fs::create_dir_all(&config)?;
+    let unmanaged = config.join("opencode.jsonc");
+    let original = b"{\n  // operator-owned\n  \"model\": \"synthetic/model\"\n}\n";
+    fs::write(&unmanaged, original)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        fs::set_permissions(&unmanaged, fs::Permissions::from_mode(0o640))?;
+    }
+    let original_mode = config_mode(&unmanaged)?;
+    let setup = OpenCodeSetup::new(&config, &state);
+    let dry_run = setup.run(SetupMode::DryRun, SetupFault::None)?;
+    assert!(!dry_run.changed);
+    assert_eq!(dry_run.plugin, SetupSubsystemStatus::Planned);
+    assert_eq!(
+        dry_run.actions.first(),
+        Some(&cutokyo_core::adapters::opencode::SetupAction::PersistInstallIntent)
+    );
+    assert!(!setup.plugin_path().exists());
+    assert!(!state.exists());
+
+    let applied = setup.run(SetupMode::Apply, SetupFault::None)?;
+    assert!(applied.changed);
+    assert_eq!(
+        applied.actions.first(),
+        Some(&cutokyo_core::adapters::opencode::SetupAction::PersistInstallIntent)
+    );
+    let intent_position = applied
+        .actions
+        .iter()
+        .position(|action| {
+            *action == cutokyo_core::adapters::opencode::SetupAction::PersistInstallIntent
+        })
+        .ok_or("OpenCode install intent missing")?;
+    let mutation_position = applied
+        .actions
+        .iter()
+        .position(|action| *action == cutokyo_core::adapters::opencode::SetupAction::InstallPlugin)
+        .ok_or("OpenCode plugin mutation missing")?;
+    assert!(intent_position < mutation_position);
+    assert_eq!(
+        fs::read_to_string(setup.plugin_path())?,
+        OPENCODE_PLUGIN_SOURCE
+    );
+    let state_json: Value =
+        serde_json::from_slice(&fs::read(state.join("opencode-setup.v1.json"))?)?;
+    assert_eq!(state_json["phase"], "applied");
+    assert!(!setup.run(SetupMode::Apply, SetupFault::None)?.changed);
+    let removed = setup.run(SetupMode::Uninstall, SetupFault::None)?;
+    assert_eq!(removed.plugin, SetupSubsystemStatus::Removed);
+    assert!(!setup.plugin_path().exists());
+    assert_eq!(fs::read(&unmanaged)?, original);
+    assert_eq!(config_mode(&unmanaged)?, original_mode);
+    assert!(!setup.run(SetupMode::Uninstall, SetupFault::None)?.changed);
+    Ok(())
+}
+
+#[test]
+fn setup_all_harnesses_roundtrip() -> TestResult {
+    let temporary = tempfile::tempdir()?;
+    let home = temporary.path().join("home");
+    let config = temporary.path().join("config");
+    let data = temporary.path().join("data");
+    assert!(home.starts_with(temporary.path()));
+    assert!(config.starts_with(temporary.path()));
+    assert!(data.starts_with(temporary.path()));
+    assert_claude_setup_roundtrip(&home, &data)?;
+    assert_codex_setup_roundtrip(&home, &data)?;
+    assert_opencode_setup_roundtrip(&config, &data)
+}
+
+fn adversarial_claude_setup(root: &std::path::Path) -> cutokyo_domain::Result<ClaudeSetup> {
+    ClaudeSetup::new(
+        root.join("home/.claude/settings.json"),
+        root.join("data/claude"),
+        "/synthetic/bin/cutokyo hook claude-code",
+    )
+}
+
+fn adversarial_codex_spec(root: &std::path::Path, enable_otel: bool) -> CodexSetupSpec {
+    let mut spec = CodexSetupSpec::for_home(
+        &root.join("home"),
+        &root.join("data"),
+        "/synthetic/bin/cutokyo hook codex --managed-v1",
+    );
+    spec.enable_otel = enable_otel;
+    spec.otel_http_endpoint = enable_otel.then(|| "http://127.0.0.1:4318/v1/logs".to_owned());
+    spec
+}
+
+fn assert_claude_recovery_worlds() -> TestResult {
+    let claude_missing = tempfile::tempdir()?;
+    let claude_config = claude_missing.path().join("home/.claude/settings.json");
+    fs::create_dir_all(
+        claude_config
+            .parent()
+            .ok_or("Claude config has no parent")?,
+    )?;
+    fs::write(&claude_config, b"{\"unmanaged\":true}\n")?;
+    let claude_setup = adversarial_claude_setup(claude_missing.path())?;
+    claude_setup.apply()?;
+    let claude_state = claude_missing
+        .path()
+        .join("data/claude/claude-setup-state.v1.json");
+    fs::remove_file(&claude_state)?;
+    let mut claude_edited: Value = serde_json::from_slice(&fs::read(&claude_config)?)?;
+    claude_edited["operator_after_install"] = json!("keep-me");
+    claude_edited["hooks"]["SessionStart"] = json!([]);
+    fs::write(&claude_config, serde_json::to_vec_pretty(&claude_edited)?)?;
+    let claude_cleanup = claude_setup.dry_run(SetupOperation::Uninstall)?;
+    assert!(claude_cleanup.issues.contains(&SetupIssue::MissingState));
+    assert_eq!(
+        claude_cleanup.actions.first(),
+        Some(&SetupAction::PersistRecoveryIntent)
+    );
+    let claude_cleaned = claude_setup.execute(claude_cleanup)?;
+    assert!(claude_cleaned.changed);
+    let claude_restored: Value = serde_json::from_slice(&fs::read(&claude_config)?)?;
+    assert_eq!(claude_restored["unmanaged"], true);
+    assert_eq!(claude_restored["operator_after_install"], "keep-me");
+    assert!(!claude_restored.to_string().contains("--cutokyo-owner="));
+    assert!(!claude_setup.uninstall()?.changed);
+
+    for (case, state_bytes, issue) in [
+        ("empty", Vec::new(), SetupIssue::EmptyState),
+        ("corrupt", b"{not-json".to_vec(), SetupIssue::CorruptState),
+    ] {
+        let world = tempfile::tempdir()?;
+        let config = world.path().join("home/.claude/settings.json");
+        fs::create_dir_all(config.parent().ok_or("Claude config has no parent")?)?;
+        fs::write(&config, b"{\"operator\":true}\n")?;
+        let setup = adversarial_claude_setup(world.path())?;
+        setup.apply()?;
+        let state = world.path().join("data/claude/claude-setup-state.v1.json");
+        fs::write(&state, state_bytes)?;
+        let plan = setup.dry_run(SetupOperation::Uninstall)?;
+        assert!(
+            plan.issues.contains(&issue),
+            "Claude {case} state was hidden"
+        );
+        let outcome = setup.execute(plan)?;
+        assert!(outcome.recovered);
+        let restored: Value = serde_json::from_slice(&fs::read(&config)?)?;
+        assert_eq!(restored["operator"], true);
+        assert!(!restored.to_string().contains("--cutokyo-owner="));
+        assert!(!setup.uninstall()?.changed);
+    }
+    Ok(())
+}
+
+fn assert_codex_recovery_worlds() -> TestResult {
+    let codex_states = tempfile::tempdir()?;
+    let codex_state_spec = adversarial_codex_spec(codex_states.path(), false);
+    let codex_state_path = codex_state_spec.state_path.clone();
+    let codex_state_hooks = codex_state_spec.hooks_path.clone();
+    let codex_state_setup = CodexSetup::new(codex_state_spec);
+    assert!(!codex_state_setup.uninstall()?.changed);
+    fs::create_dir_all(
+        codex_state_path
+            .parent()
+            .ok_or("Codex state has no parent")?,
+    )?;
+    fs::write(&codex_state_path, b" \n\t")?;
+    assert!(!codex_state_setup.uninstall()?.changed);
+    fs::create_dir_all(
+        codex_state_hooks
+            .parent()
+            .ok_or("Codex hooks have no parent")?,
+    )?;
+    fs::write(&codex_state_hooks, b"{\"operator\":true}\n")?;
+    fs::write(&codex_state_path, b"{not-json")?;
+    let codex_corrupt = codex_state_setup
+        .uninstall()
+        .err()
+        .ok_or("Codex accepted corrupt recovery state")?;
+    assert_eq!(codex_corrupt.code, ErrorCode::InvalidContract);
+    assert_eq!(fs::read(&codex_state_hooks)?, b"{\"operator\":true}\n");
+
+    let codex_concurrent = tempfile::tempdir()?;
+    let codex_concurrent_spec = adversarial_codex_spec(codex_concurrent.path(), true);
+    let codex_concurrent_hooks = codex_concurrent_spec.hooks_path.clone();
+    let codex_concurrent_config = codex_concurrent_spec.user_config_path.clone();
+    fs::create_dir_all(
+        codex_concurrent_hooks
+            .parent()
+            .ok_or("Codex hooks have no parent")?,
+    )?;
+    fs::write(&codex_concurrent_hooks, b"{\"before\":true}\n")?;
+    fs::write(&codex_concurrent_config, b"model = \"gpt-5\"\n")?;
+    let codex_concurrent_setup = CodexSetup::new(codex_concurrent_spec);
+    let codex_concurrent_plan = codex_concurrent_setup.dry_run()?;
+    codex_concurrent_setup.apply(&codex_concurrent_plan)?;
+    let mut hooks_after: Value = serde_json::from_slice(&fs::read(&codex_concurrent_hooks)?)?;
+    hooks_after["operator_after_install"] = json!(true);
+    fs::write(
+        &codex_concurrent_hooks,
+        serde_json::to_vec_pretty(&hooks_after)?,
+    )?;
+    let current_config = fs::read_to_string(&codex_concurrent_config)?;
+    fs::write(
+        &codex_concurrent_config,
+        format!("approval_policy = \"never\"\n{current_config}"),
+    )?;
+    let codex_concurrent_removed = codex_concurrent_setup.uninstall()?;
+    assert_eq!(codex_concurrent_removed.phase, SetupPhase::Restored);
+    let hooks_restored: Value = serde_json::from_slice(&fs::read(&codex_concurrent_hooks)?)?;
+    assert_eq!(hooks_restored["before"], true);
+    assert_eq!(hooks_restored["operator_after_install"], true);
+    assert!(!hooks_restored.to_string().contains("managed-v1"));
+    let config_restored = fs::read_to_string(&codex_concurrent_config)?;
+    assert!(config_restored.contains("model = \"gpt-5\""));
+    assert!(config_restored.contains("approval_policy = \"never\""));
+    assert!(!config_restored.contains("127.0.0.1:4318"));
+    assert!(!codex_concurrent_setup.uninstall()?.changed);
+    Ok(())
+}
+
+fn assert_opencode_cleanup_recovery() -> TestResult {
+    let opencode_recovery = tempfile::tempdir()?;
+    let opencode_config = opencode_recovery.path().join("config/opencode");
+    let opencode_state = opencode_recovery.path().join("data/opencode");
+    let opencode_setup = OpenCodeSetup::new(&opencode_config, &opencode_state);
+    let interrupted = opencode_setup
+        .run(SetupMode::Apply, SetupFault::AfterIntent)
+        .err()
+        .ok_or("OpenCode ignored the install-intent fault")?;
+    assert_eq!(interrupted.code, ErrorCode::Cancelled);
+    assert!(!opencode_setup.plugin_path().exists());
+    let intent_state: Value =
+        serde_json::from_slice(&fs::read(opencode_state.join("opencode-setup.v1.json"))?)?;
+    assert_eq!(intent_state["phase"], "installing");
+    let recovered_intent = opencode_setup.run(SetupMode::Recover, SetupFault::None)?;
+    assert_eq!(recovered_intent.state, SetupSubsystemStatus::Recovered);
+    assert!(!recovered_intent.recovery_pending);
+    opencode_setup.run(SetupMode::Apply, SetupFault::None)?;
+    let plugin_failure = opencode_setup.run(SetupMode::Uninstall, SetupFault::PluginCleanup)?;
+    assert_eq!(plugin_failure.plugin, SetupSubsystemStatus::Failed);
+    assert_eq!(plugin_failure.state, SetupSubsystemStatus::Skipped);
+    assert!(plugin_failure.recovery_pending);
+    assert!(opencode_setup.plugin_path().is_file());
+    let state_failure = opencode_setup.run(SetupMode::Recover, SetupFault::StateCleanup)?;
+    assert_eq!(state_failure.plugin, SetupSubsystemStatus::Removed);
+    assert_eq!(state_failure.state, SetupSubsystemStatus::Failed);
+    assert!(state_failure.recovery_pending);
+    assert!(!opencode_setup.plugin_path().exists());
+    let completed_recovery = opencode_setup.run(SetupMode::Recover, SetupFault::None)?;
+    assert_eq!(completed_recovery.state, SetupSubsystemStatus::Recovered);
+    assert!(!completed_recovery.recovery_pending);
+    assert!(
+        !opencode_setup
+            .run(SetupMode::Uninstall, SetupFault::None)?
+            .changed
+    );
+    Ok(())
+}
+
+fn assert_opencode_state_worlds() -> TestResult {
+    let opencode_states = tempfile::tempdir()?;
+    let opencode_state_root = opencode_states.path().join("data/opencode");
+    let opencode_state_setup = OpenCodeSetup::new(
+        opencode_states.path().join("config/opencode"),
+        &opencode_state_root,
+    );
+    assert!(
+        !opencode_state_setup
+            .run(SetupMode::Uninstall, SetupFault::None)?
+            .changed
+    );
+    let opencode_state_file = opencode_state_root.join("opencode-setup.v1.json");
+    fs::write(&opencode_state_file, b"")?;
+    let empty_error = opencode_state_setup
+        .run(SetupMode::Uninstall, SetupFault::None)
+        .err()
+        .ok_or("OpenCode accepted empty recovery state")?;
+    assert_eq!(empty_error.code, ErrorCode::Unhealthy);
+    fs::write(&opencode_state_file, b"{not-json")?;
+    let corrupt_error = opencode_state_setup
+        .run(SetupMode::Uninstall, SetupFault::None)
+        .err()
+        .ok_or("OpenCode accepted corrupt recovery state")?;
+    assert_eq!(corrupt_error.code, ErrorCode::Unhealthy);
+    assert_eq!(fs::read(&opencode_state_file)?, b"{not-json");
+    Ok(())
+}
+
+fn assert_opencode_concurrent_edit() -> TestResult {
+    let opencode_concurrent = tempfile::tempdir()?;
+    let opencode_concurrent_setup = OpenCodeSetup::new(
+        opencode_concurrent.path().join("config/opencode"),
+        opencode_concurrent.path().join("data/opencode"),
+    );
+    let stale_plan = opencode_concurrent_setup.plan(SetupMode::Apply)?;
+    fs::create_dir_all(
+        opencode_concurrent_setup
+            .plugin_path()
+            .parent()
+            .ok_or("OpenCode plugin has no parent")?,
+    )?;
+    let operator_plugin = b"// operator concurrent edit\n";
+    fs::write(opencode_concurrent_setup.plugin_path(), operator_plugin)?;
+    let stale_error = opencode_concurrent_setup
+        .execute(&stale_plan, SetupFault::None)
+        .err()
+        .ok_or("OpenCode accepted a stale apply plan")?;
+    assert_eq!(stale_error.code, ErrorCode::Unhealthy);
+    assert_eq!(
+        fs::read(opencode_concurrent_setup.plugin_path())?,
+        operator_plugin
+    );
+    assert!(!opencode_concurrent.path().join("data/opencode").exists());
+    Ok(())
+}
+
+#[cfg(unix)]
+fn assert_opencode_permission_preservation() -> TestResult {
+    use std::os::unix::fs::PermissionsExt as _;
+
+    let opencode_permissions = tempfile::tempdir()?;
+    let opencode_permissions_setup = OpenCodeSetup::new(
+        opencode_permissions.path().join("config/opencode"),
+        opencode_permissions.path().join("data/opencode"),
+    );
+    fs::create_dir_all(
+        opencode_permissions_setup
+            .plugin_path()
+            .parent()
+            .ok_or("OpenCode plugin has no parent")?,
+    )?;
+    fs::write(
+        opencode_permissions_setup.plugin_path(),
+        OPENCODE_PLUGIN_SOURCE,
+    )?;
+    fs::set_permissions(
+        opencode_permissions_setup.plugin_path(),
+        fs::Permissions::from_mode(0o640),
+    )?;
+    opencode_permissions_setup.run(SetupMode::Apply, SetupFault::None)?;
+    assert_eq!(
+        config_mode(&opencode_permissions_setup.plugin_path())?,
+        Some(0o640)
+    );
+    opencode_permissions_setup.run(SetupMode::Uninstall, SetupFault::None)?;
+    Ok(())
+}
+
+#[cfg(unix)]
+fn assert_claude_unsafe_targets() -> TestResult {
+    use std::os::unix::fs::symlink;
+
+    let claude_symlink = tempfile::tempdir()?;
+    let claude_symlink_config = claude_symlink.path().join("home/.claude/settings.json");
+    fs::create_dir_all(
+        claude_symlink_config
+            .parent()
+            .ok_or("Claude config has no parent")?,
+    )?;
+    let claude_outside = claude_symlink.path().join("outside.json");
+    fs::write(&claude_outside, b"{}\n")?;
+    symlink(&claude_outside, &claude_symlink_config)?;
+    let claude_symlink_error = adversarial_claude_setup(claude_symlink.path())?
+        .dry_run(SetupOperation::Install)
+        .err()
+        .ok_or("Claude accepted a config symlink")?;
+    assert_eq!(claude_symlink_error.code, ErrorCode::InvalidInput);
+    assert_eq!(fs::read(&claude_outside)?, b"{}\n");
+
+    let claude_directory = tempfile::tempdir()?;
+    let claude_directory_config = claude_directory.path().join("home/.claude/settings.json");
+    fs::create_dir_all(&claude_directory_config)?;
+    let claude_directory_error = adversarial_claude_setup(claude_directory.path())?
+        .dry_run(SetupOperation::Install)
+        .err()
+        .ok_or("Claude accepted a directory config target")?;
+    assert_eq!(claude_directory_error.code, ErrorCode::InvalidInput);
+    Ok(())
+}
+
+#[cfg(unix)]
+fn assert_codex_independent_cleanup() -> TestResult {
+    use std::os::unix::fs::symlink;
+
+    let codex_unsafe = tempfile::tempdir()?;
+    let codex_unsafe_spec = adversarial_codex_spec(codex_unsafe.path(), true);
+    let codex_unsafe_hooks = codex_unsafe_spec.hooks_path.clone();
+    let codex_unsafe_config = codex_unsafe_spec.user_config_path.clone();
+    let codex_unsafe_setup = CodexSetup::new(codex_unsafe_spec);
+    let codex_unsafe_plan = codex_unsafe_setup.dry_run()?;
+    codex_unsafe_setup.apply(&codex_unsafe_plan)?;
+    let codex_outside = codex_unsafe.path().join("outside-hooks.json");
+    fs::write(&codex_outside, b"{\"outside\":true}\n")?;
+    fs::remove_file(&codex_unsafe_hooks)?;
+    symlink(&codex_outside, &codex_unsafe_hooks)?;
+    let cleanup_error = codex_unsafe_setup
+        .uninstall()
+        .err()
+        .ok_or("Codex accepted an unsafe cleanup target")?;
+    assert_eq!(cleanup_error.code, ErrorCode::InvalidInput);
+    assert_eq!(fs::read(&codex_outside)?, b"{\"outside\":true}\n");
+    assert!(
+        !codex_unsafe_config.exists(),
+        "Codex OTel cleanup was blocked by the independent hook failure"
+    );
+    fs::remove_file(&codex_unsafe_hooks)?;
+    let codex_recovered = codex_unsafe_setup.uninstall()?;
+    assert_eq!(codex_recovered.phase, SetupPhase::Restored);
+    Ok(())
+}
+
+#[cfg(unix)]
+fn assert_codex_unsafe_targets() -> TestResult {
+    use std::os::unix::fs::symlink;
+
+    let codex_symlink = tempfile::tempdir()?;
+    let codex_symlink_spec = adversarial_codex_spec(codex_symlink.path(), false);
+    let codex_symlink_hooks = codex_symlink_spec.hooks_path.clone();
+    fs::create_dir_all(
+        codex_symlink_hooks
+            .parent()
+            .ok_or("Codex hooks have no parent")?,
+    )?;
+    let codex_symlink_outside = codex_symlink.path().join("outside.json");
+    fs::write(&codex_symlink_outside, b"{}\n")?;
+    symlink(&codex_symlink_outside, &codex_symlink_hooks)?;
+    let codex_symlink_error = CodexSetup::new(codex_symlink_spec)
+        .dry_run()
+        .err()
+        .ok_or("Codex accepted a hooks symlink")?;
+    assert_eq!(codex_symlink_error.code, ErrorCode::InvalidInput);
+    assert_eq!(fs::read(&codex_symlink_outside)?, b"{}\n");
+
+    let codex_directory = tempfile::tempdir()?;
+    let codex_directory_spec = adversarial_codex_spec(codex_directory.path(), false);
+    fs::create_dir_all(&codex_directory_spec.hooks_path)?;
+    let codex_directory_error = CodexSetup::new(codex_directory_spec)
+        .dry_run()
+        .err()
+        .ok_or("Codex accepted a directory hooks target")?;
+    assert_eq!(codex_directory_error.code, ErrorCode::InvalidInput);
+    Ok(())
+}
+
+#[cfg(unix)]
+fn assert_opencode_unsafe_targets() -> TestResult {
+    use std::os::unix::fs::symlink;
+
+    let opencode_symlink = tempfile::tempdir()?;
+    let opencode_symlink_setup = OpenCodeSetup::new(
+        opencode_symlink.path().join("config/opencode"),
+        opencode_symlink.path().join("data/opencode"),
+    );
+    fs::create_dir_all(
+        opencode_symlink_setup
+            .plugin_path()
+            .parent()
+            .ok_or("OpenCode plugin has no parent")?,
+    )?;
+    let opencode_outside = opencode_symlink.path().join("outside.ts");
+    fs::write(&opencode_outside, b"// outside\n")?;
+    symlink(&opencode_outside, opencode_symlink_setup.plugin_path())?;
+    let opencode_symlink_error = opencode_symlink_setup
+        .plan(SetupMode::Apply)
+        .err()
+        .ok_or("OpenCode accepted a plugin symlink")?;
+    assert_eq!(opencode_symlink_error.code, ErrorCode::InvalidInput);
+    assert_eq!(fs::read(&opencode_outside)?, b"// outside\n");
+
+    let opencode_directory = tempfile::tempdir()?;
+    let opencode_directory_setup = OpenCodeSetup::new(
+        opencode_directory.path().join("config/opencode"),
+        opencode_directory.path().join("data/opencode"),
+    );
+    fs::create_dir_all(opencode_directory_setup.plugin_path())?;
+    let opencode_directory_error = opencode_directory_setup
+        .plan(SetupMode::Apply)
+        .err()
+        .ok_or("OpenCode accepted a directory plugin target")?;
+    assert_eq!(opencode_directory_error.code, ErrorCode::InvalidInput);
+    Ok(())
+}
+
+#[cfg(unix)]
+fn assert_unix_setup_guards() -> TestResult {
+    assert_opencode_permission_preservation()?;
+    assert_claude_unsafe_targets()?;
+    assert_codex_independent_cleanup()?;
+    assert_codex_unsafe_targets()?;
+    assert_opencode_unsafe_targets()
+}
+
+#[test]
+fn setup_restore_adversarial_worlds() -> TestResult {
+    assert_claude_recovery_worlds()?;
+    assert_codex_recovery_worlds()?;
+    assert_opencode_cleanup_recovery()?;
+    assert_opencode_state_worlds()?;
+    assert_opencode_concurrent_edit()?;
+    #[cfg(unix)]
+    assert_unix_setup_guards()?;
     Ok(())
 }
 
