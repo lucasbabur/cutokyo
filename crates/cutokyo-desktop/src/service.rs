@@ -7,12 +7,9 @@ use std::{
     sync::{Arc, Mutex, MutexGuard},
 };
 
-use cutokyo_core::{
-    app::{Application, LocalCore, QueryUseCases},
-    store::{
-        DELETE_ALL_CONFIRMATION, DeletionReceipt, HealthSnapshot, HealthStatus, LockOwner,
-        RetentionPlan, SearchQuery, SearchResult, UsageTotals,
-    },
+use cutokyo_core::app::{
+    Application, DELETE_ALL_CONFIRMATION, DeletionReceipt, HealthSnapshot, HealthStatus, LocalCore,
+    LockOwner, QueryUseCases, RetentionPlan, SearchQuery, SearchResult, UsageTotals,
 };
 use cutokyo_domain::{
     CaptureChannel, Confidence, ConfigItemKind, ConfigItemState, Coverage, CoverageState, Harness,
@@ -22,6 +19,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use time::{Duration, OffsetDateTime, format_description::well_known::Rfc3339};
 use uuid::Uuid;
+
+use crate::health_binding::{health_binding_value, health_status, timestamp_from_epoch};
 
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 const STATE_FILE: &str = "desktop-state.json";
@@ -883,7 +882,7 @@ impl DesktopService {
 
     pub(crate) fn health(&self) -> Result<Value, String> {
         let health = self.core()?.health()?;
-        health_value(&health)
+        health_binding_value(&health)
     }
 
     pub(crate) fn retry_health(&self, dimension_id: &str) -> Result<Value, String> {
@@ -1280,58 +1279,6 @@ fn guards_value(settings: &Settings) -> Result<Value, String> {
     }))
 }
 
-fn health_value(snapshot: &HealthSnapshot) -> Result<Value, String> {
-    let dimensions = snapshot
-        .dimensions
-        .values()
-        .map(|dimension| {
-            let action = match dimension.dimension.as_str() {
-                "writer_lock" if dimension.status == HealthStatus::Degraded => {
-                    Some("Retry writer lock")
-                }
-                "spool_drain" if dimension.status == HealthStatus::Degraded => Some("Drain now"),
-                "integrity" if dimension.status != HealthStatus::Healthy => {
-                    Some("Run integrity check")
-                }
-                _ => None,
-            };
-            json!({
-                "id": dimension.dimension,
-                "name": dimension.dimension.replace('_', " "),
-                "state": health_status(dimension.status),
-                "detail": dimension.detail.as_deref().unwrap_or("No bounded detail is available."),
-                "actionLabel": action,
-                "lastSuccessAt": dimension.last_success_at_epoch.and_then(timestamp_from_epoch),
-                "lastFailureAt": dimension.last_failure_at_epoch.and_then(timestamp_from_epoch),
-                "failureCategory": dimension.failure_category,
-            })
-        })
-        .collect::<Vec<_>>();
-    Ok(json!({
-        "meta": route_meta(if snapshot.dimensions.values().any(|dimension| dimension.status == HealthStatus::Degraded) { "degraded" } else { "complete" }, &[]) ?,
-        "dimensions": dimensions,
-        "currentQuarantineCount": snapshot.current_quarantine_count,
-        "lifetimeQuarantineCount": snapshot.lifetime_quarantine_count,
-        "firstAffectedObservationId": snapshot.first_affected_observation_id,
-        "drainPendingCount": snapshot.drain_pending_count,
-        "drainPendingBytes": snapshot.drain_pending_bytes,
-        "drainLagSeconds": snapshot.drain_lag_seconds,
-        "spoolCapReason": snapshot.spool_cap_reason,
-        "writerOwner": writer_owner_label(snapshot.writer_owner.as_deref()),
-        "schemaVersion": snapshot.schema_version,
-        "deriveVersion": snapshot.derive_version,
-        "lastIntegrityResult": snapshot.last_integrity_result,
-    }))
-}
-
-fn writer_owner_label(value: Option<&str>) -> Option<String> {
-    let value = value?;
-    serde_json::from_str::<LockOwner>(value)
-        .map(|owner| format!("{} pid {}", owner.frontend, owner.pid))
-        .ok()
-        .or_else(|| Some(value.to_owned()))
-}
-
 fn provenance_value(
     source: &SourceProvenance,
     observation_ids: &[cutokyo_domain::ObservationId],
@@ -1410,14 +1357,6 @@ const fn coverage_state(state: CoverageState) -> &'static str {
     }
 }
 
-const fn health_status(status: HealthStatus) -> &'static str {
-    match status {
-        HealthStatus::Healthy => "healthy",
-        HealthStatus::Degraded => "degraded",
-        HealthStatus::Unknown => "unknown",
-    }
-}
-
 const fn config_kind(kind: ConfigItemKind) -> &'static str {
     match kind {
         ConfigItemKind::Mcp => "mcp",
@@ -1486,12 +1425,6 @@ fn now_string() -> Result<String, String> {
     OffsetDateTime::now_utc()
         .format(&Rfc3339)
         .map_err(|error| format!("Could not format the current UTC time: {error}"))
-}
-
-fn timestamp_from_epoch(epoch: i64) -> Option<String> {
-    OffsetDateTime::from_unix_timestamp(epoch)
-        .ok()
-        .and_then(|value| value.format(&Rfc3339).ok())
 }
 
 fn contract_error(error: cutokyo_domain::ContractError) -> String {

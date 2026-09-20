@@ -4,6 +4,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
     io::{self, Read as _},
+    process::{Command, Output},
     sync::{
         Arc, Mutex, PoisonError,
         atomic::{AtomicUsize, Ordering},
@@ -11,10 +12,6 @@ use std::{
     time::Duration,
 };
 
-use cutokyo_cli::{
-    bundle as cli_bundle,
-    logging::{self as cli_logging, CRASH_RECORD_MAX_BYTES, LogOptions, PENDING_CRASH_NOTICE},
-};
 use cutokyo_core::{
     adapters::{
         CaptureDecision,
@@ -37,10 +34,7 @@ use cutokyo_core::{
         AnalysisService, AnalysisSummarySink, CredentialOrigin, CredentialSource,
         ProviderCredential,
     },
-    app::{
-        Application, DELETE_ALL_CONFIRMATION, LocalCore, RuntimePaths, SessionSearch,
-        SettingsOverrides,
-    },
+    app::{Application, DELETE_ALL_CONFIRMATION, LocalCore, RuntimePaths, SessionSearch},
     bundle::{BundleDiagnostic, build_diagnostic_bundle},
     guards::{BufferedSecretGuard, GuardChannel, REDACTION_MARKER, SecretGuard},
     mcp::{
@@ -58,6 +52,7 @@ use cutokyo_core::{
         HealthSnapshot, HealthStatus, LockOwner, RetentionPlan, SearchQuery, SearchResult,
     },
 };
+use cutokyo_desktop::health_binding_value;
 use cutokyo_domain::{
     Attribution, CaptureChannel, Confidence, Coverage, CoverageState, ErrorCode, Harness,
     NativeIdentity, NativeSessionId, ObservationId, RawObservation, ResumeLauncher as _, SessionId,
@@ -72,6 +67,7 @@ use fake_harness::{
 use flate2::read::GzDecoder;
 use rmcp::model::{CallToolResult, ContentBlock, Tool, ToolAnnotations};
 use serde_json::{Map, Value, json};
+use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 use tokio_util::sync::CancellationToken;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -2327,89 +2323,201 @@ const BACKUP_SENTINEL: &str = "BackupBytesC16-4d75";
 const SPOOL_SENTINEL: &str = "SpoolBytesC16-3e86";
 const OVERSIZED_SENTINEL: &str = "OversizedEventC16-2f97";
 const SYNTHETIC_FULL_PATH: &str = "/synthetic/private/c16-project/session.jsonl";
+const WINDOWS_FULL_PATH: &str = r"C:\Users\alice\private\c16-project\session.jsonl";
+const OVERSIZED_COMMAND: &str = "c16_oversized_command_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const PENDING_CRASH_NOTICE: &str = "A bounded crash record is waiting. Review `cutokyo bundle` and explicitly add --include-crash if you want it included.";
+const CRASH_RECORD_MAX_BYTES: usize = 16 * 1024;
 const MALFORMED_HEALTH_ENTRY: &str = "c16-malformed-health.jsonl";
 
+fn c16_binary() -> &'static str {
+    env!("CARGO_BIN_EXE_cutokyo-c16-fixture")
+}
+
+fn invoke_c16(
+    root: &std::path::Path,
+    arguments: &[&str],
+    environment: &[(&str, &str)],
+) -> TestResult<Output> {
+    let mut command = Command::new(c16_binary());
+    command
+        .arg("--config-file")
+        .arg(root.join("config/config.toml"))
+        .arg("--data-dir")
+        .arg(root.join("data"))
+        .args(arguments);
+    for (key, value) in environment {
+        command.env(key, value);
+    }
+    Ok(command.output()?)
+}
+
+fn assert_c16_exit(output: &Output, expected: i32) {
+    assert_eq!(
+        output.status.code(),
+        Some(expected),
+        "stdout={}\nstderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+fn c16_json(output: &Output) -> TestResult<Value> {
+    Ok(serde_json::from_slice(&output.stdout)?)
+}
+
+fn json_contains_string(value: &Value, needle: &str) -> bool {
+    match value {
+        Value::String(value) => value.contains(needle),
+        Value::Array(values) => values
+            .iter()
+            .any(|value| json_contains_string(value, needle)),
+        Value::Object(values) => values
+            .iter()
+            .any(|(key, value)| key.contains(needle) || json_contains_string(value, needle)),
+        Value::Null | Value::Bool(_) | Value::Number(_) => false,
+    }
+}
+
+fn c16_forbidden_values(root: &std::path::Path) -> Vec<String> {
+    vec![
+        PROMPT_SENTINEL.to_owned(),
+        TRANSCRIPT_SENTINEL.to_owned(),
+        RAW_SECRET_SENTINEL.to_owned(),
+        DATABASE_SENTINEL.to_owned(),
+        BACKUP_SENTINEL.to_owned(),
+        SPOOL_SENTINEL.to_owned(),
+        SYNTHETIC_FULL_PATH.to_owned(),
+        WINDOWS_FULL_PATH.to_owned(),
+        root.display().to_string(),
+    ]
+}
+
+fn assert_decoded_value_safe(name: &str, value: &Value, forbidden: &[String]) {
+    for sentinel in forbidden {
+        assert!(
+            !json_contains_string(value, sentinel),
+            "decoded {name} leaked {sentinel}"
+        );
+    }
+}
+
+fn decode_jsonl(bytes: &[u8]) -> TestResult<Vec<Value>> {
+    bytes
+        .split(|byte| *byte == b'\n')
+        .filter(|line| !line.is_empty())
+        .map(|line| serde_json::from_slice(line).map_err(Into::into))
+        .collect()
+}
+
 fn exercise_bounded_logs(root: &std::path::Path, paths: &RuntimePaths) -> TestResult {
-    let (guard, dispatch) = cli_logging::build_dispatch(paths, LogOptions::bounded(768, 2)?)?;
-    let unsafe_log_value = format!(
-        "{PROMPT_SENTINEL} {TRANSCRIPT_SENTINEL} {RAW_SECRET_SENTINEL} {SYNTHETIC_FULL_PATH} {} {DATABASE_SENTINEL} {BACKUP_SENTINEL} {SPOOL_SENTINEL}",
+    let log_environment = [("CUTOKYO_LOG_MAX_BYTES", "256")];
+    for _ in 0..14 {
+        let output = invoke_c16(root, &["version", "--json"], &log_environment)?;
+        assert_c16_exit(&output, 0);
+    }
+
+    let private = format!(
+        "{PROMPT_SENTINEL} {TRANSCRIPT_SENTINEL} {RAW_SECRET_SENTINEL} \
+         {SYNTHETIC_FULL_PATH} {WINDOWS_FULL_PATH} {} {DATABASE_SENTINEL} \
+         {BACKUP_SENTINEL} {SPOOL_SENTINEL}",
         root.display()
     );
-    tracing::dispatcher::with_default(&dispatch, || {
-        let padding = "rotation-padding".repeat(13);
-        for index in 0_u64..14 {
-            tracing::info!(
-                target: "cutokyo_c16",
-                command = "drain", status = "finished", attempted = index,
-                source_detail = %padding, "bounded rotation fixture"
-            );
-        }
-        tracing::info!(
-            target: "cutokyo_c16",
-            command = "bundle", status = "unsafe-source",
-            source_detail = %unsafe_log_value,
-            "content that the bundle projection must discard"
-        );
-        let oversized = format!("{OVERSIZED_SENTINEL}{}", "x".repeat(4_096));
-        tracing::info!(
-            target: "cutokyo_c16",
-            command = "bundle", status = "oversized", source_detail = %oversized,
-            "oversized event"
-        );
-        tracing::info!(
-            target: "cutokyo_c16",
-            command = "doctor", status = "finished", attempted = 1_u64,
-            "writer remains usable after the oversized event"
-        );
-    });
-    guard.flush();
-    drop(dispatch);
-    drop(guard);
+    let output = invoke_c16(
+        root,
+        &["version", "--json"],
+        &[
+            ("CUTOKYO_LOG_MAX_BYTES", "256"),
+            ("CUTOKYO_INTERNAL_TEST_LOG_PRIVATE", private.as_str()),
+        ],
+    )?;
+    assert_c16_exit(&output, 0);
+    let output = invoke_c16(
+        root,
+        &["version", "--json"],
+        &[
+            ("CUTOKYO_LOG_MAX_BYTES", "256"),
+            ("CUTOKYO_INTERNAL_TEST_LOG_OVERSIZED", "1"),
+        ],
+    )?;
+    assert_c16_exit(&output, 0);
 
-    let log_paths = [
-        paths.log_dir.join("cutokyo.jsonl"),
-        paths.log_dir.join("cutokyo.jsonl.1"),
-        paths.log_dir.join("cutokyo.jsonl.2"),
-    ];
-    assert!(log_paths.iter().all(|path| path.is_file()));
-    assert!(!paths.log_dir.join("cutokyo.jsonl.3").exists());
-    let mut source_logs = Vec::new();
-    for path in log_paths {
+    let allowed_top_level = ["fields", "level", "target", "timestamp"]
+        .into_iter()
+        .collect::<BTreeSet<_>>();
+    let allowed_fields = [
+        "attempted",
+        "command",
+        "duplicates",
+        "error_code",
+        "inserted",
+        "operation",
+        "quarantined",
+        "status",
+    ]
+    .into_iter()
+    .collect::<BTreeSet<_>>();
+    let forbidden = c16_forbidden_values(root);
+    let mut commands = Vec::new();
+    for generation in 0..=5 {
+        let path = if generation == 0 {
+            paths.log_dir.join("cutokyo.jsonl")
+        } else {
+            paths.log_dir.join(format!("cutokyo.jsonl.{generation}"))
+        };
         let bytes = fs::read(&path)?;
-        assert!(
-            bytes.len() <= 768,
-            "{} exceeded its byte bound",
-            path.display()
-        );
-        source_logs.extend_from_slice(&bytes);
+        assert!(bytes.len() <= 256, "{} exceeded its bound", path.display());
+        for value in decode_jsonl(&bytes)? {
+            assert_decoded_value_safe(&path.display().to_string(), &value, &forbidden);
+            let object = value
+                .as_object()
+                .ok_or_else(|| io::Error::other("source log record is not an object"))?;
+            assert_eq!(
+                object.keys().map(String::as_str).collect::<BTreeSet<_>>(),
+                allowed_top_level
+            );
+            let fields = object["fields"]
+                .as_object()
+                .ok_or_else(|| io::Error::other("source log fields are not an object"))?;
+            assert!(
+                fields
+                    .keys()
+                    .all(|key| allowed_fields.contains(key.as_str()))
+            );
+            if let Some(command) = fields.get("command").and_then(Value::as_str) {
+                commands.push(command.to_owned());
+            }
+        }
     }
-    let source_logs = String::from_utf8(source_logs)?;
-    for expected in [
-        PROMPT_SENTINEL,
-        TRANSCRIPT_SENTINEL,
-        RAW_SECRET_SENTINEL,
-        SYNTHETIC_FULL_PATH,
-        "writer remains usable after the oversized event",
-    ] {
-        assert!(source_logs.contains(expected));
-    }
-    assert!(source_logs.contains(&root.display().to_string()));
-    assert!(!source_logs.contains(OVERSIZED_SENTINEL));
+    assert!(!paths.log_dir.join("cutokyo.jsonl.6").exists());
+    assert!(
+        commands
+            .iter()
+            .any(|command| command == "c16_sanitized_fixture")
+    );
+    assert!(!commands.iter().any(|command| command == OVERSIZED_COMMAND));
+    assert!(!commands.iter().any(|command| command == OVERSIZED_SENTINEL));
     Ok(())
 }
 
 fn exercise_crash_record(root: &std::path::Path, paths: &RuntimePaths) -> TestResult {
-    let previous_hook = std::panic::take_hook();
-    cli_logging::install_panic_hook(paths);
     let panic_payload = format!(
-        "{PROMPT_SENTINEL} {TRANSCRIPT_SENTINEL} {RAW_SECRET_SENTINEL} {}",
+        "{PROMPT_SENTINEL} {TRANSCRIPT_SENTINEL} {RAW_SECRET_SENTINEL} \
+         {SYNTHETIC_FULL_PATH} {WINDOWS_FULL_PATH} {}",
         root.display()
     );
-    let panic_result = std::panic::catch_unwind(|| {
-        assert!(std::hint::black_box(false), "{panic_payload}");
-    });
-    std::panic::set_hook(previous_hook);
-    assert!(panic_result.is_err());
+    let thread_name = format!("worker-{RAW_SECRET_SENTINEL}-{WINDOWS_FULL_PATH}");
+    let output = invoke_c16(
+        root,
+        &["version", "--json"],
+        &[
+            (
+                "CUTOKYO_INTERNAL_TEST_PANIC_PAYLOAD",
+                panic_payload.as_str(),
+            ),
+            ("CUTOKYO_INTERNAL_TEST_PANIC_THREAD", thread_name.as_str()),
+        ],
+    )?;
+    assert_c16_exit(&output, 70);
 
     let crash_bytes = fs::read(&paths.crash_file)?;
     assert!(crash_bytes.len() <= CRASH_RECORD_MAX_BYTES);
@@ -2434,38 +2542,22 @@ fn exercise_crash_record(root: &std::path::Path, paths: &RuntimePaths) -> TestRe
     .collect();
     assert_eq!(crash_keys, expected_keys);
     assert_eq!(crash["category"], "panic");
-    let rendered_crash = String::from_utf8(crash_bytes)?;
-    let dynamic_root = root.display().to_string();
-    for forbidden in [
-        PROMPT_SENTINEL,
-        TRANSCRIPT_SENTINEL,
-        RAW_SECRET_SENTINEL,
-        SYNTHETIC_FULL_PATH,
-        dynamic_root.as_str(),
-    ] {
-        assert!(!rendered_crash.contains(forbidden));
-    }
+    assert_eq!(crash["thread"], "named");
+    assert_decoded_value_safe("raw crash record", &crash, &c16_forbidden_values(root));
     #[cfg(unix)]
     assert_eq!(config_mode(&paths.crash_file)?, Some(0o600));
 
-    let next_launch = RuntimePaths::discover(
-        Some(root.join("config/config.toml")),
-        Some(root.join("data")),
-    )?;
-    assert_eq!(next_launch, *paths);
-    assert!(cli_logging::pending_crash(&next_launch));
+    let human = invoke_c16(root, &["version"], &[])?;
+    assert_c16_exit(&human, 0);
+    assert!(String::from_utf8(human.stderr)?.contains(PENDING_CRASH_NOTICE));
+    let json_launch = invoke_c16(root, &["version", "--json"], &[])?;
+    assert_c16_exit(&json_launch, 0);
+    assert!(!String::from_utf8_lossy(&json_launch.stderr).contains(PENDING_CRASH_NOTICE));
     assert_eq!(
-        cli_logging::pending_crash_notice(&next_launch, false, false),
-        Some(PENDING_CRASH_NOTICE)
+        c16_json(&json_launch)?["meta"]["pending_crash_record"],
+        true
     );
-    assert_eq!(
-        cli_logging::pending_crash_notice(&next_launch, true, false),
-        None
-    );
-    assert_eq!(
-        cli_logging::pending_crash_notice(&next_launch, false, true),
-        None
-    );
+    assert!(paths.crash_file.is_file());
     Ok(())
 }
 
@@ -2519,27 +2611,21 @@ fn seed_bundle_sources(
     Ok(())
 }
 
-fn create_bundle_variants(
-    app: &Application,
-    root: &std::path::Path,
-    paths: &RuntimePaths,
-) -> TestResult<BTreeMap<String, Vec<u8>>> {
-    let overrides = SettingsOverrides::default();
-    let config = app.resolve_settings(paths, &overrides)?;
-    let doctor = app.doctor(paths, &overrides);
-    let contract = app.contract_snapshot();
-
-    let without_crash_preview = cli_bundle::preview(paths, false);
-    assert!(!without_crash_preview.crash_record_included);
+fn preview_and_retain_crash(root: &std::path::Path, paths: &RuntimePaths) -> TestResult<Value> {
+    let preview_output = invoke_c16(root, &["bundle", "--json"], &[])?;
+    assert_c16_exit(&preview_output, 0);
+    let without_crash_preview = c16_json(&preview_output)?["data"].clone();
+    assert_eq!(without_crash_preview["crash_record_included"], false);
     assert!(
-        !without_crash_preview
-            .entries
-            .iter()
+        !without_crash_preview["entries"]
+            .as_array()
+            .into_iter()
+            .flatten()
             .any(|entry| entry == "crash/record.json")
     );
     assert_eq!(
-        without_crash_preview.excluded,
-        [
+        without_crash_preview["excluded"],
+        json!([
             "prompts",
             "transcripts",
             "raw_observations",
@@ -2547,58 +2633,163 @@ fn create_bundle_variants(
             "full_project_paths",
             "database_bytes",
             "spool_payloads",
-        ]
-        .into_iter()
-        .map(str::to_owned)
-        .collect::<Vec<_>>()
+        ])
     );
+
     let without_crash_path = root.join("bundles/without-crash.tar.gz");
-    let without_crash = cli_bundle::create(
-        paths,
-        &without_crash_path,
-        false,
-        &contract,
-        &config,
-        &doctor,
+    let without_crash_argument = without_crash_path
+        .to_str()
+        .ok_or_else(|| io::Error::other("bundle path is not UTF-8"))?;
+    let output = invoke_c16(
+        root,
+        &["bundle", "--output", without_crash_argument, "--json"],
+        &[],
     )?;
-    assert!(!without_crash.manifest.crash_record_included);
-    assert!(cli_logging::pending_crash(paths));
+    assert_c16_exit(&output, 0);
+    assert_eq!(
+        c16_json(&output)?["data"]["manifest"],
+        without_crash_preview
+    );
+    assert!(paths.crash_file.is_file());
     assert!(!read_bundle_entries(&without_crash_path)?.contains_key("crash/record.json"));
 
-    let include_preview = cli_bundle::preview(paths, true);
-    assert!(include_preview.crash_record_included);
+    let include_output = invoke_c16(root, &["bundle", "--include-crash", "--json"], &[])?;
+    assert_c16_exit(&include_output, 0);
+    let include_preview = c16_json(&include_output)?["data"].clone();
+    assert_eq!(include_preview["crash_record_included"], true);
     assert!(
-        include_preview
-            .entries
-            .iter()
+        include_preview["entries"]
+            .as_array()
+            .into_iter()
+            .flatten()
             .any(|entry| entry == "crash/record.json")
     );
+
     let blocked_parent = root.join("not-a-directory");
     fs::write(
         &blocked_parent,
         b"bundle publication must fail below this file",
     )?;
-    assert!(
-        cli_bundle::create(
-            paths,
-            &blocked_parent.join("failed.tar.gz"),
-            true,
-            &contract,
-            &config,
-            &doctor,
-        )
-        .is_err()
-    );
-    assert!(cli_logging::pending_crash(paths));
+    let blocked_output = blocked_parent.join("failed.tar.gz");
+    let blocked_argument = blocked_output
+        .to_str()
+        .ok_or_else(|| io::Error::other("blocked bundle path is not UTF-8"))?;
+    let failed = invoke_c16(
+        root,
+        &[
+            "bundle",
+            "--output",
+            blocked_argument,
+            "--include-crash",
+            "--clear-crash",
+            "--json",
+        ],
+        &[],
+    )?;
+    assert_c16_exit(&failed, 70);
+    assert_eq!(c16_json(&failed)?["meta"]["pending_crash_record"], true);
+    assert!(paths.crash_file.is_file());
 
-    let included_path = root.join("bundles/with-crash.tar.gz");
-    let included = cli_bundle::create(paths, &included_path, true, &contract, &config, &doctor)?;
-    assert!(included.manifest.crash_record_included);
-    assert_eq!(included.sha256.len(), 64);
-    assert!(included.byte_length > 0);
-    assert!(cli_logging::pending_crash(paths));
+    let retained_path = root.join("bundles/with-crash-retained.tar.gz");
+    let retained_argument = retained_path
+        .to_str()
+        .ok_or_else(|| io::Error::other("retained bundle path is not UTF-8"))?;
+    let retained = invoke_c16(
+        root,
+        &[
+            "bundle",
+            "--output",
+            retained_argument,
+            "--include-crash",
+            "--json",
+        ],
+        &[],
+    )?;
+    assert_c16_exit(&retained, 0);
+    assert!(paths.crash_file.is_file());
+    Ok(include_preview)
+}
+
+fn prove_receipt_bound_crash_clearing(
+    root: &std::path::Path,
+    paths: &RuntimePaths,
+) -> TestResult<()> {
+    let mismatch_path = root.join("bundles/receipt-mismatch.tar.gz");
+    let mismatch_argument = mismatch_path
+        .to_str()
+        .ok_or_else(|| io::Error::other("receipt mismatch bundle path is not UTF-8"))?;
+    let mismatch = invoke_c16(
+        root,
+        &[
+            "bundle",
+            "--output",
+            mismatch_argument,
+            "--include-crash",
+            "--clear-crash",
+            "--json",
+        ],
+        &[("CUTOKYO_INTERNAL_TEST_REPLACE_CRASH_BEFORE_CLEAR", "1")],
+    )?;
+    assert_c16_exit(&mismatch, 70);
+    let failure = c16_json(&mismatch)?;
+    assert_eq!(failure["meta"]["pending_crash_record"], true);
+    assert!(
+        failure["error"]["message"]
+            .as_str()
+            .is_some_and(|message| message.contains("pending crash record changed"))
+    );
+    let replacement: Value = serde_json::from_slice(&fs::read(&paths.crash_file)?)?;
+    assert_eq!(replacement["pid"], 4242);
+    let entries = read_bundle_entries(&mismatch_path)?;
+    let archived: Value =
+        serde_json::from_slice(entries.get("crash/record.json").ok_or_else(|| {
+            io::Error::other("receipt mismatch bundle omitted crash projection")
+        })?)?;
+    assert_ne!(archived["pid"], replacement["pid"]);
+    Ok(())
+}
+
+fn create_bundle_variants(
+    root: &std::path::Path,
+    paths: &RuntimePaths,
+) -> TestResult<BTreeMap<String, Vec<u8>>> {
+    let include_preview = preview_and_retain_crash(root, paths)?;
+    prove_receipt_bound_crash_clearing(root, paths)?;
+    let included_path = root.join("bundles/with-crash-cleared.tar.gz");
+    let included_argument = included_path
+        .to_str()
+        .ok_or_else(|| io::Error::other("included bundle path is not UTF-8"))?;
+    let included = invoke_c16(
+        root,
+        &[
+            "bundle",
+            "--output",
+            included_argument,
+            "--include-crash",
+            "--clear-crash",
+            "--json",
+        ],
+        &[],
+    )?;
+    assert_c16_exit(&included, 0);
+    let receipt = c16_json(&included)?;
+    assert_eq!(receipt["data"]["manifest"], include_preview);
+    assert_eq!(receipt["data"]["sha256"].as_str().map(str::len), Some(64));
+    assert!(
+        receipt["data"]["byte_length"]
+            .as_u64()
+            .is_some_and(|length| length > 0)
+    );
+    assert!(!paths.crash_file.exists());
+    let after_clear = invoke_c16(root, &["version", "--json"], &[])?;
+    assert_c16_exit(&after_clear, 0);
+    assert_eq!(
+        c16_json(&after_clear)?["meta"]["pending_crash_record"],
+        false
+    );
     #[cfg(unix)]
     assert_eq!(config_mode(&included_path)?, Some(0o600));
+
     let entries = read_bundle_entries(&included_path)?;
     let expected = [
         "coverage.json",
@@ -2621,41 +2812,46 @@ fn assert_bundle_redaction(
     root: &std::path::Path,
     entries: &BTreeMap<String, Vec<u8>>,
 ) -> TestResult {
-    let redacted_logs = String::from_utf8(
+    let redacted_logs = decode_jsonl(
         entries
             .get("logs/redacted.jsonl")
-            .ok_or_else(|| io::Error::other("redacted log projection is missing"))?
-            .clone(),
+            .ok_or_else(|| io::Error::other("redacted log projection is missing"))?,
     )?;
-    assert!(redacted_logs.contains("doctor"));
-    assert!(redacted_logs.contains("finished"));
-    assert!(!redacted_logs.contains("source_detail"));
+    assert!(redacted_logs.iter().any(|value| {
+        value.pointer("/fields/command").and_then(Value::as_str) == Some("bundle")
+    }));
+    assert!(redacted_logs.iter().any(|value| {
+        value.pointer("/fields/status").and_then(Value::as_str) == Some("finished")
+    }));
     let safe_crash: Value = serde_json::from_slice(
         entries
             .get("crash/record.json")
             .ok_or_else(|| io::Error::other("safe crash projection is missing"))?,
     )?;
     assert_eq!(safe_crash["category"], "panic");
+    assert_eq!(safe_crash["thread"], "named");
     assert!(safe_crash.get("payload").is_none());
 
-    let dynamic_root = root.display().to_string();
-    let forbidden = [
-        PROMPT_SENTINEL,
-        TRANSCRIPT_SENTINEL,
-        RAW_SECRET_SENTINEL,
-        DATABASE_SENTINEL,
-        BACKUP_SENTINEL,
-        SPOOL_SENTINEL,
-        SYNTHETIC_FULL_PATH,
-        dynamic_root.as_str(),
-        "SQLite format 3",
-    ];
+    let mut forbidden = c16_forbidden_values(root);
+    forbidden.push("SQLite format 3".to_owned());
     for (name, bytes) in entries {
-        let rendered = String::from_utf8_lossy(bytes);
-        for sentinel in forbidden {
+        let decoded = if std::path::Path::new(name)
+            .extension()
+            .is_some_and(|extension| extension.eq_ignore_ascii_case("jsonl"))
+        {
+            decode_jsonl(bytes)?
+        } else {
+            vec![serde_json::from_slice(bytes)?]
+        };
+        for value in decoded {
+            assert_decoded_value_safe(name, &value, &forbidden);
+        }
+        for sentinel in &forbidden {
             assert!(
-                !rendered.contains(sentinel),
-                "bundle entry {name} leaked {sentinel}"
+                !bytes
+                    .windows(sentinel.len())
+                    .any(|window| window == sentinel.as_bytes()),
+                "bundle entry {name} leaked raw {sentinel}"
             );
         }
     }
@@ -2678,15 +2874,9 @@ fn logging_crash_bundle_safety() -> TestResult {
 
     seed_bundle_sources(&app, root, &paths)?;
 
-    let entries = create_bundle_variants(&app, root, &paths)?;
+    let entries = create_bundle_variants(root, &paths)?;
     assert_bundle_redaction(root, &entries)?;
-
-    cli_logging::remove_crash(&paths)?;
-    assert!(!cli_logging::pending_crash(&paths));
-    assert_eq!(
-        cli_logging::pending_crash_notice(&paths, false, false),
-        None
-    );
+    assert!(!paths.crash_file.exists());
     Ok(())
 }
 
@@ -2842,6 +3032,280 @@ fn restart_and_verify_health(
     Ok((core, snapshot))
 }
 
+fn assert_health_surface_parity(
+    root: &std::path::Path,
+    core: &LocalCore,
+    expected: &HealthSnapshot,
+) -> TestResult {
+    let core_snapshot = core.queries().health()?;
+    assert_eq!(&core_snapshot, expected);
+
+    let cli = invoke_c16(root, &["doctor", "--json"], &[])?;
+    assert_c16_exit(&cli, 78);
+    let cli_json = c16_json(&cli)?;
+    assert_eq!(cli_json["command"], "doctor");
+    assert_eq!(cli_json["data"]["outcome"], "unhealthy");
+    let cli_snapshot: HealthSnapshot = serde_json::from_value(cli_json["data"]["health"].clone())?;
+    assert_eq!(cli_snapshot, core_snapshot);
+
+    let desktop = health_binding_value(&core_snapshot)?;
+    assert_desktop_health_summary(&desktop, &core_snapshot)?;
+    assert_desktop_health_dimensions(&desktop, &core_snapshot)
+}
+
+fn assert_desktop_health_summary(desktop: &Value, core_snapshot: &HealthSnapshot) -> TestResult {
+    let desktop_object = desktop
+        .as_object()
+        .ok_or_else(|| io::Error::other("desktop health binding is not an object"))?;
+    assert_eq!(
+        desktop_object
+            .keys()
+            .map(String::as_str)
+            .collect::<BTreeSet<_>>(),
+        [
+            "currentQuarantineCount",
+            "deriveVersion",
+            "dimensions",
+            "drainLagSeconds",
+            "drainPendingBytes",
+            "drainPendingCount",
+            "firstAffectedObservationId",
+            "lastIntegrityResult",
+            "lifetimeQuarantineCount",
+            "meta",
+            "schemaVersion",
+            "spoolCapReason",
+            "writerOwner",
+        ]
+        .into_iter()
+        .collect()
+    );
+    let desktop_meta = desktop["meta"]
+        .as_object()
+        .ok_or_else(|| io::Error::other("desktop health metadata is not an object"))?;
+    assert_eq!(
+        desktop_meta
+            .keys()
+            .map(String::as_str)
+            .collect::<BTreeSet<_>>(),
+        ["freshness", "generatedAt", "notices"]
+            .into_iter()
+            .collect()
+    );
+    assert_eq!(desktop["meta"]["freshness"], "degraded");
+    assert_eq!(desktop["meta"]["notices"], json!([]));
+    OffsetDateTime::parse(
+        desktop["meta"]["generatedAt"]
+            .as_str()
+            .ok_or_else(|| io::Error::other("desktop omitted generatedAt"))?,
+        &Rfc3339,
+    )?;
+    assert_eq!(
+        desktop["currentQuarantineCount"],
+        json!(core_snapshot.current_quarantine_count)
+    );
+    assert_eq!(
+        desktop["lifetimeQuarantineCount"],
+        json!(core_snapshot.lifetime_quarantine_count)
+    );
+    assert_eq!(
+        desktop["firstAffectedObservationId"],
+        json!(core_snapshot.first_affected_observation_id)
+    );
+    assert_eq!(
+        desktop["drainPendingCount"],
+        json!(core_snapshot.drain_pending_count)
+    );
+    assert_eq!(
+        desktop["drainPendingBytes"],
+        json!(core_snapshot.drain_pending_bytes)
+    );
+    assert_eq!(
+        desktop["drainLagSeconds"],
+        json!(core_snapshot.drain_lag_seconds)
+    );
+    assert_eq!(
+        desktop["spoolCapReason"],
+        json!(core_snapshot.spool_cap_reason)
+    );
+    assert_eq!(
+        desktop["schemaVersion"],
+        json!(core_snapshot.schema_version)
+    );
+    assert_eq!(
+        desktop["deriveVersion"],
+        json!(core_snapshot.derive_version)
+    );
+    assert_eq!(
+        desktop["lastIntegrityResult"],
+        json!(core_snapshot.last_integrity_result)
+    );
+    let stored_owner = core_snapshot
+        .writer_owner
+        .as_deref()
+        .ok_or_else(|| io::Error::other("core omitted bounded writer owner"))?;
+    let parsed_owner: LockOwner = serde_json::from_str(stored_owner)?;
+    assert_eq!(
+        desktop["writerOwner"],
+        format!("{} pid {}", parsed_owner.frontend, parsed_owner.pid)
+    );
+    Ok(())
+}
+
+fn assert_desktop_health_dimensions(desktop: &Value, core_snapshot: &HealthSnapshot) -> TestResult {
+    let desktop_dimensions = desktop["dimensions"]
+        .as_array()
+        .ok_or_else(|| io::Error::other("desktop health dimensions are not an array"))?;
+    assert_eq!(desktop_dimensions.len(), core_snapshot.dimensions.len());
+    assert_eq!(
+        desktop_dimensions
+            .iter()
+            .filter_map(|binding| binding["id"].as_str())
+            .collect::<BTreeSet<_>>(),
+        core_snapshot
+            .dimensions
+            .keys()
+            .map(String::as_str)
+            .collect::<BTreeSet<_>>()
+    );
+    for (id, dimension) in &core_snapshot.dimensions {
+        let binding = desktop_dimensions
+            .iter()
+            .find(|value| value["id"] == id.as_str())
+            .ok_or_else(|| io::Error::other(format!("desktop omitted health dimension {id}")))?;
+        assert_eq!(
+            binding
+                .as_object()
+                .ok_or_else(|| io::Error::other("desktop health dimension is not an object"))?
+                .keys()
+                .map(String::as_str)
+                .collect::<BTreeSet<_>>(),
+            [
+                "actionLabel",
+                "detail",
+                "failureCategory",
+                "id",
+                "lastFailureAt",
+                "lastSuccessAt",
+                "name",
+                "state",
+            ]
+            .into_iter()
+            .collect()
+        );
+        let expected_state = match dimension.status {
+            HealthStatus::Healthy => "healthy",
+            HealthStatus::Degraded => "degraded",
+            HealthStatus::Unknown => "unknown",
+        };
+        let expected_action = match dimension.dimension.as_str() {
+            "writer_lock" if dimension.status == HealthStatus::Degraded => {
+                Some("Retry writer lock")
+            }
+            "spool_drain" if dimension.status == HealthStatus::Degraded => Some("Drain now"),
+            "integrity" if dimension.status != HealthStatus::Healthy => Some("Run integrity check"),
+            _ => None,
+        };
+        let expected_timestamp = |epoch: Option<i64>| {
+            epoch
+                .and_then(|value| OffsetDateTime::from_unix_timestamp(value).ok())
+                .and_then(|value| value.format(&Rfc3339).ok())
+        };
+        assert_eq!(binding["id"], id.as_str());
+        assert_eq!(binding["name"], id.replace('_', " "));
+        assert_eq!(binding["state"], expected_state);
+        assert_eq!(
+            binding["detail"],
+            dimension
+                .detail
+                .as_deref()
+                .unwrap_or("No bounded detail is available.")
+        );
+        assert_eq!(binding["actionLabel"], json!(expected_action));
+        assert_eq!(
+            binding["lastSuccessAt"],
+            json!(expected_timestamp(dimension.last_success_at_epoch))
+        );
+        assert_eq!(
+            binding["lastFailureAt"],
+            json!(expected_timestamp(dimension.last_failure_at_epoch))
+        );
+        assert_eq!(
+            binding["failureCategory"],
+            json!(dimension.failure_category)
+        );
+    }
+    Ok(())
+}
+
+fn remove_growing_history_tables(path: &std::path::Path) -> TestResult {
+    let connection = rusqlite::Connection::open(path)?;
+    connection.execute_batch("PRAGMA foreign_keys=OFF;")?;
+    let application_tables = {
+        let mut statement = connection.prepare(
+            "SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
+        )?;
+        statement
+            .query_map([], |row| row.get::<_, String>(0))?
+            .collect::<Result<Vec<_>, _>>()?
+    };
+    for required in [
+        "raw_observations",
+        "projects",
+        "sessions",
+        "messages",
+        "projection_sources",
+        "message_fts",
+        "accounts",
+        "turns",
+        "tool_calls",
+        "agent_runs",
+        "usage_values",
+        "context_breakdowns",
+        "installation_snapshots",
+        "config_items",
+        "price_snapshots",
+        "quota_windows",
+        "summaries",
+        "summary_sessions",
+        "spool_cursors",
+        "quarantines",
+        "backup_history",
+    ] {
+        assert!(
+            application_tables.iter().any(|table| table == required),
+            "history fixture omitted growing table {required}"
+        );
+    }
+    let bounded_health_tables = ["health_dimensions", "health_state", "schema_meta"]
+        .into_iter()
+        .collect::<BTreeSet<_>>();
+    for table in &application_tables {
+        if bounded_health_tables.contains(table.as_str()) {
+            continue;
+        }
+        let quoted = table.replace('"', "\"\"");
+        connection.execute_batch(&format!("DROP TABLE IF EXISTS \"{quoted}\";"))?;
+    }
+    let remaining = {
+        let mut statement = connection.prepare(
+            "SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
+        )?;
+        statement
+            .query_map([], |row| row.get::<_, String>(0))?
+            .collect::<Result<BTreeSet<_>, _>>()?
+    };
+    assert_eq!(
+        remaining
+            .iter()
+            .map(String::as_str)
+            .collect::<BTreeSet<_>>(),
+        bounded_health_tables
+    );
+    connection.close().map_err(|(_, error)| error)?;
+    Ok(())
+}
+
 fn prove_health_reads_ignore_history(
     app: &Application,
     root: &std::path::Path,
@@ -2875,17 +3339,11 @@ fn prove_health_reads_ignore_history(
         );
     }
 
-    let connection = rusqlite::Connection::open(&history_probe)?;
-    connection.execute_batch(
-        "PRAGMA foreign_keys=OFF; ALTER TABLE raw_observations RENAME TO raw_observations_unavailable;",
-    )?;
-    assert!(
-        connection
-            .prepare("SELECT count(*) FROM raw_observations")
-            .is_err()
-    );
-    connection.close().map_err(|(_, error)| error)?;
+    // Open the real application read boundary while the backup still satisfies
+    // startup capability checks. Every ordinary health read below happens only
+    // after a separate connection removes every growing history table.
     let queries = app.open_read_only(&history_probe)?;
+    remove_growing_history_tables(&history_probe)?;
     let snapshot = queries.health()?;
     assert_eq!(
         (
@@ -3065,6 +3523,7 @@ fn persisted_health_restart_reconciliation() -> TestResult {
 
     let (restarted, after_restart) = restart_and_verify_health(&app, &paths, &before_restart)?;
 
+    assert_health_surface_parity(root, &restarted, &after_restart)?;
     prove_health_reads_ignore_history(&app, root, &restarted, &after_restart)?;
 
     repair_health_dimensions(&paths, &restarted, &after_restart)?;

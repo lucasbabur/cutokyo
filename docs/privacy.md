@@ -55,8 +55,9 @@ and aggregate counts—not raw prompts, transcripts, observations, credentials,
 or full project paths. Instrumentation failure does not block harness operation.
 
 A panic record is bounded and metadata-only. It contains schema/app version,
-process ID, bounded thread name, source filename basename and line, and the
-`panic` category. The panic payload is intentionally omitted. A later launch
+process ID, a bounded `main`/`named`/`unnamed` thread classification, source
+filename basename and line, and the `panic` category. Arbitrary thread names and
+the panic payload are intentionally omitted. A later launch
 advertises a pending record; Cutokyo does not upload it. Inclusion in a bundle
 requires `bundle --include-crash`, and clearing it requires a successful bundle
 plus `--clear-crash`.

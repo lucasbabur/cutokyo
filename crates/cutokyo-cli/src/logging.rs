@@ -1,4 +1,5 @@
 use std::{
+    fmt,
     fs::{self, File, OpenOptions},
     io::{self, Write},
     path::{Path, PathBuf},
@@ -7,45 +8,36 @@ use std::{
 
 use cutokyo_core::app::RuntimePaths;
 use serde::Serialize;
-use tracing_subscriber::fmt::MakeWriter;
+use serde_json::{Map, Value};
+use time::{OffsetDateTime, format_description::well_known::Rfc3339};
+use tracing::{
+    Event, Subscriber,
+    field::{Field, Visit},
+};
+use tracing_subscriber::{
+    fmt::{
+        FmtContext, MakeWriter,
+        format::{FormatEvent, FormatFields, Writer},
+    },
+    registry::LookupSpan,
+};
 
 const DEFAULT_MAX_BYTES: u64 = 2 * 1024 * 1024;
 const MAX_CONFIGURED_BYTES: u64 = 64 * 1024 * 1024;
 const DEFAULT_GENERATIONS: usize = 5;
 /// Maximum size of a persisted crash record.
-pub const CRASH_RECORD_MAX_BYTES: usize = 16 * 1024;
+pub(crate) const CRASH_RECORD_MAX_BYTES: usize = 16 * 1024;
 /// Human-facing notice offered on the launch after a crash.
-pub const PENDING_CRASH_NOTICE: &str = "A bounded crash record is waiting. Review `cutokyo bundle` and explicitly add --include-crash if you want it included.";
+pub(crate) const PENDING_CRASH_NOTICE: &str = "A bounded crash record is waiting. Review `cutokyo bundle` and explicitly add --include-crash if you want it included.";
 
 /// Validated bounds for a rotating JSONL log.
 #[derive(Clone, Copy, Debug)]
-pub struct LogOptions {
+struct LogOptions {
     max_bytes: u64,
     generations: usize,
 }
 
 impl LogOptions {
-    /// Construct bounded logging options.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error when the byte or generation bound is outside the supported
-    /// operational range.
-    pub fn bounded(max_bytes: u64, generations: usize) -> Result<Self, String> {
-        if !(256..=MAX_CONFIGURED_BYTES).contains(&max_bytes) {
-            return Err(format!(
-                "log byte bound must be between 256 and {MAX_CONFIGURED_BYTES}"
-            ));
-        }
-        if !(1..=32).contains(&generations) {
-            return Err("log generations must be between 1 and 32".to_owned());
-        }
-        Ok(Self {
-            max_bytes,
-            generations,
-        })
-    }
-
     fn from_environment() -> Self {
         let max_bytes = std::env::var("CUTOKYO_LOG_MAX_BYTES")
             .ok()
@@ -61,13 +53,13 @@ impl LogOptions {
 
 /// Flush handle for a configured bounded log writer.
 #[derive(Clone, Debug)]
-pub struct LogGuard {
+pub(crate) struct LogGuard {
     writer: BoundedMakeWriter,
 }
 
 impl LogGuard {
     /// Flush and synchronize buffered JSONL output.
-    pub fn flush(&self) {
+    pub(crate) fn flush(&self) {
         if let Ok(mut state) = self.writer.state.lock() {
             let _ignored = state.file.flush();
             let _ignored = state.file.sync_data();
@@ -131,13 +123,109 @@ impl<'a> MakeWriter<'a> for BoundedMakeWriter {
     }
 }
 
+#[derive(Default)]
+struct SafeEventFields {
+    values: Map<String, Value>,
+}
+
+impl SafeEventFields {
+    fn record_token(&mut self, field: &Field, value: &str) {
+        if !matches!(
+            field.name(),
+            "command" | "status" | "error_code" | "operation"
+        ) {
+            return;
+        }
+        let value = if is_safe_token(value) {
+            value
+        } else {
+            "redacted"
+        };
+        self.values
+            .insert(field.name().to_owned(), Value::String(value.to_owned()));
+    }
+
+    fn record_count(&mut self, field: &Field, value: Value) {
+        if matches!(
+            field.name(),
+            "attempted" | "inserted" | "duplicates" | "quarantined"
+        ) {
+            self.values.insert(field.name().to_owned(), value);
+        }
+    }
+}
+
+impl Visit for SafeEventFields {
+    fn record_i64(&mut self, field: &Field, value: i64) {
+        self.record_count(field, Value::from(value));
+    }
+
+    fn record_u64(&mut self, field: &Field, value: u64) {
+        self.record_count(field, Value::from(value));
+    }
+
+    fn record_str(&mut self, field: &Field, value: &str) {
+        self.record_token(field, value);
+    }
+
+    fn record_debug(&mut self, field: &Field, value: &dyn fmt::Debug) {
+        self.record_token(field, &format!("{value:?}"));
+    }
+}
+
+fn is_safe_token(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 80
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'.'))
+}
+
+#[derive(Clone, Copy, Debug)]
+struct SafeJsonEventFormatter;
+
+impl<S, N> FormatEvent<S, N> for SafeJsonEventFormatter
+where
+    S: Subscriber + for<'lookup> LookupSpan<'lookup>,
+    N: for<'writer> FormatFields<'writer> + 'static,
+{
+    fn format_event(
+        &self,
+        _context: &FmtContext<'_, S, N>,
+        mut writer: Writer<'_>,
+        event: &Event<'_>,
+    ) -> fmt::Result {
+        let metadata = event.metadata();
+        let mut fields = SafeEventFields::default();
+        event.record(&mut fields);
+        let timestamp = OffsetDateTime::now_utc()
+            .format(&Rfc3339)
+            .unwrap_or_else(|_| "unknown".to_owned());
+        let target = if is_safe_token(metadata.target()) {
+            metadata.target()
+        } else {
+            "redacted"
+        };
+        let mut record = Map::new();
+        record.insert("timestamp".to_owned(), Value::String(timestamp));
+        record.insert(
+            "level".to_owned(),
+            Value::String(metadata.level().as_str().to_owned()),
+        );
+        record.insert("target".to_owned(), Value::String(target.to_owned()));
+        record.insert("fields".to_owned(), Value::Object(fields.values));
+        let encoded = serde_json::to_string(&Value::Object(record)).map_err(|_| fmt::Error)?;
+        writeln!(writer, "{encoded}")
+    }
+}
+
 /// Install the process-wide production subscriber using the configured byte bound.
 ///
 /// # Errors
 ///
 /// Returns an error when the private log destination cannot be prepared or another
 /// process-wide tracing subscriber has already been installed.
-pub fn initialize(paths: &RuntimePaths) -> Result<LogGuard, String> {
+pub(crate) fn initialize(paths: &RuntimePaths) -> Result<LogGuard, String> {
     let (guard, dispatch) = build_dispatch(paths, LogOptions::from_environment())?;
     tracing::dispatcher::set_global_default(dispatch)
         .map_err(|error| format!("install tracing subscriber: {error}"))?;
@@ -154,7 +242,7 @@ pub fn initialize(paths: &RuntimePaths) -> Result<LogGuard, String> {
 ///
 /// Returns an error when the private log directory or append-only log file cannot
 /// be created, opened, inspected, or permission-hardened.
-pub fn build_dispatch(
+fn build_dispatch(
     paths: &RuntimePaths,
     options: LogOptions,
 ) -> Result<(LogGuard, tracing::Dispatch), String> {
@@ -174,11 +262,7 @@ pub fn build_dispatch(
         })),
     };
     let subscriber = tracing_subscriber::fmt()
-        .json()
-        .with_ansi(false)
-        .with_current_span(true)
-        .with_span_list(false)
-        .with_target(true)
+        .event_format(SafeJsonEventFormatter)
         .with_writer(writer.clone())
         .finish();
     Ok((LogGuard { writer }, tracing::Dispatch::new(subscriber)))
@@ -232,20 +316,23 @@ struct CrashRecord<'a> {
     category: &'a str,
 }
 
+pub(crate) fn safe_thread_label(name: Option<&str>) -> &'static str {
+    match name {
+        Some("main") => "main",
+        Some(_) => "named",
+        None => "unnamed",
+    }
+}
+
 /// Install the metadata-only bounded panic-record hook.
-pub fn install_panic_hook(paths: &RuntimePaths) {
+pub(crate) fn install_panic_hook(paths: &RuntimePaths) {
     let crash_path = paths.crash_file.clone();
     std::panic::set_hook(Box::new(move |information| {
         let record = CrashRecord {
             schema_version: 1,
             app_version: env!("CARGO_PKG_VERSION"),
             pid: std::process::id(),
-            thread: std::thread::current()
-                .name()
-                .unwrap_or("unnamed")
-                .chars()
-                .take(80)
-                .collect(),
+            thread: safe_thread_label(std::thread::current().name()).to_owned(),
             location_file: information.location().and_then(|location| {
                 Path::new(location.file())
                     .file_name()
@@ -265,31 +352,18 @@ pub fn install_panic_hook(paths: &RuntimePaths) {
 
 /// Return whether a crash record is waiting for an explicit bundle decision.
 #[must_use]
-pub fn pending_crash(paths: &RuntimePaths) -> bool {
+pub(crate) fn pending_crash(paths: &RuntimePaths) -> bool {
     paths.crash_file.is_file()
 }
 
 /// Return the human disclosure shown on the next applicable launch.
 #[must_use]
-pub fn pending_crash_notice(
+pub(crate) fn pending_crash_notice(
     paths: &RuntimePaths,
     machine_readable: bool,
     bundle_command: bool,
 ) -> Option<&'static str> {
     (pending_crash(paths) && !machine_readable && !bundle_command).then_some(PENDING_CRASH_NOTICE)
-}
-
-/// Remove a crash record after an explicitly requested successful bundle.
-///
-/// # Errors
-///
-/// Returns an I/O error when an existing crash record cannot be removed.
-pub fn remove_crash(paths: &RuntimePaths) -> io::Result<()> {
-    match fs::remove_file(&paths.crash_file) {
-        Ok(()) => Ok(()),
-        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
-        Err(error) => Err(error),
-    }
 }
 
 fn write_crash_atomic(path: &Path, bytes: &[u8]) -> io::Result<()> {
@@ -335,7 +409,8 @@ mod tests {
     use cutokyo_core::app::RuntimePaths;
 
     use super::{
-        BoundedMakeWriter, CRASH_RECORD_MAX_BYTES, WriterState, install_panic_hook, open_log,
+        BoundedMakeWriter, CRASH_RECORD_MAX_BYTES, LogOptions, WriterState, build_dispatch,
+        install_panic_hook, open_log, safe_thread_label,
     };
 
     #[test]
@@ -388,6 +463,52 @@ mod tests {
     }
 
     #[test]
+    fn source_log_formatter_allows_metadata_and_discards_content()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let directory = tempfile::tempdir()?;
+        let paths = RuntimePaths::discover(
+            Some(directory.path().join("config.toml")),
+            Some(directory.path().join("data")),
+        )?;
+        let (guard, dispatch) = build_dispatch(
+            &paths,
+            LogOptions {
+                max_bytes: 4_096,
+                generations: 2,
+            },
+        )?;
+        tracing::dispatcher::with_default(&dispatch, || {
+            tracing::info!(
+                command = "doctor",
+                status = "finished",
+                attempted = 3_u64,
+                source_detail = "github_pat_secret C:\\Users\\alice\\private",
+                "prompt and transcript content"
+            );
+        });
+        guard.flush();
+        let rendered = fs::read_to_string(paths.log_dir.join("cutokyo.jsonl"))?;
+        assert!(rendered.contains("doctor"));
+        assert!(rendered.contains("finished"));
+        assert!(rendered.contains("attempted"));
+        assert!(!rendered.contains("github_pat_secret"));
+        assert!(!rendered.contains("Users"));
+        assert!(!rendered.contains("prompt"));
+        assert!(!rendered.contains("source_detail"));
+        Ok(())
+    }
+
+    #[test]
+    fn arbitrary_thread_names_collapse_to_safe_classification() {
+        assert_eq!(safe_thread_label(Some("main")), "main");
+        assert_eq!(
+            safe_thread_label(Some("worker-github_pat_secret-C:\\Users\\alice")),
+            "named"
+        );
+        assert_eq!(safe_thread_label(None), "unnamed");
+    }
+
+    #[test]
     fn controlled_panic_writes_bounded_metadata_only_record()
     -> Result<(), Box<dyn std::error::Error>> {
         let directory = tempfile::tempdir()?;
@@ -410,6 +531,7 @@ mod tests {
         assert!(bytes.len() <= CRASH_RECORD_MAX_BYTES);
         let record: serde_json::Value = serde_json::from_slice(&bytes)?;
         assert_eq!(record["category"], "panic");
+        assert_eq!(record["thread"], "named");
         assert!(record.get("payload").is_none());
         let rendered = String::from_utf8(bytes)?;
         assert!(!rendered.contains("PANIC_PAYLOAD_SENTINEL"));
