@@ -388,10 +388,14 @@ pub(crate) fn run() -> Result<(), String> {
     builder
         .setup(move |app| {
             #[cfg(feature = "native-e2e")]
-            let root = native_root;
+            let paths = Application::new().runtime_paths(
+                Some(native_root.join("config/config.toml")),
+                Some(native_root.join("data")),
+            );
             #[cfg(not(feature = "native-e2e"))]
-            let root = app.path().app_local_data_dir()?;
-            let service = DesktopService::open(&root).map_err(io::Error::other)?;
+            let paths = Application::new().runtime_paths(None, None);
+            let paths = paths.map_err(|error| io::Error::other(error.message))?;
+            let service = DesktopService::open(paths).map_err(io::Error::other)?;
             #[cfg(feature = "native-e2e")]
             if let Ok(fixture) = std::env::var("CUTOKYO_DESKTOP_TEST_FIXTURE") {
                 service

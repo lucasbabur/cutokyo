@@ -9,6 +9,7 @@ use std::{
 
 use cutokyo_core::{
     app::{Application, LocalCore, QueryUseCases},
+    config::{RuntimePaths, SettingsOverrides},
     store::{
         DELETE_ALL_CONFIRMATION, DeletionReceipt, HealthSnapshot, HealthStatus, LockOwner,
         RetentionPlan, SearchQuery, SearchResult, UsageTotals,
@@ -25,8 +26,6 @@ use uuid::Uuid;
 
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 const STATE_FILE: &str = "desktop-state.json";
-const DATABASE_FILE: &str = "history.sqlite3";
-const SPOOL_DIRECTORY: &str = "spool";
 const DIAGNOSTIC_DIRECTORY: &str = "diagnostics";
 const ANALYSIS_UNAVAILABLE: &str =
     "No AI analysis provider is configured. No content left this device.";
@@ -93,7 +92,6 @@ impl UpdaterChoice {
 struct PersistedDesktopState {
     onboarding_complete: bool,
     selected_harnesses: Vec<Harness>,
-    settings: Settings,
     updater_choice: UpdaterChoice,
     crash_reports_enabled: bool,
     mcp_enabled: BTreeMap<String, bool>,
@@ -104,7 +102,6 @@ impl Default for PersistedDesktopState {
         Self {
             onboarding_complete: false,
             selected_harnesses: Vec::new(),
-            settings: Settings::default(),
             updater_choice: UpdaterChoice::Notify,
             crash_reports_enabled: false,
             mcp_enabled: BTreeMap::new(),
@@ -238,6 +235,7 @@ impl ResumeExecutor for ProcessResumeExecutor {
 
 pub(crate) struct DesktopService {
     application: Application,
+    paths: RuntimePaths,
     root: PathBuf,
     database_path: PathBuf,
     spool_path: PathBuf,
@@ -248,18 +246,18 @@ pub(crate) struct DesktopService {
 }
 
 impl DesktopService {
-    pub(crate) fn open(root: impl AsRef<Path>) -> Result<Self, String> {
-        Self::open_with_executor(root, Arc::new(ProcessResumeExecutor))
+    pub(crate) fn open(paths: RuntimePaths) -> Result<Self, String> {
+        Self::open_with_executor(paths, Arc::new(ProcessResumeExecutor))
     }
 
     pub(crate) fn open_with_executor(
-        root: impl AsRef<Path>,
+        paths: RuntimePaths,
         resume_executor: Arc<dyn ResumeExecutor>,
     ) -> Result<Self, String> {
-        let root = root.as_ref().to_path_buf();
+        let root = paths.data_dir.clone();
         create_private_directory(&root)?;
-        let database_path = root.join(DATABASE_FILE);
-        let spool_path = root.join(SPOOL_DIRECTORY);
+        let database_path = paths.database_file.clone();
+        let spool_path = paths.spool_dir.clone();
         let state_path = root.join(STATE_FILE);
         let (persisted, state_notice) = read_persisted_state(&state_path)?;
         let application = Application::new();
@@ -294,6 +292,7 @@ impl DesktopService {
         let startup_notice = state_notice.or(core_notice);
         Ok(Self {
             application,
+            paths,
             root,
             database_path,
             spool_path,
@@ -659,7 +658,7 @@ impl DesktopService {
             "meta": route_meta(if notices.is_empty() { "complete" } else { "partial" }, &notices)?,
             "items": values,
             "brokerState": if values.iter().any(|item| item.get("kind") == Some(&json!("mcp"))) { "healthy" } else { "unknown" },
-            "searchMcpEnabled": persisted.settings.search_mcp_enabled,
+            "searchMcpEnabled": self.shared_settings()?.search_mcp_enabled,
         }))
     }
 
@@ -727,7 +726,7 @@ impl DesktopService {
     }
 
     pub(crate) fn guards(&self) -> Result<Value, String> {
-        let settings = self.mutable()?.persisted.settings.clone();
+        let settings = self.shared_settings()?;
         guards_value(&settings)
     }
 
@@ -758,39 +757,19 @@ impl DesktopService {
             }
             return Err(PROXY_UNAVAILABLE.to_owned());
         }
-        let mut state = self.mutable()?;
-        if state.persisted.settings.proxy_enabled {
-            let patch = SettingsPatch {
-                proxy_enabled: Some(false),
-                ..SettingsPatch::default()
-            };
-            let next_settings = self
-                .application
-                .patch_settings(state.persisted.settings.clone(), &patch)
-                .map_err(contract_error)?;
-            let mut next = state.persisted.clone();
-            next.settings = next_settings;
-            self.persist(&next)?;
-            state.persisted = next;
-        }
-        guards_value(&state.persisted.settings)
+        self.patch_settings(&SettingsPatch {
+            proxy_enabled: Some(false),
+            ..SettingsPatch::default()
+        })?;
+        self.guards()
     }
 
     pub(crate) fn set_outgoing_guard_enabled(&self, enabled: bool) -> Result<Value, String> {
-        let mut state = self.mutable()?;
-        let patch = SettingsPatch {
+        self.patch_settings(&SettingsPatch {
             outgoing_guard_enabled: Some(enabled),
             ..SettingsPatch::default()
-        };
-        let next_settings = self
-            .application
-            .patch_settings(state.persisted.settings.clone(), &patch)
-            .map_err(contract_error)?;
-        let mut next = state.persisted.clone();
-        next.settings = next_settings;
-        self.persist(&next)?;
-        state.persisted = next;
-        guards_value(&state.persisted.settings)
+        })?;
+        self.guards()
     }
 
     pub(crate) fn analysis_candidates(&self) -> Result<Value, String> {
@@ -985,26 +964,33 @@ impl DesktopService {
         ))
     }
 
+    fn shared_settings(&self) -> Result<Settings, String> {
+        self.application
+            .resolve_settings(&self.paths, &SettingsOverrides::default())
+            .map(|resolved| resolved.settings)
+            .map_err(contract_error)
+    }
+
     pub(crate) fn settings(&self) -> Result<Value, String> {
-        Ok(settings_value(&self.mutable()?.persisted))
+        Ok(settings_value(
+            &self.mutable()?.persisted,
+            &self.shared_settings()?,
+        ))
     }
 
     pub(crate) fn patch_settings(&self, patch: &SettingsPatch) -> Result<Value, String> {
-        let mut state = self.mutable()?;
-        let next_settings = self
-            .application
-            .patch_settings(state.persisted.settings.clone(), patch)
-            .map_err(contract_error)?;
-        if next_settings.proxy_enabled && !state.persisted.settings.proxy_enabled {
+        if patch.proxy_enabled == Some(true) {
             return Err(
                 "Proxy capture can be enabled only from its explicit consent preview.".to_owned(),
             );
         }
-        let mut next = state.persisted.clone();
-        next.settings = next_settings;
-        self.persist(&next)?;
-        state.persisted = next;
-        Ok(settings_value(&state.persisted))
+        // Persist only supplied fields against the current shared file, not a
+        // cached desktop snapshot or the effective environment overrides.
+        let state = self.mutable()?;
+        self.application
+            .write_settings_patch(&self.paths, patch)
+            .map_err(contract_error)?;
+        Ok(settings_value(&state.persisted, &self.shared_settings()?))
     }
 
     pub(crate) fn patch_desktop_preferences(
@@ -1021,7 +1007,7 @@ impl DesktopService {
         }
         self.persist(&next)?;
         state.persisted = next;
-        Ok(settings_value(&state.persisted))
+        Ok(settings_value(&state.persisted, &self.shared_settings()?))
     }
 
     pub(crate) fn check_for_updates() -> Result<Value, String> {
@@ -1219,12 +1205,12 @@ fn deletion_receipt_value(receipt: &DeletionReceipt) -> Value {
     })
 }
 
-fn settings_value(state: &PersistedDesktopState) -> Value {
+fn settings_value(state: &PersistedDesktopState, settings: &Settings) -> Value {
     json!({
-        "proxy_enabled": state.settings.proxy_enabled,
-        "outgoing_guard_enabled": state.settings.outgoing_guard_enabled,
-        "search_mcp_enabled": state.settings.search_mcp_enabled,
-        "retention_days": state.settings.retention_days,
+        "proxy_enabled": settings.proxy_enabled,
+        "outgoing_guard_enabled": settings.outgoing_guard_enabled,
+        "search_mcp_enabled": settings.search_mcp_enabled,
+        "retention_days": settings.retention_days,
         "updater_choice": state.updater_choice.as_str(),
         "crash_reports_enabled": state.crash_reports_enabled,
     })
@@ -1633,6 +1619,20 @@ fn synthetic_native_observation() -> Result<cutokyo_domain::RawObservation, Stri
 }
 
 #[cfg(test)]
+#[path = "shared_runtime_tests.rs"]
+mod shared_runtime_tests;
+
+#[cfg(test)]
+fn test_paths(root: &Path) -> Result<RuntimePaths, String> {
+    Application::new()
+        .runtime_paths(
+            Some(root.join("config/config.toml")),
+            Some(root.join("data")),
+        )
+        .map_err(contract_error)
+}
+
+#[cfg(test)]
 mod tests {
     use std::sync::Mutex;
 
@@ -1657,7 +1657,8 @@ mod tests {
     fn native_service_uses_core_and_preserves_exact_resume_identity() -> Result<(), String> {
         let directory = tempfile::tempdir().map_err(|error| error.to_string())?;
         let executor = Arc::new(RecordingResumeExecutor::default());
-        let service = DesktopService::open_with_executor(directory.path(), executor.clone())?;
+        let service =
+            DesktopService::open_with_executor(test_paths(directory.path())?, executor.clone())?;
         service.seed_native_test_fixture("search-resume")?;
 
         let results = service.search_sessions(&SessionFilters {
@@ -1685,7 +1686,7 @@ mod tests {
     #[test]
     fn one_session_deletion_is_preview_bound_and_exact() -> Result<(), String> {
         let directory = tempfile::tempdir().map_err(|error| error.to_string())?;
-        let service = DesktopService::open(directory.path())?;
+        let service = DesktopService::open(test_paths(directory.path())?)?;
         service.seed_native_test_fixture("native-smoke")?;
         let session_id = "session:native-desktop-73A9";
         let preview = service.preview_session_deletion(session_id)?;
@@ -1709,7 +1710,7 @@ mod tests {
     #[test]
     fn settings_patch_preserves_omitted_privacy_controls() -> Result<(), String> {
         let directory = tempfile::tempdir().map_err(|error| error.to_string())?;
-        let service = DesktopService::open(directory.path())?;
+        let service = DesktopService::open(test_paths(directory.path())?)?;
         service.patch_settings(&SettingsPatch {
             outgoing_guard_enabled: Some(true),
             ..SettingsPatch::default()
@@ -1729,7 +1730,7 @@ mod tests {
     #[test]
     fn analysis_cancel_never_calls_an_outbound_provider() -> Result<(), String> {
         let directory = tempfile::tempdir().map_err(|error| error.to_string())?;
-        let service = DesktopService::open(directory.path())?;
+        let service = DesktopService::open(test_paths(directory.path())?)?;
         service.seed_native_test_fixture("native-smoke")?;
         let preview = service.preview_analysis(vec!["session:native-desktop-73A9".to_owned()])?;
         let request_id = preview["requestId"]
