@@ -95,14 +95,17 @@ def main() -> int:
     package = one_debian_package(args.artifacts.resolve())
     name = package_name(package)
     expected_version = args.expected_version.removeprefix("v")
+    existing = run(["dpkg-query", "--show", "--showformat=${db:Status-Abbrev}", name], check=False)
+    if existing.returncode == 0:
+        fail("refusing to replace or remove an existing package; use a disposable machine/container")
     installed = False
     try:
+        installed = True  # A failed dpkg install can still leave unpacked files.
         run(["sudo", "dpkg", "--install", os.fspath(package)])
-        installed = True
         binary = installed_binary(name)
         with tempfile.TemporaryDirectory(prefix="cutokyo-desktop-smoke-") as temporary:
             root = Path(temporary)
-            environment = os.environ.copy()
+            environment = {"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8"}
             environment.update(
                 {
                     "HOME": os.fspath(root / "home"),
@@ -139,6 +142,12 @@ def main() -> int:
             ):
                 fail("readiness probe did not distinguish a live process from an unready product")
 
+            restores = []
+            for _ in range(2):
+                restored = run([os.fspath(binary), "--cutokyo-uninstall"], env=environment, cwd=root)
+                parse_json(restored, "no-state restore")
+                restores.append(restored.returncode)
+
         remove_package(name)
         installed = False
         if binary.exists():
@@ -156,6 +165,7 @@ def main() -> int:
                     "product_readiness_exit": 69,
                     "first_uninstall_exit": 0,
                     "repeat_uninstall_exit": 0,
+                    "no_state_restore_exits": restores,
                     "source_tree_shortcut": False,
                     "version": expected_version,
                 },

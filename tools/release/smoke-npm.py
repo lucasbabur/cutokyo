@@ -10,6 +10,8 @@ import json
 import os
 import re
 import shutil
+import socket
+import signal
 import subprocess
 import sys
 import tempfile
@@ -90,32 +92,26 @@ def run(
     env: dict[str, str],
     identity: tuple[int, int] | None,
 ) -> subprocess.CompletedProcess[str]:
-    if identity is None:
-        return subprocess.run(
-            command,
-            cwd=cwd,
-            env=env,
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=120,
-            start_new_session=True,
-        )
-    user, group = identity
-    return subprocess.run(
-        command,
-        cwd=cwd,
-        env=env,
-        check=False,
-        capture_output=True,
-        text=True,
-        timeout=120,
-        start_new_session=True,
-        user=user,
-        group=group,
-        extra_groups=[],
-        umask=0o077,
-    )
+    executable = shutil.which(command[0], path=env.get("PATH")) or command[0]
+    windows_batch = os.name == "nt" and Path(executable).suffix.lower() in {".cmd", ".bat"}
+    invocation = subprocess.list2cmdline([executable, *command[1:]]) if windows_batch else command
+    options = {}
+    if identity is not None:
+        options.update(user=identity[0], group=identity[1], extra_groups=[], umask=0o077)
+    process = subprocess.Popen(invocation, cwd=cwd, env=env, shell=windows_batch,
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                               start_new_session=True, **options)
+    try:
+        stdout, stderr = process.communicate(timeout=120)
+    except BaseException:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"], check=False,
+                           capture_output=True, timeout=30)
+        else:
+            os.killpg(process.pid, signal.SIGKILL)
+        process.wait()
+        raise
+    return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
 
 
 def least_privilege_identity() -> tuple[int, int] | None:
@@ -156,10 +152,13 @@ const dns = require('node:dns');
 
 function hostOf(args) {
   const first = args[0];
+  if (Array.isArray(first)) return hostOf(first);
   if (typeof first === 'object' && first !== null) {
+    if (first.path) deny('unix-socket');
     return first.host || first.hostname || 'localhost';
   }
-  if (typeof first === 'string' && args.length > 1) return args[1];
+  if (typeof first === 'number' && typeof args[1] === 'string') return args[1];
+  if (typeof first === 'string') deny('unix-socket');
   return 'localhost';
 }
 function isLoopback(host) {
@@ -176,6 +175,7 @@ function guardConnect(original) {
     return original.apply(this, args);
   };
 }
+net.Socket.prototype.connect = guardConnect(net.Socket.prototype.connect);
 net.connect = guardConnect(net.connect);
 net.createConnection = guardConnect(net.createConnection);
 tls.connect = guardConnect(tls.connect);
@@ -212,6 +212,12 @@ def scrubbed_environment(root: Path, npm_cache: Path, egress_guard: Path) -> dic
             "USERPROFILE": os.fspath(home),
             "TEMP": os.fspath(temporary),
             "TMP": os.fspath(temporary),
+            "TMPDIR": os.fspath(temporary),
+            "XDG_CONFIG_HOME": os.fspath(home / "config"),
+            "XDG_DATA_HOME": os.fspath(home / "data"),
+            "XDG_CACHE_HOME": os.fspath(home / "cache"),
+            "APPDATA": os.fspath(home / "AppData" / "Roaming"),
+            "LOCALAPPDATA": os.fspath(home / "AppData" / "Local"),
             "NO_PROXY": "127.0.0.1,localhost,::1",
             "no_proxy": "127.0.0.1,localhost,::1",
             "HTTP_PROXY": "http://127.0.0.1:9/",
@@ -263,8 +269,30 @@ def decode_json_output(completed: subprocess.CompletedProcess[str], command: str
     return payload
 
 
+def enter_linux_network_boundary() -> int | None:
+    if sys.platform != "linux":
+        return None
+    if {name for _, name in socket.if_nameindex()} == {"lo"}:
+        return None
+    bubblewrap = shutil.which("bwrap")
+    if bubblewrap is None:
+        fail("environment-gap: Linux npm smoke requires bubblewrap for enforced egress denial")
+    # The downloader and its one-artifact server share a fresh namespace with
+    # loopback only. Unlike NODE_OPTIONS/proxies, this also confines native code.
+    completed = subprocess.run(
+        [bubblewrap, "--die-with-parent", "--unshare-net", "--ro-bind", "/", "/",
+         "--bind", tempfile.gettempdir(), tempfile.gettempdir(), "--proc", "/proc",
+         "--dev", "/dev", "--", sys.executable, str(Path(__file__).resolve()), *sys.argv[1:]],
+        check=False,
+    )
+    return completed.returncode
+
+
 def main() -> int:
     os.umask(0o077)
+    isolated_exit = enter_linux_network_boundary()
+    if isolated_exit is not None:
+        return isolated_exit
     parser = argparse.ArgumentParser()
     parser.add_argument("--npm-package", required=True, type=Path)
     parser.add_argument("--native-archive", required=True, type=Path)
@@ -459,7 +487,8 @@ def main() -> int:
                     "native_sha256": native_digest,
                     "dependency_package": source_inputs["npm dependency package"].name,
                     "dependency_sha256": input_digests["npm dependency package"],
-                    "network_mode": "scrubbed-environment-loopback-only-node-boundary",
+                    "network_mode": "linux-network-namespace-loopback-only" if sys.platform == "linux" else "scrubbed-environment-loopback-only-node-boundary",
+                    "native_egress_denied": sys.platform == "linux",
                     "external_egress_denied": True,
                     "artifact_request_count": len(requests),
                     "artifact_request_path": requests[0],
