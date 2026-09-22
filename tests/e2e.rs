@@ -2644,182 +2644,33 @@ fn prove_guard_external_evidence_boundary(
     );
     assert!(!marker.exists());
 
-    let capture_result = source_snapshot_invocation(
-        production_root,
-        checkout,
-        &[
-            OsString::from("--capture"),
-            checkout.join("capture.json").into_os_string(),
-        ],
-    )?;
-    assert_eq!(capture_result.status.code(), Some(2));
-    assert!(
-        capture_result
-            .stderr
-            .contains("--capture must resolve outside the Git worktree")
-    );
+    for option in ["--capture", "--verify"] {
+        let removed = source_snapshot_invocation(
+            production_root,
+            checkout,
+            &[
+                OsString::from(option),
+                artifacts.join("removed.json").into_os_string(),
+            ],
+        )?;
+        assert_eq!(removed.status.code(), Some(2));
+        assert!(removed.stderr.contains("unrecognized arguments"));
+    }
     assert_fixture_clean(checkout)
 }
 
-fn capture_source_state(
-    production_root: &Path,
-    checkout: &Path,
-    capture: &Path,
-    manifest: &Path,
-) -> TestResult<BoundedCommandOutput> {
-    source_snapshot_invocation(
-        production_root,
-        checkout,
-        &[
-            OsString::from("--manifest"),
-            manifest.as_os_str().to_owned(),
-            OsString::from("--capture"),
-            capture.as_os_str().to_owned(),
-        ],
-    )
-}
-
-fn verify_source_state(
-    production_root: &Path,
-    checkout: &Path,
-    capture: &Path,
-    manifest: &Path,
-) -> TestResult<BoundedCommandOutput> {
-    source_snapshot_invocation(
-        production_root,
-        checkout,
-        &[
-            OsString::from("--manifest"),
-            manifest.as_os_str().to_owned(),
-            OsString::from("--verify"),
-            capture.as_os_str().to_owned(),
-        ],
-    )
-}
-
-fn prove_split_capture_integrity(
-    production_root: &Path,
-    checkout: &Path,
-    artifacts: &Path,
-) -> TestResult {
-    let capture = artifacts.join("bound-capture.json");
+fn prove_continuous_git_movement(production_root: &Path) -> TestResult {
+    let mut command = Command::new(python_executable());
+    command.arg(production_root.join("tools/release/test_contracts.py"));
     checked_output(
-        capture_source_state(
-            production_root,
-            checkout,
-            &capture,
-            &artifacts.join("capture-source.json"),
+        run_bounded(
+            &mut command,
+            Duration::from_secs(60),
+            "continuous source mutation regressions",
         )?,
-        "capture immutable source state",
+        "continuous source mutation regressions",
     )?;
-    let capture_value = json_file(&capture)?;
-    assert_eq!(capture_value["schema_version"], 3);
-    assert!(
-        capture_value["head"]
-            .as_str()
-            .is_some_and(|value| !value.is_empty())
-    );
-    assert_eq!(
-        capture_value["index_sha256"].as_str().map(str::len),
-        Some(64)
-    );
-    assert_eq!(
-        capture_value["capture_sha256"].as_str().map(str::len),
-        Some(64)
-    );
-
-    let replacement = capture_source_state(
-        production_root,
-        checkout,
-        &capture,
-        &artifacts.join("replacement-source.json"),
-    )?;
-    assert_eq!(replacement.status.code(), Some(2));
-    assert!(replacement.stderr.contains("refuses to replace"));
-
-    let tampered_capture = artifacts.join("tampered-capture.json");
-    let mut tampered = capture_value.clone();
-    tampered["tracked"]["src/main.rs"] = json!("0".repeat(64));
-    fs::write(&tampered_capture, serde_json::to_vec_pretty(&tampered)?)?;
-    let tampered_result = verify_source_state(
-        production_root,
-        checkout,
-        &tampered_capture,
-        &artifacts.join("tampered-verify-source.json"),
-    )?;
-    assert_eq!(tampered_result.status.code(), Some(86));
-    let tamper_evidence = json_file(&artifacts.join("tampered-verify-source.json"))?;
-    assert_eq!(
-        tamper_evidence["state_changes"],
-        json!(["capture-integrity"])
-    );
-    assert!(
-        tamper_evidence["capture_error"]
-            .as_str()
-            .is_some_and(|value| value.contains("integrity digest"))
-    );
-
-    run_git(
-        checkout,
-        &["commit", "--allow-empty", "--quiet", "-m", "move HEAD"],
-    )?;
-    let replay = verify_source_state(
-        production_root,
-        checkout,
-        &capture,
-        &artifacts.join("head-replay-source.json"),
-    )?;
-    assert_eq!(replay.status.code(), Some(86));
-    let head_evidence = json_file(&artifacts.join("head-replay-source.json"))?;
-    assert!(
-        head_evidence["state_changes"]
-            .as_array()
-            .is_some_and(|changes| {
-                changes.contains(&json!("HEAD")) && changes.contains(&json!("logs/HEAD"))
-            })
-    );
-    run_git(checkout, &["reset", "--hard", "--quiet", "HEAD^"])?;
-    prove_split_index_capture(production_root, checkout, artifacts)
-}
-
-fn prove_split_index_capture(
-    production_root: &Path,
-    checkout: &Path,
-    artifacts: &Path,
-) -> TestResult {
-    let index_capture = artifacts.join("index-bound-capture.json");
-    checked_output(
-        capture_source_state(
-            production_root,
-            checkout,
-            &index_capture,
-            &artifacts.join("index-capture-source.json"),
-        )?,
-        "capture state before index movement",
-    )?;
-    fs::write(
-        checkout.join("src/main.rs"),
-        "fn main() { println!(\"index\"); }\n",
-    )?;
-    run_git(checkout, &["add", "src/main.rs"])?;
-    let index_result = verify_source_state(
-        production_root,
-        checkout,
-        &index_capture,
-        &artifacts.join("index-movement-source.json"),
-    )?;
-    assert_eq!(index_result.status.code(), Some(86));
-    let index_evidence = json_file(&artifacts.join("index-movement-source.json"))?;
-    assert!(
-        index_evidence["state_changes"]
-            .as_array()
-            .is_some_and(|changes| changes.contains(&json!("index")))
-    );
-    run_git(
-        checkout,
-        &["restore", "--staged", "--worktree", "src/main.rs"],
-    )?;
-    assert_fixture_clean(checkout)
+    Ok(())
 }
 
 fn prove_guard_refuses_dirty_start(
@@ -2893,7 +2744,7 @@ fn artifact_source_immutability() -> TestResult {
     prove_guard_catches_temporary_rewrite(&production_root, &checkout, &artifacts)?;
     prove_guard_refuses_dirty_start(&production_root, &checkout, &artifacts)?;
     prove_guard_external_evidence_boundary(&production_root, &checkout, &artifacts)?;
-    prove_split_capture_integrity(&production_root, &checkout, &artifacts)
+    prove_continuous_git_movement(&production_root)
 }
 
 fn host_dist_target() -> TestResult<&'static str> {

@@ -55,51 +55,59 @@ class SnapshotTests(unittest.TestCase):
         self.sequence += 1
         return Path(self.temporary.name) / f"evidence-{self.sequence}.json"
 
-    def capture(self):
-        path = self.external()
-        result = self.invoke("--capture", path)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        return path
+    def test_split_api_is_not_supported(self):
+        for option in ("--capture", "--verify"):
+            result = self.invoke(option, self.external())
+            self.assertEqual(result.returncode, 2, result.stderr)
+            self.assertIn("unrecognized arguments", result.stderr)
 
-    def test_clean_capture_and_malformed_fingerprints(self):
-        path = self.capture()
-        good = self.invoke("--verify", path)
-        self.assertEqual(good.returncode, 0, good.stderr)
-        value = json.loads(path.read_text())
-        for invalid in (None, [], {"source.txt": [1]}, {"source.txt": "not-a-fingerprint"}):
-            value["fingerprints"] = invalid
-            path.write_text(json.dumps(value))
-            bad = self.invoke("--verify", path)
-            self.assertEqual(bad.returncode, 86, bad.stderr)
-            self.assertIn("snapshot fingerprints are invalid", bad.stderr)
-            self.assertNotIn("Traceback", bad.stderr)
-
-    def test_split_capture_detects_restored_source_and_mtime(self):
-        path = self.capture()
-        metadata = self.source.stat()
-        self.source.write_text("temporary")
-        self.source.write_text("original\n")
-        os.utime(self.source, ns=(metadata.st_atime_ns, metadata.st_mtime_ns))
-        result = self.invoke("--verify", path)
-        self.assertEqual(result.returncode, 86, result.stderr)
-        self.assertIn("source.txt", json.loads(result.stderr)["changed_paths"])
-
-    def test_split_capture_detects_head_round_trip(self):
-        path = self.capture()
-        original = self.git("rev-parse", "HEAD")
-        self.git("commit", "--allow-empty", "-qm", "temporary head")
-        self.git("reset", "--soft", original)
-        result = self.invoke("--verify", path)
+    def test_command_detects_head_round_trip(self):
+        result = self.invoke("--", sys.executable, "-c",
+                             "import subprocess; "
+                             "head=subprocess.check_output(['git','rev-parse','HEAD']).strip(); "
+                             "subprocess.run(['git','commit','--allow-empty','-qm','temporary'],check=True); "
+                             "subprocess.run(['git','reset','--soft',head],check=True)")
         self.assertEqual(result.returncode, 86, result.stderr)
         self.assertTrue(json.loads(result.stderr)["state_changes"])
 
-    def test_split_capture_detects_index_round_trip(self):
-        path = self.capture()
-        self.git("update-index", "--assume-unchanged", "source.txt")
-        self.git("update-index", "--no-assume-unchanged", "source.txt")
-        result = self.invoke("--verify", path)
+    def test_command_detects_index_round_trip(self):
+        result = self.invoke("--", sys.executable, "-c",
+                             "import subprocess; "
+                             "subprocess.run(['git','update-index','--assume-unchanged','source.txt'],check=True); "
+                             "subprocess.run(['git','update-index','--no-assume-unchanged','source.txt'],check=True)")
         self.assertEqual(result.returncode, 86, result.stderr)
         self.assertIn("index", json.loads(result.stderr)["state_changes"])
+
+    def test_direct_ref_round_trip_and_packed_override(self):
+        original = self.git("rev-parse", "HEAD")
+        self.git("commit", "--allow-empty", "-qm", "alternate")
+        alternate = self.git("rev-parse", "HEAD")
+        self.git("reset", "--soft", original)
+        reference = self.root / ".git" / self.git("symbolic-ref", "HEAD")
+        for packed in (False, True):
+            if packed:
+                self.git("pack-refs", "--all", "--prune")
+            code = (
+                "from pathlib import Path; import subprocess,sys,os; p=Path(sys.argv[1]); "
+                "b=p.read_bytes() if p.exists() else None; "
+                "p.write_text(sys.argv[2]+'\\n'); "
+                "assert subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()==sys.argv[2]; "
+                "p.write_bytes(b) if b is not None else p.unlink()"
+            )
+            result = self.invoke("--", sys.executable, "-c", code, reference, alternate)
+            self.assertEqual(result.returncode, 86, result.stderr)
+            receipt = json.loads(result.stderr)
+            self.assertEqual(receipt["command_exit_code"], 0)
+            self.assertTrue(receipt["state_changes"])
+            self.assertEqual(self.git("rev-parse", "HEAD"), original)
+
+    def test_packed_ref_write_restore(self):
+        self.git("pack-refs", "--all", "--prune")
+        result = self.invoke("--", sys.executable, "-c",
+                             "from pathlib import Path; p=Path('.git/packed-refs'); "
+                             "b=p.read_bytes(); p.write_bytes(b+b'# temporary\\n'); p.write_bytes(b)")
+        self.assertEqual(result.returncode, 86, result.stderr)
+        self.assertIn("packed-refs", json.loads(result.stderr)["state_changes"])
 
     def test_evidence_refuses_replacement_before_command(self):
         path = self.external()
@@ -118,7 +126,7 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(receipt["changed_paths"], ["source.txt"])
 
     def test_evidence_cannot_point_into_git_metadata(self):
-        result = self.invoke("--capture", self.root / ".git" / "capture.json")
+        result = self.invoke("--manifest", self.root / ".git" / "capture.json", "--", sys.executable, "-c", "pass")
         self.assertEqual(result.returncode, 2)
         self.assertFalse((self.root / ".git" / "capture.json").exists())
 

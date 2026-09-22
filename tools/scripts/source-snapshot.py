@@ -30,10 +30,6 @@ class RepositoryState:
     tracked: dict[str, str]
 
 
-class CaptureError(ValueError):
-    """Raised when a split snapshot is malformed or no longer applicable."""
-
-
 def fail(message: str, code: int = 2) -> NoReturn:
     print(f"source-snapshot: {message}", file=sys.stderr)
     raise SystemExit(code)
@@ -87,7 +83,7 @@ def external_path(path: Path | None, root: Path, option: str) -> Path | None:
         raw = run_git(root, ["rev-parse", "--path-format=absolute", git_directory], "could not locate Git metadata")
         if path_is_within(resolved, Path(os.fsdecode(raw).strip()).resolve()):
             fail(f"{option} may not be inside Git metadata")
-    if option != "--verify" and resolved.exists():
+    if resolved.exists():
         fail(f"{option} refuses to replace existing evidence")
     return resolved
 
@@ -199,15 +195,6 @@ def tracked_worktree_changes(root: Path) -> list[str]:
     return sorted({os.fsdecode(name) for name in raw.split(b"\0") if name})
 
 
-def canonical_json(value: object) -> bytes:
-    return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode("utf-8")
-
-
-def capture_digest(value: dict[str, object]) -> str:
-    unsigned = {key: item for key, item in value.items() if key != "capture_sha256"}
-    return hashlib.sha256(canonical_json(unsigned)).hexdigest()
-
-
 def durable_directory(directory: Path) -> None:
     if os.name == "nt":
         return
@@ -218,10 +205,10 @@ def durable_directory(directory: Path) -> None:
         os.close(descriptor)
 
 
-def write_capture_exclusive(path: Path, value: dict[str, object]) -> None:
+def write_evidence_exclusive(path: Path, value: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists() or path.is_symlink():
-        fail("--capture refuses to replace existing evidence")
+        fail("--manifest refuses to replace existing evidence")
     descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     temporary = Path(temporary_name)
     try:
@@ -236,7 +223,7 @@ def write_capture_exclusive(path: Path, value: dict[str, object]) -> None:
         try:
             os.link(temporary, path)
         except FileExistsError:
-            fail("--capture refuses to replace existing evidence")
+            fail("--manifest refuses to replace existing evidence")
         durable_directory(path.parent)
     finally:
         if descriptor >= 0:
@@ -244,145 +231,36 @@ def write_capture_exclusive(path: Path, value: dict[str, object]) -> None:
         temporary.unlink(missing_ok=True)
 
 
-def root_binding(root: Path) -> str:
-    git_common = run_git(
-        root,
-        ["rev-parse", "--path-format=absolute", "--git-common-dir"],
-        "could not resolve the Git common directory",
-    ).decode("utf-8").strip()
-    identity = f"{root}\0{Path(git_common).resolve()}".encode()
-    return hashlib.sha256(identity).hexdigest()
-
-
 def git_movement_fingerprints(root: Path) -> dict[str, tuple[int, int, int, int, int] | None]:
     paths = {}
-    for name in ("HEAD", "index", "logs/HEAD"):
+    names = {"HEAD", "index", "logs/HEAD", "packed-refs", "refs"}
+    # HEAD can remain byte-identical while its loose or packed branch target is
+    # substituted and restored between polls. Change time survives that round trip.
+    # Parent metadata also detects a temporary loose override of a packed ref.
+    pending = ["HEAD"]
+    while pending:
+        name = pending.pop()
+        raw = run_git(root, ["rev-parse", "--path-format=absolute", "--git-path", name], "could not locate Git state")
+        path = Path(os.fsdecode(raw).strip())
+        if path.is_file():
+            content = path.read_text(encoding="utf-8").strip()
+            if content.startswith("ref: "):
+                target = content[5:]
+                if target not in names:
+                    pending.append(target)
+                    names.add(target)
+                    names.update(str(parent).replace(os.sep, "/") for parent in Path(target).parents if str(parent) != ".")
+    for name in sorted(names):
         raw = run_git(root, ["rev-parse", "--path-format=absolute", "--git-path", name], "could not locate Git state")
         path = Path(os.fsdecode(raw).strip())
         paths[name] = tracked_fingerprints(path.parent, [path.name])[path.name]
     return paths
 
 
-def make_capture(root: Path, state: RepositoryState) -> dict[str, object]:
-    value: dict[str, object] = {
-        "schema_version": SNAPSHOT_SCHEMA_VERSION,
-        "root_binding": root_binding(root),
-        "head": state.head,
-        "index_sha256": state.index_sha256,
-        "tracked": state.tracked,
-        "fingerprints": tracked_fingerprints(root, list(state.tracked)),
-        "git_fingerprints": git_movement_fingerprints(root),
-    }
-    value["capture_sha256"] = capture_digest(value)
-    return value
-
-
-def load_capture(path: Path) -> dict[str, object]:
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as error:
-        raise CaptureError(f"could not read snapshot: {error}") from error
-    required = {
-        "schema_version",
-        "root_binding",
-        "head",
-        "index_sha256",
-        "tracked",
-        "fingerprints",
-        "git_fingerprints",
-        "capture_sha256",
-    }
-    if not isinstance(value, dict) or set(value) != required:
-        raise CaptureError("snapshot structure is invalid")
-    if value.get("schema_version") != SNAPSHOT_SCHEMA_VERSION:
-        raise CaptureError("snapshot schema is invalid")
-    for field in ("root_binding", "index_sha256", "capture_sha256"):
-        item = value.get(field)
-        if not isinstance(item, str) or len(item) != 64 or any(character not in "0123456789abcdef" for character in item):
-            raise CaptureError(f"snapshot {field} is invalid")
-    head = value.get("head")
-    if not isinstance(head, str) or len(head) not in (40, 64) or any(character not in "0123456789abcdef" for character in head):
-        raise CaptureError("snapshot head is invalid")
-    tracked = value.get("tracked")
-    if not isinstance(tracked, dict) or not all(
-        isinstance(name, str)
-        and isinstance(digest, str)
-        and len(digest) == 64
-        and all(character in "0123456789abcdef" for character in digest)
-        for name, digest in tracked.items()
-    ):
-        raise CaptureError("snapshot tracked-file map is invalid")
-    for field, keys in (("fingerprints", set(tracked)),
-                        ("git_fingerprints", {"HEAD", "index", "logs/HEAD"})):
-        fingerprints = value.get(field)
-        if not isinstance(fingerprints, dict) or set(fingerprints) != keys or not all(
-            fingerprint is None or (isinstance(fingerprint, list) and len(fingerprint) == 5
-                                    and all(type(number) is int for number in fingerprint))
-            for fingerprint in fingerprints.values()
-        ):
-            raise CaptureError(f"snapshot {field} are invalid")
-    if value["capture_sha256"] != capture_digest(value):
-        raise CaptureError("snapshot integrity digest does not match")
-    return value
-
-
 def emit_evidence(evidence: dict[str, object], manifest: Path | None) -> None:
     if manifest is not None:
-        write_capture_exclusive(manifest, evidence)
+        write_evidence_exclusive(manifest, evidence)
     print(json.dumps(evidence, sort_keys=True), file=sys.stderr)
-
-
-def check_capture(root: Path, snapshot_path: Path, manifest: Path | None) -> int:
-    capture_error: str | None = None
-    try:
-        saved = load_capture(snapshot_path)
-    except CaptureError as error:
-        capture_error = str(error)
-        saved = {}
-    current = repository_state(root)
-    repository_changes = tracked_worktree_changes(root)
-    saved_tracked = saved.get("tracked")
-    tracked = saved_tracked if isinstance(saved_tracked, dict) else {}
-    changed = changed_paths(tracked, current.tracked) if saved else []
-    saved_fingerprints = saved.get("fingerprints")
-    if saved and isinstance(saved_fingerprints, dict):
-        fingerprints = {name: tuple(value) if value is not None else None
-                        for name, value in saved_fingerprints.items()}
-        changed = sorted(set(changed) | changed_fingerprints(
-            fingerprints, tracked_fingerprints(root, list(tracked))))
-    state_changes: list[str] = []
-    if saved:
-        if saved.get("root_binding") != root_binding(root):
-            state_changes.append("repository-binding")
-        if saved.get("head") != current.head:
-            state_changes.append("HEAD")
-        if saved.get("index_sha256") != current.index_sha256:
-            state_changes.append("index")
-    saved_git = saved.get("git_fingerprints")
-    if isinstance(saved_git, dict):
-        fingerprints = {name: tuple(value) if value is not None else None
-                        for name, value in saved_git.items()}
-        state_changes = sorted(set(state_changes) | changed_fingerprints(
-            fingerprints, git_movement_fingerprints(root)))
-    if capture_error is not None:
-        state_changes.append("capture-integrity")
-    changed = sorted(set(changed) | set(repository_changes))
-    unchanged = not changed and not state_changes
-    evidence: dict[str, object] = {
-        "schema_version": SNAPSHOT_SCHEMA_VERSION,
-        "mode": "verify",
-        "tracked_files": len(tracked),
-        "source_unchanged": unchanged,
-        "changed_paths": changed,
-        "repository_clean": not repository_changes,
-        "preexisting_changes": repository_changes,
-        "state_changes": state_changes,
-        "capture_error": capture_error,
-        "head": current.head,
-        "index_sha256": current.index_sha256,
-    }
-    emit_evidence(evidence, manifest)
-    return 0 if unchanged else SOURCE_CHANGED_EXIT
 
 
 def command_directory(root: Path, requested: Path | None) -> Path:
@@ -520,70 +398,10 @@ def main() -> int:
         type=Path,
         help="run inside this repository-relative directory (defaults to the root)",
     )
-    modes = parser.add_mutually_exclusive_group()
-    modes.add_argument(
-        "--capture",
-        type=Path,
-        help="write an immutable-state-bound snapshot outside the worktree and exit",
-    )
-    modes.add_argument(
-        "--verify",
-        type=Path,
-        help="verify an external snapshot and exit 86 on source or Git-state movement",
-    )
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     root = repository_root(args.root)
     manifest = external_path(args.manifest, root, "--manifest")
-    capture_path = external_path(args.capture, root, "--capture")
-    verify_path = external_path(args.verify, root, "--verify")
-    if manifest is not None and manifest in (capture_path, verify_path):
-        fail("--manifest must differ from the capture evidence path")
-
-    if capture_path is not None:
-        if args.command:
-            fail("--capture does not accept a command")
-        state = repository_state(root)
-        preexisting_changes = tracked_worktree_changes(root)
-        if preexisting_changes:
-            emit_evidence(
-                {
-                    "schema_version": SNAPSHOT_SCHEMA_VERSION,
-                    "mode": "capture",
-                    "tracked_files": len(state.tracked),
-                    "source_unchanged": False,
-                    "changed_paths": preexisting_changes,
-                    "repository_clean": False,
-                    "preexisting_changes": preexisting_changes,
-                    "state_changes": [],
-                    "head": state.head,
-                    "index_sha256": state.index_sha256,
-                },
-                manifest,
-            )
-            return SOURCE_CHANGED_EXIT
-        write_capture_exclusive(capture_path, make_capture(root, state))
-        emit_evidence(
-            {
-                "schema_version": SNAPSHOT_SCHEMA_VERSION,
-                "mode": "capture",
-                "tracked_files": len(state.tracked),
-                "source_unchanged": True,
-                "changed_paths": [],
-                "repository_clean": True,
-                "preexisting_changes": [],
-                "state_changes": [],
-                "head": state.head,
-                "index_sha256": state.index_sha256,
-            },
-            manifest,
-        )
-        return 0
-    if verify_path is not None:
-        if args.command:
-            fail("--verify does not accept a command")
-        return check_capture(root, verify_path, manifest)
-
     command = args.command
     if command and command[0] == "--":
         command = command[1:]
