@@ -32,6 +32,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--pnpm-root", required=True, type=Path,
+                        help="unpacked official pnpm 11.25.0 distribution, mounted read-only")
     args = parser.parse_args()
     root = args.root.resolve(strict=True)
     directory = args.output.resolve()
@@ -45,27 +47,40 @@ def main() -> int:
     image = json.loads(output(["docker", "image", "inspect", IMAGE]))[0]
     node = Path(output(["node", "-p", "process.execPath"])).resolve()
     node_root = node.parent.parent
-    for path in (root / "node_modules", root / "ui/node_modules", node_root / "bin/pnpm"):
+    pnpm_root = args.pnpm_root.resolve(strict=True)
+    for path in (root / "node_modules", root / "ui/node_modules", pnpm_root / "bin/pnpm.mjs"):
         if not path.exists():
             parser.error(f"required locked dependency installation is absent: {path}")
+    pnpm_metadata = json.loads((pnpm_root / "package.json").read_text())
+    if (pnpm_metadata.get("name"), pnpm_metadata.get("version")) != ("pnpm", "11.25.0"):
+        parser.error("--pnpm-root must contain the official pnpm 11.25.0 distribution")
+    # Vite bundles its config into this ignored cache even with dependencies read-only.
+    (root / "ui/node_modules/.vite-temp").mkdir(exist_ok=True)
     directory.mkdir(mode=0o700, parents=True)
     volume = "cutokyo-c19-production-" + uuid.uuid4().hex
     container = volume + "-build"
     uid, gid = os.getuid(), os.getgid()
     command = [
         "docker", "run", "--rm", "--name", container, "--network", "none",
-        "--user", f"{uid}:{gid}", "--workdir", "/work",
+        "--user", f"{uid}:{gid}", "--workdir", str(root),
         "--env", "HOME=/tmp/cutokyo-build-home", "--env", "CARGO_HOME=/usr/local/cargo",
         "--env", "CARGO_NET_OFFLINE=true", "--env", "CARGO_TARGET_DIR=/target",
-        "--env", "RUSTUP_TOOLCHAIN=1.98.1", "--env", "CI=true",
-        "--env", "PATH=/opt/node/bin:/usr/local/cargo/bin:/usr/local/bin:/usr/bin:/bin",
-        "--mount", f"type=bind,src={root},dst=/work",
-        "--mount", f"type=bind,src={root / 'node_modules'},dst=/work/node_modules,readonly",
-        "--mount", f"type=bind,src={root / 'ui/node_modules'},dst=/work/ui/node_modules,readonly",
+        "--env", "RUSTUP_TOOLCHAIN=1.98.1",
+        "--env", "PATH=/tmp/cutokyo-build-bin:/opt/node/bin:/usr/local/cargo/bin:/usr/local/bin:/usr/bin:/bin",
+        "--env", "COREPACK_ENABLE_NETWORK=0", "--env", "npm_config_manage_package_manager_versions=false",
+        # pnpm records absolute workspace paths. Preserve them rather than
+        # disabling verification or letting the offline build reinstall modules.
+        "--env", "pnpm_config_verify_deps_before_run=error",
+        "--mount", f"type=bind,src={root},dst={root}",
+        "--mount", f"type=bind,src={root / 'node_modules'},dst={root / 'node_modules'},readonly",
+        "--mount", f"type=bind,src={root / 'ui/node_modules'},dst={root / 'ui/node_modules'},readonly",
+        "--tmpfs", f"{root / 'ui/node_modules/.vite-temp'}:rw,uid={uid},gid={gid},mode=0700",
         "--mount", f"type=bind,src={node_root},dst=/opt/node,readonly",
+        "--mount", f"type=bind,src={pnpm_root},dst=/opt/pnpm,readonly",
         "--mount", f"type=volume,src={volume},dst=/target",
         image["Id"], "/bin/bash", "-euc",
-        "mkdir -p /tmp/cutokyo-build-home; "
+        "mkdir -p /tmp/cutokyo-build-home /tmp/cutokyo-build-bin; "
+        "ln -s /opt/pnpm/bin/pnpm.mjs /tmp/cutokyo-build-bin/pnpm; "
         "test \"$(cargo tauri --version)\" = 'tauri-cli 2.11.4'; "
         "test \"$(node --version)\" = 'v22.22.3'; "
         "test \"$(pnpm --version)\" = '11.25.0'; "

@@ -167,10 +167,13 @@ step rebuilds bytes between those operations.
 
 When the host lacks WebKit development packages, use the reviewed local
 `cutokyo-tauri-builder:2.11.4` image. Install the locked pnpm workspace first, then
-run this from a clean committed checkout with `OUT` set to a new external path:
+run this from a clean committed checkout with `OUT` set to a new external path.
+Set `PNPM_ROOT` to an unpacked official pnpm 11.25.0 distribution containing
+`bin/pnpm.mjs`. The builder mounts only that dependency directory read-only and
+bypasses Corepack's download-on-first-use behavior inside the offline container.
 
 ```bash
-python3 tools/release/build-linux-package.py --root "$PWD" --output "$OUT"
+python3 tools/release/build-linux-package.py --root "$PWD" --output "$OUT" --pnpm-root "$PNPM_ROOT"
 ```
 
 The builder records the exact Git revision, tree, resolved Docker image ID,
