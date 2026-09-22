@@ -2714,7 +2714,7 @@ fn prove_split_capture_integrity(
         "capture immutable source state",
     )?;
     let capture_value = json_file(&capture)?;
-    assert_eq!(capture_value["schema_version"], 2);
+    assert_eq!(capture_value["schema_version"], 3);
     assert!(
         capture_value["head"]
             .as_str()
@@ -2771,9 +2771,13 @@ fn prove_split_capture_integrity(
         &artifacts.join("head-replay-source.json"),
     )?;
     assert_eq!(replay.status.code(), Some(86));
-    assert_eq!(
-        json_file(&artifacts.join("head-replay-source.json"))?["state_changes"],
-        json!(["HEAD"])
+    let head_evidence = json_file(&artifacts.join("head-replay-source.json"))?;
+    assert!(
+        head_evidence["state_changes"]
+            .as_array()
+            .is_some_and(|changes| {
+                changes.contains(&json!("HEAD")) && changes.contains(&json!("logs/HEAD"))
+            })
     );
     run_git(checkout, &["reset", "--hard", "--quiet", "HEAD^"])?;
 
@@ -3163,8 +3167,13 @@ fn prove_npm_package_launches(
     assert_eq!(receipt["source_tree_shortcut"], false);
     assert_eq!(
         receipt["network_mode"],
-        "scrubbed-environment-loopback-only-node-boundary"
+        if cfg!(target_os = "linux") {
+            "linux-network-namespace-loopback-only"
+        } else {
+            "scrubbed-environment-loopback-only-node-boundary"
+        }
     );
+    assert_eq!(receipt["native_egress_denied"], cfg!(target_os = "linux"));
     assert_eq!(receipt["external_egress_denied"], true);
     assert_eq!(receipt["artifact_request_count"], 1);
     assert_eq!(
@@ -3709,7 +3718,7 @@ fn create_release_fixture(root: &Path) -> TestResult {
         "npm/cutokyo-0.1.0.tgz",
         b"cargo-dist generated npm installer dry-run bytes\n",
     )?;
-    let desktop = write_release_file(
+    write_release_file(
         root,
         "tauri-linux/Cutokyo_0.1.0_amd64.deb",
         b"Tauri Debian package dry-run bytes\n",
@@ -3746,38 +3755,18 @@ fn create_release_fixture(root: &Path) -> TestResult {
                 "component": {
                     "type": "application",
                     "name": "cutokyo-cli",
-                    "version": "0.1.0"
+                    "version": "0.1.0",
+                    "bom-ref": "pkg:cargo/cutokyo-cli@0.1.0"
                 }
             },
             "components": [{
                 "type": "library",
                 "name": "cutokyo-core",
-                "version": "0.1.0"
-            }]
+                "version": "0.1.0",
+                "bom-ref": "pkg:cargo/cutokyo-core@0.1.0"
+            }],
+            "dependencies": [{"ref": "pkg:cargo/cutokyo-cli@0.1.0", "dependsOn": ["pkg:cargo/cutokyo-core@0.1.0"]}]
         }))?,
-    )?;
-    let provenance = json!({
-        "_type": "https://in-toto.io/Statement/v1",
-        "subject": [
-            {
-                "name": "cli/cutokyo-cli-x86_64-unknown-linux-gnu.tar.xz",
-                "digest": {"sha256": sha256_path(&native)?}
-            },
-            {
-                "name": "tauri-linux/Cutokyo_0.1.0_amd64.deb",
-                "digest": {"sha256": sha256_path(&desktop)?}
-            }
-        ],
-        "predicateType": "https://slsa.dev/provenance/v1",
-        "predicate": {
-            "buildDefinition": {"buildType": "https://github.com/lucasbabur/cutokyo/release-dry-run@v1"},
-            "runDetails": {"builder": {"id": "https://github.com/lucasbabur/cutokyo/actions"}}
-        }
-    });
-    write_release_file(
-        root,
-        "release-contract/build-provenance.intoto.jsonl",
-        &(serde_json::to_vec(&provenance)?),
     )?;
     write_release_file(
         root,
@@ -3792,9 +3781,37 @@ fn create_release_fixture(root: &Path) -> TestResult {
             "product_readiness_exit": 69,
             "first_uninstall_exit": 0,
             "repeat_uninstall_exit": 0,
+            "no_state_restore_exits": [0, 0],
             "source_tree_shortcut": false,
             "version": "0.1.0"
         }))?,
+    )?;
+    let production_root = repository_root()?;
+    let revision = run_git(&production_root, &["rev-parse", "HEAD"])?.stdout;
+    checked_output(
+        run_bounded(
+            Command::new(python_executable())
+                .arg(production_root.join("tools/release/create-provenance.py"))
+                .arg("--artifacts")
+                .arg(root)
+                .arg("--output")
+                .arg(root.join("release-contract/build-provenance.intoto.jsonl"))
+                .args([
+                    "--repository",
+                    "lucasbabur/cutokyo",
+                    "--revision",
+                    revision.trim(),
+                    "--tag",
+                    "v0.1.0",
+                    "--workflow-ref",
+                    "lucasbabur/cutokyo/.github/workflows/release.yml@synthetic-test",
+                    "--invocation-id",
+                    "synthetic-contract-fixture",
+                ]),
+            Duration::from_secs(30),
+            "generate synthetic fixture inventory",
+        )?,
+        "generate synthetic fixture inventory",
     )?;
     refresh_release_checksums(root)
 }

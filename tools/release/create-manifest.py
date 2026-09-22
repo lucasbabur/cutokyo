@@ -208,6 +208,10 @@ def updater_entries(
             "signature": signature,
             "url": f"https://github.com/{repository}/releases/download/{tag}/{asset_name}",
         }
+    if require_signatures:
+        missing = {"linux", "darwin", "windows"} - {platform.split("-", 1)[0] for platform in result}
+        if missing:
+            fail("signed updater payloads are missing for: " + ", ".join(sorted(missing)))
     return result
 
 
@@ -337,21 +341,40 @@ def validate_sboms(files: list[Path], root: Path) -> None:
                 not isinstance(value, dict)
                 or value.get("bomFormat") != "CycloneDX"
                 or not isinstance(value.get("specVersion"), str)
+                or not isinstance(product, dict)
                 or not component_is_meaningful(product)
                 or not isinstance(components, list)
                 or not components
                 or not all(component_is_meaningful(component) for component in components)
             ):
                 fail(f"CycloneDX JSON SBOM lacks a meaningful product or components: {relative}")
-        elif path.stat().st_size == 0:
-            fail(f"CycloneDX XML SBOM is empty: {relative}")
+            if value["specVersion"] not in {"1.3", "1.4", "1.5", "1.6"} or type(value.get("version")) is not int or value["version"] < 1:
+                fail(f"CycloneDX schema/version is unsupported: {relative}")
+            references = [component.get("bom-ref") for component in [product, *components]]
+            if not all(isinstance(reference, str) and reference for reference in references) or len(set(references)) != len(references):
+                fail(f"CycloneDX components need unique bom-ref identities: {relative}")
+            dependencies = value.get("dependencies")
+            if not isinstance(dependencies, list) or not dependencies:
+                fail(f"CycloneDX dependency graph is missing: {relative}")
+            known = set(references)
+            for dependency in dependencies:
+                reference = dependency.get("ref") if isinstance(dependency, dict) else None
+                children = dependency.get("dependsOn") if isinstance(dependency, dict) else None
+                if (not isinstance(reference, str) or reference not in known
+                    or not isinstance(children, list)
+                    or any(not isinstance(ref, str) or ref not in known for ref in children)):
+                    fail(f"CycloneDX dependency graph has an unknown reference: {relative}")
+            if not any(edge["ref"] == product["bom-ref"] and edge["dependsOn"] for edge in dependencies):
+                fail(f"CycloneDX dependency graph does not link the product: {relative}")
+        else:
+            fail(f"CycloneDX release validation requires JSON, not unchecked XML: {relative}")
 
 
-def validate_provenance(files: list[Path], root: Path) -> None:
+def validate_provenance(files: list[Path], root: Path, repository: str, tag: str) -> None:
     provenance_files = [path for path in files if classify(path.relative_to(root)) == "build-provenance"]
     if not provenance_files:
         fail("required release artifact classes are missing: build-provenance")
-    subjects_seen = 0
+    subjects_seen: set[str] = set()
     for path in provenance_files:
         relative = path.relative_to(root).as_posix()
         lines = [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -363,8 +386,30 @@ def validate_provenance(files: list[Path], root: Path) -> None:
             except json.JSONDecodeError as error:
                 fail(f"build provenance JSON is invalid ({relative}): {error}")
             subjects = statement.get("subject") if isinstance(statement, dict) else None
-            if statement.get("_type") != "https://in-toto.io/Statement/v1" or not isinstance(subjects, list) or not subjects:
+            if not isinstance(statement, dict) or statement.get("_type") != "https://in-toto.io/Statement/v1" or not isinstance(subjects, list) or not subjects:
                 fail(f"build provenance has no in-toto subjects: {relative}")
+            predicate = statement.get("predicate")
+            if statement.get("predicateType") != "https://cutokyo.dev/attestation/release-inventory/v1" or not isinstance(predicate, dict):
+                fail(f"build provenance predicate is missing or unsupported: {relative}")
+            definition = predicate.get("buildDefinition", {})
+            details = predicate.get("runDetails", {})
+            if not isinstance(definition, dict) or not isinstance(details, dict):
+                fail(f"build provenance definition/run details are invalid: {relative}")
+            parameters = definition.get("externalParameters", {})
+            if not isinstance(parameters, dict):
+                fail(f"build provenance source identity is invalid: {relative}")
+            revision = parameters.get("revision", "")
+            if (parameters.get("repository") != repository or parameters.get("tag") != tag
+                or not isinstance(revision, str) or re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", revision) is None
+                or not isinstance(parameters.get("workflowRef"), str)
+                or not parameters["workflowRef"].startswith(f"{repository}/.github/workflows/release.yml@")
+                or not isinstance(definition.get("buildType"), str) or not definition["buildType"].startswith("https://")
+                or definition.get("resolvedDependencies") != [{"uri": f"git+https://github.com/{repository}@{revision}", "digest": {"gitCommit": revision}}]
+                or details.get("builder") != {"id": f"https://github.com/{repository}/actions"}
+                or not isinstance(details.get("metadata"), dict)
+                or not isinstance(details["metadata"].get("invocationId"), str)
+                or not details["metadata"]["invocationId"].strip()):
+                fail(f"build provenance source, builder or invocation identity is invalid: {relative}")
             for subject in subjects:
                 name = subject.get("name") if isinstance(subject, dict) else None
                 digests = subject.get("digest") if isinstance(subject, dict) else None
@@ -377,9 +422,13 @@ def validate_provenance(files: list[Path], root: Path) -> None:
                 actual = digest(subject_path)
                 if not hmac.compare_digest(expected.lower(), actual):
                     fail(f"build provenance subject digest mismatch: {subject_relative}")
-                subjects_seen += 1
-    if subjects_seen == 0:
-        fail("build provenance contains no validated subjects")
+                if subject_relative in subjects_seen:
+                    fail(f"build provenance contains duplicate subjects: {subject_relative}")
+                subjects_seen.add(subject_relative)
+    required = {path.relative_to(root).as_posix() for path in files
+                if classify(path.relative_to(root)) not in {"checksum", "build-provenance", "updater-signature"}}
+    if required - subjects_seen:
+        fail("build provenance omits release inputs: " + ", ".join(sorted(required - subjects_seen)))
 
 
 def validate_smoke_evidence(files: list[Path]) -> None:
@@ -401,6 +450,7 @@ def validate_smoke_evidence(files: list[Path]) -> None:
         "source_tree_shortcut": False,
         "first_uninstall_exit": 0,
         "repeat_uninstall_exit": 0,
+        "no_state_restore_exits": [0, 0],
     }
     mismatches = [
         field
@@ -474,11 +524,12 @@ def write_final_checksums(root: Path) -> Path:
     return inventory
 
 
-def validate_artifact_contract(files: list[Path], root: Path) -> None:
+def validate_artifact_contract(files: list[Path], root: Path, repository: str, tag: str) -> None:
+    validate_unique_asset_names(files, root)
     validate_archive_sidecars(files, root)
     validate_sboms(files, root)
-    validate_provenance(files, root)
     validate_smoke_evidence(files)
+    validate_provenance(files, root, repository, tag)
     validate_required_artifacts(files, root)
 
 
@@ -551,8 +602,8 @@ def main() -> int:
             root,
             {(root / "SHA256SUMS").resolve(), output.resolve(), latest_path.resolve()},
         )
-        validate_artifact_contract(artifact_files, root)
-        updater_entries(
+        validate_artifact_contract(artifact_files, root, args.repository, args.tag)
+        entries = updater_entries(
             root,
             args.repository,
             args.tag,
@@ -562,6 +613,14 @@ def main() -> int:
             public_key,
         )
         verify_manifest_inventory(root, output, latest_path)
+        latest = json.loads(latest_path.read_text(encoding="utf-8"))
+        manifest = json.loads(output.read_text(encoding="utf-8"))
+        if (not isinstance(latest, dict) or latest.get("platforms") != entries
+            or latest.get("version") != tag_match.group("version")
+            or manifest.get("release") != {"tag": args.tag, "version": tag_match.group("version"), "repository": args.repository}
+            or manifest.get("policy", {}).get("updater_signatures_required") is not args.require_updater_signatures
+            or manifest.get("policy", {}).get("updater_platforms") != sorted(entries)):
+            fail("generated updater/release metadata does not match the verified signing contract")
         print(json.dumps({"verified": True, "sha256_entries": len(files_under(root, {(root / 'SHA256SUMS').resolve()}))}))
         return 0
 
@@ -574,7 +633,7 @@ def main() -> int:
         root,
         {path.resolve() for path in generated} | {(root / "SHA256SUMS").resolve()},
     )
-    validate_artifact_contract(artifact_files, root)
+    validate_artifact_contract(artifact_files, root, args.repository, args.tag)
 
     entries = updater_entries(
         root,

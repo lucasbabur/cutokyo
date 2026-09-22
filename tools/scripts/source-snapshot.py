@@ -7,7 +7,7 @@ import argparse
 import hashlib
 import json
 import os
-import stat
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import NoReturn
 
-SNAPSHOT_SCHEMA_VERSION = 2
+SNAPSHOT_SCHEMA_VERSION = 3
 SOURCE_CHANGED_EXIT = 86
 POLL_INTERVAL_SECONDS = 0.01
 
@@ -78,9 +78,17 @@ def path_is_within(path: Path, root: Path) -> bool:
 def external_path(path: Path | None, root: Path, option: str) -> Path | None:
     if path is None:
         return None
+    if path.is_symlink():
+        fail(f"{option} may not be a symbolic link")
     resolved = path.resolve(strict=False)
     if path_is_within(resolved, root):
         fail(f"{option} must resolve outside the Git worktree")
+    for git_directory in ("--git-dir", "--git-common-dir"):
+        raw = run_git(root, ["rev-parse", "--path-format=absolute", git_directory], "could not locate Git metadata")
+        if path_is_within(resolved, Path(os.fsdecode(raw).strip()).resolve()):
+            fail(f"{option} may not be inside Git metadata")
+    if option != "--verify" and resolved.exists():
+        fail(f"{option} refuses to replace existing evidence")
     return resolved
 
 
@@ -104,6 +112,37 @@ def tracked_snapshot(root: Path, names: list[str] | None = None) -> dict[str, st
     return {relative: file_digest(root / relative) for relative in selected}
 
 
+def change_time(path: Path, metadata: os.stat_result) -> int:
+    if os.name != "nt":
+        return metadata.st_ctime_ns
+    # Windows st_ctime is creation time, not the NTFS change timestamp. Query
+    # FileBasicInfo so a write/restore (even with restored mtime) stays observable.
+    import ctypes
+    from ctypes import wintypes
+
+    class BasicInfo(ctypes.Structure):
+        _fields_ = [(name, ctypes.c_longlong) for name in
+                    ("creation", "access", "write", "change")] + [("attributes", wintypes.DWORD)]
+
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                                  ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+    kernel.CreateFileW.restype = wintypes.HANDLE
+    kernel.GetFileInformationByHandleEx.argtypes = [wintypes.HANDLE, ctypes.c_int,
+                                                   ctypes.c_void_p, wintypes.DWORD]
+    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+    handle = kernel.CreateFileW(str(path), 0x80, 7, None, 3, 0x02200000, None)
+    if handle == wintypes.HANDLE(-1).value:
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        info = BasicInfo()
+        if not kernel.GetFileInformationByHandleEx(handle, 0, ctypes.byref(info), ctypes.sizeof(info)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        return info.change
+    finally:
+        kernel.CloseHandle(handle)
+
+
 def tracked_fingerprints(root: Path, names: list[str]) -> dict[str, tuple[int, int, int, int, int] | None]:
     fingerprints: dict[str, tuple[int, int, int, int, int] | None] = {}
     for relative in names:
@@ -117,7 +156,7 @@ def tracked_fingerprints(root: Path, names: list[str]) -> dict[str, tuple[int, i
             metadata.st_mode,
             metadata.st_size,
             metadata.st_mtime_ns,
-            metadata.st_ctime_ns,
+            change_time(path, metadata),
             getattr(metadata, "st_ino", 0),
         )
     return fingerprints
@@ -179,31 +218,6 @@ def durable_directory(directory: Path) -> None:
         os.close(descriptor)
 
 
-def write_json(path: Path, value: object) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    mode = 0o600
-    try:
-        mode = stat.S_IMODE(path.stat().st_mode)
-    except FileNotFoundError:
-        pass
-    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
-    temporary = Path(temporary_name)
-    try:
-        os.fchmod(descriptor, mode)
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            descriptor = -1
-            json.dump(value, stream, indent=2, sort_keys=True)
-            stream.write("\n")
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temporary, path)
-        durable_directory(path.parent)
-    finally:
-        if descriptor >= 0:
-            os.close(descriptor)
-        temporary.unlink(missing_ok=True)
-
-
 def write_capture_exclusive(path: Path, value: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists() or path.is_symlink():
@@ -211,7 +225,8 @@ def write_capture_exclusive(path: Path, value: dict[str, object]) -> None:
     descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     temporary = Path(temporary_name)
     try:
-        os.fchmod(descriptor, 0o600)
+        if os.name != "nt":
+            os.fchmod(descriptor, 0o600)
         with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
             descriptor = -1
             json.dump(value, stream, indent=2, sort_keys=True)
@@ -239,6 +254,15 @@ def root_binding(root: Path) -> str:
     return hashlib.sha256(identity).hexdigest()
 
 
+def git_movement_fingerprints(root: Path) -> dict[str, tuple[int, int, int, int, int] | None]:
+    paths = {}
+    for name in ("HEAD", "index", "logs/HEAD"):
+        raw = run_git(root, ["rev-parse", "--path-format=absolute", "--git-path", name], "could not locate Git state")
+        path = Path(os.fsdecode(raw).strip())
+        paths[name] = tracked_fingerprints(path.parent, [path.name])[path.name]
+    return paths
+
+
 def make_capture(root: Path, state: RepositoryState) -> dict[str, object]:
     value: dict[str, object] = {
         "schema_version": SNAPSHOT_SCHEMA_VERSION,
@@ -246,6 +270,8 @@ def make_capture(root: Path, state: RepositoryState) -> dict[str, object]:
         "head": state.head,
         "index_sha256": state.index_sha256,
         "tracked": state.tracked,
+        "fingerprints": tracked_fingerprints(root, list(state.tracked)),
+        "git_fingerprints": git_movement_fingerprints(root),
     }
     value["capture_sha256"] = capture_digest(value)
     return value
@@ -262,6 +288,8 @@ def load_capture(path: Path) -> dict[str, object]:
         "head",
         "index_sha256",
         "tracked",
+        "fingerprints",
+        "git_fingerprints",
         "capture_sha256",
     }
     if not isinstance(value, dict) or set(value) != required:
@@ -284,6 +312,15 @@ def load_capture(path: Path) -> dict[str, object]:
         for name, digest in tracked.items()
     ):
         raise CaptureError("snapshot tracked-file map is invalid")
+    for field, keys in (("fingerprints", set(tracked)),
+                        ("git_fingerprints", {"HEAD", "index", "logs/HEAD"})):
+        fingerprints = value.get(field)
+        if not isinstance(fingerprints, dict) or set(fingerprints) != keys or not all(
+            fingerprint is None or (isinstance(fingerprint, list) and len(fingerprint) == 5
+                                    and all(type(number) is int for number in fingerprint))
+            for fingerprint in fingerprints.values()
+        ):
+            raise CaptureError(f"snapshot {field} are invalid")
     if value["capture_sha256"] != capture_digest(value):
         raise CaptureError("snapshot integrity digest does not match")
     return value
@@ -291,7 +328,7 @@ def load_capture(path: Path) -> dict[str, object]:
 
 def emit_evidence(evidence: dict[str, object], manifest: Path | None) -> None:
     if manifest is not None:
-        write_json(manifest, evidence)
+        write_capture_exclusive(manifest, evidence)
     print(json.dumps(evidence, sort_keys=True), file=sys.stderr)
 
 
@@ -307,6 +344,12 @@ def check_capture(root: Path, snapshot_path: Path, manifest: Path | None) -> int
     saved_tracked = saved.get("tracked")
     tracked = saved_tracked if isinstance(saved_tracked, dict) else {}
     changed = changed_paths(tracked, current.tracked) if saved else []
+    saved_fingerprints = saved.get("fingerprints")
+    if saved and isinstance(saved_fingerprints, dict):
+        fingerprints = {name: tuple(value) if value is not None else None
+                        for name, value in saved_fingerprints.items()}
+        changed = sorted(set(changed) | changed_fingerprints(
+            fingerprints, tracked_fingerprints(root, list(tracked))))
     state_changes: list[str] = []
     if saved:
         if saved.get("root_binding") != root_binding(root):
@@ -315,6 +358,12 @@ def check_capture(root: Path, snapshot_path: Path, manifest: Path | None) -> int
             state_changes.append("HEAD")
         if saved.get("index_sha256") != current.index_sha256:
             state_changes.append("index")
+    saved_git = saved.get("git_fingerprints")
+    if isinstance(saved_git, dict):
+        fingerprints = {name: tuple(value) if value is not None else None
+                        for name, value in saved_git.items()}
+        state_changes = sorted(set(state_changes) | changed_fingerprints(
+            fingerprints, git_movement_fingerprints(root)))
     if capture_error is not None:
         state_changes.append("capture-integrity")
     changed = sorted(set(changed) | set(repository_changes))
@@ -363,6 +412,7 @@ def run_guarded_command(
     names = tracked_names(root)
     before = repository_state(root, names)
     baseline_fingerprints = tracked_fingerprints(root, names)
+    baseline_git = git_movement_fingerprints(root)
     preexisting_changes = tracked_worktree_changes(root)
     base_evidence: dict[str, object] = {
         "schema_version": SNAPSHOT_SCHEMA_VERSION,
@@ -391,7 +441,10 @@ def run_guarded_command(
         return SOURCE_CHANGED_EXIT
 
     try:
-        process = subprocess.Popen(command, cwd=directory)
+        executable = shutil.which(command[0]) or command[0]
+        windows_batch = os.name == "nt" and Path(executable).suffix.lower() in {".cmd", ".bat"}
+        invocation = subprocess.list2cmdline([executable, *command[1:]]) if windows_batch else command
+        process = subprocess.Popen(invocation, cwd=directory, shell=windows_batch)
     except OSError as error:
         fail(f"could not execute command: {error}", 127)
 
@@ -425,6 +478,7 @@ def run_guarded_command(
     )
     after = repository_state(root)
     observed_state_changes.update(state_changes(before, after))
+    observed_state_changes.update(changed_fingerprints(baseline_git, git_movement_fingerprints(root)))
     repository_changes = tracked_worktree_changes(root)
     final_changes = changed_paths(before.tracked, after.tracked)
     changed = sorted(set(final_changes) | set(repository_changes) | observed_paths)
