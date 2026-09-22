@@ -156,6 +156,14 @@ impl DesktopCore {
         }
     }
 
+    fn session(&self, session_id: &SessionId) -> Result<Option<SearchResult>, String> {
+        match self {
+            Self::Owner(core) => core.session(session_id.as_str()).map_err(contract_error),
+            Self::ReadOnly(core) => core.session(session_id.as_str()).map_err(contract_error),
+            Self::Unavailable(message) => Err(message.clone()),
+        }
+    }
+
     fn usage(&self, session_id: &SessionId) -> Result<UsageTotals, String> {
         match self {
             Self::Owner(core) => core.usage(session_id).map_err(contract_error),
@@ -1046,9 +1054,8 @@ impl DesktopService {
     }
 
     fn find_session(&self, id: &SessionId) -> Result<SearchResult, String> {
-        self.search_results(&SessionFilters::default())?
-            .into_iter()
-            .find(|result| &result.session_id == id)
+        self.core()?
+            .session(id)?
             .ok_or_else(|| format!("Session {id} was not found in local history."))
     }
 
@@ -1680,6 +1687,107 @@ mod tests {
             calls.as_slice(),
             &[(Harness::ClaudeCode, "claude-native-73A9".to_owned())]
         );
+        Ok(())
+    }
+
+    #[test]
+    fn older_search_hit_can_open_resume_and_delete_without_touching_neighbors() -> Result<(), String>
+    {
+        let directory = tempfile::tempdir().map_err(|error| error.to_string())?;
+        let paths = test_paths(directory.path())?;
+        let application = Application::new();
+        let capture = application
+            .open_capture(&paths.spool_dir)
+            .map_err(contract_error)?;
+        for index in 0..502 {
+            let mut observation = synthetic_native_observation()?;
+            observation.observation_id =
+                cutokyo_domain::ObservationId::parse(format!("obs:older-hit-{index:04}"))
+                    .map_err(contract_error)?;
+            observation.source.native.event_id = Some(format!("event:older-hit-{index:04}"));
+            observation.source.native.session_key = format!("native:older-hit-{index:04}");
+            observation.source.native.resume_id = Some(format!("resume:older-hit-{index:04}"));
+            observation.payload["session_id"] = json!(format!("session:older-hit-{index:04}"));
+            observation.payload["message_id"] = json!(format!("message:older-hit-{index:04}"));
+            observation.payload["title"] = json!(format!("Older hit {index:04}"));
+            observation.payload["session_started_at"] = json!(if index == 501 {
+                "2026-09-18T10:00:00Z"
+            } else {
+                "2026-09-19T10:00:00Z"
+            });
+            observation.payload["text"] = json!(format!("unique older needle {index:04}"));
+            capture.capture(&observation).map_err(contract_error)?;
+        }
+        let executor = Arc::new(RecordingResumeExecutor::default());
+        let service = DesktopService::open_with_executor(paths.clone(), executor.clone())?;
+        let selected = "session:older-hit-0501";
+        let first_page = service.search_sessions(&SessionFilters::default())?;
+        let first_rows = first_page["sessions"]
+            .as_array()
+            .ok_or("missing sessions")?;
+        assert_eq!(first_rows.len(), 500);
+        assert!(first_rows.iter().all(|row| row["id"] != selected));
+        let filters = SessionFilters {
+            text: "unique older needle 0501".to_owned(),
+            ..SessionFilters::default()
+        };
+        let matches = service.search_sessions(&filters)?;
+        assert_eq!(matches["total"], 1);
+        assert_eq!(matches["sessions"][0]["id"], selected);
+        assert_eq!(service.session_detail(selected)?["title"], "Older hit 0501");
+        let reader = DesktopService::open(paths.clone())?;
+        assert_eq!(reader.bootstrap()?["writerMode"], "read_only");
+        assert_eq!(reader.session_detail(selected)?["id"], selected);
+        assert_eq!(
+            reader.preview_resume(selected)?["nativeResumeId"],
+            "resume:older-hit-0501"
+        );
+        assert_eq!(
+            service.preview_resume(selected)?["nativeResumeId"],
+            "resume:older-hit-0501"
+        );
+        service.resume_session(selected)?;
+        assert_eq!(
+            executor
+                .calls
+                .lock()
+                .map_err(|_| "recording resume lock poisoned")?
+                .as_slice(),
+            &[(Harness::ClaudeCode, "resume:older-hit-0501".to_owned())]
+        );
+        let preview = service.preview_session_deletion(selected)?;
+        assert_eq!(preview["sessionIds"], json!([selected]));
+        assert_eq!(preview["sessionTitles"], json!(["Older hit 0501"]));
+        assert_eq!(preview["rawObservations"], 1);
+        assert_eq!(preview["messages"], 1);
+        assert_eq!(preview["ftsRows"], 1);
+        let token = preview["previewToken"]
+            .as_str()
+            .ok_or("missing deletion token")?;
+        assert!(
+            service
+                .delete_session("session:older-hit-0500", token)
+                .is_err()
+        );
+        assert_eq!(service.delete_session(selected, token)?["sessions"], 1);
+        assert!(service.session_detail(selected).is_err());
+        assert!(reader.session_detail(selected).is_err());
+        assert!(service.preview_resume(selected).is_err());
+        assert!(service.resume_session(selected).is_err());
+        assert!(service.preview_session_deletion(selected).is_err());
+        assert_eq!(service.search_sessions(&filters)?["total"], 0);
+        drop(reader);
+        drop(service);
+        let reopened = DesktopService::open(paths)?;
+        for index in 0..501 {
+            let neighbor = format!("session:older-hit-{index:04}");
+            assert_eq!(reopened.session_detail(&neighbor)?["id"], neighbor);
+            let preview = reopened.preview_session_deletion(&neighbor)?;
+            assert_eq!(preview["rawObservations"], 1);
+            assert_eq!(preview["messages"], 1);
+            assert_eq!(preview["ftsRows"], 1);
+        }
+        assert!(reopened.session_detail(selected).is_err());
         Ok(())
     }
 
