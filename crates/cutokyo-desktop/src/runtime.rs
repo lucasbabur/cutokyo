@@ -1,4 +1,6 @@
-use std::{io, path::PathBuf};
+use std::io;
+#[cfg(feature = "native-e2e")]
+use std::path::PathBuf;
 
 use cutokyo_core::app::Application;
 use cutokyo_domain::SettingsPatch;
@@ -362,12 +364,13 @@ fn check_for_updates() -> Result<Value, String> {
 
 pub(crate) fn run() -> Result<(), String> {
     #[cfg(feature = "native-e2e")]
-    if std::env::var("CUTOKYO_DESKTOP_TEST_MODE").as_deref() != Ok("1") {
-        return Err(
-            "The native-e2e binary requires CUTOKYO_DESKTOP_TEST_MODE=1 and an isolated test root."
-                .to_owned(),
-        );
-    }
+    let native_root = crate::native_test::validated_root(
+        std::env::var("CUTOKYO_DESKTOP_TEST_MODE").ok().as_deref(),
+        std::env::var_os("CUTOKYO_DESKTOP_TEST_ROOT")
+            .map(PathBuf::from)
+            .as_deref(),
+    )
+    .map_err(|error| error.to_string())?;
 
     let builder = tauri::Builder::default();
     #[cfg(feature = "native-e2e")]
@@ -383,10 +386,13 @@ pub(crate) fn run() -> Result<(), String> {
     let context = tauri::generate_context!();
 
     builder
-        .setup(|app| {
-            let root = desktop_data_root(app)?;
+        .setup(move |app| {
+            #[cfg(feature = "native-e2e")]
+            let root = native_root;
+            #[cfg(not(feature = "native-e2e"))]
+            let root = app.path().app_local_data_dir()?;
             let service = DesktopService::open(&root).map_err(io::Error::other)?;
-            #[cfg(debug_assertions)]
+            #[cfg(feature = "native-e2e")]
             if let Ok(fixture) = std::env::var("CUTOKYO_DESKTOP_TEST_FIXTURE") {
                 service
                     .seed_native_test_fixture(&fixture)
@@ -433,30 +439,4 @@ pub(crate) fn run() -> Result<(), String> {
         ])
         .run(context)
         .map_err(|error| format!("Cutokyo desktop failed: {error}"))
-}
-
-fn desktop_data_root(app: &tauri::App) -> Result<PathBuf, Box<dyn std::error::Error>> {
-    #[cfg(debug_assertions)]
-    if std::env::var("CUTOKYO_DESKTOP_TEST_MODE").as_deref() == Ok("1") {
-        let candidate =
-            PathBuf::from(std::env::var("CUTOKYO_DESKTOP_TEST_ROOT").map_err(|_| {
-                io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    "CUTOKYO_DESKTOP_TEST_ROOT is required in native test mode",
-                )
-            })?);
-        let safe_name = candidate
-            .file_name()
-            .and_then(|value| value.to_str())
-            .is_some_and(|value| value.starts_with("cutokyo-native-test-"));
-        if !candidate.is_absolute() || !safe_name {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "native test root must be an absolute path whose final component starts with cutokyo-native-test-",
-            )
-            .into());
-        }
-        return Ok(candidate);
-    }
-    app.path().app_local_data_dir().map_err(Into::into)
 }

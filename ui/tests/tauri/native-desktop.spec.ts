@@ -1,18 +1,14 @@
 import { strict as assert } from "node:assert";
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { $, browser } from "@wdio/globals";
 
-const repositoryRoot = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  "../../..",
-);
-const evidencePath = resolve(
-  repositoryRoot,
-  "evidence/final/native/search-detail-resume-1280x800.png",
-);
+import { assertNativeGeometry } from "./geometry.js";
+
+const nativeEvidence = process.env.CUTOKYO_NATIVE_EVIDENCE;
+assert.ok(nativeEvidence, "native evidence directory was not propagated");
+const evidencePath = join(nativeEvidence, "search-detail-resume-1280x800.png");
 
 describe("Cutokyo native Tauri application", () => {
   it("searches, opens, exactly resumes, and deletes an isolated native fixture", async () => {
@@ -27,10 +23,15 @@ describe("Cutokyo native Tauri application", () => {
     const windowSize = (await browser.tauri.execute(({ core }) =>
       core.invoke("plugin:window|inner_size", { label: "main" }),
     )) as { height: number; width: number };
-    assert.ok(windowSize.width >= 900, `native width was ${windowSize.width}`);
-    assert.ok(
-      windowSize.height >= 700,
-      `native height was ${windowSize.height}`,
+    const viewport = await browser.execute(() => ({
+      width: window.innerWidth,
+      height: window.innerHeight,
+    }));
+    assertNativeGeometry(windowSize, viewport);
+    writeFileSync(
+      join(nativeEvidence, "geometry-1280x800.json"),
+      JSON.stringify({ windowSize, viewport }),
+      { flag: "wx" },
     );
 
     const sessionsNavigation = await $("a=Sessions");

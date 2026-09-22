@@ -5,6 +5,9 @@ compile_error!("native-e2e is test-only and cannot be enabled in release builds"
 
 mod service;
 
+#[cfg(any(test, feature = "native-e2e"))]
+mod native_test;
+
 #[cfg(feature = "desktop-runtime")]
 mod runtime;
 

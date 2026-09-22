@@ -1109,7 +1109,7 @@ impl DesktopService {
         }))
     }
 
-    #[cfg(debug_assertions)]
+    #[cfg(any(test, feature = "native-e2e"))]
     pub(crate) fn seed_native_test_fixture(&self, fixture: &str) -> Result<(), String> {
         if fixture != "search-resume" && fixture != "native-smoke" {
             return Err(format!("Unknown isolated native test fixture: {fixture}"));
@@ -1586,7 +1586,7 @@ fn set_private_file(path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-#[cfg(debug_assertions)]
+#[cfg(any(test, feature = "native-e2e"))]
 fn synthetic_native_observation() -> Result<cutokyo_domain::RawObservation, String> {
     use cutokyo_domain::{NativeIdentity, ObservationId, RawObservation};
 

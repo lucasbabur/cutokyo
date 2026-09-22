@@ -1,7 +1,6 @@
-import { chmodSync, copyFileSync, mkdirSync, rmSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, delimiter, dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { basename, dirname, join, resolve } from "node:path";
 
 import LocalRunner from "@wdio/local-runner";
 import type {
@@ -10,72 +9,52 @@ import type {
 } from "@wdio/tauri-service";
 import type {} from "@wdio/types";
 
-const uiRoot = dirname(fileURLToPath(import.meta.url));
-const repositoryRoot = resolve(uiRoot, "..");
-const executableSuffix = process.platform === "win32" ? ".exe" : "";
-const application = join(
-  repositoryRoot,
-  "target",
-  "debug",
-  `cutokyo-desktop${executableSuffix}`,
-);
-const fakeHarnessSource = join(
-  repositoryRoot,
-  "target",
-  "debug",
-  `fake-resume-harness${executableSuffix}`,
-);
+function required(name: string): string {
+  const value = process.env[name];
+  if (!value)
+    throw new Error(`Run the isolated native package runner: missing ${name}`);
+  return value;
+}
 
-const nativeTestParent = resolve(tmpdir());
-const inheritedNativeTestRoot = process.env.CUTOKYO_DESKTOP_TEST_ROOT;
-const nativeTestRoot = inheritedNativeTestRoot
-  ? resolve(inheritedNativeTestRoot)
-  : join(nativeTestParent, `cutokyo-native-test-wdio-${process.pid}`);
+const nativeTestRoot = resolve(required("CUTOKYO_DESKTOP_TEST_ROOT"));
 if (
-  dirname(nativeTestRoot) !== nativeTestParent ||
-  !basename(nativeTestRoot).startsWith("cutokyo-native-test-wdio-")
+  dirname(nativeTestRoot) !== realpathSync(tmpdir()) ||
+  realpathSync(nativeTestRoot) !== nativeTestRoot ||
+  !basename(nativeTestRoot).startsWith("cutokyo-native-test-wdio-") ||
+  process.env.CUTOKYO_DESKTOP_TEST_MODE !== "1"
 ) {
   throw new Error(
-    "The propagated native test root must be a direct, isolated child of the system temporary directory.",
+    "Native WDIO requires a real isolated temporary test root and test mode.",
   );
 }
-process.env.CUTOKYO_DESKTOP_TEST_ROOT = nativeTestRoot;
-const nativeResumeAudit = join(nativeTestRoot, "resume-audit.txt");
-process.env.CUTOKYO_NATIVE_RESUME_AUDIT = nativeResumeAudit;
-const fakeBin = join(nativeTestRoot, "bin");
-const fakeClaude = join(fakeBin, `claude${executableSuffix}`);
-const nativeEvidence = join(repositoryRoot, "evidence", "final", "native");
-
-function prepareNativeTest(): void {
-  if (typeof LocalRunner !== "function") {
-    throw new TypeError("WebdriverIO local runner is unavailable.");
-  }
-  rmSync(nativeTestRoot, { force: true, recursive: true });
-  mkdirSync(fakeBin, { recursive: true, mode: 0o700 });
-  mkdirSync(nativeEvidence, { recursive: true });
-  copyFileSync(fakeHarnessSource, fakeClaude);
-  if (process.platform !== "win32") chmodSync(fakeClaude, 0o700);
+const application = required("CUTOKYO_NATIVE_APPLICATION");
+if (
+  application !== join(nativeTestRoot, "package/usr/bin/cutokyo-desktop") ||
+  realpathSync(application) !== application
+) {
+  throw new Error(
+    "Native WDIO must launch the extracted Debian bundle, not a build executable.",
+  );
+}
+const nativeEvidence = required("CUTOKYO_NATIVE_EVIDENCE");
+const port = Number(required("CUTOKYO_NATIVE_PORT"));
+if (!Number.isInteger(port) || port < 1024 || port > 65535) {
+  throw new Error("Native WDIO requires its allocated unprivileged port.");
 }
 
 const serviceOptions: TauriServiceOptions = {
   appBinaryPath: application,
   driverProvider: "embedded",
+  embeddedPort: port,
   startTimeout: 90_000,
   statusPollTimeout: 5_000,
-  env: {
-    CUTOKYO_DESKTOP_TEST_MODE: "1",
-    CUTOKYO_DESKTOP_TEST_ROOT: nativeTestRoot,
-    CUTOKYO_DESKTOP_TEST_FIXTURE: "search-resume",
-    CUTOKYO_NATIVE_RESUME_AUDIT: nativeResumeAudit,
-    PATH: `${fakeBin}${delimiter}${process.env.PATH ?? ""}`,
-  },
+  captureBackendLogs: true,
+  logDir: nativeEvidence,
 };
 
 const capability: TauriCapabilities = {
   browserName: "tauri",
-  "tauri:options": {
-    application,
-  },
+  "tauri:options": { application },
 };
 
 export const config: WebdriverIO.Config = {
@@ -86,21 +65,23 @@ export const config: WebdriverIO.Config = {
   capabilities: [capability],
   framework: "mocha",
   reporters: ["spec"],
-  logLevel: "warn",
+  outputDir: nativeEvidence,
+  logLevel: "info",
   bail: 0,
   waitforTimeout: 15_000,
   connectionRetryTimeout: 120_000,
   connectionRetryCount: 1,
-  mochaOpts: {
-    ui: "bdd",
-    timeout: 90_000,
-  },
+  mochaOpts: { ui: "bdd", timeout: 90_000 },
   onPrepare() {
-    prepareNativeTest();
-  },
-  onComplete() {
-    if (process.env.CUTOKYO_KEEP_NATIVE_TEST_ROOT !== "1") {
-      rmSync(nativeTestRoot, { force: true, recursive: true });
+    if (typeof LocalRunner !== "function") {
+      throw new TypeError("WebdriverIO local runner is unavailable.");
+    }
+    if (!existsSync(join(nativeEvidence, "package-launch.json"))) {
+      throw new Error(
+        "The package runner must record bundle provenance before launch.",
+      );
     }
   },
+  // No root deletion in WDIO hooks: their order relative to service teardown is
+  // not an ownership guarantee. The outer runner stops children, then cleans up.
 };
