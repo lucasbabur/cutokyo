@@ -71,11 +71,22 @@ impl BundleReceipt {
         if sha256 != self.sha256 || byte_length != self.byte_length {
             return Err("the successful bundle changed before crash clearing".to_owned());
         }
+        // Publication takes the same stable sidecar lock. Keep it through both
+        // comparison and removal so a newer, unbundled record cannot be unlinked.
+        let _crash_lock = crate::logging::lock_crash_record(&paths.crash_file)
+            .map_err(|error| format!("lock crash record before receipt-bound clearing: {error}"))?;
         let current = CrashFingerprint::from_path(&paths.crash_file)
             .map_err(|error| format!("read crash record before receipt-bound clearing: {error}"))?;
         if Some(current) != self.bundled_crash_fingerprint {
             return Err("the pending crash record changed after bundle creation".to_owned());
         }
+        #[cfg(test)]
+        AFTER_CRASH_COMPARISON.with(|hook| {
+            if let Some(hook) = hook.take() {
+                hook()?;
+            }
+            Ok::<_, String>(())
+        })?;
         fs::remove_file(&paths.crash_file)
             .map_err(|error| format!("remove bundled crash record: {error}"))
     }
@@ -472,6 +483,16 @@ fn set_private_file(path: &Path) -> std::io::Result<()> {
 #[cfg(not(unix))]
 fn set_private_file(_path: &Path) -> std::io::Result<()> {
     Ok(())
+}
+
+#[cfg(test)]
+type CrashComparisonHook = Box<dyn FnOnce() -> Result<(), String>>;
+
+#[cfg(test)]
+std::thread_local! {
+    // Test-only scheduling seam: production has no callback in this critical section.
+    pub(crate) static AFTER_CRASH_COMPARISON: std::cell::RefCell<Option<CrashComparisonHook>> =
+        std::cell::RefCell::new(None);
 }
 
 #[cfg(test)]
