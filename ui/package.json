@@ -19,6 +19,7 @@
     "build:e2e:tauri:ui": "vite build --mode native-e2e",
     "test:native-harness": "python3 -m unittest discover -s scripts -p 'test_native_e2e.py' -v",
     "test:e2e:tauri": "pnpm build && python3 scripts/native-e2e.py",
+    "test:e2e:tauri:runner": "wdio run ./wdio.conf.ts",
     "knip": "knip",
     "check": "pnpm check:settings && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm knip"
   },

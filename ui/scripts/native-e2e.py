@@ -103,11 +103,14 @@ def extract_package(root: Path, env: dict[str, str]) -> tuple[Path, Path]:
 
 
 def runtime_environment(root: Path, evidence: Path, application: Path, port: int) -> dict[str, str]:
-    env = dict(os.environ)
-    # No inherited operator harness locations, fixture selectors or loader hooks.
-    for key in list(env):
-        if key.startswith(("CUTOKYO_", "CLAUDE_", "CODEX_", "OPENCODE_", "XDG_")):
-            env.pop(key)
+    # Keep only process/display plumbing, not provider credentials, operator
+    # harness locations, fixture selectors, proxy settings or loader hooks.
+    allowed = {
+        "PATH", "DISPLAY", "WAYLAND_DISPLAY", "DBUS_SESSION_BUS_ADDRESS",
+        "LANG", "LC_ALL", "TZ", "GDK_BACKEND", "LIBGL_ALWAYS_SOFTWARE",
+        "WEBKIT_DISABLE_COMPOSITING_MODE", "WEBKIT_DISABLE_DMABUF_RENDERER",
+    }
+    env = {key: value for key, value in os.environ.items() if key in allowed}
     for name in ("home", "config", "data", "cache", "runtime"):
         (root / name).mkdir(mode=0o700)
     env.update({
@@ -171,7 +174,7 @@ def main() -> None:
         # Keep the port reserved throughout preparation; never use a fixed/shared
         # port. A subsequent bind collision must fail, not reuse another server.
         reservation.close()
-        run(["pnpm", "exec", "wdio", "run", "./wdio.conf.ts"], cwd=UI, env=native_env)
+        run(["pnpm", "test:e2e:tauri:runner"], cwd=UI, env=native_env)
     shutil.copy2(root / "resume-audit.txt", evidence / "resume-audit.txt")
     shutil.rmtree(root)
 

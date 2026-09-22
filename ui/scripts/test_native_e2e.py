@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 SPEC = importlib.util.spec_from_file_location("native_e2e", Path(__file__).with_name("native-e2e.py"))
 if SPEC is None or SPEC.loader is None:
@@ -37,6 +38,34 @@ class NativePackageHarness(unittest.TestCase):
                     self.assertTrue(Path(runtime[key]).is_relative_to(root))
                     self.assertEqual(Path(runtime[key]).stat().st_mode & 0o777, 0o700)
                 self.assertEqual(runtime["PATH"].split(os.pathsep)[0], str(root / "bin"))
+
+    def test_runtime_environment_excludes_credentials_and_loader_hooks(self):
+        excluded = {
+            "ANTHROPIC_API_KEY", "OPENAI_API_KEY", "NPM_TOKEN", "AWS_SECRET_ACCESS_KEY",
+            "CLAUDE_CONFIG_DIR", "CODEX_HOME", "NODE_OPTIONS", "LD_PRELOAD", "HTTPS_PROXY",
+            "CUTOKYO_CONFIG_FILE", "CUTOKYO_DATA_DIR", "CUTOKYO_PROXY_ENABLED",
+        }
+        synthetic = dict.fromkeys(excluded, "synthetic-never-inherit")
+        synthetic.update(PATH="/usr/bin:/bin", DISPLAY=":synthetic-display")
+        with tempfile.TemporaryDirectory() as temporary, patch.dict(os.environ, synthetic, clear=True):
+            root = Path(temporary)
+            env = NATIVE.runtime_environment(root, root / "evidence", root / "package/usr/bin/cutokyo-desktop", 12345)
+            self.assertFalse(excluded.intersection(env))
+            self.assertEqual(env["DISPLAY"], ":synthetic-display")
+            self.assertEqual(env["HOME"], str(root / "home"))
+
+    def test_wdio_config_imports_without_runner_but_refuses_unisolated_launch(self):
+        env = {key: value for key, value in os.environ.items() if not key.startswith("CUTOKYO_")}
+        imported = subprocess.run(
+            ["node", "--import", "tsx", "--input-type=module", "--eval", 'import { config } from "./wdio.conf.ts"; console.log(config.capabilities[0]["tauri:options"].application);'],
+            cwd=NATIVE.UI, env=env, capture_output=True, text=True)
+        self.assertEqual(imported.returncode, 0, imported.stderr)
+        self.assertIn("/cutokyo-native-package-runner-required", imported.stdout)
+        refused = subprocess.run(
+            ["node", "--import", "tsx", "--input-type=module", "--eval", 'import { config } from "./wdio.conf.ts"; config.onPrepare();'],
+            cwd=NATIVE.UI, env=env, capture_output=True, text=True)
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertIn("missing CUTOKYO_DESKTOP_TEST_ROOT", refused.stderr)
 
     def test_launch_path_comes_from_debian_bundle_not_debug_decoy(self):
         with tempfile.TemporaryDirectory() as temporary:
