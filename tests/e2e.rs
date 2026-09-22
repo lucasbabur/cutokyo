@@ -2779,7 +2779,14 @@ fn prove_split_capture_integrity(
             })
     );
     run_git(checkout, &["reset", "--hard", "--quiet", "HEAD^"])?;
+    prove_split_index_capture(production_root, checkout, artifacts)
+}
 
+fn prove_split_index_capture(
+    production_root: &Path,
+    checkout: &Path,
+    artifacts: &Path,
+) -> TestResult {
     let index_capture = artifacts.join("index-bound-capture.json");
     checked_output(
         capture_source_state(
@@ -3080,8 +3087,16 @@ fn generate_dist_native_archive(
         .and_then(|value| value.to_str())
         .ok_or("cargo-dist native archive filename is not UTF-8")?;
     let checksum = archive.with_file_name(format!("{filename}.sha256"));
-    assert!(archive.is_file(), "cargo-dist omitted {archive:?}");
-    assert!(checksum.is_file(), "cargo-dist omitted {checksum:?}");
+    assert!(
+        archive.is_file(),
+        "cargo-dist omitted {}",
+        archive.display()
+    );
+    assert!(
+        checksum.is_file(),
+        "cargo-dist omitted {}",
+        checksum.display()
+    );
     let sidecar = fs::read_to_string(&checksum)?;
     assert!(sidecar.contains(&sha256_path(&archive)?));
     assert!(sidecar.contains(filename));
@@ -3406,7 +3421,7 @@ fn prove_host_tauri_linux_package(
             &artifacts.join("tauri-build-source.json"),
             &arguments,
             &[("CARGO_TARGET_DIR", &target)],
-            Duration::from_secs(1_800),
+            Duration::from_mins(30),
         )?,
         "build real Linux package with installed native development libraries",
     )?;
@@ -3491,7 +3506,7 @@ fn prove_real_tauri_linux_package(
                 .arg(pnpm_root)
                 .arg("--cargo-cache")
                 .arg(cargo_cache),
-            Duration::from_secs(1_800),
+            Duration::from_mins(30),
             "build release-profile Debian package in the offline builder",
         )?,
         "build release-profile Debian package in the offline builder",
@@ -3515,7 +3530,15 @@ fn prove_real_tauri_linux_package(
         .into());
     };
     assert!(fs::read(package)?.starts_with(b"!<arch>\n"));
+    prove_packaged_tauri_in_container(checkout, &packages, package)
+}
 
+#[cfg(target_os = "linux")]
+fn prove_packaged_tauri_in_container(
+    checkout: &Path,
+    packages: &Path,
+    package: &Path,
+) -> TestResult<TauriPackageEvidence> {
     let smoke_container = docker_resource_name("tauri-smoke");
     let _resource = DockerSmokeResource {
         container: smoke_container.clone(),
@@ -3571,7 +3594,7 @@ fn prove_real_tauri_linux_package(
     let receipt = packages.join("package-smoke.json");
     fs::write(&receipt, serde_json::to_vec(&receipt_value)?)?;
     Ok(TauriPackageEvidence {
-        package: package.clone(),
+        package: package.to_path_buf(),
         receipt,
     })
 }
@@ -3728,6 +3751,10 @@ fn create_release_fixture(root: &Path) -> TestResult {
             "version": "0.1.0"
         }))?,
     )?;
+    create_fixture_provenance(root)
+}
+
+fn create_fixture_provenance(root: &Path) -> TestResult {
     let production_root = repository_root()?;
     let revision = run_git(&production_root, &["rev-parse", "HEAD"])?.stdout;
     checked_output(
@@ -4355,6 +4382,11 @@ fn prove_release_signature_contract(
     parent: &Path,
     verifier: &Path,
 ) -> TestResult {
+    const ARM_TARGETS: [(&str, &str); 3] = [
+        ("linux-x86_64", "tauri-linux/Cutokyo_0.1.0_x86_64.AppImage"),
+        ("darwin-aarch64", "tauri-macos/Cutokyo.app.tar.gz"),
+        ("windows-x86_64", "tauri-windows/Cutokyo_0.1.0_x64.msi"),
+    ];
     let missing = fresh_release_fixture(parent, "missing-signatures")?;
     let missing_key = updater_signing_fixture(parent, "missing-signatures")?;
     let inputs = signature_inputs(verifier, &missing_key.public_key, &UPDATER_TARGETS_X64);
@@ -4402,11 +4434,6 @@ fn prove_release_signature_contract(
 
     let arm = fresh_release_fixture(parent, "signed-darwin-arm")?;
     let arm_signing = updater_signing_fixture(parent, "signed-darwin-arm")?;
-    const ARM_TARGETS: [(&str, &str); 3] = [
-        ("linux-x86_64", "tauri-linux/Cutokyo_0.1.0_x86_64.AppImage"),
-        ("darwin-aarch64", "tauri-macos/Cutokyo.app.tar.gz"),
-        ("windows-x86_64", "tauri-windows/Cutokyo_0.1.0_x64.msi"),
-    ];
     add_updater_signatures(&arm, &ARM_TARGETS, &arm_signing.secret_key)?;
     let arm_inputs = signature_inputs(verifier, &arm_signing.public_key, &ARM_TARGETS);
     checked_output(
