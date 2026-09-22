@@ -3,10 +3,14 @@
 #[cfg(all(feature = "native-e2e", not(debug_assertions)))]
 compile_error!("native-e2e is test-only and cannot be enabled in release builds");
 
+mod health_binding;
+#[cfg(any(feature = "desktop-runtime", test))]
 mod service;
 
 #[cfg(feature = "desktop-runtime")]
 mod runtime;
+
+pub use health_binding::health_binding_value;
 
 /// Starts the native Tauri desktop application.
 ///

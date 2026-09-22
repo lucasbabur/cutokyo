@@ -11,15 +11,29 @@ publish = false
 [dependencies]
 cutokyo-core.workspace = true
 cutokyo-domain.workspace = true
+cutokyo-desktop = { path = "../crates/cutokyo-desktop", version = "0.1.0", default-features = false }
 fake-harness = { path = "../tools/fake-harness", version = "0.1.0" }
+clap.workspace = true
+flate2.workspace = true
 jsonschema.workspace = true
+rmcp.workspace = true
+rusqlite.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+sha2.workspace = true
+tar.workspace = true
 tempfile.workspace = true
-rusqlite.workspace = true
-rmcp.workspace = true
+time.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[[bin]]
+name = "cutokyo-c16-fixture"
+path = "../crates/cutokyo-cli/src/main.rs"
+test = false
+bench = false
 
 [[test]]
 name = "pipeline"

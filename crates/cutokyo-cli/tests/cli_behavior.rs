@@ -511,6 +511,7 @@ const AUTHORIZATION_CONTENT: &str = "AuthorizationHeaderSentinel2f97";
 const URL_QUERY_CONTENT: &str = "UrlQuerySentinel1a08";
 const TOOL_OUTPUT_CONTENT: &str = "ToolOutputSentinel0b19";
 const MULTILINE_CONTENT: &str = "MultilineSentinel8c20";
+const WINDOWS_PROJECT_PATH: &str = r"C:\Users\alice\private\c12-project\session.jsonl";
 
 type CliTestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -537,7 +538,7 @@ fn bundle_has_no_content_or_secret() -> CliTestResult {
 
     let entries = create_bundle_archive(root, &data, &preview_manifest, &expected_entries)?;
 
-    assert_archive_has_no_forbidden_bytes(&entries, &full_project_path, &secret_corpus);
+    assert_archive_has_no_forbidden_bytes(&entries, &full_project_path, &secret_corpus)?;
 
     assert_allowlisted_log_projection(&entries)?;
 
@@ -558,6 +559,34 @@ fn contains_bytes(haystack: &[u8], needle: &str) -> bool {
     haystack
         .windows(needle.len())
         .any(|window| window == needle.as_bytes())
+}
+
+fn json_contains_string(value: &Value, needle: &str) -> bool {
+    match value {
+        Value::String(value) => value.contains(needle),
+        Value::Array(values) => values
+            .iter()
+            .any(|value| json_contains_string(value, needle)),
+        Value::Object(values) => values
+            .iter()
+            .any(|(key, value)| key.contains(needle) || json_contains_string(value, needle)),
+        Value::Null | Value::Bool(_) | Value::Number(_) => false,
+    }
+}
+
+fn decoded_bundle_values(name: &str, bytes: &[u8]) -> CliTestResult<Vec<Value>> {
+    if std::path::Path::new(name)
+        .extension()
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("jsonl"))
+    {
+        bytes
+            .split(|byte| *byte == b'\n')
+            .filter(|line| !line.is_empty())
+            .map(|line| serde_json::from_slice(line).map_err(Into::into))
+            .collect()
+    } else {
+        Ok(vec![serde_json::from_slice(bytes)?])
+    }
 }
 
 fn assert_maintained_secret_corpus(corpus: &[(&str, String)]) -> CliTestResult {
@@ -729,7 +758,7 @@ fn forbidden_log_text(project_path: &str, corpus: &[(&str, String)]) -> String {
     format!(
         "{PROMPT_CONTENT}\n{TRANSCRIPT_CONTENT}\n{RAW_OBSERVATION_CONTENT}\n{DATABASE_BYTES}\n\
          {BACKUP_BYTES}\n{SPOOL_BYTES}\n{AUTHORIZATION_CONTENT}\n{URL_QUERY_CONTENT}\n\
-         {TOOL_OUTPUT_CONTENT}\n{MULTILINE_CONTENT}\n{project_path}\n{}",
+         {TOOL_OUTPUT_CONTENT}\n{MULTILINE_CONTENT}\n{project_path}\n{WINDOWS_PROJECT_PATH}\n{}",
         corpus
             .iter()
             .map(|(_, secret)| secret.as_str())
@@ -786,8 +815,8 @@ fn seed_log_and_crash_fixture(
             "schema_version": 1,
             "app_version": "0.1.0",
             "pid": 7,
-            "thread": "bundle-test",
-            "location_file": "bundle_fixture.rs",
+            "thread": format!("worker-{}-{WINDOWS_PROJECT_PATH}", corpus[0].1),
+            "location_file": r"C:\private\bundle_fixture.rs",
             "location_line": 10,
             "category": "panic",
             "payload": forbidden_text,
@@ -953,7 +982,7 @@ fn assert_archive_has_no_forbidden_bytes(
     entries: &BTreeMap<String, Vec<u8>>,
     project_path: &str,
     corpus: &[(&str, String)],
-) {
+) -> CliTestResult {
     let mut forbidden = vec![
         ("prompt content", PROMPT_CONTENT.to_owned()),
         ("transcript content", TRANSCRIPT_CONTENT.to_owned()),
@@ -969,20 +998,29 @@ fn assert_archive_has_no_forbidden_bytes(
         ("tool output content", TOOL_OUTPUT_CONTENT.to_owned()),
         ("multiline content", MULTILINE_CONTENT.to_owned()),
         ("complete project path", project_path.to_owned()),
+        ("Windows project path", WINDOWS_PROJECT_PATH.to_owned()),
     ];
     forbidden.extend(
         corpus
             .iter()
             .map(|(label, secret)| (*label, secret.clone())),
     );
-    for (label, bytes) in &forbidden {
-        for (entry_name, entry) in entries {
+    for (entry_name, entry) in entries {
+        let decoded = decoded_bundle_values(entry_name, entry)?;
+        for (label, forbidden_value) in &forbidden {
             assert!(
-                !contains_bytes(entry, bytes),
-                "bundle entry {entry_name} leaked {label}"
+                !contains_bytes(entry, forbidden_value),
+                "bundle entry {entry_name} leaked raw {label}"
+            );
+            assert!(
+                !decoded
+                    .iter()
+                    .any(|value| json_contains_string(value, forbidden_value)),
+                "bundle entry {entry_name} leaked decoded {label}"
             );
         }
     }
+    Ok(())
 }
 
 fn assert_allowlisted_log_projection(entries: &BTreeMap<String, Vec<u8>>) -> CliTestResult {
@@ -1065,7 +1103,7 @@ fn assert_allowlisted_crash_projection(entries: &BTreeMap<String, Vec<u8>>) -> C
         .map(str::to_owned)
         .collect()
     );
-    assert_eq!(crash["thread"], "bundle-test");
+    assert_eq!(crash["thread"], "named");
     assert_eq!(crash["location_file"], "bundle_fixture.rs");
     assert_eq!(crash["category"], "panic");
     Ok(())

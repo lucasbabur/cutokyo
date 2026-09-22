@@ -352,31 +352,16 @@ fn main() -> ExitCode {
     };
     logging::install_panic_hook(&paths);
     let pending_crash = logging::pending_crash(&paths);
-    let mutation_free_setup_preview = matches!(
-        cli.command.as_ref(),
-        Some(CliCommand::Setup { dry_run: true })
-    );
-    let log_guard = if mutation_free_setup_preview {
-        None
-    } else {
-        match logging::initialize(&paths) {
-            Ok(guard) => Some(guard),
-            Err(log_error) => {
-                if !cli.json {
-                    eprintln!(
-                        "cutokyo: logging is unavailable; continuing without file logs ({log_error})"
-                    );
-                }
-                None
-            }
-        }
-    };
+    let log_guard = initialize_logging(&paths, cli.json, cli.command.as_ref());
+    if run_internal_test_probe(log_guard.as_ref()) {
+        return ExitCode::from(70);
+    }
     let overrides = match parse_overrides(&cli) {
         Ok(overrides) => overrides,
         Err(error) => return render_failure("startup", &error, cli.json, pending_crash),
     };
 
-    offer_pending_crash(pending_crash, cli.json, cli.command.as_ref());
+    offer_pending_crash(&paths, cli.json, cli.command.as_ref());
     let command_name = command_name(cli.command.as_ref());
     info!(
         command = command_name,
@@ -413,12 +398,100 @@ fn main() -> ExitCode {
     exit
 }
 
-fn offer_pending_crash(pending_crash: bool, json: bool, command: Option<&CliCommand>) {
-    if pending_crash && !json && !matches!(command, Some(CliCommand::Bundle(_))) {
-        eprintln!(
-            "A bounded crash record is waiting. Review `cutokyo bundle` and explicitly add --include-crash if you want it included."
+fn initialize_logging(
+    paths: &RuntimePaths,
+    json: bool,
+    command: Option<&CliCommand>,
+) -> Option<logging::LogGuard> {
+    if matches!(command, Some(CliCommand::Setup { dry_run: true })) {
+        return None;
+    }
+    match logging::initialize(paths) {
+        Ok(guard) => Some(guard),
+        Err(log_error) => {
+            if !json {
+                eprintln!(
+                    "cutokyo: logging is unavailable; continuing without file logs ({log_error})"
+                );
+            }
+            None
+        }
+    }
+}
+
+fn offer_pending_crash(paths: &RuntimePaths, json: bool, command: Option<&CliCommand>) {
+    if let Some(notice) =
+        logging::pending_crash_notice(paths, json, matches!(command, Some(CliCommand::Bundle(_))))
+    {
+        eprintln!("{notice}");
+    }
+}
+
+#[cfg(debug_assertions)]
+fn run_internal_test_probe(log_guard: Option<&logging::LogGuard>) -> bool {
+    if let Ok(private) = std::env::var("CUTOKYO_INTERNAL_TEST_LOG_PRIVATE") {
+        info!(
+            command = "c16_sanitized_fixture",
+            status = "finished",
+            source_detail = %private,
+            "private test field must not reach the source log"
         );
     }
+    if std::env::var_os("CUTOKYO_INTERNAL_TEST_LOG_OVERSIZED").is_some() {
+        info!(
+            command = "c16_oversized_command_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            status = "c16_oversized_status_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            error_code = "c16_oversized_error_ccccccccccccccccccccccccccccccccccccccccc",
+            attempted = u64::MAX,
+            "bounded writer oversized-event fixture"
+        );
+    }
+    let Some(payload) = std::env::var_os("CUTOKYO_INTERNAL_TEST_PANIC_PAYLOAD") else {
+        return false;
+    };
+    let thread_name = std::env::var("CUTOKYO_INTERNAL_TEST_PANIC_THREAD")
+        .unwrap_or_else(|_| "controlled-panic".to_owned());
+    let Ok(thread) = std::thread::Builder::new()
+        .name(thread_name)
+        .spawn(move || {
+            let should_panic = std::hint::black_box(true);
+            assert!(!should_panic, "{}", payload.display());
+        })
+    else {
+        return false;
+    };
+    let _panic = thread.join();
+    if let Some(guard) = log_guard {
+        guard.flush();
+    }
+    true
+}
+
+#[cfg(not(debug_assertions))]
+const fn run_internal_test_probe(_log_guard: Option<&logging::LogGuard>) -> bool {
+    false
+}
+
+#[cfg(debug_assertions)]
+fn replace_crash_before_clear_for_internal_test(paths: &RuntimePaths) -> Result<(), String> {
+    if std::env::var_os("CUTOKYO_INTERNAL_TEST_REPLACE_CRASH_BEFORE_CLEAR").is_none() {
+        return Ok(());
+    }
+    fs::write(
+        &paths.crash_file,
+        concat!(
+            "{\"schema_version\":1,\"app_version\":\"0.1.0\",",
+            "\"pid\":4242,\"thread\":\"named\",",
+            "\"location_file\":\"replacement.rs\",\"location_line\":1,",
+            "\"category\":\"panic\"}\n"
+        ),
+    )
+    .map_err(|error| format!("replace crash record for internal receipt test: {error}"))
+}
+
+#[cfg(not(debug_assertions))]
+const fn replace_crash_before_clear_for_internal_test(_paths: &RuntimePaths) -> Result<(), String> {
+    Ok(())
 }
 
 fn run(
@@ -1051,10 +1124,12 @@ fn bundle_command(
     )
     .map_err(|message| ContractError::new(ErrorCode::Internal, message))?;
     if arguments.clear_crash {
-        logging::remove_crash(paths).map_err(|_| {
+        replace_crash_before_clear_for_internal_test(paths)
+            .map_err(|message| ContractError::new(ErrorCode::Internal, message))?;
+        receipt.clear_included_crash(paths).map_err(|message| {
             ContractError::new(
                 ErrorCode::Internal,
-                "bundle succeeded but the crash record could not be cleared",
+                format!("bundle succeeded but the crash record could not be cleared: {message}"),
             )
         })?;
     }

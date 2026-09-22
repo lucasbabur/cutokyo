@@ -14,20 +14,82 @@ use sha2::{Digest as _, Sha256};
 const ENTRY_LIMIT: u64 = 2 * 1024 * 1024;
 const REDACTED_LOG_LIMIT: usize = 512 * 1024;
 
+/// Allowlisted diagnostic archive manifest shown before creation.
 #[derive(Clone, Debug, Serialize)]
 pub(crate) struct BundlePreview {
+    /// Bundle manifest contract version.
     pub schema_version: u32,
+    /// Exact archive entry allowlist for this invocation.
     pub entries: Vec<String>,
+    /// Content categories deliberately excluded from every archive.
     pub excluded: Vec<String>,
+    /// Whether an existing crash record will be projected into the archive.
     pub crash_record_included: bool,
 }
 
+/// Receipt for a successfully published diagnostic archive.
 #[derive(Clone, Debug, Serialize)]
 pub(crate) struct BundleReceipt {
+    /// Published archive path.
     pub output: PathBuf,
+    /// SHA-256 digest of the closed archive bytes.
     pub sha256: String,
+    /// Closed archive byte length.
     pub byte_length: u64,
+    /// Manifest used to construct the archive.
     pub manifest: BundlePreview,
+    #[serde(skip)]
+    bundled_crash_fingerprint: Option<CrashFingerprint>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct CrashFingerprint {
+    sha256: String,
+    byte_length: u64,
+}
+
+impl CrashFingerprint {
+    fn from_bytes(bytes: &[u8]) -> Self {
+        Self {
+            sha256: lowercase_hex(&Sha256::digest(bytes)),
+            byte_length: u64::try_from(bytes.len()).unwrap_or(u64::MAX),
+        }
+    }
+
+    fn from_path(path: &Path) -> Result<Self, String> {
+        let bytes = fs::read(path).map_err(|error| format!("read crash record: {error}"))?;
+        Ok(Self::from_bytes(&bytes))
+    }
+}
+
+impl BundleReceipt {
+    pub(crate) fn clear_included_crash(&self, paths: &RuntimePaths) -> Result<(), String> {
+        if !self.manifest.crash_record_included {
+            return Err("the successful bundle receipt did not include a crash record".to_owned());
+        }
+        let (sha256, byte_length) = digest_file(&self.output)?;
+        if sha256 != self.sha256 || byte_length != self.byte_length {
+            return Err("the successful bundle changed before crash clearing".to_owned());
+        }
+        // Publication takes the same stable sidecar lock. Keep it through both
+        // comparison and removal so a newer, unbundled record cannot be unlinked.
+        let _crash_lock = crate::logging::lock_crash_record(&paths.crash_file)
+            .map_err(|error| format!("lock crash record before receipt-bound clearing: {error}"))?;
+        let current = CrashFingerprint::from_path(&paths.crash_file)
+            .map_err(|error| format!("read crash record before receipt-bound clearing: {error}"))?;
+        if Some(current) != self.bundled_crash_fingerprint {
+            return Err("the pending crash record changed after bundle creation".to_owned());
+        }
+        #[cfg(test)]
+        AFTER_CRASH_COMPARISON.with(|hook| {
+            if let Some(hook) = hook.take() {
+                hook()?;
+            }
+            Ok::<_, String>(())
+        })?;
+        fs::remove_file(&paths.crash_file)
+            .map_err(|error| format!("remove bundled crash record: {error}"))
+    }
 }
 
 #[derive(Serialize)]
@@ -37,6 +99,8 @@ struct SafeConfig<'a> {
     effective: &'a BTreeMap<String, cutokyo_core::app::EffectiveValue>,
 }
 
+/// Preview the exact archive allowlist without reading content into the archive.
+#[must_use]
 pub(crate) fn preview(paths: &RuntimePaths, include_crash: bool) -> BundlePreview {
     let mut entries = vec![
         "manifest.json".to_owned(),
@@ -67,6 +131,12 @@ pub(crate) fn preview(paths: &RuntimePaths, include_crash: bool) -> BundlePrevie
     }
 }
 
+/// Create and atomically publish an allowlisted, redacted diagnostic archive.
+///
+/// # Errors
+///
+/// Returns a bounded diagnostic when archive serialization, filesystem access,
+/// compression, atomic publication, permission hardening, or digesting fails.
 pub(crate) fn create(
     paths: &RuntimePaths,
     output: &Path,
@@ -89,6 +159,7 @@ pub(crate) fn create(
         Compression::default(),
     );
     let mut archive = tar::Builder::new(encoder);
+    let mut bundled_crash_fingerprint = None;
 
     append_json(&mut archive, "manifest.json", &manifest)?;
     append_json(&mut archive, "versions.json", contract)?;
@@ -122,8 +193,9 @@ pub(crate) fn create(
         &redacted_logs(&paths.log_dir),
     )?;
     if manifest.crash_record_included {
-        let crash = safe_crash_record(&paths.crash_file);
+        let (crash, fingerprint) = safe_crash_record(&paths.crash_file);
         append_bytes(&mut archive, "crash/record.json", &crash)?;
+        bundled_crash_fingerprint = fingerprint;
     }
     let encoder = archive
         .into_inner()
@@ -145,6 +217,7 @@ pub(crate) fn create(
         sha256,
         byte_length,
         manifest,
+        bundled_crash_fingerprint,
     })
 }
 
@@ -259,41 +332,117 @@ fn bounded_string_value(value: &Value, limit: usize) -> Value {
     )
 }
 
-fn safe_crash_record(path: &Path) -> Vec<u8> {
+fn safe_crash_record(path: &Path) -> (Vec<u8>, Option<CrashFingerprint>) {
     let Ok(bytes) = fs::read(path) else {
-        return b"{}\n".to_vec();
+        return (b"{}\n".to_vec(), None);
     };
+    let fingerprint = Some(CrashFingerprint::from_bytes(&bytes));
     let Ok(value) = serde_json::from_slice::<Value>(&bytes) else {
-        return b"{\"category\":\"unreadable_crash_record\"}\n".to_vec();
+        return (
+            b"{\"category\":\"unreadable_crash_record\"}\n".to_vec(),
+            fingerprint,
+        );
     };
     let Some(object) = value.as_object() else {
-        return b"{\"category\":\"unreadable_crash_record\"}\n".to_vec();
+        return (
+            b"{\"category\":\"unreadable_crash_record\"}\n".to_vec(),
+            fingerprint,
+        );
     };
     let mut safe = Map::new();
-    for key in [
-        "schema_version",
-        "app_version",
-        "pid",
-        "thread",
-        "location_file",
-        "location_line",
-        "category",
-    ] {
-        if let Some(value) = object.get(key) {
-            safe.insert(key.to_owned(), bounded_string_value_or_scalar(value));
-        }
-    }
-    serde_json::to_vec_pretty(&Value::Object(safe)).unwrap_or_else(|_| b"{}".to_vec())
+    safe.insert(
+        "schema_version".to_owned(),
+        object
+            .get("schema_version")
+            .and_then(Value::as_u64)
+            .map_or(Value::Null, Value::from),
+    );
+    safe.insert(
+        "app_version".to_owned(),
+        object
+            .get("app_version")
+            .and_then(Value::as_str)
+            .filter(|value| safe_version(value))
+            .map_or_else(
+                || Value::String("unknown".to_owned()),
+                |value| Value::String(value.to_owned()),
+            ),
+    );
+    safe.insert(
+        "pid".to_owned(),
+        object
+            .get("pid")
+            .and_then(Value::as_u64)
+            .map_or(Value::Null, Value::from),
+    );
+    safe.insert(
+        "thread".to_owned(),
+        Value::String(
+            safe_stored_thread_label(object.get("thread").and_then(Value::as_str)).to_owned(),
+        ),
+    );
+    safe.insert(
+        "location_file".to_owned(),
+        object
+            .get("location_file")
+            .and_then(Value::as_str)
+            .and_then(safe_source_basename)
+            .map_or(Value::Null, Value::String),
+    );
+    safe.insert(
+        "location_line".to_owned(),
+        object
+            .get("location_line")
+            .and_then(Value::as_u64)
+            .map_or(Value::Null, Value::from),
+    );
+    safe.insert(
+        "category".to_owned(),
+        Value::String(
+            if object.get("category").and_then(Value::as_str) == Some("panic") {
+                "panic"
+            } else {
+                "unreadable_crash_record"
+            }
+            .to_owned(),
+        ),
+    );
+    (
+        serde_json::to_vec_pretty(&Value::Object(safe)).unwrap_or_else(|_| b"{}".to_vec()),
+        fingerprint,
+    )
 }
 
-fn bounded_string_value_or_scalar(value: &Value) -> Value {
-    if value.is_string() {
-        bounded_string_value(value, 160)
-    } else if value.is_number() || value.is_boolean() || value.is_null() {
-        value.clone()
-    } else {
-        Value::Null
+fn safe_stored_thread_label(value: Option<&str>) -> &'static str {
+    match value {
+        Some("main") => "main",
+        Some("unnamed") | None => "unnamed",
+        Some(_) => "named",
     }
+}
+
+fn safe_version(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 32
+        && value
+            .bytes()
+            .next()
+            .is_some_and(|byte| byte.is_ascii_digit())
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'-' | b'+'))
+}
+
+fn safe_source_basename(value: &str) -> Option<String> {
+    let basename = value.rsplit(['/', '\\']).next()?;
+    (basename.len() <= 120
+        && Path::new(basename)
+            .extension()
+            .is_some_and(|extension| extension.eq_ignore_ascii_case("rs"))
+        && basename
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'.')))
+    .then(|| basename.to_owned())
 }
 
 fn digest_file(path: &Path) -> Result<(String, u64), String> {
@@ -334,6 +483,16 @@ fn set_private_file(path: &Path) -> std::io::Result<()> {
 #[cfg(not(unix))]
 fn set_private_file(_path: &Path) -> std::io::Result<()> {
     Ok(())
+}
+
+#[cfg(test)]
+type CrashComparisonHook = Box<dyn FnOnce() -> Result<(), String>>;
+
+#[cfg(test)]
+std::thread_local! {
+    // Test-only scheduling seam: production has no callback in this critical section.
+    pub(crate) static AFTER_CRASH_COMPARISON: std::cell::RefCell<Option<CrashComparisonHook>> =
+        std::cell::RefCell::new(None);
 }
 
 #[cfg(test)]

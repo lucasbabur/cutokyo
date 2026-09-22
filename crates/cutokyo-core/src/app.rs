@@ -20,9 +20,7 @@ use crate::{
     guards::{GuardChannel, GuardError, GuardErrorCode, SecretGuard},
     ingest::{IngestContract, Spool, SpoolCapReason, SpoolStatus},
     proxy::{ProxyState, ProxyStateStore},
-    store::{
-        ReadStore, SearchQuery, StoreContract, WriterStore, health_persistence_marker_present,
-    },
+    store::{ReadStore, StoreContract, WriterStore, health_persistence_marker_present},
 };
 
 pub use crate::{
@@ -34,7 +32,8 @@ pub use crate::{
     store::{
         BackupManifest, CheckpointMode, CheckpointResult, ConnectionEvidence,
         DELETE_ALL_CONFIRMATION, DELETION_DISCLOSURE, DeletionReceipt, DiagnosticRowCounts,
-        HealthSnapshot, LockOwner, RestoreReceipt, RetentionPlan, SearchResult, UsageTotals,
+        HealthSnapshot, HealthStatus, LockOwner, RestoreReceipt, RetentionPlan, SearchQuery,
+        SearchResult, UsageTotals,
     },
 };
 
