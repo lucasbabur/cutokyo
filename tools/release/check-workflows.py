@@ -46,14 +46,28 @@ def validate(ci: dict, release: dict) -> None:
             "Tauri updater architecture must match explicit build targets")
     require(next(row for row in matrix if row["updater-platform"] == "darwin-aarch64")["os"] == "macos-14",
             "Darwin ARM artifacts need an ARM runner")
-    builds = [step for step in tauri["steps"] if "tauri build" in step.get("run", "")]
+    builds = [step for step in tauri["steps"] if "tauri build" in step.get("run", "")
+              or step.get("uses", "").startswith("tauri-apps/tauri-action@")]
     require(len(builds) == 3, "three dry-run/Unix-signed/Windows-signed Tauri recipes are required")
     for build in builds:
-        recipe = build["run"]
+        options = build.get("with", {})
+        recipe = build.get("run", options.get("args", ""))
         require('--target "${{ matrix.target }}"' in recipe, "Tauri recipes must build the declared target")
         require("--debug" not in recipe and "native-e2e" not in recipe,
                 "release artifacts must use the production profile and frontend")
-        require("source-snapshot.py" in recipe, "Tauri builds need source immutability proof")
+        if "uses" not in build:
+            require("source-snapshot.py" in recipe, "Tauri builds need source immutability proof")
+            continue
+        require(options.get("tauriScript") ==
+                "python tools/scripts/source-snapshot.py --root . --manifest ../tauri-dry-run-source.json -- pnpm exec tauri"
+                and options.get("projectPath") == ".",
+                "Tauri action must wrap the pinned workspace CLI in the continuous source guard")
+        require(options.get("includeDebug") == "false" and options.get("includeRelease") == "true"
+                and options.get("includeUpdaterJson") == "false" and options.get("retryAttempts") == "0",
+                "Tauri action must build production bytes once without publishing updater metadata")
+        require(not ({"tagName", "releaseId", "releaseName"} & options.keys())
+                and build.get("if") == "needs.release-contract.outputs.publish != 'true'",
+                "Tauri action is dry-run only and must not publish")
     for workflow in (ci, release):
         for job in workflow["jobs"].values():
             # Detect Bash interpolation in default-shell cross-platform steps.
@@ -124,6 +138,8 @@ def main() -> int:
         lambda c, r: r["jobs"]["tauri-artifacts"]["strategy"]["matrix"]["include"][1].update(target="x86_64-apple-darwin"),
         lambda c, r: r["jobs"]["release-contract"]["steps"][0].update(uses="actions/checkout@main"),
         lambda c, r: next(s for s in r["jobs"]["release-manifest"]["steps"] if "npm publish" in s.get("run", "")).pop("if"),
+        lambda c, r: next(s for s in r["jobs"]["tauri-artifacts"]["steps"] if s.get("uses", "").startswith("tauri-apps/tauri-action@"))["with"].update(tauriScript="pnpm exec tauri"),
+        lambda c, r: next(s for s in r["jobs"]["tauri-artifacts"]["steps"] if s.get("uses", "").startswith("tauri-apps/tauri-action@"))["with"].update(includeDebug="true"),
     ]
     for mutation in mutations:
         bad_ci, bad_release = copy.deepcopy(workflows)

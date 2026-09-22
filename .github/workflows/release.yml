@@ -257,7 +257,17 @@ jobs:
           "thumbprint=$($certificate.Thumbprint)" >> $env:GITHUB_OUTPUT
       - name: Build unsigned dry-run Tauri package without source rewrites
         if: needs.release-contract.outputs.publish != 'true'
-        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/tauri-dry-run-source.json" -- pnpm exec tauri build --ci --target "${{ matrix.target }}" --features desktop-runtime
+        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # reviewed runner/build implementation
+        with:
+          projectPath: .
+          # This pinned runner splits tauriScript on spaces. Keep its argv relative,
+          # with evidence outside the checkout, so Windows paths need no shell parsing.
+          tauriScript: python tools/scripts/source-snapshot.py --root . --manifest ../tauri-dry-run-source.json -- pnpm exec tauri
+          args: --ci --target "${{ matrix.target }}" --features desktop-runtime
+          includeDebug: false
+          includeRelease: true
+          includeUpdaterJson: false
+          retryAttempts: 0
       - name: Prepare macOS or Linux public updater configuration
         if: runner.os != 'Windows' && needs.release-contract.outputs.publish == 'true'
         env:
