@@ -361,12 +361,12 @@ def validate_sboms(files: list[Path], root: Path) -> None:
             known = set(references)
             for dependency in dependencies:
                 reference = dependency.get("ref") if isinstance(dependency, dict) else None
-                children = dependency.get("dependsOn") if isinstance(dependency, dict) else None
+                children = dependency.get("dependsOn", []) if isinstance(dependency, dict) else None
                 if (not isinstance(reference, str) or reference not in known
                     or not isinstance(children, list)
                     or any(not isinstance(ref, str) or ref not in known for ref in children)):
                     fail(f"CycloneDX dependency graph has an unknown reference: {relative}")
-            if not any(edge["ref"] == product["bom-ref"] and edge["dependsOn"] for edge in dependencies):
+            if not any(edge["ref"] == product["bom-ref"] and edge.get("dependsOn") for edge in dependencies):
                 fail(f"CycloneDX dependency graph does not link the product: {relative}")
         else:
             fail(f"CycloneDX release validation requires JSON, not unchecked XML: {relative}")

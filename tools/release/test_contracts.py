@@ -152,6 +152,10 @@ class SbomTests(unittest.TestCase):
     def test_good(self):
         self.validate()
 
+    def test_leaf_dependencies_may_omit_optional_depends_on(self):
+        self.value["dependencies"].append({"ref": "lib"})
+        self.validate()
+
     def test_null_product_fails_cleanly(self):
         self.value["metadata"]["component"] = None
         with self.assertRaises(SystemExit) as failure:

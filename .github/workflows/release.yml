@@ -94,7 +94,7 @@ jobs:
           python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/install-cyclonedx-source.json" -- cargo install cargo-cyclonedx --version "$CARGO_CYCLONEDX_VERSION" --locked
           mkdir -p release-contract/sbom
           python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/cyclonedx-source.json" -- cargo cyclonedx --all --format json
-          find . -name '*.cdx.json' -not -path './target/*' -exec cp {} release-contract/sbom/ \;
+          find . -name '*.cdx.json' -not -path './target/*' -not -path './release-contract/*' -exec cp {} release-contract/sbom/ \;
           test -n "$(find release-contract/sbom -type f -name '*.cdx.json' -print -quit)"
       - name: Create contract checksums
         run: |
