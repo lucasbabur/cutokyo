@@ -9,6 +9,7 @@
 *.log
 __pycache__/
 *.py[cod]
+*.cdx.json
 .DS_Store
 .idea/
 .vscode/

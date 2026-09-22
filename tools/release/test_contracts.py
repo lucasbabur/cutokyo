@@ -108,6 +108,20 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertEqual(path.read_text(), "preserve me")
 
+    def test_interrupted_child_leaves_a_failed_source_receipt(self):
+        result = self.invoke("--", sys.executable, "-c",
+                             "from pathlib import Path; Path('source.txt').write_text('interrupted'); "
+                             "raise SystemExit(130)")
+        self.assertEqual(result.returncode, 86, result.stderr)
+        receipt = json.loads(result.stderr)
+        self.assertEqual(receipt["command_exit_code"], 130)
+        self.assertEqual(receipt["changed_paths"], ["source.txt"])
+
+    def test_evidence_cannot_point_into_git_metadata(self):
+        result = self.invoke("--capture", self.root / ".git" / "capture.json")
+        self.assertEqual(result.returncode, 2)
+        self.assertFalse((self.root / ".git" / "capture.json").exists())
+
     def test_command_detects_fast_write_restore(self):
         result = self.invoke("--", sys.executable, "-c",
                              "from pathlib import Path; import os; p=Path('source.txt'); "

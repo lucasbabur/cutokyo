@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+"""Build a production Debian artifact in the reviewed local builder, without launching it.
+
+No harness state or credentials are mounted. The output directory must be new and
+outside the worktree. Native/GUI acceptance is deliberately a separate serial step.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import uuid
+
+IMAGE = "cutokyo-tauri-builder:2.11.4"
+
+
+def output(command: list[str], **kwargs) -> str:
+    return subprocess.check_output(command, text=True, **kwargs).strip()
+
+
+def digest(path: Path) -> str:
+    with path.open("rb") as stream:
+        return hashlib.file_digest(stream, "sha256").hexdigest()
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--root", required=True, type=Path)
+    parser.add_argument("--output", required=True, type=Path)
+    args = parser.parse_args()
+    root = args.root.resolve(strict=True)
+    directory = args.output.resolve()
+    if directory.is_relative_to(root) or directory.exists():
+        parser.error("--output must be a new directory outside the worktree")
+    if output(["git", "-C", str(root), "rev-parse", "--show-toplevel"]) != str(root):
+        parser.error("--root must be the exact Git worktree")
+    if output(["git", "-C", str(root), "diff", "HEAD", "--name-only"]):
+        parser.error("production artifacts require clean, committed tracked source")
+    revision = output(["git", "-C", str(root), "rev-parse", "HEAD"])
+    image = json.loads(output(["docker", "image", "inspect", IMAGE]))[0]
+    node = Path(output(["node", "-p", "process.execPath"])).resolve()
+    node_root = node.parent.parent
+    for path in (root / "node_modules", root / "ui/node_modules", node_root / "bin/pnpm"):
+        if not path.exists():
+            parser.error(f"required locked dependency installation is absent: {path}")
+    directory.mkdir(mode=0o700, parents=True)
+    volume = "cutokyo-c19-production-" + uuid.uuid4().hex
+    container = volume + "-build"
+    uid, gid = os.getuid(), os.getgid()
+    command = [
+        "docker", "run", "--rm", "--name", container, "--network", "none",
+        "--user", f"{uid}:{gid}", "--workdir", "/work",
+        "--env", "HOME=/tmp/cutokyo-build-home", "--env", "CARGO_HOME=/usr/local/cargo",
+        "--env", "CARGO_NET_OFFLINE=true", "--env", "CARGO_TARGET_DIR=/target",
+        "--env", "RUSTUP_TOOLCHAIN=1.98.1", "--env", "CI=true",
+        "--env", "PATH=/opt/node/bin:/usr/local/cargo/bin:/usr/local/bin:/usr/bin:/bin",
+        "--mount", f"type=bind,src={root},dst=/work",
+        "--mount", f"type=bind,src={root / 'node_modules'},dst=/work/node_modules,readonly",
+        "--mount", f"type=bind,src={root / 'ui/node_modules'},dst=/work/ui/node_modules,readonly",
+        "--mount", f"type=bind,src={node_root},dst=/opt/node,readonly",
+        "--mount", f"type=volume,src={volume},dst=/target",
+        image["Id"], "/bin/bash", "-euc",
+        "mkdir -p /tmp/cutokyo-build-home; "
+        "test \"$(cargo tauri --version)\" = 'tauri-cli 2.11.4'; "
+        "test \"$(node --version)\" = 'v22.22.3'; "
+        "test \"$(pnpm --version)\" = '11.25.0'; "
+        "cargo tauri build --ci --features desktop-runtime --bundles deb",
+    ]
+    (directory / "build-inputs.json").write_text(json.dumps({
+        "revision": revision, "tree": output(["git", "-C", str(root), "rev-parse", "HEAD^{tree}"]),
+        "builder_image": IMAGE, "builder_image_id": image["Id"],
+        "profile": "release", "features": ["desktop-runtime"],
+        "recipe_sha256": digest(Path(__file__)), "command": command,
+        "network": "none", "native_acceptance_performed": False,
+    }, indent=2) + "\n")
+    try:
+        subprocess.run(["docker", "volume", "create", volume], check=True, stdout=subprocess.DEVNULL)
+        subprocess.run(["docker", "run", "--rm", "--network", "none", "--mount",
+                        f"type=volume,src={volume},dst=/target", image["Id"],
+                        "chown", f"{uid}:{gid}", "/target"], check=True)
+        with (directory / "build.stdout.log").open("x") as stdout, (directory / "build.stderr.log").open("x") as stderr:
+            completed = subprocess.run([
+                sys.executable, str(root / "tools/scripts/source-snapshot.py"),
+                "--root", str(root), "--manifest", str(directory / "source-immutability.json"),
+                "--", *command,
+            ], stdout=stdout, stderr=stderr, check=False)
+        if completed.returncode:
+            print(f"production build failed ({completed.returncode}); inspect {directory}", file=sys.stderr)
+            return completed.returncode
+        subprocess.run([
+            "docker", "run", "--rm", "--network", "none", "--user", f"{uid}:{gid}",
+            "--mount", f"type=volume,src={volume},dst=/target,readonly",
+            "--mount", f"type=bind,src={directory},dst=/out", image["Id"], "/bin/bash", "-euc",
+            "mapfile -d '' files < <(find /target/release/bundle/deb -maxdepth 1 -name '*.deb' -type f -print0); "
+            "(( ${#files[@]} == 1 )); install -m 0644 \"${files[0]}\" /out/",
+        ], check=True)
+        packages = list(directory.glob("*.deb"))
+        if len(packages) != 1:
+            raise RuntimeError("builder did not emit exactly one production Debian package")
+        package = packages[0]
+        with tempfile.TemporaryDirectory(prefix="package-inspection-", dir=directory) as unpacked:
+            subprocess.run(["dpkg-deb", "--extract", str(package), unpacked], check=True)
+            binaries = list((Path(unpacked) / "usr/bin").iterdir())
+            if len(binaries) != 1 or not binaries[0].is_file():
+                raise RuntimeError("production package does not contain one native executable")
+            binary_sha256 = digest(binaries[0])
+        receipt = {
+            "revision": revision, "profile": "release", "package": package.name,
+            "sha256": digest(package), "binary_sha256": binary_sha256,
+            "builder_image_id": image["Id"], "native_acceptance_performed": False,
+            "source_immutability": "source-immutability.json",
+        }
+        (directory / "production-package.json").write_text(json.dumps(receipt, indent=2) + "\n")
+        print(json.dumps(receipt, sort_keys=True))
+        return 0
+    finally:
+        subprocess.run(["docker", "rm", "--force", container], capture_output=True, check=False)
+        subprocess.run(["docker", "volume", "rm", volume], check=False, stdout=subprocess.DEVNULL)
+
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -2371,33 +2371,32 @@ fn initialize_git_fixture(root: &Path) -> TestResult {
 }
 
 fn tracked_checkout(source: &Path, destination: &Path) -> TestResult {
-    fs::create_dir_all(destination)?;
-    let mut list = Command::new("git");
-    list.args(["ls-files", "-z"]).current_dir(source);
-    let files = checked_output(
+    let changes = run_git(source, &["diff", "HEAD", "--name-only"])?;
+    assert!(
+        changes.stdout.is_empty(),
+        "artifact proof requires committed source"
+    );
+    let revision = run_git(source, &["rev-parse", "HEAD"])?;
+    checked_output(
         run_bounded(
-            &mut list,
-            Duration::from_secs(30),
-            "list tracked source for disposable checkout",
+            Command::new("git")
+                .args(["clone", "--quiet", "--no-hardlinks", "--no-checkout"])
+                .arg(source)
+                .arg(destination),
+            Duration::from_secs(60),
+            "clone exact committed artifact source",
         )?,
-        "list tracked source for disposable checkout",
+        "clone exact committed artifact source",
     )?;
-    for relative in files.stdout.split('\0').filter(|value| !value.is_empty()) {
-        let from = source.join(relative);
-        let to = destination.join(relative);
-        let metadata = fs::symlink_metadata(&from)?;
-        if !metadata.file_type().is_file() {
-            return Err(
-                format!("tracked checkout fixture only accepts regular files: {relative}").into(),
-            );
-        }
-        if let Some(parent) = to.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        fs::copy(&from, &to)?;
-        fs::set_permissions(&to, metadata.permissions())?;
-    }
-    initialize_git_fixture(destination)
+    run_git(
+        destination,
+        &["checkout", "--quiet", "--detach", revision.stdout.trim()],
+    )?;
+    assert_eq!(
+        run_git(destination, &["rev-parse", "HEAD"])?.stdout,
+        revision.stdout
+    );
+    Ok(())
 }
 
 fn json_file(path: &Path) -> TestResult<Value> {
@@ -3378,18 +3377,76 @@ struct TauriPackageEvidence {
 }
 
 #[cfg(target_os = "linux")]
-fn executable_on_path(name: &str) -> TestResult<PathBuf> {
-    let path = std::env::var_os("PATH").ok_or("PATH is absent")?;
-    std::env::split_paths(&path)
-        .map(|directory| directory.join(name))
-        .find(|candidate| candidate.is_file())
-        .ok_or_else(|| format!("required executable is not on PATH: {name}").into())
-}
-
-#[cfg(target_os = "linux")]
 fn docker_resource_name(prefix: &str) -> String {
     let sequence = DOCKER_RESOURCE_SEQUENCE.fetch_add(1, Ordering::Relaxed);
     format!("cutokyo-c19-{prefix}-{}-{sequence}", std::process::id())
+}
+
+#[cfg(target_os = "linux")]
+fn prove_host_tauri_linux_package(
+    production_root: &Path,
+    checkout: &Path,
+    artifacts: &Path,
+) -> TestResult<TauriPackageEvidence> {
+    use std::os::unix::fs::symlink;
+    fs::create_dir_all(artifacts)?;
+    for relative in ["node_modules", "ui/node_modules"] {
+        symlink(production_root.join(relative), checkout.join(relative))?;
+    }
+    let target = artifacts.join("target");
+    let arguments = command_args(&[
+        "pnpm",
+        "exec",
+        "tauri",
+        "build",
+        "--ci",
+        "--features",
+        "desktop-runtime",
+        "--bundles",
+        "deb",
+    ]);
+    checked_output(
+        source_guard_command(
+            checkout,
+            checkout,
+            &artifacts.join("tauri-build-source.json"),
+            &arguments,
+            &[("CARGO_TARGET_DIR", &target)],
+            Duration::from_secs(1_800),
+        )?,
+        "build real Linux package with installed native development libraries",
+    )?;
+    let packages = artifacts.join("tauri-linux");
+    fs::create_dir_all(&packages)?;
+    let built = fs::read_dir(target.join("release/bundle/deb"))?.collect::<Result<Vec<_>, _>>()?;
+    let debs = built
+        .iter()
+        .map(std::fs::DirEntry::path)
+        .filter(|path| path.extension().is_some_and(|extension| extension == "deb"))
+        .collect::<Vec<_>>();
+    let [deb] = debs.as_slice() else {
+        return Err("expected exactly one built Debian package".into());
+    };
+    let package = packages.join(deb.file_name().ok_or("package filename is absent")?);
+    fs::copy(deb, &package)?;
+    let smoke = checked_output(
+        run_bounded(
+            Command::new(python_executable())
+                .arg(checkout.join("tools/release/smoke-tauri-linux.py"))
+                .arg("--artifacts")
+                .arg(&packages)
+                .args(["--expected-version", "v0.1.0"]),
+            Duration::from_secs(240),
+            "install and probe actual host-built Debian package",
+        )?,
+        "install and probe actual host-built Debian package",
+    )?;
+    let value: Value = serde_json::from_str(smoke.stdout.trim())?;
+    assert_eq!(value["no_state_restore_exits"], json!([0, 0]));
+    assert_eq!(value["source_tree_shortcut"], false);
+    let receipt = packages.join("package-smoke.json");
+    fs::write(&receipt, serde_json::to_vec(&value)?)?;
+    Ok(TauriPackageEvidence { package, receipt })
 }
 
 #[cfg(target_os = "linux")]
@@ -3398,6 +3455,13 @@ fn prove_real_tauri_linux_package(
     checkout: &Path,
     artifacts: &Path,
 ) -> TestResult<TauriPackageEvidence> {
+    if Command::new("pkg-config")
+        .args(["--exists", "webkit2gtk-4.1"])
+        .status()
+        .is_ok_and(|status| status.success())
+    {
+        return prove_host_tauri_linux_package(production_root, checkout, artifacts);
+    }
     let image_check = checked_output(
         run_bounded(
             Command::new("docker").args(["image", "inspect", TAURI_BUILDER_IMAGE]),
@@ -3408,7 +3472,15 @@ fn prove_real_tauri_linux_package(
     )?;
     assert!(!image_check.stdout.is_empty());
 
-    let node = fs::canonicalize(executable_on_path("node")?)?;
+    let node_output = checked_output(
+        run_bounded(
+            Command::new("node").args(["-p", "process.execPath"]),
+            Duration::from_secs(30),
+            "resolve real Node installation",
+        )?,
+        "resolve real Node installation",
+    )?;
+    let node = fs::canonicalize(node_output.stdout.trim())?;
     let node_root = node
         .parent()
         .and_then(Path::parent)
@@ -3537,7 +3609,7 @@ fn prove_real_tauri_linux_package(
         "set -euo pipefail; ",
         "mapfile -d '' packages < <(find /target/debug/bundle/deb -maxdepth 1 -type f -name '*.deb' -print0); ",
         "(( ${#packages[@]} == 1 )); ",
-        "cp --no-preserve=ownership --mode=0644 \"${packages[0]}\" /out/"
+        "install -m 0644 \"${packages[0]}\" /out/"
     );
     checked_output(
         run_bounded(
@@ -3725,7 +3797,7 @@ fn create_release_fixture(root: &Path) -> TestResult {
     )?;
     write_release_file(
         root,
-        "tauri-linux/Cutokyo_0.1.0_x86_64.AppImage.tar.gz",
+        "tauri-linux/Cutokyo_0.1.0_x86_64.AppImage",
         b"Linux updater dry-run payload\n",
     )?;
     write_release_file(
@@ -3735,7 +3807,7 @@ fn create_release_fixture(root: &Path) -> TestResult {
     )?;
     write_release_file(
         root,
-        "tauri-windows/Cutokyo_0.1.0_x64.msi.zip",
+        "tauri-windows/Cutokyo_0.1.0_x64.msi",
         b"Windows updater dry-run payload\n",
     )?;
     write_release_file(
@@ -3777,6 +3849,8 @@ fn create_release_fixture(root: &Path) -> TestResult {
             "liveness_exit": 0,
             "process_liveness": true,
             "package": "Cutokyo_0.1.0_amd64.deb",
+            "package_sha256": sha256_path(&root.join("tauri-linux/Cutokyo_0.1.0_amd64.deb"))?,
+            "installed_executable_sha256": sha256_path(&native)?,
             "product_readiness": false,
             "product_readiness_exit": 69,
             "first_uninstall_exit": 0,
@@ -3832,65 +3906,56 @@ fn copy_release_artifact(root: &Path, directory: &str, source: &Path) -> TestRes
 }
 
 #[cfg(target_os = "linux")]
-fn write_actual_cyclonedx(checkout: &Path, destination: &Path) -> TestResult {
-    let metadata = checked_output(
-        run_bounded(
-            Command::new("cargo")
-                .args([
-                    "metadata",
-                    "--locked",
-                    "--offline",
-                    "--no-deps",
-                    "--format-version=1",
-                ])
-                .current_dir(checkout),
-            Duration::from_secs(60),
-            "read actual workspace metadata for CycloneDX fixture",
+fn write_actual_cyclonedx(
+    checkout: &Path,
+    destination: &Path,
+    source_receipt: &Path,
+) -> TestResult {
+    let directory = destination
+        .parent()
+        .ok_or("SBOM destination has no parent")?;
+    fs::create_dir_all(directory)?;
+    let arguments = command_args(&[
+        "cargo",
+        "cyclonedx",
+        "--all",
+        "--format",
+        "json",
+        "--spec-version",
+        "1.5",
+        "--manifest-path",
+        "crates/cutokyo-cli/Cargo.toml",
+    ]);
+    checked_output(
+        source_guard_command(
+            checkout,
+            checkout,
+            source_receipt,
+            &arguments,
+            &[],
+            Duration::from_secs(180),
         )?,
-        "read actual workspace metadata for CycloneDX fixture",
+        "generate full dependency CycloneDX with the pinned cargo-cyclonedx tool",
     )?;
-    let metadata: Value = serde_json::from_str(&metadata.stdout)?;
-    let packages = metadata["packages"]
-        .as_array()
-        .ok_or("Cargo metadata packages must be an array")?;
-    let mut components = packages
-        .iter()
-        .filter_map(|package| {
-            let name = package["name"].as_str()?;
-            let version = package["version"].as_str()?;
-            (name != "cutokyo-cli").then(|| {
-                json!({
-                    "type": "library",
-                    "name": name,
-                    "version": version,
-                    "purl": format!("pkg:cargo/{name}@{version}")
-                })
-            })
-        })
-        .collect::<Vec<_>>();
-    components.sort_by(|left, right| left["name"].as_str().cmp(&right["name"].as_str()));
-    if components.is_empty() {
-        return Err("actual Cargo metadata produced no CycloneDX components".into());
-    }
-    let sbom = json!({
-        "bomFormat": "CycloneDX",
-        "specVersion": "1.6",
-        "serialNumber": "urn:uuid:00000000-0000-4000-8000-000000000019",
-        "version": 1,
-        "metadata": {
-            "component": {
-                "type": "application",
-                "name": "cutokyo-cli",
-                "version": "0.1.0",
-                "purl": "pkg:cargo/cutokyo-cli@0.1.0"
-            }
-        },
-        "components": components
-    });
-    if let Some(parent) = destination.parent() {
-        fs::create_dir_all(parent)?;
-    }
-    fs::write(destination, serde_json::to_vec(&sbom)?)?;
+    fs::copy(
+        checkout.join("crates/cutokyo-cli/cutokyo-cli.cdx.json"),
+        destination,
+    )?;
+    let sbom = json_file(destination)?;
+    assert_eq!(sbom["bomFormat"], "CycloneDX");
+    assert!(sbom["components"].as_array().is_some_and(|components| {
+        components
+            .iter()
+            .any(|component| component["name"] == "rusqlite")
+            && components
+                .iter()
+                .any(|component| component["name"] == "cutokyo-core")
+    }));
+    assert!(
+        sbom["dependencies"]
+            .as_array()
+            .is_some_and(|edges| !edges.is_empty())
+    );
     Ok(())
 }
 
@@ -3915,6 +3980,7 @@ fn create_actual_release_fixture(
     write_actual_cyclonedx(
         checkout,
         &root.join("release-contract/sbom/cutokyo-cli.cdx.json"),
+        &build_artifacts.join("cyclonedx-source.json"),
     )?;
 
     let revision = run_git(checkout, &["rev-parse", "HEAD"])?.stdout;
@@ -3954,12 +4020,9 @@ fn create_actual_release_fixture(
 }
 
 const UPDATER_TARGETS_X64: [(&str, &str); 3] = [
-    (
-        "linux-x86_64",
-        "tauri-linux/Cutokyo_0.1.0_x86_64.AppImage.tar.gz",
-    ),
+    ("linux-x86_64", "tauri-linux/Cutokyo_0.1.0_x86_64.AppImage"),
     ("darwin-x86_64", "tauri-macos/Cutokyo.app.tar.gz"),
-    ("windows-x86_64", "tauri-windows/Cutokyo_0.1.0_x64.msi.zip"),
+    ("windows-x86_64", "tauri-windows/Cutokyo_0.1.0_x64.msi"),
 ];
 
 struct UpdaterSigningFixture {
@@ -4368,7 +4431,7 @@ fn prove_invalid_updater_signatures(
         &non_base64_key.secret_key,
     )?;
     fs::write(
-        non_base64.join("tauri-linux/Cutokyo_0.1.0_x86_64.AppImage.tar.gz.sig"),
+        non_base64.join("tauri-linux/Cutokyo_0.1.0_x86_64.AppImage.sig"),
         "%%%not-base64%%%",
     )?;
     refresh_release_checksums(&non_base64)?;
@@ -4381,9 +4444,8 @@ fn prove_invalid_updater_signatures(
     let corrupt = fresh_release_fixture(parent, "signature-corrupt")?;
     let corrupt_key = updater_signing_fixture(parent, "signature-corrupt")?;
     add_updater_signatures(&corrupt, &UPDATER_TARGETS_X64, &corrupt_key.secret_key)?;
-    let corrupt_payload = corrupt.join("tauri-linux/Cutokyo_0.1.0_x86_64.AppImage.tar.gz");
-    let corrupt_signature =
-        corrupt_payload.with_file_name("Cutokyo_0.1.0_x86_64.AppImage.tar.gz.sig");
+    let corrupt_payload = corrupt.join("tauri-linux/Cutokyo_0.1.0_x86_64.AppImage");
+    let corrupt_signature = corrupt_payload.with_file_name("Cutokyo_0.1.0_x86_64.AppImage.sig");
     let mut decoded = BASE64_STANDARD.decode(fs::read_to_string(&corrupt_signature)?)?;
     let byte = decoded
         .iter_mut()
@@ -4402,8 +4464,7 @@ fn prove_invalid_updater_signatures(
     let wrong_payload = fresh_release_fixture(parent, "signature-wrong-payload")?;
     let wrong_key = updater_signing_fixture(parent, "signature-wrong-payload")?;
     add_updater_signatures(&wrong_payload, &UPDATER_TARGETS_X64, &wrong_key.secret_key)?;
-    let linux_signature =
-        wrong_payload.join("tauri-linux/Cutokyo_0.1.0_x86_64.AppImage.tar.gz.sig");
+    let linux_signature = wrong_payload.join("tauri-linux/Cutokyo_0.1.0_x86_64.AppImage.sig");
     fs::copy(
         wrong_payload.join("tauri-macos/Cutokyo.app.tar.gz.sig"),
         &linux_signature,
@@ -4474,12 +4535,9 @@ fn prove_release_signature_contract(
     let arm = fresh_release_fixture(parent, "signed-darwin-arm")?;
     let arm_signing = updater_signing_fixture(parent, "signed-darwin-arm")?;
     const ARM_TARGETS: [(&str, &str); 3] = [
-        (
-            "linux-x86_64",
-            "tauri-linux/Cutokyo_0.1.0_x86_64.AppImage.tar.gz",
-        ),
+        ("linux-x86_64", "tauri-linux/Cutokyo_0.1.0_x86_64.AppImage"),
         ("darwin-aarch64", "tauri-macos/Cutokyo.app.tar.gz"),
-        ("windows-x86_64", "tauri-windows/Cutokyo_0.1.0_x64.msi.zip"),
+        ("windows-x86_64", "tauri-windows/Cutokyo_0.1.0_x64.msi"),
     ];
     add_updater_signatures(&arm, &ARM_TARGETS, &arm_signing.secret_key)?;
     let arm_inputs = signature_inputs(verifier, &arm_signing.public_key, &ARM_TARGETS);
@@ -4554,6 +4612,30 @@ fn prove_release_workflow_boundaries(production_root: &Path) -> TestResult {
     );
     assert_eq!(release_tauri["bundle"]["createUpdaterArtifacts"], true);
     Ok(())
+}
+
+#[test]
+fn release_contract_mutations() -> TestResult {
+    let production_root = repository_root()?;
+    checked_output(
+        run_bounded(
+            Command::new(python_executable())
+                .arg(production_root.join("tools/release/test_contracts.py")),
+            Duration::from_secs(60),
+            "fast release contract mutations",
+        )?,
+        "fast release contract mutations",
+    )?;
+    let temporary = tempfile::tempdir()?;
+    let checkout = temporary.path().join("checkout");
+    let artifacts = temporary.path().join("artifacts");
+    tracked_checkout(&production_root, &checkout)?;
+    fs::create_dir_all(&artifacts)?;
+    let verifier = build_updater_signature_verifier(&checkout, &artifacts)?;
+    prove_release_integrity_rejections(&production_root, temporary.path())?;
+    prove_release_health_contract(&production_root, temporary.path())?;
+    prove_release_signature_contract(&production_root, temporary.path(), &verifier)?;
+    prove_release_workflow_boundaries(&production_root)
 }
 
 #[test]

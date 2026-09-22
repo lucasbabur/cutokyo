@@ -107,9 +107,9 @@ def parse_updater_targets(root: Path, values: list[str]) -> dict[str, Path]:
         lower = path.name.lower()
         family = platform.split("-", maxsplit=1)[0]
         family_matches = {
-            "linux": lower.endswith(".appimage.tar.gz"),
+            "linux": lower.endswith(".appimage"),
             "darwin": lower.endswith(".app.tar.gz"),
-            "windows": lower.endswith((".msi.zip", ".nsis.zip")),
+            "windows": lower.endswith((".msi", "-setup.exe")),
         }
         if not family_matches[family]:
             fail(f"updater payload suffix does not match {platform}: {relative}")
@@ -183,14 +183,16 @@ def updater_entries(
     if require_signatures and public_key is not None:
         strict_tauri_base64(public_key, "updater public key")
 
-    mapped_signatures = {path.with_name(path.name + ".sig").resolve() for path in targets.values()}
-    orphaned = [
-        path.relative_to(root).as_posix()
-        for path in root.rglob("*.sig")
-        if path.resolve() not in mapped_signatures
-    ]
-    if orphaned:
-        fail("updater signatures are not explicitly mapped to a target: " + ", ".join(sorted(orphaned)))
+    # Tauri v2 also signs distribution packages (for example .deb) that are not
+    # selected by latest.json. Verify every sidecar, not just mapped updater URLs.
+    for signature_path in sorted(root.rglob("*.sig")):
+        payload = signature_path.with_suffix("")
+        if not payload.is_file() or payload.is_symlink():
+            fail(f"updater signature has no regular payload: {signature_path.name}")
+        strict_tauri_base64(signature_path, "updater signature")
+        if verifier is None or public_key is None:
+            fail("an updater signature was supplied without its verifier and public key")
+        verify_updater_signature(verifier, public_key, payload, signature_path)
 
     result: dict[str, dict[str, str]] = {}
     for platform, payload in sorted(targets.items()):
@@ -464,6 +466,12 @@ def validate_smoke_evidence(files: list[Path]) -> None:
         )
     if not isinstance(evidence.get("package"), str) or not evidence["package"]:
         fail("installed-package smoke does not identify its package")
+    packages = [path for path in files if path.name == evidence["package"] and path.suffix == ".deb"]
+    if len(packages) != 1 or evidence.get("package_sha256") != digest(packages[0]):
+        fail("installed-package smoke is not bound to the exact Debian artifact")
+    executable_digest = evidence.get("installed_executable_sha256")
+    if not isinstance(executable_digest, str) or SHA256.fullmatch(executable_digest) is None:
+        fail("installed-package smoke omits its installed executable SHA-256")
 
 
 def validate_required_artifacts(files: list[Path], root: Path) -> None:

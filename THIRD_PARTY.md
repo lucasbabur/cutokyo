@@ -111,6 +111,8 @@ runtime application code.
 | cargo-machete   |                      0.9.2 | MIT OR Apache-2.0 | Visible non-blocking unused-dependency report                 |
 | Knip            |                     6.37.0 | ISC               | Visible non-blocking TypeScript surface report                |
 | pnpm            |                    11.25.0 | MIT               | Locked TypeScript workspace package manager                   |
+| PyYAML          |                      6.0.3 | MIT               | Development-only parsed workflow contract tests, verified from PyPI metadata |
+| actionlint      |                     1.7.12 | MIT               | GitHub expression and shell validation, upstream `LICENSE.txt` |
 
 ## Workflow actions and standards text
 

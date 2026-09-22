@@ -9,6 +9,7 @@
 - [Windows Authenticode](#windows-authenticode)
 - [Tauri updater signatures](#tauri-updater-signatures)
 - [CLI, npm, checksums, and SBOM](#cli-npm-checksums-and-sbom)
+- [Local production Linux package](#local-production-linux-package)
 - [Verification and rotation](#verification-and-rotation)
 
 ## Trust boundaries
@@ -103,14 +104,22 @@ build. A Tauri updater signature alone is not an acceptable Windows signature.
 
 ## Tauri updater signatures
 
-Updater artifacts are enabled only through
-`crates/cutokyo-desktop/tauri.release.conf.json`, never for ordinary debug
-builds. Tauri signs each updater payload with the protected updater key. Release
-assembly refuses a tag release unless signed payloads exist for Linux, macOS,
-and Windows.
+The tag jobs run `tools/release/prepare-signing-config.py` to create a temporary
+Tauri overlay. It enables updater artifacts and embeds the reviewed public key in
+`plugins.updater.pubkey`. On Windows it also selects the imported Authenticode
+certificate. It never reads or writes the private signing key. Ordinary builds do
+not enable updater artifacts.
 
-`tools/release/create-manifest.py` pairs each bounded `.sig` with an explicitly
-architectured payload and creates `latest.json` using immutable release URLs. It
+Tauri 2.11.4 signs `.AppImage` and `.msi` payloads directly. macOS uses `.app.tar.gz`.
+The workflow does not request the deprecated v1-compatible archive format. Each
+job declares its target triple; the macOS ARM runner produces `darwin-aarch64`,
+not a mislabeled Intel update. Release assembly refuses a tag release unless
+signed updater payloads exist for Linux, macOS, and Windows.
+
+`tools/release/create-manifest.py` verifies every bounded `.sig` against its
+payload, including signed `.deb` files not selected for the updater. It creates
+`latest.json` from explicit architecture-to-payload mappings and immutable release
+URLs. It
 strictly decodes Tauri's outer Base64, parses the enclosed Minisign text, and uses
 the checked-in Rust verifier to verify every payload byte against the reviewed
 `TAURI_UPDATER_PUBLIC_KEY` repository variable. It rejects orphaned, malformed,
@@ -125,8 +134,14 @@ storage and removes that runner with the job.
 cargo-dist 0.32.0 builds target-native `cutokyo` archives and generates shell,
 PowerShell, and npm installers. The npm project is packed locally and smoke
 tested by installing its tarball, letting its real postinstall consume a local
-native archive, resolving `node_modules/.bin/cutokyo`, and checking structured
-version output.
+cargo-dist native archive, resolving `node_modules/.bin/cutokyo`, and checking
+structured version and doctor output. The installed executable must hash to the
+same bytes as the executable inside that archive. Linux smoke uses a loopback-only
+network namespace and a native-socket denial probe, not just proxy variables.
+It requires bubblewrap or an existing network-disabled container. Other platforms
+report their narrower Node-only network check without claiming native confinement.
+The smoke uses an allowlisted child environment and disposable HOME, config,
+data, and npm-cache directories.
 
 Release assembly emits:
 
@@ -147,6 +162,35 @@ npm artifact with npm provenance. Only after npm succeeds does it make the GitHu
 release public. A failed npm publication therefore leaves an inspectable draft
 rather than advertising a release whose installer channel is absent; no workflow
 step rebuilds bytes between those operations.
+
+## Local production Linux package
+
+When the host lacks WebKit development packages, use the reviewed local
+`cutokyo-tauri-builder:2.11.4` image. Install the locked pnpm workspace first, then
+run this from a clean committed checkout with `OUT` set to a new external path:
+
+```bash
+python3 tools/release/build-linux-package.py --root "$PWD" --output "$OUT"
+```
+
+The builder records the exact Git revision, tree, resolved Docker image ID,
+recipe hash, source-immutability receipt, `.deb` hash, and contained executable
+hash. It builds the release profile with `desktop-runtime`, without `native-e2e`,
+and never launches the app. It mounts no harness state or host credentials.
+Missing offline dependencies are an environment failure, not a passing build.
+
+Run install/start/uninstall and GUI QA separately, with no parallel native runner.
+`smoke-tauri-linux.py` installs the `.deb` with dpkg, resolves its owned `/usr/bin`
+executable, compares it with the packaged executable, checks liveness and fresh
+readiness, and calls no-state uninstall twice. It refuses to replace an existing
+installation. Its `gui_activated: false` receipt is not GUI evidence. Final GUI QA
+must launch this installed release artifact with disposable HOME/config/data;
+`target/debug` and browser screenshots do not count.
+
+The CI Linux release test uses installed development libraries when available.
+The local fallback uses the reviewed builder image. Windows and macOS still need
+successful jobs and clean-machine installation checks before a release manager
+can claim those platforms passed.
 
 ## Verification and rotation
 

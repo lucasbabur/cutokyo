@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import errno
 import hashlib
 import hmac
 import json
@@ -16,10 +17,12 @@ import subprocess
 import sys
 import tempfile
 import threading
+import tarfile
+import zipfile
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import ClassVar, NoReturn
+from typing import IO, ClassVar, NoReturn
 from urllib.parse import quote
 
 
@@ -54,6 +57,33 @@ def fail(message: str) -> NoReturn:
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def stream_digest(stream: IO[bytes]) -> str:
+    hasher = hashlib.sha256()
+    while block := stream.read(1024 * 1024):
+        hasher.update(block)
+    return hasher.hexdigest()
+
+
+def archived_executable_digest(archive: Path) -> str:
+    name = "cutokyo.exe" if os.name == "nt" else "cutokyo"
+    if archive.suffix == ".zip":
+        with zipfile.ZipFile(archive) as package:
+            members = [entry for entry in package.infolist() if Path(entry.filename).name == name and not entry.is_dir()]
+            if len(members) != 1:
+                fail("native archive must contain exactly one Cutokyo executable")
+            with package.open(members[0]) as stream:
+                return stream_digest(stream)
+    with tarfile.open(archive, "r:*") as package:
+        members = [entry for entry in package.getmembers() if Path(entry.name).name == name and entry.isfile()]
+        if len(members) != 1:
+            fail("native archive must contain exactly one regular Cutokyo executable")
+        stream = package.extractfile(members[0])
+        if stream is None:
+            fail("native executable has no archive content")
+        with stream:
+            return stream_digest(stream)
 
 
 def verify_native_checksum(checksum_path: Path, native_archive: Path) -> str:
@@ -273,6 +303,17 @@ def enter_linux_network_boundary() -> int | None:
     if sys.platform != "linux":
         return None
     if {name for _, name in socket.if_nameindex()} == {"lo"}:
+        # Probe the kernel boundary with native sockets, independently of Node
+        # monkey-patching and proxy settings. TEST-NET-1 is never contacted.
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            probe.settimeout(2)
+            try:
+                probe.connect(("192.0.2.1", 443))
+            except OSError as error:
+                if error.errno not in {errno.ENETUNREACH, errno.EHOSTUNREACH}:
+                    fail(f"native egress mutation did not prove routing denial: {error.errno}")
+            else:
+                fail("native egress unexpectedly escaped the loopback-only namespace")
         return None
     bubblewrap = shutil.which("bwrap")
     if bubblewrap is None:
@@ -314,6 +355,7 @@ def main() -> int:
         source_inputs["native checksum"], source_inputs["native archive"]
     )
     input_digests = {label: sha256(path) for label, path in source_inputs.items()}
+    executable_digest = archived_executable_digest(source_inputs["native archive"])
 
     with tempfile.TemporaryDirectory(prefix="cutokyo-npm-smoke-") as temporary_name:
         root = Path(temporary_name)
@@ -468,6 +510,9 @@ def main() -> int:
         except ValueError:
             fail("installed native executable resolves outside the npm package")
 
+        if sha256(native) != executable_digest:
+            fail("installed executable is not the exact cargo-dist archive binary")
+
         credential_names = [
             name
             for name in environment
@@ -485,6 +530,7 @@ def main() -> int:
                     "native_archive": source_inputs["native archive"].name,
                     "native_checksum": source_inputs["native checksum"].name,
                     "native_sha256": native_digest,
+                    "native_executable_sha256": executable_digest,
                     "dependency_package": source_inputs["npm dependency package"].name,
                     "dependency_sha256": input_digests["npm dependency package"],
                     "network_mode": "linux-network-namespace-loopback-only" if sys.platform == "linux" else "scrubbed-environment-loopback-only-node-boundary",
