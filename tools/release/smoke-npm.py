@@ -299,10 +299,12 @@ def decode_json_output(completed: subprocess.CompletedProcess[str], command: str
     return payload
 
 
-def enter_linux_network_boundary() -> int | None:
+def enter_linux_network_boundary(args: argparse.Namespace) -> int | None:
     if sys.platform != "linux":
         return None
-    if {name for _, name in socket.if_nameindex()} == {"lo"}:
+    if Path(__file__) == Path("/smoke.py") and os.environ.get("CUTOKYO_NPM_SANDBOX") == "1":
+        if {name for _, name in socket.if_nameindex()} != {"lo"}:
+            fail("sandbox unexpectedly exposes a host network interface")
         # Probe the kernel boundary with native sockets, independently of Node
         # monkey-patching and proxy settings. TEST-NET-1 is never contacted.
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
@@ -318,22 +320,68 @@ def enter_linux_network_boundary() -> int | None:
     bubblewrap = shutil.which("bwrap")
     if bubblewrap is None:
         fail("environment-gap: Linux npm smoke requires bubblewrap for enforced egress denial")
-    # The downloader and its one-artifact server share a fresh namespace with
-    # loopback only. Unlike NODE_OPTIONS/proxies, this also confines native code.
-    completed = subprocess.run(
-        [bubblewrap, "--die-with-parent", "--unshare-net", "--ro-bind", "/", "/",
-         "--bind", tempfile.gettempdir(), tempfile.gettempdir(), "--proc", "/proc",
-         "--dev", "/dev", "--", sys.executable, str(Path(__file__).resolve()), *sys.argv[1:]],
-        check=False,
-    )
+    # Construct a new root, not a read-only view of the host root. In particular
+    # no host home, /tmp, /run, IPC namespace or host process table is visible.
+    node = subprocess.check_output(["node", "-p", "process.execPath"], text=True).strip()
+    npm = shutil.which("npm")
+    if npm is None:
+        fail("environment-gap: npm runtime is missing")
+    npm_root = Path(npm).resolve().parents[1]
+    command = [bubblewrap, "--die-with-parent", "--unshare-all", "--new-session",
+               "--clearenv", "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp",
+               "--dir", "/home", "--dir", "/run", "--dir", "/inputs",
+               "--dir", "/runtime/bin", "--symlink", "usr/bin", "/bin",
+               "--ro-bind", node, "/runtime/bin/node",
+               "--ro-bind", str(npm_root), "/runtime/npm",
+               "--symlink", "/runtime/npm/bin/npm-cli.js", "/runtime/bin/npm",
+               "--ro-bind", str(Path(__file__).resolve()), "/smoke.py"]
+    # Runtime libraries and interpreter standard libraries only. Executables are
+    # individually allowlisted; user-controlled PATH directories are never mounted.
+    import sysconfig
+    architecture = sysconfig.get_config_var("MULTIARCH")
+    if not architecture or not (Path("/usr/lib") / architecture).is_dir():
+        fail("environment-gap: Linux sandbox requires a multiarch system runtime")
+    for directory in (f"/usr/lib/{architecture}", sysconfig.get_path("stdlib"),
+                      "/usr/lib64", "/lib", "/lib64"):
+        path = Path(directory)
+        if path.is_symlink():
+            command.extend(["--symlink", os.readlink(path), directory])
+        elif path.is_dir():
+            command.extend(["--ro-bind", directory, directory])
+    for name in ("env", "sh", "tar", "xz", "gzip", "uname", "getconf", "ldd"):
+        executable = shutil.which(name, path="/usr/bin:/bin")
+        if executable:
+            command.extend(["--ro-bind", str(Path(executable).resolve()), f"/usr/bin/{name}"])
+    python = Path(sys.executable).resolve()
+    command.extend(["--ro-bind", str(python), str(python)])
+    child_arguments = []
+    for option in ("npm_package", "native_archive", "native_checksum", "dependency_package"):
+        source = getattr(args, option).resolve()
+        if not source.is_file():
+            fail(f"required regular file is missing: {option.replace('_', ' ')}")
+        destination = f"/inputs/{option}/{source.name}"
+        command.extend(["--ro-bind", str(source), destination])
+        child_arguments.extend(["--" + option.replace("_", "-"), destination])
+    with tempfile.TemporaryDirectory(prefix="cutokyo-private-probe-") as private:
+        sentinel = Path(private) / "synthetic-private-state"
+        sentinel.write_text("SYNTHETIC-NOT-A-CREDENTIAL\n", encoding="utf-8")
+        sentinel.chmod(0o600)
+        # Supply only synthetic account data, even when the invoking builder is root.
+        accounts = Path(private) / "passwd"
+        accounts.write_text("nobody:x:65534:65534:nobody:/nonexistent:/usr/bin/sh\n", encoding="utf-8")
+        command.extend(["--ro-bind", str(accounts), "/etc/passwd",
+                        "--setenv", "PATH", "/runtime/bin:/usr/bin:/bin",
+                        "--setenv", "HOME", "/tmp",
+                        "--setenv", "CUTOKYO_NPM_SANDBOX", "1",
+                        "--setenv", "CUTOKYO_SYNTHETIC_PRIVATE_PROBE", str(sentinel),
+                        "--chdir", "/tmp", "--", str(python), "/smoke.py",
+                        *child_arguments, "--expected-version", args.expected_version])
+        completed = subprocess.run(command, check=False)
     return completed.returncode
 
 
 def main() -> int:
     os.umask(0o077)
-    isolated_exit = enter_linux_network_boundary()
-    if isolated_exit is not None:
-        return isolated_exit
     parser = argparse.ArgumentParser()
     parser.add_argument("--npm-package", required=True, type=Path)
     parser.add_argument("--native-archive", required=True, type=Path)
@@ -341,6 +389,9 @@ def main() -> int:
     parser.add_argument("--dependency-package", required=True, type=Path)
     parser.add_argument("--expected-version", required=True)
     args = parser.parse_args()
+    isolated_exit = enter_linux_network_boundary(args)
+    if isolated_exit is not None:
+        return isolated_exit
 
     source_inputs = {
         "npm package": args.npm_package.resolve(),
@@ -439,12 +490,32 @@ def main() -> int:
             metadata_path.write_text(
                 json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
             )
+            if sys.platform == "linux":
+                sentinel = os.environ["CUTOKYO_SYNTHETIC_PRIVATE_PROBE"]
+                script = installed / "install.js"
+                contents = script.read_text(encoding="utf-8")
+                # Execute the confidentiality regression in the actual installed
+                # downloader, not an unrelated helper. Only this disposable copy
+                # changes; the package/archive inputs remain byte-identical.
+                probe = (
+                    "let privateReadDenied = false;\n"
+                    f"try {{ require('node:fs').readFileSync({json.dumps(sentinel)}); }} "
+                    "catch (e) { if (['ENOENT','EACCES'].includes(e.code)) privateReadDenied = true; else throw e; }\n"
+                    "if (!privateReadDenied) throw new Error('SYNTHETIC_PRIVATE_READ_ESCAPED');\n"
+                    "console.error('CUTOKYO_SYNTHETIC_PRIVATE_READ_DENIED');\n"
+                )
+                if contents.startswith("#!"):
+                    first, contents = contents.split("\n", 1)
+                    probe = first + "\n" + probe
+                script.write_text(probe + contents, encoding="utf-8")
             postinstall = run(
                 ["node", "install.js"],
                 cwd=installed,
                 env=environment,
                 identity=identity,
             )
+            if sys.platform == "linux" and "CUTOKYO_SYNTHETIC_PRIVATE_READ_DENIED" not in postinstall.stderr:
+                fail("installed downloader did not prove synthetic private-file read denial")
             if postinstall.returncode != 0:
                 fail(
                     f"generated postinstall exited {postinstall.returncode}: "
@@ -540,7 +611,10 @@ def main() -> int:
                     "artifact_request_path": requests[0],
                     "credentials_in_child_environment": credential_names,
                     "temporary_home": True,
-                    "least_privilege": identity is not None or not hasattr(os, "geteuid") or os.geteuid() != 0,
+                    "least_privilege": sys.platform == "linux" and os.environ.get("CUTOKYO_NPM_SANDBOX") == "1",
+                    "filesystem_mode": "allowlisted-runtime-and-inputs" if sys.platform == "linux" else "not-kernel-isolated",
+                    "synthetic_private_read_denied": sys.platform == "linux",
+                    "host_ipc_hidden": sys.platform == "linux",
                     "launcher": "node_modules/.bin/cutokyo",
                     "native_location": native.relative_to(project).as_posix(),
                     "source_tree_shortcut": False,

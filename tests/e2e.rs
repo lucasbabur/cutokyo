@@ -3047,7 +3047,20 @@ fn prove_npm_package_launches(
     );
     assert_eq!(receipt["credentials_in_child_environment"], json!([]));
     assert_eq!(receipt["temporary_home"], true);
-    assert_eq!(receipt["least_privilege"], true);
+    assert_eq!(receipt["least_privilege"], cfg!(target_os = "linux"));
+    assert_eq!(
+        receipt["synthetic_private_read_denied"],
+        cfg!(target_os = "linux")
+    );
+    assert_eq!(receipt["host_ipc_hidden"], cfg!(target_os = "linux"));
+    assert_eq!(
+        receipt["filesystem_mode"],
+        if cfg!(target_os = "linux") {
+            "allowlisted-runtime-and-inputs"
+        } else {
+            "not-kernel-isolated"
+        }
+    );
     assert_eq!(receipt["version_exit"], 0);
     assert_eq!(receipt["doctor_command"], "doctor");
     assert!(matches!(receipt["doctor_exit"].as_i64(), Some(0 | 69 | 78)));
