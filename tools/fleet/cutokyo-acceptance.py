@@ -1,38 +1,48 @@
 #!/usr/bin/env python3
-"""Run a Cutokyo acceptance criterion exactly as recorded and refuse false greens.
+"""Run the pinned Cutokyo acceptance contract without changing its commands.
 
-The acceptance contract in review.json is read-only here. Each criterion command is
-executed as its own `&&` segments so every segment can be attributed, and the tool
-proves the rejoined segments are byte-identical to the recorded command before it
-runs anything.
-
-A filtered `cargo test` segment that selects no test exits 0 in Cargo. That is the
-single failure mode that has repeatedly turned a missing test into a passing
-criterion, so this runner treats it as failure ZERO_TEST_EXIT.
+Filtered Rust invocations need complete, consistent libtest results and at least
+one passed test. Exit 86 means execution evidence is insufficient, 87 means the
+contract differs from the approved Git blob, and 88 means evidence capture failed.
+With --log-dir, command output goes directly to durable files while it runs; an
+unfinished report stays incomplete even if the runner is killed. Without it, JSON
+contains the captured diagnostics, but cannot survive an uncatchable termination.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import platform
 import re
 import shlex
+import shutil
+import signal
 import subprocess
 import sys
 import tempfile
-from dataclasses import dataclass, field
+import unittest
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 
-ZERO_TEST_EXIT = 86
+TEST_EVIDENCE_EXIT = 86
 CONTRACT_EXIT = 87
+EVIDENCE_EXIT = 88
 USAGE_EXIT = 2
 
-RUNNING = re.compile(r"^running (\d+) tests?$", re.MULTILINE)
+CONTRACT_PATH = ".claude/fleets/20260919-cutokyo-v01/review.json"
+# Approval anchor, deliberately not a branch, CLI option, or environment override.
+APPROVED_REVISION = "1db95d8659d31df8cea6933a994d9a196205bf8e"
+APPROVED_BLOB = "4f43bfe9c2e8818871a981ac8562545af58e342d"
+APPROVED_REFERENCE = f"{APPROVED_REVISION}:{CONTRACT_PATH}"
+
+RUNNING = re.compile(r"^running (\d+) tests?$")
 RESULT = re.compile(
     r"^test result: (ok|FAILED)\. (\d+) passed; (\d+) failed; (\d+) ignored; "
-    r"(\d+) measured; (\d+) filtered out",
-    re.MULTILINE,
+    r"(\d+) measured; (\d+) filtered out(?:; finished in .*)?$"
 )
 
 # Flags that consume the following argument, so it is never a test-name filter.
@@ -47,34 +57,24 @@ VALUE_FLAGS = {
 class Segment:
     index: int
     command: str
-    is_cargo_test: bool = False
-    filter_name: str | None = None
+    is_filtered_cargo_test: bool = False
+    filter: str | None = None
     exit_code: int | None = None
     tests_run: int = 0
     tests_passed: int = 0
     tests_failed: int = 0
-    targets: int = 0
+    tests_ignored: int = 0
+    test_targets: int = 0
+    test_results: int = 0
     skipped: bool = False
+    state: str = "pending"
+    log: str | None = None
+    output: str | None = None
     findings: list[str] = field(default_factory=list)
-
-    def as_dict(self) -> dict:
-        return {
-            "index": self.index,
-            "command": self.command,
-            "is_filtered_cargo_test": self.is_cargo_test and self.filter_name is not None,
-            "filter": self.filter_name,
-            "exit_code": self.exit_code,
-            "tests_run": self.tests_run,
-            "tests_passed": self.tests_passed,
-            "tests_failed": self.tests_failed,
-            "test_targets": self.targets,
-            "skipped": self.skipped,
-            "findings": self.findings,
-        }
 
 
 def split_segments(command: str) -> list[str]:
-    """Split on top-level ` && ` only. Quoted regions are preserved verbatim."""
+    """Split the contract's top-level ` && ` separators without rewriting bytes."""
     parts: list[str] = []
     buf: list[str] = []
     quote: str | None = None
@@ -102,17 +102,14 @@ def split_segments(command: str) -> list[str]:
     if quote:
         raise ValueError("unbalanced quote in recorded command")
     parts.append("".join(buf))
-    return [p for p in parts]
+    return parts
 
 
 def classify(segment: str) -> tuple[bool, str | None]:
     """Return (is cargo test, explicit test-name filter)."""
-    try:
-        tokens = shlex.split(segment)
-    except ValueError:
-        return (False, None)
+    tokens = shlex.split(segment)
     if len(tokens) < 2 or tokens[0] != "cargo" or tokens[1] != "test":
-        return (False, None)
+        return False, None
     rest = tokens[2:]
     if "--" in rest:
         rest = rest[: rest.index("--")]
@@ -125,231 +122,315 @@ def classify(segment: str) -> tuple[bool, str | None]:
         if token.startswith("-"):
             i += 1
             continue
-        return (True, token)
-    return (True, None)
+        return True, token
+    return True, None
 
 
-def parse_counts(output: str) -> tuple[int, int, int, int]:
-    targets = len(RUNNING.findall(output))
-    run = sum(int(n) for n in RUNNING.findall(output))
-    passed = sum(int(m.group(2)) for m in RESULT.finditer(output))
-    failed = sum(int(m.group(3)) for m in RESULT.finditer(output))
-    return run, passed, failed, targets
+def parse_counts(output: str, seg: Segment) -> None:
+    """Pair each target's selection count with its result, not just global sums."""
+    pending: int | None = None
+    for line in output.splitlines():
+        running = RUNNING.fullmatch(line)
+        result = RESULT.fullmatch(line)
+        if running:
+            if pending is not None:
+                seg.findings.append("test target is missing its result")
+            pending = int(running[1])
+            seg.test_targets += 1
+            seg.tests_run += pending
+        elif result:
+            passed, failed, ignored, measured = map(int, result.group(2, 3, 4, 5))
+            seg.test_results += 1
+            seg.tests_passed += passed
+            seg.tests_failed += failed
+            seg.tests_ignored += ignored
+            if pending is None or pending != passed + failed + ignored + measured:
+                seg.findings.append("test result does not match its target's selected count")
+            if (result[1] == "ok") != (failed == 0):
+                seg.findings.append("test result status contradicts its failure count")
+            pending = None
+        elif line.startswith("test result:"):
+            seg.findings.append("unrecognized test result")
+    if pending is not None:
+        seg.findings.append("test target is missing its result")
+    if not seg.test_targets or not seg.test_results:
+        seg.findings.append("no complete parsed test execution")
+    if seg.tests_failed:
+        seg.findings.append(f"{seg.tests_failed} parsed test(s) failed")
+    if not seg.tests_passed:
+        seg.findings.append("no test passed; selected or ignored tests are not successful execution")
 
 
-def load_criterion(review: Path, criterion_id: str) -> dict:
-    data = json.loads(review.read_text(encoding="utf-8"))
-    for item in data.get("criteria", []):
-        if item.get("id", "").upper() == criterion_id.upper():
-            return item
-    raise KeyError(criterion_id)
+def git(root: Path, *args: str) -> bytes:
+    return subprocess.run(
+        ["git", "-C", str(root), *args], check=True, capture_output=True,
+    ).stdout
 
 
-def run_criterion(
-    *,
-    root: Path,
-    review: Path,
-    criterion_id: str,
-    log_dir: Path | None,
-    env: dict | None = None,
-) -> dict:
-    criterion = load_criterion(review, criterion_id)
-    command = criterion["command"]
-
-    segments_text = split_segments(command)
-    rejoined = " && ".join(segments_text)
-    if rejoined != command:
-        return {
-            "criterion": criterion_id,
-            "status": "contract-error",
-            "exit_code": CONTRACT_EXIT,
-            "error": "segment reconstruction did not reproduce the recorded command",
-            "command": command,
-            "segments": [],
-        }
-
-    segments = [Segment(index=i, command=text) for i, text in enumerate(segments_text)]
-    for seg in segments:
-        seg.is_cargo_test, seg.filter_name = classify(seg.command)
-
-    run_env = dict(os.environ)
-    if env:
-        run_env.update(env)
-
-    overall = 0
-    zero_test = []
-    for seg in segments:
-        if overall != 0:
-            seg.skipped = True
-            continue
-        proc = subprocess.run(
-            ["bash", "-c", seg.command],
-            cwd=str(root),
-            env=run_env,
-            capture_output=True,
-            text=True,
-        )
-        seg.exit_code = proc.returncode
-        combined = proc.stdout + proc.stderr
-        if log_dir:
-            log_dir.mkdir(parents=True, exist_ok=True)
-            (log_dir / f"{criterion_id}-segment-{seg.index}.log").write_text(
-                f"$ {seg.command}\n\n{combined}\n[exit {proc.returncode}]\n",
-                encoding="utf-8",
-            )
-        if seg.is_cargo_test:
-            seg.tests_run, seg.tests_passed, seg.tests_failed, seg.targets = parse_counts(combined)
-            if seg.filter_name and proc.returncode == 0 and seg.tests_run == 0:
-                seg.findings.append(
-                    f"filter {seg.filter_name!r} selected no test; Cargo still exited 0"
-                )
-                zero_test.append(seg.index)
-        if proc.returncode != 0:
-            overall = proc.returncode
-
-    status = "pass"
-    exit_code = overall
-    if overall != 0:
-        status = "fail"
-    elif zero_test:
-        status = "zero-test"
-        exit_code = ZERO_TEST_EXIT
-
+def source_identity(root: Path) -> dict:
     return {
-        "criterion": criterion_id,
-        "title": criterion.get("title", ""),
-        "owners": criterion.get("owners", []),
-        "status": status,
-        "exit_code": exit_code,
-        "command": command,
-        "command_unmodified": True,
-        "zero_test_segments": zero_test,
-        "segments": [s.as_dict() for s in segments],
+        "revision": git(root, "rev-parse", "HEAD").decode().strip(),
+        "tracked_status": git(root, "status", "--porcelain=v1", "--untracked-files=no").decode(),
+        "tracked_diff_sha256": hashlib.sha256(git(root, "diff", "--binary", "HEAD")).hexdigest(),
     }
 
 
-def selftest() -> int:
-    """Known-good passes, known-bad fails, and errors can never become success."""
-    failures: list[str] = []
+def environment_identity(root: Path, env: dict) -> dict:
+    # Do not dump the inherited environment: it can contain credentials. This is
+    # execution context, not a claim of a hermetic/reproducible environment.
+    identity = {
+        "hostname": platform.node(),
+        "system": platform.system(),
+        "release": platform.release(),
+        "machine": platform.machine(),
+        "python": platform.python_version(),
+        "python_executable": sys.executable,
+        "root": str(root),
+        "executables": {
+            name: shutil.which(name, path=env.get("PATH"))
+            for name in ("bash", "git", "cargo", "rustc", "node", "pnpm", "dist")
+        },
+        "runner_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+    }
+    identity["id"] = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
+    return identity
 
-    def check(name: str, ok: bool, detail: str = "") -> None:
-        if ok:
-            print(f"[PASS] {name}")
+
+def approved_contract(root: Path, review: Path) -> tuple[dict, dict]:
+    approved = git(root, "show", APPROVED_REFERENCE)
+    blob = hashlib.sha1(f"blob {len(approved)}\0".encode() + approved).hexdigest()
+    identity = {
+        "reference": APPROVED_REFERENCE,
+        "git_blob": APPROVED_BLOB,
+        "sha256": hashlib.sha256(approved).hexdigest(),
+        "path": str(review),
+        "verified": False,
+    }
+    if blob != APPROVED_BLOB:
+        raise ValueError("approved reference did not resolve to the pinned contract blob")
+    # An alternate --review cannot hide a changed contract in the selected tree.
+    if (root / CONTRACT_PATH).read_bytes() != approved or review.read_bytes() != approved:
+        raise ValueError("selected worktree acceptance contract differs from the approved Git blob")
+    identity["verified"] = True
+    return json.loads(approved), identity
+
+
+def now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def save_report(path: Path | None, report: dict) -> None:
+    if path is None:
+        return
+    # Atomic replacement keeps the previous incomplete snapshot valid if killed.
+    fd, name = tempfile.mkstemp(prefix=f".{path.name}-", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            json.dump(report, stream, indent=2)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(name, path)
+        directory = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    finally:
+        if os.path.exists(name):
+            os.unlink(name)
+
+
+class Interrupted(Exception):
+    def __init__(self, signum: int):
+        self.signum = signum
+
+
+def interrupt(signum: int, _frame: object) -> None:
+    raise Interrupted(signum)
+
+
+def execute_segment(seg: Segment, root: Path, env: dict, log_dir: Path | None) -> None:
+    # Direct file descriptors, not capture_output: partial bytes survive a killed
+    # runner. Child-side buffering is outside our control.
+    stream = Path(seg.log).open("x+b", buffering=0) if seg.log else tempfile.TemporaryFile()
+    proc = None
+    try:
+        if log_dir:
+            stream.write(f"$ {seg.command}\n\n".encode())
+            os.fsync(stream.fileno())
+        output_start = stream.tell()
+        proc = subprocess.Popen(
+            ["bash", "-c", seg.command], cwd=root, env=env,
+            stdout=stream, stderr=subprocess.STDOUT, start_new_session=True,
+        )
+        try:
+            seg.exit_code = proc.wait()
+            seg.state = "complete"
+        except Interrupted:
+            seg.state = "incomplete"
+            raise
+        finally:
+            if proc.poll() is None or seg.state == "incomplete":
+                # Kill the command's process group, including children of Bash.
+                try:
+                    os.killpg(proc.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                proc.wait()
+    finally:
+        stream.flush()
+        os.fsync(stream.fileno())
+        stream.seek(output_start if proc is not None else 0)
+        output = stream.read().decode("utf-8", errors="replace")
+        if seg.is_filtered_cargo_test:
+            parse_counts(output, seg)
+        if log_dir:
+            stream.seek(0, os.SEEK_END)
+            stream.write(f"\n[state {seg.state}; exit {seg.exit_code}]\n".encode())
+            os.fsync(stream.fileno())
         else:
-            failures.append(f"{name}: {detail}")
-            print(f"[FAIL] {name} {detail}")
+            seg.output = output
+        stream.close()
 
-    # Splitting must preserve quoted text and never lose a segment.
-    cmd = "a --x && b 'q && q' && c"
-    parts = split_segments(cmd)
-    check("split preserves quoted &&", parts == ["a --x", "b 'q && q'", "c"], str(parts))
-    check("split round-trips", " && ".join(parts) == cmd)
 
-    # Filter classification.
-    check(
-        "detects filtered cargo test",
-        classify("cargo test -p cutokyo-integration-tests --test e2e some_name") == (True, "some_name"),
-    )
-    check(
-        "unfiltered cargo test is not a filter",
-        classify("cargo test --workspace") == (True, None),
-    )
-    check(
-        "non-cargo segment ignored",
-        classify("python3 tools/fleet/cutokyo-gates.py legal --root .") == (False, None),
-    )
-    check(
-        "flag values are not filters",
-        classify("cargo test -p a --test b --features c") == (True, None),
-    )
+def _execute_criterion(*, root: Path, criterion: dict, report: dict,
+                       log_dir: Path | None, env: dict) -> dict:
+    """Shared execution engine. Production callers must use run_criterion."""
+    criterion_id = criterion["id"]
+    command = criterion["command"]
+    segments_text = split_segments(command)
+    if " && ".join(segments_text) != command or any(not s.strip() for s in segments_text):
+        raise ValueError("segment reconstruction did not reproduce a nonempty recorded command")
+    segments = [Segment(index=i, command=text) for i, text in enumerate(segments_text)]
+    for seg in segments:
+        cargo_test, seg.filter = classify(seg.command)
+        seg.is_filtered_cargo_test = cargo_test and seg.filter is not None
+        if log_dir:
+            seg.log = str(log_dir / f"{criterion_id}-segment-{seg.index}.log")
+    report.update({
+        "criterion": criterion_id,
+        "title": criterion.get("title", ""),
+        "owners": criterion.get("owners", []),
+        "command": command,
+        "command_unmodified": report["contract"]["verified"],
+        "status": "incomplete",
+        "state": "incomplete",
+        "exit_code": None,
+        "started_at": now(),
+        "insufficient_test_evidence_segments": [],
+        "segments": [],
+    })
+    report_path = None
 
-    with tempfile.TemporaryDirectory() as tmp:
-        root = Path(tmp)
-        shim = root / "bin"
-        shim.mkdir()
-        # A cargo shim whose behavior is chosen by the filter name.
-        (shim / "cargo").write_text(
-            "#!/bin/bash\n"
-            'for a in "$@"; do\n'
-            '  case "$a" in\n'
-            "    good) echo 'running 1 test'; echo 'test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out'; exit 0;;\n"
-            "    empty) echo 'running 0 tests'; echo 'test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out'; exit 0;;\n"
-            "    broken) echo 'running 1 test'; echo 'test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 9 filtered out'; exit 101;;\n"
-            "  esac\n"
-            "done\n"
-            "echo 'running 3 tests'; echo 'test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out'; exit 0\n",
-            encoding="utf-8",
-        )
-        (shim / "cargo").chmod(0o755)
-        env = {"PATH": f"{shim}:{os.environ['PATH']}"}
+    def checkpoint() -> None:
+        report["segments"] = [asdict(s) for s in segments]
+        save_report(report_path, report)
 
-        def write_review(command: str) -> Path:
-            path = root / "review.json"
-            path.write_text(
-                json.dumps({"criteria": [{"id": "CXX", "title": "t", "owners": [], "command": command}]}),
-                encoding="utf-8",
-            )
-            return path
+    handlers = {}
+    try:
+        if log_dir:
+            log_dir.mkdir(parents=True, exist_ok=True)
+            report_path = log_dir / f"{criterion_id}-report.json"
+            # Refuse reuse rather than destroying an earlier run's evidence.
+            if report_path.exists() or any(Path(s.log).exists() for s in segments):
+                raise FileExistsError("evidence files already exist; use a fresh log directory")
+            with report_path.open("x", encoding="utf-8") as stream:
+                json.dump(report, stream)
+                stream.flush()
+                os.fsync(stream.fileno())
+            report["report_path"] = str(report_path)
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            handlers[signum] = signal.signal(signum, interrupt)
+        checkpoint()
+        for seg in segments:
+            if report["exit_code"] not in (None, 0):
+                seg.skipped = True
+                seg.state = "skipped"
+                continue
+            seg.state = "incomplete"
+            checkpoint()
+            execute_segment(seg, root, env, log_dir)
+            if seg.exit_code != 0:
+                report["exit_code"] = seg.exit_code if seg.exit_code > 0 else 128 - seg.exit_code
+                report["status"] = "fail"
+            elif seg.findings:
+                report["insufficient_test_evidence_segments"].append(seg.index)
+                report["exit_code"] = TEST_EVIDENCE_EXIT
+                report["status"] = "insufficient-test-evidence"
+            checkpoint()
+        if report["exit_code"] is None:
+            report["exit_code"] = 0
+            report["status"] = "pass"
+        # Production evidence is not complete until the post-run source and
+        # contract checks in run_criterion have also finished.
+        report["state"] = "incomplete" if report["contract"]["verified"] else "complete"
+    except Interrupted as exc:
+        report.update(status="interrupted", state="incomplete", exit_code=128 + exc.signum)
+        for seg in segments:
+            if seg.state == "pending":
+                seg.skipped = True
+                seg.state = "skipped"
+    except OSError as exc:
+        report.update(status="evidence-error", state="incomplete", exit_code=EVIDENCE_EXIT, error=str(exc))
+        # Never overwrite a prior report when refusing reused evidence paths.
+        if isinstance(exc, FileExistsError):
+            report_path = None
+    finally:
+        for signum, handler in handlers.items():
+            signal.signal(signum, handler)
+    report["finished_at"] = now()
+    checkpoint()
+    return report
 
-        good = run_criterion(
-            root=root, review=write_review("cargo test -p x --test e2e good"),
-            criterion_id="CXX", log_dir=None, env=env,
-        )
-        check("known-good exits 0", good["exit_code"] == 0 and good["status"] == "pass", json.dumps(good["segments"]))
 
-        empty = run_criterion(
-            root=root, review=write_review("cargo test -p x --test e2e empty"),
-            criterion_id="CXX", log_dir=None, env=env,
-        )
-        check(
-            "zero-test filter cannot pass",
-            empty["exit_code"] == ZERO_TEST_EXIT and empty["status"] == "zero-test",
-            json.dumps(empty["segments"]),
-        )
+def run_criterion(*, root: Path, review: Path, criterion_id: str,
+                  log_dir: Path | None, env: dict | None = None) -> dict:
+    run_env = dict(os.environ)
+    if env:
+        run_env.update(env)
+    report = {
+        "criterion": criterion_id,
+        "revision": None,
+        "environment": environment_identity(root, run_env),
+        "contract": {"reference": APPROVED_REFERENCE, "git_blob": APPROVED_BLOB, "verified": False},
+        "command_unmodified": False,
+        "segments": [],
+    }
+    try:
+        source = source_identity(root)
+        report.update(source)
+        data, report["contract"] = approved_contract(root, review)
+        criterion = next((c for c in data["criteria"] if c["id"].upper() == criterion_id.upper()), None)
+        if criterion is None:
+            raise KeyError(criterion_id)
+    except (ValueError, OSError, subprocess.CalledProcessError) as exc:
+        report.update(status="contract-error", state="not-started", exit_code=CONTRACT_EXIT, error=str(exc))
+        return report
+    report = _execute_criterion(root=root, criterion=criterion, report=report, log_dir=log_dir, env=run_env)
+    commands_complete = report["status"] in ("pass", "fail", "insufficient-test-evidence")
+    try:
+        report["source_after"] = source_identity(root)
+        if report["source_after"] != source:
+            report.update(status="source-changed", exit_code=EVIDENCE_EXIT)
+        approved_contract(root, review)
+    except (ValueError, OSError, subprocess.CalledProcessError) as exc:
+        report.update(status="contract-error", exit_code=CONTRACT_EXIT, error=str(exc))
+    if commands_complete:
+        report["state"] = "complete"
+    if report.get("report_path"):
+        save_report(Path(report["report_path"]), report)
+    return report
 
-        broken = run_criterion(
-            root=root, review=write_review("cargo test -p x --test e2e broken"),
-            criterion_id="CXX", log_dir=None, env=env,
-        )
-        check("failing test propagates", broken["exit_code"] == 101 and broken["status"] == "fail")
 
-        mixed = run_criterion(
-            root=root,
-            review=write_review("cargo test -p x --test e2e good && cargo test -p x --test e2e empty"),
-            criterion_id="CXX", log_dir=None, env=env,
-        )
-        check(
-            "later zero-test segment still fails the criterion",
-            mixed["exit_code"] == ZERO_TEST_EXIT and mixed["zero_test_segments"] == [1],
-        )
-
-        missing = run_criterion(
-            root=root, review=write_review("cutokyo-does-not-exist --json"),
-            criterion_id="CXX", log_dir=None, env=env,
-        )
-        check("missing executable is not success", missing["exit_code"] == 127 and missing["status"] == "fail")
-
-        unfiltered_zero = run_criterion(
-            root=root, review=write_review("cargo test -p x --lib"),
-            criterion_id="CXX", log_dir=None, env=env,
-        )
-        check("unfiltered suite is judged by cargo alone", unfiltered_zero["exit_code"] == 0)
-
-        stop = run_criterion(
-            root=root,
-            review=write_review("cargo test -p x --test e2e broken && cargo test -p x --test e2e good"),
-            criterion_id="CXX", log_dir=None, env=env,
-        )
-        check(
-            "segments stop at first failure like &&",
-            stop["exit_code"] == 101 and stop["segments"][1]["skipped"] is True,
-        )
-
-    if failures:
-        print(f"\nselftest FAILED: {len(failures)} case(s)")
+def selftest() -> int:
+    """Only this action loads the synthetic contract harness, never `run`."""
+    suite = unittest.defaultTestLoader.discover(str(Path(__file__).parent), pattern="test_cutokyo_acceptance.py")
+    if suite.countTestCases() == 0:
+        print("selftest failed: runner test suite is missing or empty", file=sys.stderr)
         return 1
-    print("\nselftest OK")
-    return 0
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    return 0 if result.wasSuccessful() else 1
 
 
 def main() -> int:
@@ -357,55 +438,47 @@ def main() -> int:
     parser.add_argument("action", choices=["run", "selftest", "list"])
     parser.add_argument("--criterion", help="criterion id, e.g. C16")
     parser.add_argument("--root", default=".", help="repository root")
-    parser.add_argument("--review", help="path to review.json")
-    parser.add_argument("--log-dir", help="directory for per-segment logs")
-    parser.add_argument("--json", action="store_true", help="emit a JSON report")
+    parser.add_argument("--review", help="path to the same pinned review.json")
+    parser.add_argument("--log-dir", help="directory for streaming logs and a durable report; never reuse evidence files")
+    parser.add_argument("--json", action="store_true", help="emit a JSON report, including diagnostics when no log directory is set")
     args = parser.parse_args()
-
     if args.action == "selftest":
         return selftest()
-
     root = Path(args.root).resolve()
-    review = Path(args.review).resolve() if args.review else (
-        root / ".claude/fleets/20260919-cutokyo-v01/review.json"
-    )
-    if not review.is_file():
-        print(f"acceptance contract not found: {review}", file=sys.stderr)
-        return USAGE_EXIT
-
+    review = Path(args.review).resolve() if args.review else root / CONTRACT_PATH
     if args.action == "list":
-        data = json.loads(review.read_text(encoding="utf-8"))
-        for item in data.get("criteria", []):
-            print(f"{item['id']}\t{item.get('title','')}")
+        try:
+            data, _ = approved_contract(root, review)
+        except (ValueError, OSError, subprocess.CalledProcessError) as exc:
+            print(f"acceptance contract rejected: {exc}", file=sys.stderr)
+            return CONTRACT_EXIT
+        for item in data["criteria"]:
+            print(f"{item['id']}\t{item.get('title', '')}")
         return 0
-
     if not args.criterion:
-        print("run requires --criterion", file=sys.stderr)
-        return USAGE_EXIT
-
+        parser.error("run requires --criterion")
     try:
         report = run_criterion(
-            root=root,
-            review=review,
-            criterion_id=args.criterion,
+            root=root, review=review, criterion_id=args.criterion,
             log_dir=Path(args.log_dir).resolve() if args.log_dir else None,
         )
     except KeyError:
         print(f"unknown criterion: {args.criterion}", file=sys.stderr)
         return USAGE_EXIT
-
     if args.json:
         print(json.dumps(report, indent=2))
     else:
         print(f"{report['criterion']}: {report['status']} (exit {report['exit_code']})")
+        if report.get("error"):
+            print(report["error"])
         for seg in report["segments"]:
-            state = "skipped" if seg["skipped"] else f"exit {seg['exit_code']}"
-            extra = ""
-            if seg["is_filtered_cargo_test"]:
-                extra = f" [{seg['tests_run']} run, {seg['tests_passed']} passed]"
-            print(f"  [{seg['index']}] {state}{extra}: {seg['command']}")
+            print(f"  [{seg['index']}] {seg['state']}, exit {seg['exit_code']}: {seg['command']}")
             for finding in seg["findings"]:
                 print(f"      !! {finding}")
+            if seg["log"]:
+                print(f"      log: {seg['log']}")
+            elif seg["output"]:
+                print(seg["output"], end="")
     return report["exit_code"]
 
 
