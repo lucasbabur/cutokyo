@@ -171,9 +171,12 @@ run this from a clean committed checkout with `OUT` set to a new external path.
 Set `PNPM_ROOT` to an unpacked official pnpm 11.25.0 distribution containing
 `bin/pnpm.mjs`. The builder mounts only that dependency directory read-only and
 bypasses Corepack's download-on-first-use behavior inside the offline container.
+`CARGO_CACHE` must contain the fetched public `git/` and `registry/` dependencies.
+Only those two subdirectories are mounted, read-only. Cargo configuration and
+credential files are not mounted.
 
 ```bash
-python3 tools/release/build-linux-package.py --root "$PWD" --output "$OUT" --pnpm-root "$PNPM_ROOT"
+python3 tools/release/build-linux-package.py --root "$PWD" --output "$OUT" --pnpm-root "$PNPM_ROOT" --cargo-cache "$CARGO_CACHE"
 ```
 
 The builder records the exact Git revision, tree, resolved Docker image ID,
@@ -191,7 +194,10 @@ must launch this installed release artifact with disposable HOME/config/data;
 `target/debug` and browser screenshots do not count.
 
 The CI Linux release test uses installed development libraries when available.
-The local fallback uses the reviewed builder image. Windows and macOS still need
+The local fallback uses the same release-profile builder. Set
+`CUTOKYO_RELEASE_PNPM_ROOT` to the unpacked pnpm distribution before running the
+unchanged acceptance command on a host without WebKit development libraries.
+Windows and macOS still need
 successful jobs and clean-machine installation checks before a release manager
 can claim those platforms passed.
 

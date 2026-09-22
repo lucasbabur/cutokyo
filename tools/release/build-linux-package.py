@@ -34,6 +34,8 @@ def main() -> int:
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--pnpm-root", required=True, type=Path,
                         help="unpacked official pnpm 11.25.0 distribution, mounted read-only")
+    parser.add_argument("--cargo-cache", required=True, type=Path,
+                        help="Cargo dependency cache; only registry/ and git/ are mounted")
     args = parser.parse_args()
     root = args.root.resolve(strict=True)
     directory = args.output.resolve()
@@ -48,6 +50,10 @@ def main() -> int:
     node = Path(output(["node", "-p", "process.execPath"])).resolve()
     node_root = node.parent.parent
     pnpm_root = args.pnpm_root.resolve(strict=True)
+    cargo_cache = args.cargo_cache.resolve(strict=True)
+    for subdirectory in ("git", "registry"):
+        if not (cargo_cache / subdirectory).is_dir():
+            parser.error(f"missing public Cargo dependency cache: {subdirectory}")
     for path in (root / "node_modules", root / "ui/node_modules", pnpm_root / "bin/pnpm.mjs"):
         if not path.exists():
             parser.error(f"required locked dependency installation is absent: {path}")
@@ -63,7 +69,10 @@ def main() -> int:
     command = [
         "docker", "run", "--rm", "--name", container, "--network", "none",
         "--user", f"{uid}:{gid}", "--workdir", str(root),
-        "--env", "HOME=/tmp/cutokyo-build-home", "--env", "CARGO_HOME=/usr/local/cargo",
+        "--env", "HOME=/tmp/cutokyo-build-home", "--env", "CARGO_HOME=/tmp/cutokyo-cargo",
+        "--tmpfs", f"/tmp/cutokyo-cargo:rw,uid={uid},gid={gid},mode=0700",
+        "--mount", f"type=bind,src={cargo_cache / 'git'},dst=/tmp/cutokyo-cargo/git,readonly",
+        "--mount", f"type=bind,src={cargo_cache / 'registry'},dst=/tmp/cutokyo-cargo/registry,readonly",
         "--env", "CARGO_NET_OFFLINE=true", "--env", "CARGO_TARGET_DIR=/target",
         "--env", "RUSTUP_TOOLCHAIN=1.98.1",
         "--env", "PATH=/tmp/cutokyo-build-bin:/opt/node/bin:/usr/local/cargo/bin:/usr/local/bin:/usr/bin:/bin",

@@ -3349,21 +3349,15 @@ const TAURI_BUILDER_IMAGE: &str = "cutokyo-tauri-builder:2.11.4";
 static DOCKER_RESOURCE_SEQUENCE: AtomicUsize = AtomicUsize::new(0);
 
 #[cfg(target_os = "linux")]
-struct DockerBuildResources {
+struct DockerSmokeResource {
     container: String,
-    volume: String,
 }
 
 #[cfg(target_os = "linux")]
-impl Drop for DockerBuildResources {
+impl Drop for DockerSmokeResource {
     fn drop(&mut self) {
         let _remove_container = Command::new("docker")
             .args(["rm", "--force", &self.container])
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status();
-        let _remove_volume = Command::new("docker")
-            .args(["volume", "rm", "--force", &self.volume])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .status();
@@ -3388,11 +3382,11 @@ fn prove_host_tauri_linux_package(
     checkout: &Path,
     artifacts: &Path,
 ) -> TestResult<TauriPackageEvidence> {
-    use std::os::unix::fs::symlink;
     fs::create_dir_all(artifacts)?;
-    for relative in ["node_modules", "ui/node_modules"] {
-        symlink(production_root.join(relative), checkout.join(relative))?;
-    }
+    assert_eq!(
+        run_git(production_root, &["rev-parse", "HEAD"])?.stdout,
+        run_git(checkout, &["rev-parse", "HEAD"])?.stdout
+    );
     let target = artifacts.join("target");
     let arguments = command_args(&[
         "pnpm",
@@ -3407,8 +3401,8 @@ fn prove_host_tauri_linux_package(
     ]);
     checked_output(
         source_guard_command(
-            checkout,
-            checkout,
+            production_root,
+            production_root,
             &artifacts.join("tauri-build-source.json"),
             &arguments,
             &[("CARGO_TARGET_DIR", &target)],
@@ -3472,170 +3466,42 @@ fn prove_real_tauri_linux_package(
     )?;
     assert!(!image_check.stdout.is_empty());
 
-    let node_output = checked_output(
-        run_bounded(
-            Command::new("node").args(["-p", "process.execPath"]),
-            Duration::from_secs(30),
-            "resolve real Node installation",
-        )?,
-        "resolve real Node installation",
-    )?;
-    let node = fs::canonicalize(node_output.stdout.trim())?;
-    let node_root = node
-        .parent()
-        .and_then(Path::parent)
-        .ok_or("Node executable has no installation root")?;
-    assert!(node_root.join("bin/pnpm").is_file());
-    let root_modules = production_root.join("node_modules");
-    let ui_modules = production_root.join("ui/node_modules");
-    assert!(root_modules.is_dir());
-    assert!(ui_modules.is_dir());
-    fs::create_dir_all(checkout.join("node_modules"))?;
-    fs::create_dir_all(checkout.join("ui/node_modules"))?;
-    fs::create_dir_all(artifacts)?;
-
-    let container = docker_resource_name("tauri-build");
-    let volume = docker_resource_name("tauri-target");
-    let mut resources = DockerBuildResources { container, volume };
-    checked_output(
-        run_bounded(
-            Command::new("docker").args(["volume", "create", &resources.volume]),
-            Duration::from_secs(30),
-            "create disposable Tauri target volume",
-        )?,
-        "create disposable Tauri target volume",
-    )?;
-    checked_output(
-        run_bounded(
-            Command::new("docker").args([
-                "run",
-                "--rm",
-                "--network",
-                "none",
-                "--mount",
-                &format!("type=volume,src={},dst=/target", resources.volume),
-                TAURI_BUILDER_IMAGE,
-                "/bin/chmod",
-                "0777",
-                "/target",
-            ]),
-            Duration::from_secs(30),
-            "initialize disposable Tauri target volume",
-        )?,
-        "initialize disposable Tauri target volume",
-    )?;
-
-    use std::os::unix::fs::MetadataExt as _;
-
-    let checkout_metadata = fs::metadata(checkout)?;
-    let user = format!("{}:{}", checkout_metadata.uid(), checkout_metadata.gid());
-    let build_script = concat!(
-        "set -euo pipefail; ",
-        "mkdir -p /tmp/cutokyo-home; ",
-        "test \"$(cargo tauri --version)\" = 'tauri-cli 2.11.4'; ",
-        "test \"$(node --version)\" = 'v22.22.3'; ",
-        "test \"$(pnpm --version)\" = '11.25.0'; ",
-        "cargo tauri build --ci --debug --features desktop-runtime --bundles deb"
+    assert_eq!(
+        run_git(production_root, &["rev-parse", "HEAD"])?.stdout,
+        run_git(checkout, &["rev-parse", "HEAD"])?.stdout
     );
-    let docker_arguments = vec![
-        OsString::from("docker"),
-        OsString::from("run"),
-        OsString::from("--rm"),
-        OsString::from("--name"),
-        OsString::from(&resources.container),
-        OsString::from("--network"),
-        OsString::from("none"),
-        OsString::from("--user"),
-        OsString::from(&user),
-        OsString::from("--workdir"),
-        OsString::from("/work"),
-        OsString::from("--env"),
-        OsString::from("CI=true"),
-        OsString::from("--env"),
-        OsString::from("CARGO_HOME=/usr/local/cargo"),
-        OsString::from("--env"),
-        OsString::from("CARGO_NET_OFFLINE=true"),
-        OsString::from("--env"),
-        OsString::from("CARGO_TARGET_DIR=/target"),
-        OsString::from("--env"),
-        OsString::from("HOME=/tmp/cutokyo-home"),
-        OsString::from("--env"),
-        OsString::from("PATH=/opt/node/bin:/usr/local/cargo/bin:/usr/local/bin:/usr/bin:/bin"),
-        OsString::from("--env"),
-        OsString::from("RUSTUP_TOOLCHAIN=1.98.1"),
-        OsString::from("--mount"),
-        OsString::from(format!("type=bind,src={},dst=/work", checkout.display())),
-        OsString::from("--mount"),
-        OsString::from(format!(
-            "type=bind,src={},dst=/work/node_modules,readonly",
-            root_modules.display()
-        )),
-        OsString::from("--mount"),
-        OsString::from(format!(
-            "type=bind,src={},dst=/work/ui/node_modules,readonly",
-            ui_modules.display()
-        )),
-        OsString::from("--mount"),
-        OsString::from(format!(
-            "type=bind,src={},dst=/opt/node,readonly",
-            node_root.display()
-        )),
-        OsString::from("--mount"),
-        OsString::from(format!("type=volume,src={},dst=/target", resources.volume)),
-        OsString::from(TAURI_BUILDER_IMAGE),
-        OsString::from("/bin/bash"),
-        OsString::from("-c"),
-        OsString::from(build_script),
-    ];
-    let source_evidence = artifacts.join("tauri-build-source.json");
-    checked_output(
-        source_guard_command(
-            checkout,
-            checkout,
-            &source_evidence,
-            &docker_arguments,
-            &[],
-            Duration::from_secs(1_800),
-        )?,
-        "Docker-backed production Tauri Debian build",
+    let pnpm_root = std::env::var_os("CUTOKYO_RELEASE_PNPM_ROOT").ok_or(
+        "environment-gap: set CUTOKYO_RELEASE_PNPM_ROOT to unpacked official pnpm 11.25.0",
     )?;
-    let evidence = json_file(&source_evidence)?;
+    let cargo_cache = std::env::var_os("CARGO_HOME")
+        .or_else(|| {
+            std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cargo").into_os_string())
+        })
+        .ok_or("environment-gap: public Cargo dependency cache is unavailable")?;
+    let packages = artifacts.join("tauri-linux");
+    checked_output(
+        run_bounded(
+            Command::new(python_executable())
+                .arg(production_root.join("tools/release/build-linux-package.py"))
+                .arg("--root")
+                .arg(production_root)
+                .arg("--output")
+                .arg(&packages)
+                .arg("--pnpm-root")
+                .arg(pnpm_root)
+                .arg("--cargo-cache")
+                .arg(cargo_cache),
+            Duration::from_secs(1_800),
+            "build release-profile Debian package in the offline builder",
+        )?,
+        "build release-profile Debian package in the offline builder",
+    )?;
+    let evidence = json_file(&packages.join("source-immutability.json"))?;
     assert_eq!(evidence["source_unchanged"], true);
     assert_eq!(evidence["command_exit_code"], 0);
-
-    let packages = artifacts.join("tauri-linux");
-    fs::create_dir_all(&packages)?;
-    let copy_script = concat!(
-        "set -euo pipefail; ",
-        "mapfile -d '' packages < <(find /target/debug/bundle/deb -maxdepth 1 -type f -name '*.deb' -print0); ",
-        "(( ${#packages[@]} == 1 )); ",
-        "install -m 0644 \"${packages[0]}\" /out/"
-    );
-    checked_output(
-        run_bounded(
-            Command::new("docker").args([
-                "run",
-                "--rm",
-                "--network",
-                "none",
-                "--user",
-                &user,
-                "--workdir",
-                "/tmp",
-                "--mount",
-                &format!("type=volume,src={},dst=/target,readonly", resources.volume),
-                "--mount",
-                &format!("type=bind,src={},dst=/out", packages.display()),
-                TAURI_BUILDER_IMAGE,
-                "/bin/bash",
-                "-c",
-                copy_script,
-            ]),
-            Duration::from_secs(60),
-            "copy real Tauri Debian package",
-        )?,
-        "copy real Tauri Debian package",
-    )?;
+    let built = json_file(&packages.join("production-package.json"))?;
+    assert_eq!(built["profile"], "release");
+    assert_eq!(built["native_acceptance_performed"], false);
     let debian_packages = fs::read_dir(&packages)?
         .filter_map(Result::ok)
         .map(|entry| entry.path())
@@ -3651,7 +3517,9 @@ fn prove_real_tauri_linux_package(
     assert!(fs::read(package)?.starts_with(b"!<arch>\n"));
 
     let smoke_container = docker_resource_name("tauri-smoke");
-    resources.container.clone_from(&smoke_container);
+    let _resource = DockerSmokeResource {
+        container: smoke_container.clone(),
+    };
     let smoke_script = checkout.join("tools/release/smoke-tauri-linux.py");
     let smoke = checked_output(
         run_bounded(
