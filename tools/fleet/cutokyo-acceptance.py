@@ -255,6 +255,7 @@ def execute_segment(seg: Segment, root: Path, env: dict, log_dir: Path | None) -
     # runner. Child-side buffering is outside our control.
     stream = Path(seg.log).open("x+b", buffering=0) if seg.log else tempfile.TemporaryFile()
     proc = None
+    output_start = 0
     try:
         if log_dir:
             stream.write(f"$ {seg.command}\n\n".encode())
@@ -281,7 +282,7 @@ def execute_segment(seg: Segment, root: Path, env: dict, log_dir: Path | None) -
     finally:
         stream.flush()
         os.fsync(stream.fileno())
-        stream.seek(output_start if proc is not None else 0)
+        stream.seek(output_start)
         output = stream.read().decode("utf-8", errors="replace")
         if seg.is_filtered_cargo_test:
             parse_counts(output, seg)
@@ -333,7 +334,7 @@ def _execute_criterion(*, root: Path, criterion: dict, report: dict,
             log_dir.mkdir(parents=True, exist_ok=True)
             report_path = log_dir / f"{criterion_id}-report.json"
             # Refuse reuse rather than destroying an earlier run's evidence.
-            if report_path.exists() or any(Path(s.log).exists() for s in segments):
+            if report_path.exists() or any(s.log is not None and Path(s.log).exists() for s in segments):
                 raise FileExistsError("evidence files already exist; use a fresh log directory")
             with report_path.open("x", encoding="utf-8") as stream:
                 json.dump(report, stream)
@@ -351,6 +352,8 @@ def _execute_criterion(*, root: Path, criterion: dict, report: dict,
             seg.state = "incomplete"
             checkpoint()
             execute_segment(seg, root, env, log_dir)
+            if seg.exit_code is None:
+                raise OSError("command returned without an exit code; execution evidence is incomplete")
             if seg.exit_code != 0:
                 report["exit_code"] = seg.exit_code if seg.exit_code > 0 else 128 - seg.exit_code
                 report["status"] = "fail"

@@ -17,9 +17,12 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 RUNNER = Path(__file__).with_name("cutokyo-acceptance.py")
 spec = importlib.util.spec_from_file_location("cutokyo_acceptance", RUNNER)
+if spec is None or spec.loader is None:
+    raise ImportError(f"cannot load acceptance runner from {RUNNER}")
 runner = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = runner
 spec.loader.exec_module(runner)
@@ -122,6 +125,19 @@ class AcceptanceTests(unittest.TestCase):
         missing = synthetic(self.root, "cutokyo-command-that-does-not-exist")
         self.assertEqual(missing["exit_code"], 127)
         self.assertIn("not found", missing["segments"][0]["output"])
+
+    def test_spawn_error_and_missing_exit_code_remain_incomplete(self):
+        with mock.patch.object(runner.subprocess, "Popen", side_effect=OSError("synthetic spawn failure")):
+            failed = synthetic(self.root, "true")
+        self.assertEqual(failed["exit_code"], 88)
+        self.assertEqual(failed["state"], "incomplete")
+        self.assertIn("synthetic spawn failure", failed["error"])
+        self.assertEqual(failed["segments"][0]["output"], "")
+        with mock.patch.object(runner, "execute_segment", return_value=None):
+            missing = synthetic(self.root, "true")
+        self.assertEqual(missing["exit_code"], 88)
+        self.assertEqual(missing["state"], "incomplete")
+        self.assertIn("without an exit code", missing["error"])
 
     def test_unfiltered_cargo_is_judged_by_exit_status(self):
         report = synthetic(self.root, "cargo test --workspace", env=self.shim_env("running 0 tests\n"))
