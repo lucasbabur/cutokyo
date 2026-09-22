@@ -13,11 +13,12 @@ use std::{
 };
 
 use cutokyo_domain::{
-    Attribution, CaptureChannel, Confidence, ConfigItem, ConfigItemId, ConfigItemKind,
-    ConfigItemState, ContractError, ErrorCode, Harness, InstallationSnapshot,
-    InstallationSnapshotId, NativeIdentity, ObservationId, PriceSnapshot, PriceSnapshotId,
-    QuotaWindow, QuotaWindowId, RawObservation, Result, SessionId, SourceProvenance, Summary,
-    Timestamp,
+    AgentRun, AgentRunId, Attribution, CaptureChannel, Confidence, ConfigItem, ConfigItemId,
+    ConfigItemKind, ConfigItemState, ContractError, ErrorCode, Harness, InstallationSnapshot,
+    InstallationSnapshotId, Message, MessageId, MessageRole, NativeIdentity, ObservationId,
+    PriceSnapshot, PriceSnapshotId, QuotaWindow, QuotaWindowId, RawObservation, Result, RunState,
+    SessionId, SessionState, SourceProvenance, Summary, SummaryId, Timestamp, ToolCall, ToolCallId,
+    TurnId,
 };
 use fs4::TryLockError;
 use rusqlite::{
@@ -329,6 +330,26 @@ pub struct SearchResult {
     pub observation_ids: Vec<ObservationId>,
     /// Winning source provenance.
     pub provenance: SourceProvenance,
+}
+
+/// Stored detail for one exact session, read from a single SQLite snapshot.
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct SessionDetail {
+    /// Session identity and metadata selected by source precedence.
+    pub session: SearchResult,
+    /// Observed completion time, when available.
+    pub ended_at: Option<Timestamp>,
+    /// Observed lifecycle state; absence remains unknown.
+    pub state: SessionState,
+    /// Attributable transcript messages, ordered by time and identity.
+    pub messages: Vec<Message>,
+    /// Attributable tool and skill invocations.
+    pub tool_calls: Vec<ToolCall>,
+    /// Attributable agent executions.
+    pub agent_runs: Vec<AgentRun>,
+    /// Latest stored summary linked to this session, including its attribution.
+    pub summary: Option<Summary>,
 }
 
 /// Usage totals where absence remains `None` rather than zero.
@@ -841,6 +862,15 @@ impl WriterStore {
     /// Returns a store or contract-decoding error.
     pub fn session(&self, session_id: &SessionId) -> Result<Option<SearchResult>> {
         self.reader().session(session_id)
+    }
+
+    /// Reads attributable detail for one exact session.
+    ///
+    /// # Errors
+    ///
+    /// Returns a store or contract-decoding error.
+    pub fn session_detail(&self, session_id: &SessionId) -> Result<Option<SessionDetail>> {
+        self.reader().session_detail(session_id)
     }
 
     /// Returns safe aggregate row counts for diagnostics.
@@ -1776,6 +1806,43 @@ impl ReadStore {
     pub fn session(&self, session_id: &SessionId) -> Result<Option<SearchResult>> {
         let connection = open_read_connection(&self.path)?;
         session_connection(&connection, session_id)
+    }
+
+    /// Reads stored transcript, executions, and latest summary for one identity.
+    /// All rows and their provenance come from the same read transaction.
+    ///
+    /// # Errors
+    ///
+    /// Returns a store or contract-decoding error.
+    pub fn session_detail(&self, session_id: &SessionId) -> Result<Option<SessionDetail>> {
+        let mut connection = open_read_connection(&self.path)?;
+        let transaction = connection
+            .transaction()
+            .map_err(|error| sqlite_error("begin session detail snapshot", &error))?;
+        let Some(session) = session_connection(&transaction, session_id)? else {
+            return Ok(None);
+        };
+        let (ended_at, state) = transaction
+            .query_row(
+                "SELECT ended_at, state FROM sessions WHERE session_id=?1",
+                [session_id.as_str()],
+                |row| Ok((row.get::<_, Option<String>>(0)?, row.get::<_, String>(1)?)),
+            )
+            .map_err(|error| sqlite_error("read session lifecycle", &error))?;
+        let detail = SessionDetail {
+            session,
+            ended_at: ended_at.map(Timestamp::parse).transpose()?,
+            state: serde_json::from_value(Value::String(state))
+                .map_err(|error| serialization_error("decode session state", &error))?,
+            messages: session_messages(&transaction, session_id)?,
+            tool_calls: session_tool_calls(&transaction, session_id)?,
+            agent_runs: session_agent_runs(&transaction, session_id)?,
+            summary: latest_session_summary(&transaction, session_id)?,
+        };
+        transaction
+            .commit()
+            .map_err(|error| sqlite_error("finish session detail snapshot", &error))?;
+        Ok(Some(detail))
     }
 
     /// Returns safe aggregate row counts without reading content columns.
@@ -3802,6 +3869,211 @@ fn search_connection(connection: &Connection, query: &SearchQuery) -> Result<Vec
         });
     }
     Ok(results)
+}
+
+fn session_messages(connection: &Connection, session_id: &SessionId) -> Result<Vec<Message>> {
+    let mut statement = connection
+        .prepare("SELECT message_id, turn_id, native_message_id, role, text, created_at, winning_observation_id, conflict FROM messages WHERE session_id=?1 ORDER BY created_at_epoch, message_id")
+        .map_err(|error| sqlite_error("prepare session messages", &error))?;
+    let rows = statement
+        .query_map([session_id.as_str()], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, Option<String>>(1)?,
+                row.get::<_, Option<String>>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, Option<String>>(4)?,
+                row.get::<_, String>(5)?,
+                row.get::<_, String>(6)?,
+                row.get::<_, bool>(7)?,
+            ))
+        })
+        .map_err(|error| sqlite_error("query session messages", &error))?;
+    rows.map(|row| {
+        let row = row.map_err(|error| sqlite_error("read session message", &error))?;
+        let attribution = detail_attribution(connection, "message", &row.0, &row.6, row.7)?;
+        Ok(Message {
+            message_id: MessageId::parse(row.0)?,
+            session_id: session_id.clone(),
+            turn_id: row.1.map(TurnId::parse).transpose()?,
+            native_message_id: row.2,
+            role: match row.3.as_str() {
+                "user" => MessageRole::User,
+                "assistant" => MessageRole::Assistant,
+                "system" => MessageRole::System,
+                "tool" => MessageRole::Tool,
+                _ => MessageRole::Unknown(row.3),
+            },
+            text: row.4,
+            created_at: Timestamp::parse(row.5)?,
+            attribution,
+        })
+    })
+    .collect()
+}
+
+fn session_tool_calls(connection: &Connection, session_id: &SessionId) -> Result<Vec<ToolCall>> {
+    let mut statement = connection
+        .prepare("SELECT tool_call_id, turn_id, native_tool_call_id, tool_name, skill_name, input_json, output_json, state, started_at, ended_at, winning_observation_id, conflict FROM tool_calls WHERE session_id=?1 ORDER BY started_at_epoch, tool_call_id")
+        .map_err(|error| sqlite_error("prepare session tools", &error))?;
+    let rows = statement
+        .query_map([session_id.as_str()], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, Option<String>>(1)?,
+                row.get::<_, Option<String>>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, Option<String>>(4)?,
+                row.get::<_, Option<String>>(5)?,
+                row.get::<_, Option<String>>(6)?,
+                row.get::<_, String>(7)?,
+                row.get::<_, String>(8)?,
+                row.get::<_, Option<String>>(9)?,
+                row.get::<_, String>(10)?,
+                row.get::<_, bool>(11)?,
+            ))
+        })
+        .map_err(|error| sqlite_error("query session tools", &error))?;
+    rows.map(|row| {
+        let row = row.map_err(|error| sqlite_error("read session tool", &error))?;
+        let attribution = detail_attribution(connection, "tool_call", &row.0, &row.10, row.11)?;
+        Ok(ToolCall {
+            tool_call_id: ToolCallId::parse(row.0)?,
+            session_id: session_id.clone(),
+            turn_id: row.1.map(TurnId::parse).transpose()?,
+            native_tool_call_id: row.2,
+            tool_name: row.3,
+            skill_name: row.4,
+            input: row
+                .5
+                .map(|value| serde_json::from_str(&value))
+                .transpose()
+                .map_err(|error| serialization_error("decode tool input", &error))?,
+            output: row
+                .6
+                .map(|value| serde_json::from_str(&value))
+                .transpose()
+                .map_err(|error| serialization_error("decode tool output", &error))?,
+            state: detail_run_state(row.7)?,
+            started_at: Timestamp::parse(row.8)?,
+            ended_at: row.9.map(Timestamp::parse).transpose()?,
+            attribution,
+        })
+    })
+    .collect()
+}
+
+fn session_agent_runs(connection: &Connection, session_id: &SessionId) -> Result<Vec<AgentRun>> {
+    let mut statement = connection
+        .prepare("SELECT agent_run_id, parent_agent_run_id, native_agent_run_id, agent_name, state, started_at, ended_at, winning_observation_id, conflict FROM agent_runs WHERE session_id=?1 ORDER BY started_at_epoch, agent_run_id")
+        .map_err(|error| sqlite_error("prepare session agents", &error))?;
+    let rows = statement
+        .query_map([session_id.as_str()], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, Option<String>>(1)?,
+                row.get::<_, Option<String>>(2)?,
+                row.get::<_, Option<String>>(3)?,
+                row.get::<_, String>(4)?,
+                row.get::<_, String>(5)?,
+                row.get::<_, Option<String>>(6)?,
+                row.get::<_, String>(7)?,
+                row.get::<_, bool>(8)?,
+            ))
+        })
+        .map_err(|error| sqlite_error("query session agents", &error))?;
+    rows.map(|row| {
+        let row = row.map_err(|error| sqlite_error("read session agent", &error))?;
+        let attribution = detail_attribution(connection, "agent_run", &row.0, &row.7, row.8)?;
+        Ok(AgentRun {
+            agent_run_id: AgentRunId::parse(row.0)?,
+            session_id: session_id.clone(),
+            parent_agent_run_id: row.1.map(AgentRunId::parse).transpose()?,
+            native_agent_run_id: row.2,
+            agent_name: row.3,
+            state: detail_run_state(row.4)?,
+            started_at: Timestamp::parse(row.5)?,
+            ended_at: row.6.map(Timestamp::parse).transpose()?,
+            attribution,
+        })
+    })
+    .collect()
+}
+
+fn detail_run_state(value: String) -> Result<RunState> {
+    serde_json::from_value(Value::String(value))
+        .map_err(|error| serialization_error("decode execution state", &error))
+}
+
+fn detail_attribution(
+    connection: &Connection,
+    kind: &str,
+    key: &str,
+    winner: &str,
+    conflicting: bool,
+) -> Result<Attribution> {
+    let mut observation_ids = projection_evidence(connection, kind, key)?;
+    let winner_id = ObservationId::parse(winner)?;
+    // Tools and agents retain a winning observation directly rather than a
+    // projection_sources collection. Always preserve that explicit linkage.
+    if !observation_ids.contains(&winner_id) {
+        observation_ids.insert(0, winner_id);
+    }
+    let mut source = load_observation_provenance(connection, winner)?;
+    if conflicting {
+        source.confidence = Confidence::Conflicting;
+    }
+    Ok(Attribution {
+        observation_ids,
+        source,
+    })
+}
+
+fn latest_session_summary(
+    connection: &Connection,
+    session_id: &SessionId,
+) -> Result<Option<Summary>> {
+    let row = connection
+        .query_row(
+            "SELECT s.summary_id, s.provider, s.model, s.prompt_version, s.idempotency_key, s.text, s.created_at, s.attribution_json FROM summaries s JOIN summary_sessions link ON link.summary_id=s.summary_id WHERE link.session_id=?1 ORDER BY s.created_at_epoch DESC, s.summary_id LIMIT 1",
+            [session_id.as_str()],
+            |row| Ok((
+                row.get::<_, String>(0)?, row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?, row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?, row.get::<_, String>(5)?,
+                row.get::<_, String>(6)?, row.get::<_, String>(7)?,
+            )),
+        )
+        .optional()
+        .map_err(|error| sqlite_error("read latest session summary", &error))?;
+    let Some(row) = row else {
+        return Ok(None);
+    };
+    let mut statement = connection
+        .prepare("SELECT session_id FROM summary_sessions WHERE summary_id=?1 ORDER BY session_id")
+        .map_err(|error| sqlite_error("prepare summary source sessions", &error))?;
+    let rows = statement
+        .query_map([&row.0], |row| row.get::<_, String>(0))
+        .map_err(|error| sqlite_error("query summary source sessions", &error))?;
+    let source_session_ids = rows
+        .map(|row| {
+            SessionId::parse(
+                row.map_err(|error| sqlite_error("read summary source session", &error))?,
+            )
+        })
+        .collect::<Result<Vec<_>>>()?;
+    Ok(Some(Summary {
+        summary_id: SummaryId::parse(row.0)?,
+        source_session_ids,
+        provider: row.1,
+        model: row.2,
+        prompt_version: row.3,
+        idempotency_key: row.4,
+        text: row.5,
+        created_at: Timestamp::parse(row.6)?,
+        attribution: serde_json::from_str(&row.7)
+            .map_err(|error| serialization_error("decode summary attribution", &error))?,
+    }))
 }
 
 fn projection_evidence(

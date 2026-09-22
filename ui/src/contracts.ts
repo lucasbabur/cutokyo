@@ -91,11 +91,11 @@ export interface UsageRecord {
 
 interface TimelineEntry {
   readonly id: string;
-  readonly kind: "user" | "assistant" | "tool" | "agent" | "system";
+  readonly kind: "user" | "assistant" | "tool" | "agent" | "system" | "unknown";
   readonly at: string;
   readonly title: string;
   readonly body: string | null;
-  readonly state: "succeeded" | "failed" | "running" | "unknown";
+  readonly state: "succeeded" | "failed" | "running" | "cancelled" | "unknown";
   readonly provenance: Provenance;
 }
 

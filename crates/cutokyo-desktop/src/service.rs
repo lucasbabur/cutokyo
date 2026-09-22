@@ -8,7 +8,7 @@ use std::{
 };
 
 use cutokyo_core::{
-    app::{Application, LocalCore, QueryUseCases},
+    app::{Application, LocalCore, QueryUseCases, SessionDetail},
     config::{RuntimePaths, SettingsOverrides},
     store::{
         DELETE_ALL_CONFIRMATION, DeletionReceipt, HealthSnapshot, HealthStatus, LockOwner,
@@ -16,8 +16,9 @@ use cutokyo_core::{
     },
 };
 use cutokyo_domain::{
-    CaptureChannel, Confidence, ConfigItemKind, ConfigItemState, Coverage, CoverageState, Harness,
-    SessionId, Settings, SettingsPatch, SourceProvenance, Timestamp,
+    Attribution, CaptureChannel, Confidence, ConfigItemKind, ConfigItemState, Coverage,
+    CoverageState, Harness, MessageRole, RunState, SessionId, Settings, SettingsPatch,
+    SourceProvenance, Timestamp,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -160,6 +161,18 @@ impl DesktopCore {
         match self {
             Self::Owner(core) => core.session(session_id.as_str()).map_err(contract_error),
             Self::ReadOnly(core) => core.session(session_id.as_str()).map_err(contract_error),
+            Self::Unavailable(message) => Err(message.clone()),
+        }
+    }
+
+    fn session_detail(&self, session_id: &SessionId) -> Result<Option<SessionDetail>, String> {
+        match self {
+            Self::Owner(core) => core
+                .session_detail(session_id.as_str())
+                .map_err(contract_error),
+            Self::ReadOnly(core) => core
+                .session_detail(session_id.as_str())
+                .map_err(contract_error),
             Self::Unavailable(message) => Err(message.clone()),
         }
     }
@@ -457,8 +470,33 @@ impl DesktopService {
 
     pub(crate) fn session_detail(&self, session_id: &str) -> Result<Value, String> {
         let id = SessionId::parse(session_id.to_owned()).map_err(contract_error)?;
-        let result = self.find_session(&id)?;
-        self.session_value(&result)
+        let detail = self
+            .core()?
+            .session_detail(&id)?
+            .ok_or_else(|| format!("Session {id} was not found in local history."))?;
+        let mut value = self.session_value(&detail.session)?;
+        // List routes intentionally avoid loading transcripts. Only an exact
+        // detail request expands the stored evidence through the app boundary.
+        value["summary"] = json!(detail.summary.as_ref().map(|summary| &summary.text));
+        value["endedAt"] = json!(detail.ended_at);
+        value["state"] = json!(detail.state);
+        value["tools"] = json!(unique_strings(
+            detail.tool_calls.iter().map(|tool| tool.tool_name.clone())
+        ));
+        value["skills"] = json!(unique_strings(
+            detail
+                .tool_calls
+                .iter()
+                .filter_map(|tool| tool.skill_name.clone())
+        ));
+        value["agents"] = json!(unique_strings(
+            detail
+                .agent_runs
+                .iter()
+                .filter_map(|agent| agent.agent_name.clone())
+        ));
+        value["timeline"] = detail_timeline(&detail);
+        Ok(value)
     }
 
     pub(crate) fn preview_resume(&self, session_id: &str) -> Result<Value, String> {
@@ -1131,6 +1169,95 @@ impl DesktopService {
         self.persist(&next)?;
         state.persisted = next;
         Ok(())
+    }
+}
+
+fn detail_timeline(detail: &SessionDetail) -> Value {
+    let mut entries = Vec::new();
+    for message in &detail.messages {
+        let (kind, title) = match &message.role {
+            MessageRole::User => ("user", "User message".to_owned()),
+            MessageRole::Assistant => ("assistant", "Assistant message".to_owned()),
+            MessageRole::System => ("system", "System message".to_owned()),
+            MessageRole::Tool => ("tool", "Tool message".to_owned()),
+            MessageRole::Unknown(role) => ("unknown", format!("Message (native role: {role})")),
+        };
+        entries.push((
+            &message.created_at,
+            json!({
+                "id": message.message_id,
+                "kind": kind,
+                "at": message.created_at,
+                "title": title,
+                "body": message.text,
+                "state": "unknown",
+                "provenance": attribution_value(&message.attribution),
+            }),
+        ));
+    }
+    for tool in &detail.tool_calls {
+        let mut parts = Vec::new();
+        if let Some(input) = &tool.input {
+            parts.push(format!("Input: {input}"));
+        }
+        if let Some(output) = &tool.output {
+            parts.push(format!("Output: {output}"));
+        }
+        entries.push((
+            &tool.started_at,
+            json!({
+                "id": tool.tool_call_id,
+                "kind": "tool",
+                "at": tool.started_at,
+                "title": format!("{} ({})", tool.tool_name, run_state_label(tool.state)),
+                "body": if parts.is_empty() { None } else { Some(parts.join("\n")) },
+                "state": run_state_label(tool.state),
+                "provenance": attribution_value(&tool.attribution),
+            }),
+        ));
+    }
+    for agent in &detail.agent_runs {
+        entries.push((&agent.started_at, json!({
+            "id": agent.agent_run_id,
+            "kind": "agent",
+            "at": agent.started_at,
+            "title": format!("{} ({})", agent.agent_name.as_deref().unwrap_or("Unnamed agent"), run_state_label(agent.state)),
+            "body": Value::Null,
+            "state": run_state_label(agent.state),
+            "provenance": attribution_value(&agent.attribution),
+        })));
+    }
+    if let Some(summary) = &detail.summary {
+        entries.push((&summary.created_at, json!({
+            "id": summary.summary_id,
+            "kind": "system",
+            "at": summary.created_at,
+            "title": format!("Summary · {} / {} · {}", summary.provider, summary.model, summary.prompt_version),
+            "body": summary.text,
+            "state": "succeeded",
+            "provenance": attribution_value(&summary.attribution),
+        })));
+    }
+    entries.sort_by(|left, right| {
+        left.0
+            .unix_timestamp()
+            .cmp(&right.0.unix_timestamp())
+            .then_with(|| left.1["id"].as_str().cmp(&right.1["id"].as_str()))
+    });
+    Value::Array(entries.into_iter().map(|(_, entry)| entry).collect())
+}
+
+fn attribution_value(attribution: &Attribution) -> Value {
+    provenance_value(&attribution.source, &attribution.observation_ids)
+}
+
+const fn run_state_label(state: RunState) -> &'static str {
+    match state {
+        RunState::Running => "running",
+        RunState::Succeeded => "succeeded",
+        RunState::Failed => "failed",
+        RunState::Cancelled => "cancelled",
+        RunState::Unknown => "unknown",
     }
 }
 

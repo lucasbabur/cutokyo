@@ -34,7 +34,8 @@ pub use crate::{
     store::{
         BackupManifest, CheckpointMode, CheckpointResult, ConnectionEvidence,
         DELETE_ALL_CONFIRMATION, DELETION_DISCLOSURE, DeletionReceipt, DiagnosticRowCounts,
-        HealthSnapshot, LockOwner, RestoreReceipt, RetentionPlan, SearchResult, UsageTotals,
+        HealthSnapshot, LockOwner, RestoreReceipt, RetentionPlan, SearchResult, SessionDetail,
+        UsageTotals,
     },
 };
 
@@ -513,6 +514,15 @@ impl QueryUseCases {
         self.store.session(&SessionId::parse(session_id)?)
     }
 
+    /// Reads one session's stored transcript, executions, and summary with provenance.
+    ///
+    /// # Errors
+    ///
+    /// Returns invalid-input for malformed identity or a store read/decoding error.
+    pub fn session_detail(&self, session_id: &str) -> Result<Option<SessionDetail>> {
+        self.store.session_detail(&SessionId::parse(session_id)?)
+    }
+
     /// Builds an exact native resume plan without launching a process.
     ///
     /// # Errors
@@ -776,6 +786,15 @@ impl LocalCore {
     /// Returns invalid-input for malformed identity or a store read error.
     pub fn session(&self, session_id: &str) -> Result<Option<SearchResult>> {
         self.store.session(&SessionId::parse(session_id)?)
+    }
+
+    /// Reads one session's stored transcript, executions, and summary with provenance.
+    ///
+    /// # Errors
+    ///
+    /// Returns invalid-input for malformed identity or a store read/decoding error.
+    pub fn session_detail(&self, session_id: &str) -> Result<Option<SessionDetail>> {
+        self.store.session_detail(&SessionId::parse(session_id)?)
     }
 
     /// Builds an exact native resume plan without launching a process.
