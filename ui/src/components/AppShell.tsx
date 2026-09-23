@@ -9,7 +9,7 @@ import {
   ShieldCheck,
   Stethoscope,
 } from "lucide-react";
-import { type PropsWithChildren, useEffect } from "react";
+import { type PropsWithChildren, useEffect, useRef } from "react";
 
 import type { BootstrapResponse, RoutePath } from "../contracts.js";
 import { routeHref } from "../router.js";
@@ -74,11 +74,30 @@ export function AppShell({
   readonly bootstrap: BootstrapResponse;
   readonly currentPath: RoutePath;
 }>) {
+  const renderedPath = useRef(currentPath);
   useEffect(() => {
+    // The first load keeps natural tab order; only route changes move focus.
+    if (renderedPath.current === currentPath) return;
+    renderedPath.current = currentPath;
+    // Pages render a loading state before their heading, so wait for it.
+    const focusHeading = () => {
+      const heading = document.querySelector<HTMLElement>(
+        "[data-page-heading]",
+      );
+      heading?.focus();
+      return heading !== null;
+    };
     const frame = globalThis.requestAnimationFrame(() => {
-      document.querySelector<HTMLElement>("[data-page-heading]")?.focus();
+      if (focusHeading()) return;
+      observer.observe(document.body, { childList: true, subtree: true });
     });
-    return () => globalThis.cancelAnimationFrame(frame);
+    const observer = new MutationObserver(() => {
+      if (focusHeading()) observer.disconnect();
+    });
+    return () => {
+      globalThis.cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
   }, [currentPath]);
 
   return (

@@ -5,9 +5,11 @@ import { describe, expect, it } from "vitest";
 
 import { CommandProvider } from "../commands/context.js";
 import { AnnouncementProvider } from "../components/Announcer.js";
+import { AppShell } from "../components/AppShell.js";
 import type { CommandClient } from "../contracts.js";
 import { createBrowserFixtureClient } from "../fixtures/browserAdapter.js";
 import { DashboardPage } from "./DashboardPage.js";
+import { HealthPage } from "./HealthPage.js";
 import { OnboardingPage } from "./OnboardingPage.js";
 import { SessionsPage } from "./SessionsPage.js";
 
@@ -20,6 +22,28 @@ function renderWithClient(client: CommandClient, node: ReactNode) {
 }
 
 describe("desktop route components", () => {
+  it("moves focus to a route heading that renders after loading", async () => {
+    const client = createBrowserFixtureClient("health-degraded");
+    const bootstrap = await client.getBootstrap();
+    const shell = (path: "/dashboard" | "/health") => (
+      <CommandProvider client={client}>
+        <AnnouncementProvider>
+          <AppShell bootstrap={bootstrap} currentPath={path}>
+            {path === "/health" ? <HealthPage /> : <DashboardPage />}
+          </AppShell>
+        </AnnouncementProvider>
+      </CommandProvider>
+    );
+    const view = render(shell("/dashboard"));
+    await screen.findByRole("heading", { name: "Overview" });
+    expect(document.activeElement).toBe(document.body);
+    view.rerender(shell("/health"));
+    const heading = await screen.findByRole("heading", {
+      name: "System health",
+    });
+    await waitFor(() => expect(document.activeElement).toBe(heading));
+  });
+
   it("renders chart totals, raw values, uncertainty, and absent context consistently", async () => {
     renderWithClient(
       createBrowserFixtureClient("populated-dashboard"),
