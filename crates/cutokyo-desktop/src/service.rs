@@ -7,13 +7,18 @@ use std::{
     sync::{Arc, Mutex, MutexGuard},
 };
 
-use cutokyo_core::app::{
-    Application, DELETE_ALL_CONFIRMATION, DeletionReceipt, HealthSnapshot, HealthStatus, LocalCore,
-    LockOwner, QueryUseCases, RetentionPlan, SearchQuery, SearchResult, UsageTotals,
+use cutokyo_core::{
+    app::{
+        Application, DELETE_ALL_CONFIRMATION, DeletionReceipt, HealthSnapshot, HealthStatus,
+        LocalCore, LockOwner, QueryUseCases, RetentionPlan, SearchQuery, SearchResult,
+        SessionDetail, UsageTotals,
+    },
+    config::{RuntimePaths, SettingsOverrides},
 };
 use cutokyo_domain::{
-    CaptureChannel, Confidence, ConfigItemKind, ConfigItemState, Coverage, CoverageState, Harness,
-    SessionId, Settings, SettingsPatch, SourceProvenance, Timestamp,
+    Attribution, CaptureChannel, Confidence, ConfigItemKind, ConfigItemState, Coverage,
+    CoverageState, Harness, MessageRole, RunState, SessionId, Settings, SettingsPatch,
+    SourceProvenance, Timestamp,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -24,8 +29,6 @@ use crate::health_binding::{health_binding_value, health_status, timestamp_from_
 
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 const STATE_FILE: &str = "desktop-state.json";
-const DATABASE_FILE: &str = "history.sqlite3";
-const SPOOL_DIRECTORY: &str = "spool";
 const DIAGNOSTIC_DIRECTORY: &str = "diagnostics";
 const ANALYSIS_UNAVAILABLE: &str =
     "No AI analysis provider is configured. No content left this device.";
@@ -92,7 +95,6 @@ impl UpdaterChoice {
 struct PersistedDesktopState {
     onboarding_complete: bool,
     selected_harnesses: Vec<Harness>,
-    settings: Settings,
     updater_choice: UpdaterChoice,
     crash_reports_enabled: bool,
     mcp_enabled: BTreeMap<String, bool>,
@@ -103,7 +105,6 @@ impl Default for PersistedDesktopState {
         Self {
             onboarding_complete: false,
             selected_harnesses: Vec::new(),
-            settings: Settings::default(),
             updater_choice: UpdaterChoice::Notify,
             crash_reports_enabled: false,
             mcp_enabled: BTreeMap::new(),
@@ -154,6 +155,26 @@ impl DesktopCore {
         match self {
             Self::Owner(core) => core.search(query).map_err(contract_error),
             Self::ReadOnly(core) => core.search(query).map_err(contract_error),
+            Self::Unavailable(message) => Err(message.clone()),
+        }
+    }
+
+    fn session(&self, session_id: &SessionId) -> Result<Option<SearchResult>, String> {
+        match self {
+            Self::Owner(core) => core.session(session_id.as_str()).map_err(contract_error),
+            Self::ReadOnly(core) => core.session(session_id.as_str()).map_err(contract_error),
+            Self::Unavailable(message) => Err(message.clone()),
+        }
+    }
+
+    fn session_detail(&self, session_id: &SessionId) -> Result<Option<SessionDetail>, String> {
+        match self {
+            Self::Owner(core) => core
+                .session_detail(session_id.as_str())
+                .map_err(contract_error),
+            Self::ReadOnly(core) => core
+                .session_detail(session_id.as_str())
+                .map_err(contract_error),
             Self::Unavailable(message) => Err(message.clone()),
         }
     }
@@ -237,6 +258,7 @@ impl ResumeExecutor for ProcessResumeExecutor {
 
 pub(crate) struct DesktopService {
     application: Application,
+    paths: RuntimePaths,
     root: PathBuf,
     database_path: PathBuf,
     spool_path: PathBuf,
@@ -247,18 +269,18 @@ pub(crate) struct DesktopService {
 }
 
 impl DesktopService {
-    pub(crate) fn open(root: impl AsRef<Path>) -> Result<Self, String> {
-        Self::open_with_executor(root, Arc::new(ProcessResumeExecutor))
+    pub(crate) fn open(paths: RuntimePaths) -> Result<Self, String> {
+        Self::open_with_executor(paths, Arc::new(ProcessResumeExecutor))
     }
 
     pub(crate) fn open_with_executor(
-        root: impl AsRef<Path>,
+        paths: RuntimePaths,
         resume_executor: Arc<dyn ResumeExecutor>,
     ) -> Result<Self, String> {
-        let root = root.as_ref().to_path_buf();
+        let root = paths.data_dir.clone();
         create_private_directory(&root)?;
-        let database_path = root.join(DATABASE_FILE);
-        let spool_path = root.join(SPOOL_DIRECTORY);
+        let database_path = paths.database_file.clone();
+        let spool_path = paths.spool_dir.clone();
         let state_path = root.join(STATE_FILE);
         let (persisted, state_notice) = read_persisted_state(&state_path)?;
         let application = Application::new();
@@ -293,6 +315,7 @@ impl DesktopService {
         let startup_notice = state_notice.or(core_notice);
         Ok(Self {
             application,
+            paths,
             root,
             database_path,
             spool_path,
@@ -449,8 +472,33 @@ impl DesktopService {
 
     pub(crate) fn session_detail(&self, session_id: &str) -> Result<Value, String> {
         let id = SessionId::parse(session_id.to_owned()).map_err(contract_error)?;
-        let result = self.find_session(&id)?;
-        self.session_value(&result)
+        let detail = self
+            .core()?
+            .session_detail(&id)?
+            .ok_or_else(|| format!("Session {id} was not found in local history."))?;
+        let mut value = self.session_value(&detail.session)?;
+        // List routes intentionally avoid loading transcripts. Only an exact
+        // detail request expands the stored evidence through the app boundary.
+        value["summary"] = json!(detail.summary.as_ref().map(|summary| &summary.text));
+        value["endedAt"] = json!(detail.ended_at);
+        value["state"] = json!(detail.state);
+        value["tools"] = json!(unique_strings(
+            detail.tool_calls.iter().map(|tool| tool.tool_name.clone())
+        ));
+        value["skills"] = json!(unique_strings(
+            detail
+                .tool_calls
+                .iter()
+                .filter_map(|tool| tool.skill_name.clone())
+        ));
+        value["agents"] = json!(unique_strings(
+            detail
+                .agent_runs
+                .iter()
+                .filter_map(|agent| agent.agent_name.clone())
+        ));
+        value["timeline"] = detail_timeline(&detail);
+        Ok(value)
     }
 
     pub(crate) fn preview_resume(&self, session_id: &str) -> Result<Value, String> {
@@ -658,7 +706,7 @@ impl DesktopService {
             "meta": route_meta(if notices.is_empty() { "complete" } else { "partial" }, &notices)?,
             "items": values,
             "brokerState": if values.iter().any(|item| item.get("kind") == Some(&json!("mcp"))) { "healthy" } else { "unknown" },
-            "searchMcpEnabled": persisted.settings.search_mcp_enabled,
+            "searchMcpEnabled": self.shared_settings()?.search_mcp_enabled,
         }))
     }
 
@@ -726,7 +774,7 @@ impl DesktopService {
     }
 
     pub(crate) fn guards(&self) -> Result<Value, String> {
-        let settings = self.mutable()?.persisted.settings.clone();
+        let settings = self.shared_settings()?;
         guards_value(&settings)
     }
 
@@ -757,39 +805,19 @@ impl DesktopService {
             }
             return Err(PROXY_UNAVAILABLE.to_owned());
         }
-        let mut state = self.mutable()?;
-        if state.persisted.settings.proxy_enabled {
-            let patch = SettingsPatch {
-                proxy_enabled: Some(false),
-                ..SettingsPatch::default()
-            };
-            let next_settings = self
-                .application
-                .patch_settings(state.persisted.settings.clone(), &patch)
-                .map_err(contract_error)?;
-            let mut next = state.persisted.clone();
-            next.settings = next_settings;
-            self.persist(&next)?;
-            state.persisted = next;
-        }
-        guards_value(&state.persisted.settings)
+        self.patch_settings(&SettingsPatch {
+            proxy_enabled: Some(false),
+            ..SettingsPatch::default()
+        })?;
+        self.guards()
     }
 
     pub(crate) fn set_outgoing_guard_enabled(&self, enabled: bool) -> Result<Value, String> {
-        let mut state = self.mutable()?;
-        let patch = SettingsPatch {
+        self.patch_settings(&SettingsPatch {
             outgoing_guard_enabled: Some(enabled),
             ..SettingsPatch::default()
-        };
-        let next_settings = self
-            .application
-            .patch_settings(state.persisted.settings.clone(), &patch)
-            .map_err(contract_error)?;
-        let mut next = state.persisted.clone();
-        next.settings = next_settings;
-        self.persist(&next)?;
-        state.persisted = next;
-        guards_value(&state.persisted.settings)
+        })?;
+        self.guards()
     }
 
     pub(crate) fn analysis_candidates(&self) -> Result<Value, String> {
@@ -984,26 +1012,33 @@ impl DesktopService {
         ))
     }
 
+    fn shared_settings(&self) -> Result<Settings, String> {
+        self.application
+            .resolve_settings(&self.paths, &SettingsOverrides::default())
+            .map(|resolved| resolved.settings)
+            .map_err(contract_error)
+    }
+
     pub(crate) fn settings(&self) -> Result<Value, String> {
-        Ok(settings_value(&self.mutable()?.persisted))
+        Ok(settings_value(
+            &self.mutable()?.persisted,
+            &self.shared_settings()?,
+        ))
     }
 
     pub(crate) fn patch_settings(&self, patch: &SettingsPatch) -> Result<Value, String> {
-        let mut state = self.mutable()?;
-        let next_settings = self
-            .application
-            .patch_settings(state.persisted.settings.clone(), patch)
-            .map_err(contract_error)?;
-        if next_settings.proxy_enabled && !state.persisted.settings.proxy_enabled {
+        if patch.proxy_enabled == Some(true) {
             return Err(
                 "Proxy capture can be enabled only from its explicit consent preview.".to_owned(),
             );
         }
-        let mut next = state.persisted.clone();
-        next.settings = next_settings;
-        self.persist(&next)?;
-        state.persisted = next;
-        Ok(settings_value(&state.persisted))
+        // Persist only supplied fields against the current shared file, not a
+        // cached desktop snapshot or the effective environment overrides.
+        let state = self.mutable()?;
+        self.application
+            .write_settings_patch(&self.paths, patch)
+            .map_err(contract_error)?;
+        Ok(settings_value(&state.persisted, &self.shared_settings()?))
     }
 
     pub(crate) fn patch_desktop_preferences(
@@ -1020,7 +1055,7 @@ impl DesktopService {
         }
         self.persist(&next)?;
         state.persisted = next;
-        Ok(settings_value(&state.persisted))
+        Ok(settings_value(&state.persisted, &self.shared_settings()?))
     }
 
     pub(crate) fn check_for_updates() -> Result<Value, String> {
@@ -1059,9 +1094,8 @@ impl DesktopService {
     }
 
     fn find_session(&self, id: &SessionId) -> Result<SearchResult, String> {
-        self.search_results(&SessionFilters::default())?
-            .into_iter()
-            .find(|result| &result.session_id == id)
+        self.core()?
+            .session(id)?
             .ok_or_else(|| format!("Session {id} was not found in local history."))
     }
 
@@ -1108,7 +1142,7 @@ impl DesktopService {
         }))
     }
 
-    #[cfg(debug_assertions)]
+    #[cfg(any(test, feature = "native-e2e"))]
     pub(crate) fn seed_native_test_fixture(&self, fixture: &str) -> Result<(), String> {
         if fixture != "search-resume" && fixture != "native-smoke" {
             return Err(format!("Unknown isolated native test fixture: {fixture}"));
@@ -1137,6 +1171,95 @@ impl DesktopService {
         self.persist(&next)?;
         state.persisted = next;
         Ok(())
+    }
+}
+
+fn detail_timeline(detail: &SessionDetail) -> Value {
+    let mut entries = Vec::new();
+    for message in &detail.messages {
+        let (kind, title) = match &message.role {
+            MessageRole::User => ("user", "User message".to_owned()),
+            MessageRole::Assistant => ("assistant", "Assistant message".to_owned()),
+            MessageRole::System => ("system", "System message".to_owned()),
+            MessageRole::Tool => ("tool", "Tool message".to_owned()),
+            MessageRole::Unknown(role) => ("unknown", format!("Message (native role: {role})")),
+        };
+        entries.push((
+            &message.created_at,
+            json!({
+                "id": message.message_id,
+                "kind": kind,
+                "at": message.created_at,
+                "title": title,
+                "body": message.text,
+                "state": "unknown",
+                "provenance": attribution_value(&message.attribution),
+            }),
+        ));
+    }
+    for tool in &detail.tool_calls {
+        let mut parts = Vec::new();
+        if let Some(input) = &tool.input {
+            parts.push(format!("Input: {input}"));
+        }
+        if let Some(output) = &tool.output {
+            parts.push(format!("Output: {output}"));
+        }
+        entries.push((
+            &tool.started_at,
+            json!({
+                "id": tool.tool_call_id,
+                "kind": "tool",
+                "at": tool.started_at,
+                "title": format!("{} ({})", tool.tool_name, run_state_label(tool.state)),
+                "body": if parts.is_empty() { None } else { Some(parts.join("\n")) },
+                "state": run_state_label(tool.state),
+                "provenance": attribution_value(&tool.attribution),
+            }),
+        ));
+    }
+    for agent in &detail.agent_runs {
+        entries.push((&agent.started_at, json!({
+            "id": agent.agent_run_id,
+            "kind": "agent",
+            "at": agent.started_at,
+            "title": format!("{} ({})", agent.agent_name.as_deref().unwrap_or("Unnamed agent"), run_state_label(agent.state)),
+            "body": Value::Null,
+            "state": run_state_label(agent.state),
+            "provenance": attribution_value(&agent.attribution),
+        })));
+    }
+    if let Some(summary) = &detail.summary {
+        entries.push((&summary.created_at, json!({
+            "id": summary.summary_id,
+            "kind": "system",
+            "at": summary.created_at,
+            "title": format!("Summary · {} / {} · {}", summary.provider, summary.model, summary.prompt_version),
+            "body": summary.text,
+            "state": "succeeded",
+            "provenance": attribution_value(&summary.attribution),
+        })));
+    }
+    entries.sort_by(|left, right| {
+        left.0
+            .unix_timestamp()
+            .cmp(&right.0.unix_timestamp())
+            .then_with(|| left.1["id"].as_str().cmp(&right.1["id"].as_str()))
+    });
+    Value::Array(entries.into_iter().map(|(_, entry)| entry).collect())
+}
+
+fn attribution_value(attribution: &Attribution) -> Value {
+    provenance_value(&attribution.source, &attribution.observation_ids)
+}
+
+const fn run_state_label(state: RunState) -> &'static str {
+    match state {
+        RunState::Running => "running",
+        RunState::Succeeded => "succeeded",
+        RunState::Failed => "failed",
+        RunState::Cancelled => "cancelled",
+        RunState::Unknown => "unknown",
     }
 }
 
@@ -1218,12 +1341,12 @@ fn deletion_receipt_value(receipt: &DeletionReceipt) -> Value {
     })
 }
 
-fn settings_value(state: &PersistedDesktopState) -> Value {
+fn settings_value(state: &PersistedDesktopState, settings: &Settings) -> Value {
     json!({
-        "proxy_enabled": state.settings.proxy_enabled,
-        "outgoing_guard_enabled": state.settings.outgoing_guard_enabled,
-        "search_mcp_enabled": state.settings.search_mcp_enabled,
-        "retention_days": state.settings.retention_days,
+        "proxy_enabled": settings.proxy_enabled,
+        "outgoing_guard_enabled": settings.outgoing_guard_enabled,
+        "search_mcp_enabled": settings.search_mcp_enabled,
+        "retention_days": settings.retention_days,
         "updater_choice": state.updater_choice.as_str(),
         "crash_reports_enabled": state.crash_reports_enabled,
     })
@@ -1519,7 +1642,7 @@ fn set_private_file(path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-#[cfg(debug_assertions)]
+#[cfg(any(test, feature = "native-e2e"))]
 fn synthetic_native_observation() -> Result<cutokyo_domain::RawObservation, String> {
     use cutokyo_domain::{NativeIdentity, ObservationId, RawObservation};
 
@@ -1566,6 +1689,20 @@ fn synthetic_native_observation() -> Result<cutokyo_domain::RawObservation, Stri
 }
 
 #[cfg(test)]
+#[path = "shared_runtime_tests.rs"]
+mod shared_runtime_tests;
+
+#[cfg(test)]
+fn test_paths(root: &Path) -> Result<RuntimePaths, String> {
+    Application::new()
+        .runtime_paths(
+            Some(root.join("config/config.toml")),
+            Some(root.join("data")),
+        )
+        .map_err(contract_error)
+}
+
+#[cfg(test)]
 mod tests {
     use std::sync::Mutex;
 
@@ -1590,7 +1727,8 @@ mod tests {
     fn native_service_uses_core_and_preserves_exact_resume_identity() -> Result<(), String> {
         let directory = tempfile::tempdir().map_err(|error| error.to_string())?;
         let executor = Arc::new(RecordingResumeExecutor::default());
-        let service = DesktopService::open_with_executor(directory.path(), executor.clone())?;
+        let service =
+            DesktopService::open_with_executor(test_paths(directory.path())?, executor.clone())?;
         service.seed_native_test_fixture("search-resume")?;
 
         let results = service.search_sessions(&SessionFilters {
@@ -1616,9 +1754,110 @@ mod tests {
     }
 
     #[test]
+    fn older_search_hit_can_open_resume_and_delete_without_touching_neighbors() -> Result<(), String>
+    {
+        let directory = tempfile::tempdir().map_err(|error| error.to_string())?;
+        let paths = test_paths(directory.path())?;
+        let application = Application::new();
+        let capture = application
+            .open_capture(&paths.spool_dir)
+            .map_err(contract_error)?;
+        for index in 0..502 {
+            let mut observation = synthetic_native_observation()?;
+            observation.observation_id =
+                cutokyo_domain::ObservationId::parse(format!("obs:older-hit-{index:04}"))
+                    .map_err(contract_error)?;
+            observation.source.native.event_id = Some(format!("event:older-hit-{index:04}"));
+            observation.source.native.session_key = format!("native:older-hit-{index:04}");
+            observation.source.native.resume_id = Some(format!("resume:older-hit-{index:04}"));
+            observation.payload["session_id"] = json!(format!("session:older-hit-{index:04}"));
+            observation.payload["message_id"] = json!(format!("message:older-hit-{index:04}"));
+            observation.payload["title"] = json!(format!("Older hit {index:04}"));
+            observation.payload["session_started_at"] = json!(if index == 501 {
+                "2026-09-18T10:00:00Z"
+            } else {
+                "2026-09-19T10:00:00Z"
+            });
+            observation.payload["text"] = json!(format!("unique older needle {index:04}"));
+            capture.capture(&observation).map_err(contract_error)?;
+        }
+        let executor = Arc::new(RecordingResumeExecutor::default());
+        let service = DesktopService::open_with_executor(paths.clone(), executor.clone())?;
+        let selected = "session:older-hit-0501";
+        let first_page = service.search_sessions(&SessionFilters::default())?;
+        let first_rows = first_page["sessions"]
+            .as_array()
+            .ok_or("missing sessions")?;
+        assert_eq!(first_rows.len(), 500);
+        assert!(first_rows.iter().all(|row| row["id"] != selected));
+        let filters = SessionFilters {
+            text: "unique older needle 0501".to_owned(),
+            ..SessionFilters::default()
+        };
+        let matches = service.search_sessions(&filters)?;
+        assert_eq!(matches["total"], 1);
+        assert_eq!(matches["sessions"][0]["id"], selected);
+        assert_eq!(service.session_detail(selected)?["title"], "Older hit 0501");
+        let reader = DesktopService::open(paths.clone())?;
+        assert_eq!(reader.bootstrap()?["writerMode"], "read_only");
+        assert_eq!(reader.session_detail(selected)?["id"], selected);
+        assert_eq!(
+            reader.preview_resume(selected)?["nativeResumeId"],
+            "resume:older-hit-0501"
+        );
+        assert_eq!(
+            service.preview_resume(selected)?["nativeResumeId"],
+            "resume:older-hit-0501"
+        );
+        service.resume_session(selected)?;
+        assert_eq!(
+            executor
+                .calls
+                .lock()
+                .map_err(|_| "recording resume lock poisoned")?
+                .as_slice(),
+            &[(Harness::ClaudeCode, "resume:older-hit-0501".to_owned())]
+        );
+        let preview = service.preview_session_deletion(selected)?;
+        assert_eq!(preview["sessionIds"], json!([selected]));
+        assert_eq!(preview["sessionTitles"], json!(["Older hit 0501"]));
+        assert_eq!(preview["rawObservations"], 1);
+        assert_eq!(preview["messages"], 1);
+        assert_eq!(preview["ftsRows"], 1);
+        let token = preview["previewToken"]
+            .as_str()
+            .ok_or("missing deletion token")?;
+        assert!(
+            service
+                .delete_session("session:older-hit-0500", token)
+                .is_err()
+        );
+        assert_eq!(service.delete_session(selected, token)?["sessions"], 1);
+        assert!(service.session_detail(selected).is_err());
+        assert!(reader.session_detail(selected).is_err());
+        assert!(service.preview_resume(selected).is_err());
+        assert!(service.resume_session(selected).is_err());
+        assert!(service.preview_session_deletion(selected).is_err());
+        assert_eq!(service.search_sessions(&filters)?["total"], 0);
+        drop(reader);
+        drop(service);
+        let reopened = DesktopService::open(paths)?;
+        for index in 0..501 {
+            let neighbor = format!("session:older-hit-{index:04}");
+            assert_eq!(reopened.session_detail(&neighbor)?["id"], neighbor);
+            let preview = reopened.preview_session_deletion(&neighbor)?;
+            assert_eq!(preview["rawObservations"], 1);
+            assert_eq!(preview["messages"], 1);
+            assert_eq!(preview["ftsRows"], 1);
+        }
+        assert!(reopened.session_detail(selected).is_err());
+        Ok(())
+    }
+
+    #[test]
     fn one_session_deletion_is_preview_bound_and_exact() -> Result<(), String> {
         let directory = tempfile::tempdir().map_err(|error| error.to_string())?;
-        let service = DesktopService::open(directory.path())?;
+        let service = DesktopService::open(test_paths(directory.path())?)?;
         service.seed_native_test_fixture("native-smoke")?;
         let session_id = "session:native-desktop-73A9";
         let preview = service.preview_session_deletion(session_id)?;
@@ -1642,7 +1881,7 @@ mod tests {
     #[test]
     fn settings_patch_preserves_omitted_privacy_controls() -> Result<(), String> {
         let directory = tempfile::tempdir().map_err(|error| error.to_string())?;
-        let service = DesktopService::open(directory.path())?;
+        let service = DesktopService::open(test_paths(directory.path())?)?;
         service.patch_settings(&SettingsPatch {
             outgoing_guard_enabled: Some(true),
             ..SettingsPatch::default()
@@ -1662,7 +1901,7 @@ mod tests {
     #[test]
     fn analysis_cancel_never_calls_an_outbound_provider() -> Result<(), String> {
         let directory = tempfile::tempdir().map_err(|error| error.to_string())?;
-        let service = DesktopService::open(directory.path())?;
+        let service = DesktopService::open(test_paths(directory.path())?)?;
         service.seed_native_test_fixture("native-smoke")?;
         let preview = service.preview_analysis(vec!["session:native-desktop-73A9".to_owned()])?;
         let request_id = preview["requestId"]

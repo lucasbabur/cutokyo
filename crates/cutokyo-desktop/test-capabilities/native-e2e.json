@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "native-e2e-window-inspection",
+  "description": "Native-E2E-only access for WebdriverIO to inspect the main window and forward test logs.",
+  "windows": ["main"],
+  "permissions": [
+    "wdio:allow-get-window-states",
+    "wdio:allow-log-frontend"
+  ]
+}

@@ -1,30 +1,37 @@
 import { strict as assert } from "node:assert";
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { $, browser } from "@wdio/globals";
 
-const repositoryRoot = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  "../../..",
-);
-const evidencePath = resolve(
-  repositoryRoot,
-  "evidence/final/native/search-detail-resume-1280x800.png",
-);
+import { assertNativeGeometry } from "./geometry.js";
+
+const nativeEvidence = process.env.CUTOKYO_NATIVE_EVIDENCE;
+assert.ok(nativeEvidence, "native evidence directory was not propagated");
+const evidencePath = join(nativeEvidence, "search-detail-resume-1280x800.png");
 
 describe("Cutokyo native Tauri application", () => {
   it("searches, opens, exactly resumes, and deletes an isolated native fixture", async () => {
+    const applicationUrl = new URL(await browser.getUrl());
+    assert.equal(applicationUrl.protocol, "tauri:");
+    assert.equal(applicationUrl.hostname, "localhost");
+
     const overview = await $("h1=Overview");
     await overview.waitForDisplayed();
     assert.equal(await overview.getText(), "Overview");
 
-    const windowSize = await browser.getWindowSize();
-    assert.ok(windowSize.width >= 900, `native width was ${windowSize.width}`);
-    assert.ok(
-      windowSize.height >= 700,
-      `native height was ${windowSize.height}`,
+    const windowSize = (await browser.tauri.execute(({ core }) =>
+      core.invoke("plugin:window|inner_size", { label: "main" }),
+    )) as { height: number; width: number };
+    const viewport = await browser.execute(() => ({
+      width: window.innerWidth,
+      height: window.innerHeight,
+    }));
+    assertNativeGeometry(windowSize, viewport);
+    writeFileSync(
+      join(nativeEvidence, "geometry-1280x800.json"),
+      JSON.stringify({ windowSize, viewport }),
+      { flag: "wx" },
     );
 
     const sessionsNavigation = await $("a=Sessions");
@@ -72,12 +79,23 @@ describe("Cutokyo native Tauri application", () => {
     await $("button=Delete session").click();
     const deletionDialog = await $('[role="dialog"]');
     await deletionDialog.waitForDisplayed();
-    assert.match(await deletionDialog.getText(), /Raw observations\s+1/);
-    assert.match(await deletionDialog.getText(), /Search rows\s+1/);
+    const rawObservationCount = await deletionDialog.$(
+      ".//dt[normalize-space(.)='Raw observations']/following-sibling::dd[1]",
+    );
+    const searchRowCount = await deletionDialog.$(
+      ".//dt[normalize-space(.)='Search rows']/following-sibling::dd[1]",
+    );
+    assert.equal(await rawObservationCount.getText(), "1");
+    assert.equal(await searchRowCount.getText(), "1");
     await $("button=Delete selected session").click();
 
-    await sessionsHeading.waitForDisplayed();
-    const emptyState = await $("h2=No sessions match these filters");
+    const returnedSessionsHeading = await $("h1=Sessions");
+    await returnedSessionsHeading.waitForDisplayed();
+    const deletedResult = await $(
+      'a[aria-label="Open Native exact resume 73A9"]',
+    );
+    await deletedResult.waitForExist({ reverse: true });
+    const emptyState = await $("h2=History is empty—not zero");
     await emptyState.waitForDisplayed();
   });
 });

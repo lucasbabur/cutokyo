@@ -7,6 +7,9 @@ mod health_binding;
 #[cfg(any(feature = "desktop-runtime", test))]
 mod service;
 
+#[cfg(any(test, feature = "native-e2e"))]
+mod native_test;
+
 #[cfg(feature = "desktop-runtime")]
 mod runtime;
 
