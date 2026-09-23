@@ -5,6 +5,7 @@ members = [
   "crates/cutokyo-cli",
   "crates/cutokyo-desktop",
   "tools/fake-harness",
+  "tools/updater-signature-verifier",
   "tests",
 ]
 resolver = "2"
@@ -51,6 +52,10 @@ tracing = "=0.1.44"
 tracing-subscriber = { version = "=0.3.20", features = ["env-filter", "fmt", "json"] }
 tar = "=0.4.44"
 flate2 = "=1.1.9"
+wait-timeout = "=0.2.1"
+base64 = "=0.22.1"
+minisign-verify = "=0.2.5"
+minisign = "=0.9.1"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
@@ -78,6 +83,7 @@ ci = "github"
 installers = ["shell", "powershell", "npm"]
 npm-package = "cutokyo"
 npm-shrinkwrap = true
+precise-builds = true
 pr-run-mode = "plan"
 # The release workflow layers pinned actions, signing preflight, Tauri, SBOM, and
 # provenance jobs over cargo-dist's plan. It is intentionally maintained here.

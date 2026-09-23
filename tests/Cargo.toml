@@ -28,6 +28,10 @@ tokio.workspace = true
 tokio-util.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+wait-timeout.workspace = true
+base64.workspace = true
+minisign.workspace = true
+
 
 [[bin]]
 name = "cutokyo-c16-fixture"

@@ -9,6 +9,7 @@ fn artifact_probe() -> Option<i32> {
     let probe = match arguments.as_slice() {
         [probe] if probe == "--cutokyo-probe-liveness" => "liveness",
         [probe] if probe == "--cutokyo-probe-readiness" => "readiness",
+        [probe] if probe == "--cutokyo-uninstall" => "uninstall",
         _ => return None,
     };
     let application = Application::new();
@@ -29,6 +30,21 @@ fn artifact_probe() -> Option<i32> {
             return Some(70);
         }
     };
+    if probe == "uninstall" {
+        return Some(match application.uninstall(&paths) {
+            Ok(receipt) => match serde_json::to_string(&receipt) {
+                Ok(output) => {
+                    println!("{output}");
+                    0
+                }
+                Err(_) => 70,
+            },
+            Err(error) => {
+                eprintln!("desktop uninstall failed: {:?}", error.code);
+                78
+            }
+        });
+    }
     let report = application.doctor(&paths, &SettingsOverrides::default());
     let exit = match report.outcome {
         DoctorOutcome::Healthy => 0,

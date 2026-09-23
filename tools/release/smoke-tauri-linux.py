@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -95,14 +96,26 @@ def main() -> int:
     package = one_debian_package(args.artifacts.resolve())
     name = package_name(package)
     expected_version = args.expected_version.removeprefix("v")
+    existing = run(["dpkg-query", "--show", "--showformat=${db:Status-Abbrev}", name], check=False)
+    if existing.returncode == 0:
+        fail("refusing to replace or remove an existing package; use a disposable machine/container")
+    package_digest = hashlib.sha256(package.read_bytes()).hexdigest()
+    with tempfile.TemporaryDirectory(prefix="cutokyo-package-inspect-") as unpacked:
+        run(["dpkg-deb", "--extract", os.fspath(package), unpacked])
+        binaries = list((Path(unpacked) / "usr/bin").iterdir())
+        if len(binaries) != 1 or binaries[0].is_symlink() or not binaries[0].is_file():
+            fail("Debian package must contain exactly one regular native executable")
+        executable_digest = hashlib.sha256(binaries[0].read_bytes()).hexdigest()
     installed = False
     try:
+        installed = True  # A failed dpkg install can still leave unpacked files.
         run(["sudo", "dpkg", "--install", os.fspath(package)])
-        installed = True
         binary = installed_binary(name)
+        if hashlib.sha256(binary.read_bytes()).hexdigest() != executable_digest:
+            fail("installed desktop executable differs from the built package")
         with tempfile.TemporaryDirectory(prefix="cutokyo-desktop-smoke-") as temporary:
             root = Path(temporary)
-            environment = os.environ.copy()
+            environment = {"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8"}
             environment.update(
                 {
                     "HOME": os.fspath(root / "home"),
@@ -139,6 +152,14 @@ def main() -> int:
             ):
                 fail("readiness probe did not distinguish a live process from an unready product")
 
+            restores = []
+            for _ in range(2):
+                restored = run([os.fspath(binary), "--cutokyo-uninstall"], env=environment, cwd=root)
+                restore = parse_json(restored, "no-state restore")
+                if restore != {"managed_state_found": False, "removed": [], "history_preserved": True}:
+                    fail("no-state restore did not report an idempotent history-preserving no-op")
+                restores.append(restored.returncode)
+
         remove_package(name)
         installed = False
         if binary.exists():
@@ -150,9 +171,15 @@ def main() -> int:
                     "binary": binary.name,
                     "gui_activated": False,
                     "liveness_exit": 0,
+                    "process_liveness": True,
                     "package": package.name,
+                    "package_sha256": package_digest,
+                    "installed_executable_sha256": executable_digest,
+                    "product_readiness": False,
                     "product_readiness_exit": 69,
+                    "first_uninstall_exit": 0,
                     "repeat_uninstall_exit": 0,
+                    "no_state_restore_exits": restores,
                     "source_tree_shortcut": False,
                     "version": expected_version,
                 },

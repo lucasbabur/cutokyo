@@ -41,10 +41,24 @@ Exact active versions are in `Cargo.lock`.
 | tracing-subscriber | 0.3.20 | MIT | Bounded JSONL subscriber output |
 | tar | 0.4.44 | MIT OR Apache-2.0 | Deterministic diagnostic archive construction |
 | flate2 | 1.1.9 | MIT OR Apache-2.0 | Gzip diagnostic archive compression; version shared with KeyHog's exact maintained dependency |
+| wait-timeout | 0.2.1 | MIT OR Apache-2.0 | Bounded release-artifact subprocess integration tests |
+| base64 | 0.22.1 | MIT OR Apache-2.0 | Strict decoding of Tauri's outer updater-signature encoding |
+| minisign-verify | 0.2.5 | MIT | Established Minisign parser and verifier used at release assembly |
+| minisign | 0.9.1 | MIT | Test-only generation of valid and deliberately mismatched updater signatures |
 | tauri | 2.11.5 | Apache-2.0 OR MIT | Optional desktop-runtime dependency; stable v2 |
 | tauri-build | 2.6.3 | Apache-2.0 OR MIT | Official Tauri build-context generator |
 | tauri-plugin-wdio | 1.4.0 | MIT OR Apache-2.0 | Test-feature-only WebdriverIO bridge and native window inspection commands |
 | tauri-plugin-wdio-webdriver | 1.4.0 | MIT | Test-feature-only embedded native WebDriver server; release builds reject the feature |
+
+## Release-test npm fixture
+
+The cargo-dist generated npm installer has one runtime dependency. Its exact upstream
+package is retained solely as an offline install-test input; it is not a Cutokyo CLI
+implementation and is removed before release assembly.
+
+| Package | Version | Artifact SHA-256 | License | Upstream |
+| --- | ---: | --- | --- | --- |
+| detect-libc | 2.1.2 | `270dec0fc06cff86481da8af2dd8f18dee6b602790b14ef0e1c2c18d7da39427` | Apache-2.0 | <https://www.npmjs.com/package/detect-libc/v/2.1.2> |
 
 ## OpenCode fixture reference artifacts
 
@@ -98,6 +112,8 @@ runtime application code.
 | cargo-machete   |                      0.9.2 | MIT OR Apache-2.0 | Visible non-blocking unused-dependency report                 |
 | Knip            |                     6.37.0 | ISC               | Visible non-blocking TypeScript surface report                |
 | pnpm            |                    11.25.0 | MIT               | Locked TypeScript workspace package manager                   |
+| PyYAML          |                      6.0.3 | MIT               | Development-only parsed workflow contract tests, verified from PyPI metadata |
+| actionlint      |                     1.7.12 | MIT               | GitHub expression and shell validation, upstream `LICENSE.txt` |
 
 ## Workflow actions and standards text
 
