@@ -1,14 +1,8 @@
 <h1 align="center">Cutokyo 🗼</h1>
 
 <p align="center">
-  <strong>🔎 Find a session. ▶️ Resume the exact one. 🔒 Keep your history local.</strong>
-</p>
-
-<p align="center">
   <a href="https://github.com/lucasbabur/cutokyo/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/lucasbabur/cutokyo/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/lucasbabur/cutokyo/blob/main/LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/badge/License-Apache--2.0-blue"></a>
-</p>
-<p align="center">
   <a href="https://github.com/lucasbabur/cutokyo/blob/main/Cargo.toml"><img alt="Rust 2024" src="https://img.shields.io/badge/Rust-2024-000000?logo=rust&amp;logoColor=white"></a>
   <a href="https://github.com/lucasbabur/cutokyo/tree/main/crates/cutokyo-desktop"><img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-24C8D8?logo=tauri&amp;logoColor=white"></a>
   <a href="https://github.com/lucasbabur/cutokyo/tree/main/ui"><img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?logo=react&amp;logoColor=white"></a>
