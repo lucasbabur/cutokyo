@@ -1,13 +1,19 @@
 <h1 align="center">Cutokyo 🗼</h1>
 
-[![CI](https://github.com/lucasbabur/cutokyo/actions/workflows/ci.yml/badge.svg)](https://github.com/lucasbabur/cutokyo/actions/workflows/ci.yml)
-[![Rust 2024](https://img.shields.io/badge/Rust-2024-000000?logo=rust&logoColor=white)](Cargo.toml)
-[![Tauri 2](https://img.shields.io/badge/Tauri-2-24C8D8?logo=tauri&logoColor=white)](crates/cutokyo-desktop)
-[![React 19](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](ui)
-[![SQLite](https://img.shields.io/badge/SQLite-local-003B57?logo=sqlite&logoColor=white)](crates/cutokyo-core)
-[![Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue)](LICENSE)
+<p align="center">
+  <strong>🔎 Find a session. ▶️ Resume the exact one. 🔒 Keep your history local.</strong>
+</p>
 
-**🔎 Find a session. ▶️ Resume the exact one. 🔒 Keep your history local.**
+<p align="center">
+  <a href="https://github.com/lucasbabur/cutokyo/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/lucasbabur/cutokyo/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/lucasbabur/cutokyo/blob/main/LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/badge/License-Apache--2.0-blue"></a>
+</p>
+<p align="center">
+  <a href="https://github.com/lucasbabur/cutokyo/blob/main/Cargo.toml"><img alt="Rust 2024" src="https://img.shields.io/badge/Rust-2024-000000?logo=rust&amp;logoColor=white"></a>
+  <a href="https://github.com/lucasbabur/cutokyo/tree/main/crates/cutokyo-desktop"><img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-24C8D8?logo=tauri&amp;logoColor=white"></a>
+  <a href="https://github.com/lucasbabur/cutokyo/tree/main/ui"><img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?logo=react&amp;logoColor=white"></a>
+  <a href="https://github.com/lucasbabur/cutokyo/tree/main/crates/cutokyo-core"><img alt="Local SQLite" src="https://img.shields.io/badge/SQLite-local-003B57?logo=sqlite&amp;logoColor=white"></a>
+</p>
 
 Cutokyo brings Claude Code, Codex, and OpenCode session history into one local
 CLI and desktop app. Search by project, inspect where a session came from,
@@ -15,10 +21,10 @@ resume it in its native harness, and check whether capture and storage are
 healthy. The app is written in Rust; its desktop interface uses Tauri. The npm
 package installs the native executable, not a separate JavaScript version.
 
-![Cutokyo desktop overview showing sessions and usage across three harnesses](evidence/final/screens/dashboard-1280x800.png)
-
-*Desktop overview with sample data. Totals show their source and coverage rather
-than pretending incomplete capture is complete.*
+<p align="center">
+  <img src="https://raw.githubusercontent.com/lucasbabur/cutokyo/main/evidence/final/screens/dashboard-1280x800.png" alt="Cutokyo desktop overview showing sessions and usage across three harnesses" width="960">
+</p>
+<p align="center"><em>Sample data. Each total keeps its source and coverage in view.</em></p>
 
 ## Contents
 
