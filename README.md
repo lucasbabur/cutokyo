@@ -1,14 +1,28 @@
-# Cutokyo
+# Cutokyo 🗼
 
-Cutokyo is a pre-1.0, local-only community observability and control surface for
-Claude Code, Codex, and OpenCode. It preserves attributable session history,
-searches it locally, resumes the exact native session, and reports capture and
-storage health. The product is one native Rust application with CLI and Tauri
-frontends. The npm package is only cargo-dist's generated installer for that
-native executable.
+[![CI](https://github.com/lucasbabur/cutokyo/actions/workflows/ci.yml/badge.svg)](https://github.com/lucasbabur/cutokyo/actions/workflows/ci.yml)
+[![Rust 2024](https://img.shields.io/badge/Rust-2024-000000?logo=rust&logoColor=white)](Cargo.toml)
+[![Tauri 2](https://img.shields.io/badge/Tauri-2-24C8D8?logo=tauri&logoColor=white)](crates/cutokyo-desktop)
+[![React 19](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](ui)
+[![SQLite](https://img.shields.io/badge/SQLite-local-003B57?logo=sqlite&logoColor=white)](crates/cutokyo-core)
+[![Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue)](LICENSE)
+
+**🔎 Find a session. ▶️ Resume the exact one. 🔒 Keep your history local.**
+
+Cutokyo brings Claude Code, Codex, and OpenCode session history into one local
+CLI and desktop app. Search by project, inspect where a session came from,
+resume it in its native harness, and check whether capture and storage are
+healthy. The app is written in Rust; its desktop interface uses Tauri. The npm
+package installs the native executable, not a separate JavaScript version.
+
+![Cutokyo desktop overview showing sessions and usage across three harnesses](evidence/final/screens/dashboard-1280x800.png)
+
+*Desktop overview with sample data. Totals show their source and coverage rather
+than pretending incomplete capture is complete.*
 
 ## Contents
 
+- [At a glance](#at-a-glance)
 - [Product boundary](#product-boundary)
 - [Clean install](#clean-install)
 - [CLI tour](#cli-tour)
@@ -17,6 +31,15 @@ native executable.
 - [Development](#development)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
+
+## At a glance
+
+- Search local sessions across Claude Code, Codex, and OpenCode without losing
+  their project or source.
+- Preview an exact native resume command before choosing to launch it.
+- Check capture gaps, storage health, and configuration with `cutokyo doctor`.
+- Preview retention and deletion scope before confirming a destructive action.
+- Keep proxy capture and provider-bound analysis off unless you opt in.
 
 ## Product boundary
 
@@ -41,9 +64,9 @@ Prerequisites for source development are Rust 1.98.1, Node 22.22.3, pnpm
 11.25.0, Python 3, and the platform's Tauri prerequisites when building the
 desktop.
 
-A released CLI may be installed with cargo-dist's generated shell, PowerShell,
-or npm installer. All three install the same Rust binary. Verify the published
-SHA-256 manifest before first launch.
+Start with an authorized [GitHub release](https://github.com/lucasbabur/cutokyo/releases).
+Its cargo-dist shell, PowerShell, and npm installers install the same Rust
+binary. Verify the published SHA-256 manifest before first launch.
 
 ```bash
 # Preview only: creates no config or data directory.
