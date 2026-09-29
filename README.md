@@ -1,4 +1,4 @@
-# Cutokyo 🗼
+<h1 align="center">Cutokyo 🗼</h1>
 
 [![CI](https://github.com/lucasbabur/cutokyo/actions/workflows/ci.yml/badge.svg)](https://github.com/lucasbabur/cutokyo/actions/workflows/ci.yml)
 [![Rust 2024](https://img.shields.io/badge/Rust-2024-000000?logo=rust&logoColor=white)](Cargo.toml)
