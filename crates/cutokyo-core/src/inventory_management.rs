@@ -509,7 +509,7 @@ fn scan_config_entries(
                             },
                             (
                                 "hook",
-                                format!("{event} #{}", index + 1),
+                                describe::hook_name(event, group),
                                 owned(event, group),
                                 "configured",
                                 describe::hook(event, group),

@@ -2,7 +2,7 @@ import { strict as assert } from "node:assert";
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { $, browser } from "@wdio/globals";
+import { $, $$, browser } from "@wdio/globals";
 
 const root = process.env.CUTOKYO_DESKTOP_TEST_ROOT;
 assert.ok(
@@ -20,30 +20,36 @@ async function tools() {
   await $("a=Agent tools").click();
   await $("h1=Agent tools").waitForDisplayed();
 }
+const panel = (name: string) => $(`aside[aria-label="${name}"]`);
 async function manage(name: string) {
-  await $(`button[aria-label="Manage ${name}"]`).click();
-  await $('[role="dialog"]').waitForDisplayed();
-  await $('[role="dialog"]').$("button=File").click();
+  await $(`tr button[aria-label="${name}"]`).click();
+  await panel(name).waitForDisplayed();
   await $('textarea[aria-label="Source content"]').waitForDisplayed();
 }
 async function waitForDialogClose() {
   await $('[role="dialog"]').waitForExist({ reverse: true });
 }
+async function waitForReceipt() {
+  await $(".success-message").waitForDisplayed();
+}
 async function filterHarness(name: string) {
-  const group = await $('[role="group"][aria-label="Harness"]');
-  await group.$(`button=${name}`).click();
-  assert.equal(
-    await group.$(`button=${name}`).getAttribute("aria-pressed"),
-    "true",
-  );
+  const filter = await $('nav[aria-label="Tool filters"]').$(`button*=${name}`);
+  await filter.click();
+  assert.equal(await filter.getAttribute("aria-pressed"), "true");
 }
 async function installTo(name: string) {
-  await $('[role="dialog"]').$("button*=Install to…").click();
-  await $(`button=Install to ${name}`).click();
-  const confirm = await $(`button=Confirm install to ${name}`);
+  await $(
+    `ul[aria-label="Harnesses"] button[aria-label="Install to ${name}"]`,
+  ).click();
+  const confirm = await $('[role="dialog"]').$(`button*=Install to ${name}`);
   await confirm.waitForDisplayed();
   assert.equal(await confirm.isEnabled(), true);
   await confirm.click();
+}
+/** Shows the installation that lives in `harness` when a tool has several. */
+async function showInstallation(harness: string) {
+  const row = await $('ul[aria-label="Harnesses"]').$(`button*=${harness}`);
+  if (await row.isExisting()) await row.click();
 }
 
 describe("Native inventory management on real isolated harness files", () => {
@@ -59,8 +65,8 @@ describe("Native inventory management on real isolated harness files", () => {
       const edited =
         "---\nname: release-checklist\ndescription: Native edited release checklist\n---\n# Native edited checklist\nVerify the actual release.\n";
       await source.setValue(edited);
-      await $("button=Save changes").click();
-      await waitForDialogClose();
+      await $("button*=Save changes").click();
+      await waitForReceipt();
       assert.equal(readFileSync(join(sourceSkill, "SKILL.md"), "utf8"), edited);
 
       await manage("release-checklist");
@@ -74,17 +80,22 @@ describe("Native inventory management on real isolated harness files", () => {
 
       await filterHarness("Claude Code");
       await manage("release-checklist");
-      await $('[role="dialog"]').$("button=Details").click();
-      assert.ok((await $('[role="dialog"]').getText()).includes(sourceSkill));
-      await $('[role="dialog"]').$("button*=Install to…").click();
-      for (const row of await $('[role="dialog"]').$$("li")) {
-        for (const button of await row.$$("button*=Install to")) {
-          assert.equal(await button.isEnabled(), false);
-        }
-      }
-      await $('[role="dialog"]').$("button*=Install to…").click();
-      await $('[role="dialog"]').$("button=File").click();
-      await $("button=Remove").click();
+      await showInstallation("Claude Code");
+      await panel("release-checklist").$("button=Details").click();
+      assert.ok(
+        (await panel("release-checklist").getText()).includes(sourceSkill),
+      );
+      // An independent copy now exists, so no harness offers another install.
+      assert.equal(
+        (
+          await $$(
+            'ul[aria-label="Harnesses"] button[aria-label^="Install to"]',
+          )
+        ).length,
+        0,
+      );
+      await panel("release-checklist").$("button=File").click();
+      await $("button*=Remove").click();
       assert.match(await $('[role="dialog"]').getText(), /recovery copy/i);
       await browser.saveScreenshot(
         join(evidence, "inventory-remove-confirmation-1280x800.png"),
@@ -106,14 +117,16 @@ describe("Native inventory management on real isolated harness files", () => {
         "project-notes",
       );
       await manage("project-notes");
-      await $('[role="dialog"]').$("button=Details").click();
-      assert.ok((await $('[role="dialog"]').getText()).includes(claudeConfig));
-      await $('[role="dialog"]').$("button=File").click();
+      await panel("project-notes").$("button=Details").click();
+      assert.ok(
+        (await panel("project-notes").getText()).includes(claudeConfig),
+      );
+      await panel("project-notes").$("button=File").click();
       const editor = await $('textarea[aria-label="Source content"]');
       const invalid = "{not valid JSON";
       const before = readFileSync(claudeConfig, "utf8");
       await editor.setValue(invalid);
-      await $("button=Save changes").click();
+      await $("button*=Save changes").click();
       await $('.form-error[role="alert"]').waitForDisplayed();
       assert.equal(await editor.getValue(), invalid);
       assert.equal(readFileSync(claudeConfig, "utf8"), before);
@@ -135,7 +148,7 @@ describe("Native inventory management on real isolated harness files", () => {
       const external = JSON.parse(before);
       external.unrelated = "concurrent user edit";
       writeFileSync(claudeConfig, JSON.stringify(external));
-      await $("button=Save changes").click();
+      await $("button*=Save changes").click();
       await browser.waitUntil(async () =>
         /changed since/.test(await $('.form-error[role="alert"]').getText()),
       );
@@ -146,14 +159,14 @@ describe("Native inventory management on real isolated harness files", () => {
         ].args[0],
         "notes.js",
       );
-      await $("button=Cancel").click();
+      await $('button[aria-label="Close details"]').click();
       await $("button=Discard changes").click();
       await waitForDialogClose();
-      await $("button=Refresh installations").click();
+      await $('button[aria-label="Rescan installations"]').click();
       await manage("project-notes");
       await $('textarea[aria-label="Source content"]').setValue(edited);
-      await $("button=Save changes").click();
-      await waitForDialogClose();
+      await $("button*=Save changes").click();
+      await waitForReceipt();
       assert.equal(
         JSON.parse(readFileSync(claudeConfig, "utf8")).unrelated,
         "concurrent user edit",
@@ -178,21 +191,19 @@ describe("Native inventory management on real isolated harness files", () => {
       assert.match(openConfig, /changed-notes.js/);
 
       await $('input[aria-label="Search installed tools"]').setValue(
-        "PostToolUse #2",
+        "PostToolUse · cutokyo",
       );
-      await manage("PostToolUse #2");
+      await manage("PostToolUse · cutokyo");
       const protectedSource = await $('textarea[aria-label="Source content"]');
       assert.notEqual(await protectedSource.getAttribute("readonly"), null);
       assert.equal(await protectedSource.getProperty("readOnly"), true);
-      await $('[role="dialog"]').$("button=Overview").click();
       assert.match(
-        await $('[role="dialog"]').getText(),
+        await panel("PostToolUse · cutokyo").getText(),
         /Cutokyo-owned capture/,
       );
-      assert.equal(await $("button=Save changes").isExisting(), false);
-      assert.equal(await $("button=Remove").isExisting(), false);
-      await $("button=Done").click();
-      await waitForDialogClose();
+      assert.equal(await $("button*=Save changes").isExisting(), false);
+      assert.equal(await $("button*=Remove").isExisting(), false);
+      await $('button[aria-label="Close details"]').click();
       await browser.saveScreenshot(
         join(evidence, "inventory-native-configured-1280x800.png"),
       );
@@ -214,14 +225,16 @@ describe("Native inventory management on real isolated harness files", () => {
         "release-checklist",
       );
       await manage("release-checklist");
-      await $('[role="dialog"]').$("button=Details").click();
-      assert.ok((await $('[role="dialog"]').getText()).includes(copiedSkill));
-      await $('[role="dialog"]').$("button=File").click();
+      await panel("release-checklist").$("button=Details").click();
+      assert.ok(
+        (await panel("release-checklist").getText()).includes(copiedSkill),
+      );
+      await panel("release-checklist").$("button=File").click();
       assert.match(
         await $('textarea[aria-label="Source content"]').getValue(),
         /Native edited checklist/,
       );
-      await $("button=Done").click();
+      await $('button[aria-label="Close details"]').click();
     });
   } else {
     throw new Error(

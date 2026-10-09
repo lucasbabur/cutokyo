@@ -6,6 +6,7 @@ import { initializeAppearance, loadAppearance } from "./appearance.js";
 import { CommandProvider } from "./commands/context.js";
 import { createTauriCommandClient } from "./commands/tauri.js";
 import { AnnouncementProvider } from "./components/Announcer.js";
+import { trackInputModality } from "./inputModality.js";
 import type { CommandClient } from "./contracts.js";
 import "./styles.css";
 
@@ -38,6 +39,7 @@ async function resolveCommandClient(): Promise<CommandClient> {
 // Apply the OS appearance synchronously; the saved choice is read before the
 // first app render when the command responds promptly.
 initializeAppearance();
+trackInputModality(document.documentElement);
 const container = document.querySelector<HTMLDivElement>("#root");
 if (container === null) throw new Error("Cutokyo root element is missing.");
 

@@ -2,6 +2,8 @@ import type {
   Coverage,
   DashboardResponse,
   DesktopSettings,
+  Harness,
+  InventoryItem,
   ProxyStatus,
   HealthResponse,
   InventoryResponse,
@@ -578,6 +580,143 @@ export interface FixtureState {
   failAppearanceSave: boolean;
 }
 
+/** Inventory at the size of a real long-lived setup (~235 tools), for layout checks. */
+function largeInventory(): InventoryResponse {
+  const harnessSets: readonly (readonly Harness[])[] = [
+    ["claude_code"],
+    ["claude_code", "opencode"],
+    ["codex"],
+    ["opencode"],
+    ["codex", "opencode"],
+    ["claude_code", "codex", "opencode"],
+  ];
+  const topics = [
+    "chrome-browser",
+    "built-in-browser",
+    "hyperframes-creative",
+    "hyperframes-animation",
+    "gitnexus-guide",
+    "gitnexus-debugging",
+    "gitnexus-refactoring",
+    "sandbox-sdk",
+    "refero-design",
+    "dataviz",
+    "pdf",
+    "docx",
+    "xlsx",
+    "pptx",
+    "skill-creator",
+    "deep-research",
+    "code-review",
+    "diagnosing-bugs",
+    "simplify",
+    "security-review",
+  ];
+  const items: InventoryItem[] = [];
+  for (let index = 0; index < 130; index += 1) {
+    const topic = topics[index % topics.length]!;
+    const name =
+      index < topics.length
+        ? topic
+        : `${topic}-${Math.floor(index / topics.length)}`;
+    items.push({
+      id: `large-skill-${index}`,
+      kind: "skill",
+      name,
+      harnesses: harnessSets[index % harnessSets.length]!,
+      scope: index % 7 === 0 ? "project" : "user",
+      origin: `~/.claude/skills/${name}/SKILL.md`,
+      state: "installed",
+      managedByCutokyo: false,
+      description: `Read this skill before the first step that uses ${topic}. It covers loading the tools, the permissions each step needs, what to do when a page cannot be reached, and when to stop and ask the person before continuing.`,
+      provenance: provenance("claude_code", "local_state"),
+    });
+  }
+  for (let index = 0; index < 23; index += 1) {
+    items.push({
+      id: `large-mcp-${index}`,
+      kind: "mcp",
+      name:
+        [
+          "refero",
+          "akb-memory",
+          "headroom",
+          "dataforseo",
+          "higgsfield",
+          "mobbin",
+          "graphiti",
+        ][index % 7]! + (index < 7 ? "" : `-${index}`),
+      harnesses: harnessSets[(index + 2) % harnessSets.length]!,
+      scope: "user",
+      origin: "~/.claude.json › mcpServers",
+      state: index === 0 ? "degraded" : "configured",
+      managedByCutokyo: false,
+      description: "Remote MCP server (http): api.example.dev",
+      provenance: provenance("claude_code", "local_state"),
+    });
+  }
+  const hooks: readonly (readonly [string, string])[] = [
+    ["PostToolUse", "herdr-progress"],
+    ["PostToolUse", "bash screenshot-seen-nudge.sh"],
+    ["PostToolUse", "bash format-on-save.sh"],
+    ["PreToolUse", "bash guard.sh"],
+    ["PreToolUse", "grep-guard"],
+    ["SessionStart", "herdr-progress"],
+    ["SessionStart", "bash load-context.sh"],
+    ["SessionEnd", "python3 summarize.py"],
+    ["Stop", "bash memory-nudge.sh"],
+    ["UserPromptSubmit", "herdr-progress"],
+    ["WorktreeCreate", "bash worktree-setup.sh"],
+    ["WorktreeRemove", "bash worktree-clean.sh"],
+    ["Notification", "notify-send"],
+    ["PreCompact", "bash save-state.sh"],
+    ["SubagentStop", "herdr-progress"],
+  ];
+  hooks.forEach(([event, command], index) => {
+    items.push({
+      id: `large-hook-${index}`,
+      kind: "hook",
+      name: `${event} · ${command}`,
+      harnesses: ["claude_code"],
+      scope: "user",
+      origin: "~/.claude/settings.json",
+      state: "configured",
+      managedByCutokyo: false,
+      description: `Runs ${command}`,
+      provenance: provenance("claude_code", "local_state"),
+    });
+  });
+  for (let index = 0; index < 59; index += 1) {
+    items.push({
+      id: `large-plugin-${index}`,
+      kind: "plugin",
+      name: `plugin-${String(index).padStart(2, "0")}@marketplace`,
+      harnesses: [index % 3 === 0 ? "opencode" : "claude_code"],
+      scope: "user",
+      origin: "~/.claude/settings.json › enabledPlugins",
+      state: "enabled",
+      managedByCutokyo: false,
+      description: "Formats, lints and reviews code with marketplace commands.",
+      provenance: provenance("claude_code", "local_state"),
+    });
+  }
+  for (let index = 0; index < 8; index += 1) {
+    items.push({
+      id: `large-instruction-${index}`,
+      kind: "instruction",
+      name: index % 2 === 0 ? "CLAUDE.md" : "AGENTS.md",
+      harnesses: [index % 2 === 0 ? "claude_code" : "codex"],
+      scope: index < 2 ? "user" : "project",
+      origin: `~/Developer/project-${index}/${index % 2 === 0 ? "CLAUDE.md" : "AGENTS.md"}`,
+      state: "configured",
+      managedByCutokyo: false,
+      description: "Engineering defaults and writing rules for coding agents.",
+      provenance: provenance("claude_code", "local_state"),
+    });
+  }
+  return { ...structuredClone(baseInventory), items };
+}
+
 export function createScenario(caseName: string | null): FixtureState {
   let onboarding = structuredClone(baseOnboarding);
   let dashboard = structuredClone(baseDashboard);
@@ -643,7 +782,10 @@ export function createScenario(caseName: string | null): FixtureState {
     onboarding,
     dashboard,
     sessions,
-    inventory: structuredClone(baseInventory),
+    inventory:
+      caseName === "large-inventory"
+        ? largeInventory()
+        : structuredClone(baseInventory),
     proxy: structuredClone(baseProxy),
     health,
     settings: {

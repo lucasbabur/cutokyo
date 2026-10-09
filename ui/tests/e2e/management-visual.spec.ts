@@ -24,7 +24,7 @@ for (const theme of ["light", "dark"] as const) {
         page.getByRole("heading", { name: "Agent tools", level: 1 }),
       ).toBeVisible();
       await expect(
-        page.getByRole("button", { name: "Manage docs-73A9" }),
+        page.getByRole("button", { name: "docs-73A9", exact: true }),
       ).toBeInViewport();
       const capture = async (state: string) => {
         await page.evaluate(async () => {
@@ -52,31 +52,26 @@ for (const theme of ["light", "dark"] as const) {
         });
       };
       await capture("installations");
-      await page.getByRole("button", { name: "Manage protocol-check" }).click();
-      const manager = page.getByRole("dialog", {
-        name: "Manage protocol-check",
+      await page
+        .getByRole("button", { name: "protocol-check", exact: true })
+        .click();
+      const manager = page.getByRole("complementary", {
+        name: "protocol-check",
       });
-      await capture("manage-overview");
-      await manager.getByRole("tab", { name: "File" }).click();
       await expect(
         manager.getByRole("textbox", { name: "Source content" }),
       ).not.toHaveValue("");
       const editor = manager.getByRole("textbox", { name: "Source content" });
       const original = await editor.inputValue();
-      await expect(
-        manager.getByRole("button", { name: "Save changes" }),
-      ).toHaveCount(0);
+      const save = manager.getByRole("button", { name: "Save changes" });
+      await expect(save).toBeDisabled();
+      await capture("tool-panel");
       await editor.fill("# edit\n");
-      await expect(
-        manager.getByRole("button", { name: "Save changes" }),
-      ).toBeInViewport();
+      await expect(save).toBeEnabled();
+      await expect(save).toBeInViewport();
       await capture("skill-editor");
       await editor.fill(original);
-      await expect(
-        manager.getByRole("button", { name: "Save changes" }),
-      ).toHaveCount(0);
-      await manager.getByRole("button", { name: /Install to…/ }).click();
-      await capture("install-menu");
+      await expect(save).toBeDisabled();
       await manager
         .getByRole("button", { name: "Install to Claude Code" })
         .click();
@@ -85,11 +80,13 @@ for (const theme of ["light", "dark"] as const) {
       });
       await expect(
         install.getByRole("button", {
-          name: "Confirm install to Claude Code",
+          name: "Install to Claude Code",
         }),
       ).toBeInViewport();
       await capture("install-preview");
-      await install.getByRole("button", { name: "Back", exact: true }).click();
+      await install
+        .getByRole("button", { name: "Cancel", exact: true })
+        .click();
       await manager
         .getByRole("button", { name: "Remove", exact: true })
         .click();

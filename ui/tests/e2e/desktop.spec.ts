@@ -200,10 +200,9 @@ test("MCP source edits persist without changing plugin or search installations",
   page,
 }) => {
   await openCase(page, "mcp-plugin-inventory", "/inventory", "Agent tools");
-  const docs = page.locator("article").filter({ hasText: "docs-73A9" });
-  await docs.getByRole("button", { name: "Manage docs-73A9" }).click();
-  const manager = page.getByRole("dialog", { name: "Manage docs-73A9" });
-  await manager.getByRole("tab", { name: "File" }).click();
+  const docs = page.getByRole("button", { name: "docs-73A9", exact: true });
+  await docs.click();
+  const manager = page.getByRole("complementary", { name: "docs-73A9" });
   const source = manager.getByRole("textbox", { name: "Source content" });
   await expect(source).not.toHaveValue("");
   const updated = JSON.stringify(
@@ -213,17 +212,22 @@ test("MCP source edits persist without changing plugin or search installations",
   );
   await source.fill(updated);
   await manager.getByRole("button", { name: "Save changes" }).click();
-  await expect(manager).not.toBeVisible();
-  await docs.getByRole("button", { name: "Manage docs-73A9" }).click();
-  await manager.getByRole("tab", { name: "File" }).click();
+  await expect(
+    page.locator(".success-message").getByText(/Saved docs-73A9/),
+  ).toBeVisible();
+  await manager.getByRole("button", { name: "Close details" }).click();
+  await docs.click();
   await expect(source).toHaveValue(updated);
-  await manager.getByRole("button", { name: "Done", exact: true }).click();
+  await manager.getByRole("button", { name: "Close details" }).click();
   await expect(page.getByText("Cutokyo search MCP")).toBeVisible();
-  const plugin = page
-    .locator("article")
-    .filter({ hasText: "fixture-processor-73A9" });
-  await plugin.getByRole("button", { name: "Verification" }).click();
-  const dialog = page.getByRole("dialog", { name: /Plugin verification/ });
+  await page
+    .getByRole("button", { name: "fixture-processor-73A9", exact: true })
+    .click();
+  const plugin = page.getByRole("complementary", {
+    name: "fixture-processor-73A9",
+  });
+  await plugin.getByRole("tab", { name: "Details" }).click();
+  const dialog = plugin.getByRole("region", { name: "Plugin verification" });
   await expect(dialog.getByText("normalized_records:read")).toBeVisible();
   await expect(dialog.getByText("30 seconds")).toBeVisible();
   await expect(
@@ -643,23 +647,19 @@ test("captures the seven representative states at all required desktop sizes", a
     });
     await page.keyboard.press("Escape");
 
-    await page.getByRole("button", { name: "Manage docs-73A9" }).click();
-    await expect(
-      page.getByRole("dialog", { name: "Manage docs-73A9" }),
-    ).toBeVisible();
+    await page.getByRole("button", { name: "docs-73A9", exact: true }).click();
+    const panel = page.getByRole("complementary", { name: "docs-73A9" });
+    await expect(panel).toBeVisible();
     await expectNoWindowOverflow(page);
     await page.screenshot({
       path: resolve(SCREENSHOTS, `inventory-manage-${suffix}.png`),
     });
-    await page
-      .getByRole("dialog", { name: "Manage docs-73A9" })
-      .getByRole("button", { name: /Install to…/ })
-      .click();
+    await panel.getByRole("button", { name: "Install to Codex" }).click();
     await page.screenshot({
-      path: resolve(SCREENSHOTS, `inventory-install-menu-${suffix}.png`),
+      path: resolve(SCREENSHOTS, `inventory-install-${suffix}.png`),
     });
     await page.keyboard.press("Escape");
-    await page.keyboard.press("Escape");
+    await panel.getByRole("button", { name: "Close details" }).click();
 
     await openCase(
       page,
@@ -738,7 +738,7 @@ test("warnings live in one shell badge; no workspace top bar remains", async ({
   ).not.toContainText(/\d/);
 });
 
-test("agent tool rows show description, kind symbols, harness marks and an aligned toolbar", async ({
+test("agent tool rows show description, kind symbols, harness marks and an aligned header", async ({
   page,
 }) => {
   await openCase(page, "mcp-plugin-inventory", "/inventory", "Agent tools");
@@ -748,7 +748,7 @@ test("agent tool rows show description, kind symbols, harness marks and an align
   );
   await expect(page.getByText(/Shared native source/)).toHaveCount(0);
   const kinds = await page
-    .locator(".inventory-row__icon")
+    .locator(".tool-row__icon")
     .evaluateAll(
       (nodes) =>
         new Set(nodes.map((node) => `${node.getAttribute("aria-label")}`)).size,
@@ -756,32 +756,28 @@ test("agent tool rows show description, kind symbols, harness marks and an align
   expect(kinds).toBeGreaterThanOrEqual(4);
   await expect(
     page
-      .locator(".inventory-card")
+      .locator("tr.tool-row")
       .first()
-      .locator(".harness-chips svg.harness-mark"),
+      .getByRole("img", {
+        name: /^Installed in /,
+      }),
   ).not.toHaveCount(0);
-  const boxes = await page.locator(".toolbar > *").evaluateAll((nodes) =>
-    nodes.map((node) => {
-      const box = node.getBoundingClientRect();
-      return { top: box.top, bottom: box.bottom };
-    }),
-  );
-  expect(boxes.length).toBeGreaterThanOrEqual(3);
-  // Controls on one visual line share the same top and bottom; wrapped lines
-  // each hold a uniform 38px control height.
-  for (const box of boxes) {
-    expect(Math.abs(box.bottom - box.top - 38)).toBeLessThanOrEqual(1);
-    const sameLine = boxes.filter(
-      (other) => Math.abs(other.top - box.top) < 20,
+  // The search field and the rescan button share one 34px line.
+  const boxes = await page
+    .locator(".tools-header > label, .tools-header > button")
+    .evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const box = node.getBoundingClientRect();
+        return { top: box.top, bottom: box.bottom };
+      }),
     );
-    for (const other of sameLine) {
-      expect(Math.abs(other.top - box.top)).toBeLessThanOrEqual(1);
-      expect(Math.abs(other.bottom - box.bottom)).toBeLessThanOrEqual(1);
-    }
+  expect(boxes).toHaveLength(2);
+  for (const box of boxes) {
+    expect(Math.abs(box.bottom - box.top - 34)).toBeLessThanOrEqual(1);
+    expect(Math.abs(box.top - boxes[0]!.top)).toBeLessThanOrEqual(1);
   }
-  await page.getByRole("button", { name: "Manage docs-73A9" }).click();
-  const dialog = page.getByRole("dialog", { name: "Manage docs-73A9" });
-  await dialog.getByRole("button", { name: /Install to…/ }).click();
+  await page.getByRole("button", { name: "docs-73A9", exact: true }).click();
+  const dialog = page.getByRole("complementary", { name: "docs-73A9" });
   await expect(
     dialog.getByRole("button", { name: "Install to Codex" }),
   ).toBeVisible();

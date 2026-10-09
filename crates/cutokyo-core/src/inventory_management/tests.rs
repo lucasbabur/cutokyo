@@ -263,7 +263,7 @@ fn hooks_plugins_instructions_are_real_nodes_and_owned_entries_are_protected()
         &r.opencode.join("plugins/user.ts"),
         b"export default () => ({})",
     )?;
-    let entry = item(&r, "hook", "PostToolUse #1", Harness::ClaudeCode)?;
+    let entry = item(&r, "hook", "PostToolUse · user-hook", Harness::ClaudeCode)?;
     let doc = document(&r, &entry.id)?;
     assert!(doc.install_targets.iter().all(|t| !t.available));
     save(
@@ -281,7 +281,7 @@ fn hooks_plugins_instructions_are_real_nodes_and_owned_entries_are_protected()
         1
     );
     assert_eq!(v["unrelated"]["permissions"], json!(["keep"]));
-    let owned = item(&r, "hook", "PostToolUse #1", Harness::ClaudeCode)?;
+    let owned = item(&r, "hook", "PostToolUse · cutokyo", Harness::ClaudeCode)?;
     let doc = document(&r, &owned.id)?;
     assert!(!doc.editable);
     assert!(remove(&r, &temp.path().join("recovery"), &owned.id, &doc.revision).is_err());
@@ -656,8 +656,8 @@ fn row_descriptions_are_factual_and_free_of_boilerplate() -> Result<(), Box<dyn 
         Some("Formats code on save")
     );
     assert_eq!(
-        find("hook", "PreToolUse #1").as_deref(),
-        Some("PreToolUse on Bash: runs bash guard.sh")
+        find("hook", "PreToolUse · bash guard.sh").as_deref(),
+        Some("On Bash: runs bash guard.sh")
     );
     assert_eq!(
         find("mcp", "local").as_deref(),

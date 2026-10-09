@@ -27,29 +27,15 @@ function show(
   return client;
 }
 
-async function openFileTab(dialog: HTMLElement) {
-  await userEvent.click(
-    await within(dialog).findByRole("tab", { name: "File" }),
-  );
-}
-
-async function openInstallMenu(dialog: HTMLElement) {
-  await userEvent.click(
-    await within(dialog).findByRole("button", { name: /Install to…/ }),
-  );
-  return within(dialog).getByRole("list", { name: "Install to a harness" });
+async function select(name: string) {
+  await userEvent.click(await screen.findByRole("button", { name }));
+  return screen.findByRole("complementary", { name });
 }
 
 async function manageSkill() {
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Manage protocol-check" }),
-  );
-  const dialog = await screen.findByRole("dialog", {
-    name: "Manage protocol-check",
-  });
-  await openFileTab(dialog);
-  await within(dialog).findByDisplayValue(/Run the protocol fixtures/);
-  return dialog;
+  const panel = await select("protocol-check");
+  await within(panel).findByDisplayValue(/Run the protocol fixtures/);
+  return panel;
 }
 
 describe("agent tool management", () => {
@@ -60,42 +46,81 @@ describe("agent tool management", () => {
       name: "Search installed tools",
     });
     await user.type(search, "protocol-check");
+    expect(screen.getByRole("button", { name: "protocol-check" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "docs-73A9" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: /^Claude Code/ }));
     expect(
-      screen.getByRole("button", { name: "Manage protocol-check" }),
+      screen.getByRole("heading", { name: "No tools match" }),
     ).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: /^All tools/ }));
+    expect(screen.getByRole("button", { name: "protocol-check" })).toBeTruthy();
+    await user.clear(search);
+    expect(screen.getByRole("button", { name: "docs-73A9" })).toBeTruthy();
+  });
+
+  it("groups tools into counted kind sections with one column per harness", async () => {
+    show();
+    const table = await screen.findByRole("table");
+    for (const name of [
+      "Skills",
+      "MCP servers",
+      "Hooks",
+      "Plugins",
+      "Instructions",
+    ]) {
+      expect(
+        within(table).getByRole("columnheader", {
+          name: new RegExp(`^${name}\\s*\\d+$`),
+        }),
+      ).toBeTruthy();
+    }
+    for (const name of ["Claude Code", "Codex", "OpenCode"]) {
+      expect(within(table).getByRole("columnheader", { name })).toBeTruthy();
+    }
+    const row = screen
+      .getByRole("button", { name: "protocol-check" })
+      .closest("tr")!;
+    expect(within(row).getByRole("img", { name: "Installed in OpenCode" }));
     expect(
-      screen.queryByRole("button", { name: "Manage docs-73A9" }),
-    ).toBeNull();
-    await user.click(screen.getByRole("button", { name: "Claude Code" }));
-    expect(
-      screen.getByRole("heading", {
-        name: "No installations match these filters",
+      within(row).getByRole("button", {
+        name: "Install protocol-check in Claude Code",
       }),
-    ).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "Clear filters" }));
-    expect(
-      screen.getByRole("button", { name: "Manage docs-73A9" }),
     ).toBeTruthy();
   });
 
-  it("groups installations into counted kind sections without boilerplate", async () => {
+  it("starts an install from an empty harness cell", async () => {
     show();
-    const skills = await screen.findByRole("region", { name: /^Skills/ });
-    expect(skills.textContent).toContain("1");
-    expect(within(skills).getByText("protocol-check")).toBeTruthy();
-    for (const name of ["MCP servers", "Hooks", "Plugins", "Instructions"]) {
-      expect(
-        screen.getByRole("heading", { name: new RegExp(`^${name}`) }),
-      ).toBeTruthy();
-    }
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Install docs-73A9 in Codex" }),
+    );
+    expect(
+      await screen.findByRole("dialog", { name: "Install docs-73A9 to Codex" }),
+    ).toBeTruthy();
+  });
+
+  it("never offers to copy hooks or plugins across harnesses", async () => {
+    show();
+    const row = (
+      await screen.findByRole("button", {
+        name: "PreToolUse project check",
+      })
+    ).closest("tr")!;
+    expect(within(row).queryByRole("button", { name: /^Install / })).toBeNull();
+    expect(
+      within(row).getByRole("img", { name: "Not available in Codex" }),
+    ).toBeTruthy();
   });
 
   it("saves native content and rereads the saved document", async () => {
     const client = show();
     const dialog = await manageSkill();
     expect(
-      within(dialog).queryByRole("button", { name: "Save changes" }),
-    ).toBeNull();
+      (
+        within(dialog).getByRole("button", {
+          name: "Save changes",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
     const updated =
       "---\nname: protocol-check\ndescription: Test protocols.\n---\n\n# Updated protocol instructions\n";
     fireEvent.change(
@@ -105,10 +130,11 @@ describe("agent tool management", () => {
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Save changes" }),
     );
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    expect(
-      (await client.getInventoryDocument("skill-protocol-check")).content,
-    ).toBe(updated);
+    await waitFor(async () =>
+      expect(
+        (await client.getInventoryDocument("skill-protocol-check")).content,
+      ).toBe(updated),
+    );
     expect(
       screen.getByText(/Saved protocol-check/, {
         selector: ".success-message p",
@@ -116,7 +142,7 @@ describe("agent tool management", () => {
     ).toBeTruthy();
   });
 
-  it("keeps edits and errors inside the active dialog when a save fails", async () => {
+  it("keeps edits and errors inside the panel when a save fails", async () => {
     const base = createBrowserFixtureClient("mcp-plugin-inventory");
     show({
       ...base,
@@ -138,7 +164,6 @@ describe("agent tool management", () => {
       "file changed outside Cutokyo",
     );
     expect(editor.value).toBe("# Keep my unsaved instructions");
-    expect(screen.getByRole("dialog")).toBe(dialog);
   });
 
   it("requires a decision before discarding unsaved content", async () => {
@@ -149,7 +174,7 @@ describe("agent tool management", () => {
     });
     fireEvent.change(editor, { target: { value: "# Unsaved content" } });
     await userEvent.click(
-      within(dialog).getByRole("button", { name: "Cancel" }),
+      within(dialog).getByRole("button", { name: "Close details" }),
     );
     const discard = screen.getByRole("dialog", {
       name: "Discard unsaved changes?",
@@ -164,11 +189,14 @@ describe("agent tool management", () => {
         }) as HTMLTextAreaElement
       ).value,
     ).toBe("# Unsaved content");
-    await userEvent.click(screen.getByRole("button", { name: "Close dialog" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Close details" }),
+    );
     await userEvent.click(
       screen.getByRole("button", { name: "Discard changes" }),
     );
     expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("complementary")).toBeNull();
   });
 
   it.each(["Escape", "close button"])(
@@ -176,10 +204,11 @@ describe("agent tool management", () => {
     async (dismissal) => {
       show();
       const dialog = await manageSkill();
-      fireEvent.change(
-        within(dialog).getByRole("textbox", { name: "Source content" }),
-        { target: { value: "# Preserve this draft" } },
-      );
+      const editor = within(dialog).getByRole("textbox", {
+        name: "Source content",
+      });
+      fireEvent.change(editor, { target: { value: "# Preserve this draft" } });
+      editor.focus();
       await userEvent.keyboard("{Escape}");
       const discard = screen.getByRole("dialog", {
         name: "Discard unsaved changes?",
@@ -202,21 +231,26 @@ describe("agent tool management", () => {
       await userEvent.click(
         screen.getByRole("button", { name: "Save changes" }),
       );
-      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      expect(
+        await screen.findByText(/Saved protocol-check/, {
+          selector: ".success-message p",
+        }),
+      ).toBeTruthy();
     },
   );
 
   it("installs an independent copy and never overwrites an existing destination", async () => {
     const client = show();
     const dialog = await manageSkill();
-    const targets = await openInstallMenu(dialog);
-    // OpenCode already has this skill: shown as installed, with no action.
-    expect(within(targets).getByText("Installed")).toBeTruthy();
+    const targets = within(dialog).getByRole("list", { name: "Harnesses" });
+    // OpenCode already has this skill: shown with its path, with no action.
     expect(
       within(targets).queryByRole("button", { name: "Install to OpenCode" }),
     ).toBeNull();
     await userEvent.click(
-      within(targets).getByRole("button", { name: "Install to Claude Code" }),
+      await within(targets).findByRole("button", {
+        name: "Install to Claude Code",
+      }),
     );
     const install = screen.getByRole("dialog", {
       name: "Install protocol-check to Claude Code",
@@ -226,7 +260,7 @@ describe("agent tool management", () => {
     ).toBeTruthy();
     await userEvent.click(
       within(install).getByRole("button", {
-        name: "Confirm install to Claude Code",
+        name: "Install to Claude Code",
       }),
     );
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
@@ -254,6 +288,7 @@ describe("agent tool management", () => {
   it("cancels removal without mutation and deletes only the chosen installation", async () => {
     const client = show();
     let dialog = await manageSkill();
+    expect(dialog).toBeTruthy();
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Remove" }),
     );
@@ -263,7 +298,7 @@ describe("agent tool management", () => {
         (item) => item.id === "skill-protocol-check",
       ),
     ).toBe(true);
-    dialog = screen.getByRole("dialog", { name: "Manage protocol-check" });
+    dialog = screen.getByRole("complementary", { name: "protocol-check" });
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Remove" }),
     );
@@ -306,33 +341,33 @@ describe("agent tool management", () => {
     expect(
       (
         within(dialog).getByRole("button", {
-          name: "Close dialog",
+          name: "Close details",
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(true);
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Saving…" }),
+    );
     await userEvent.keyboard("{Escape}");
-    expect(screen.getByRole("dialog")).toBe(dialog);
+    expect(screen.getByRole("complementary", { name: "protocol-check" })).toBe(
+      dialog,
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(save).toHaveBeenCalledTimes(1);
     finish?.({ ok: true, status: "success", message: "Saved" });
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(
+      await screen.findByText("Saved", { selector: ".success-message p" }),
+    ).toBeTruthy();
   });
 
   it("explains app-owned entries rather than offering destructive controls", async () => {
     const client = show();
-    await userEvent.click(
-      await screen.findByRole("button", {
-        name: "Manage Cutokyo SessionStart",
-      }),
-    );
-    const dialog = screen.getByRole("dialog", {
-      name: "Manage Cutokyo SessionStart",
-    });
+    const dialog = await select("Cutokyo SessionStart");
     await within(dialog).findByText(/Use Settings or uninstall/);
     expect(within(dialog).queryByRole("button", { name: "Remove" })).toBeNull();
     expect(
       within(dialog).queryByRole("button", { name: "Save changes" }),
     ).toBeNull();
-    await openFileTab(dialog);
     expect(
       (
         within(dialog).getByRole("textbox", {
@@ -377,16 +412,14 @@ describe("agent tool management", () => {
           unavailableReason,
         }),
       });
-      const trigger = await screen.findByRole("button", {
-        name: "Manage Cutokyo SessionStart",
-      });
-      await userEvent.click(trigger);
-      const dialog = screen.getByRole("dialog");
+      const dialog = await select("Cutokyo SessionStart");
+      await userEvent.click(
+        within(dialog).getByRole("tab", { name: "Details" }),
+      );
       const link = await within(dialog).findByRole("link", {
         name: "Manage capture",
       });
       expect(link.getAttribute("href")).toBe("#/onboarding");
-      expect(link.getAttribute("aria-disabled")).toBe("false");
       expect(
         within(dialog).queryByRole("button", { name: "Remove" }),
       ).toBeNull();
@@ -395,11 +428,9 @@ describe("agent tool management", () => {
       ).toBeNull();
       try {
         await userEvent.click(link);
-        await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
         await waitFor(() =>
           expect(globalThis.location.hash).toBe("#/onboarding"),
         );
-        expect(document.activeElement).toBe(trigger);
         expect(save).not.toHaveBeenCalled();
         expect(remove).not.toHaveBeenCalled();
         expect(install).not.toHaveBeenCalled();
@@ -445,14 +476,12 @@ describe("agent tool management", () => {
             "This is a Cutokyo-owned capture/search entry. Manage it through Cutokyo setup or Settings, not the inventory editor.",
         }),
       });
-      await userEvent.click(
-        await screen.findByRole("button", {
-          name: "Manage Cutokyo SessionStart",
-        }),
-      );
-      const dialog = screen.getByRole("dialog");
+      const dialog = await select("Cutokyo SessionStart");
       await within(dialog).findByText(
         /This .*entry|This installation is read-only/,
+      );
+      await userEvent.click(
+        within(dialog).getByRole("tab", { name: "Details" }),
       );
       expect(
         within(dialog).queryByRole("link", { name: "Manage capture" }),
@@ -470,34 +499,22 @@ describe("agent tool management", () => {
         return base.getInventory();
       },
     });
-    await screen.findByRole("button", { name: "Manage protocol-check" });
+    await screen.findByRole("button", { name: "protocol-check" });
     fail = true;
     await userEvent.click(
-      screen.getByRole("button", { name: "Refresh installations" }),
+      screen.getByRole("button", { name: "Rescan installations" }),
     );
     expect((await screen.findByRole("alert")).textContent).toContain(
       "Native configuration could not be read",
     );
-    expect(
-      screen.getByRole("button", { name: "Manage protocol-check" }),
-    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "protocol-check" })).toBeTruthy();
   });
 
   it("requires explicit acknowledgement before installing with dropped fields", async () => {
     const client = show();
+    const dialog = await select("docs-73A9");
     await userEvent.click(
-      await screen.findByRole("button", { name: "Manage docs-73A9" }),
-    );
-    const dialog = await screen.findByRole("dialog", {
-      name: "Manage docs-73A9",
-    });
-    const targets = await openInstallMenu(dialog);
-    expect(
-      within(targets).getByText(/2 fields will not carry over/),
-    ).toBeTruthy();
-    expect(within(targets).getByText(/1 conversion/)).toBeTruthy();
-    await userEvent.click(
-      within(targets).getByRole("button", { name: "Install to Codex" }),
+      await within(dialog).findByRole("button", { name: "Install to Codex" }),
     );
     const install = screen.getByRole("dialog", {
       name: "Install docs-73A9 to Codex",
@@ -507,7 +524,7 @@ describe("agent tool management", () => {
       within(install).getByText("env is written as an [env] table"),
     ).toBeTruthy();
     const confirm = within(install).getByRole("button", {
-      name: "Confirm install to Codex",
+      name: "Install to Codex",
     }) as HTMLButtonElement;
     expect(confirm.disabled).toBe(true);
     await userEvent.click(
@@ -527,7 +544,8 @@ describe("agent tool management", () => {
 
   it("shows only the item description plus kind and harness symbols in a row", async () => {
     show();
-    const rows = (await screen.findAllByRole("article")) as HTMLElement[];
+    await screen.findByRole("table");
+    const rows = [...document.querySelectorAll<HTMLElement>("tr.tool-row")];
     expect(rows.length).toBeGreaterThan(0);
     const kinds = new Set<string>();
     for (const row of rows) {
@@ -535,24 +553,23 @@ describe("agent tool management", () => {
         /Shared native source|Supporting asset|Discovered native files/,
       );
       expect(within(row).queryByText("Source")).toBeNull();
-      kinds.add(within(row).getByRole("img").getAttribute("aria-label")!);
+      kinds.add(
+        row.querySelector(".tool-row__icon")!.getAttribute("aria-label")!,
+      );
       expect(
-        row.querySelector(".harness-chips svg.harness-mark"),
-      ).not.toBeNull();
+        within(row).getAllByRole("img", { name: /^Installed in / }).length,
+      ).toBeGreaterThan(0);
     }
     expect(kinds.size).toBeGreaterThanOrEqual(4);
   });
 
-  it("keeps provenance and notes inside the Manage view", async () => {
+  it("keeps provenance and notes inside the panel's Details tab", async () => {
     show();
     const dialog = await manageSkill();
-    await userEvent.click(
-      within(dialog).getByRole("tab", { name: "Overview" }),
-    );
+    await userEvent.click(within(dialog).getByRole("tab", { name: "Details" }));
     expect(
       within(dialog).getByText(/Supporting files in the skill/),
     ).toBeTruthy();
-    await userEvent.click(within(dialog).getByRole("tab", { name: "Details" }));
     expect(within(dialog).getAllByText("Source").length).toBeGreaterThan(0);
   });
 });

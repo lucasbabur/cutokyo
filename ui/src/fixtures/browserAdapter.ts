@@ -47,6 +47,7 @@ const VALID_CASES = new Set([
   "appearance-conflict",
   "appearance-save-error",
   "native-capabilities-unavailable",
+  "large-inventory",
 ]);
 
 const DELETION_DISCLOSURE =

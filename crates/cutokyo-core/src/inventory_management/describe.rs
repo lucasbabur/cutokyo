@@ -1,7 +1,6 @@
 //! Short factual one-line summaries for inventory rows. Summaries never include
 //! environment values, header values, URL credentials, queries or full argument lists.
 use super::{Harness, Path, Value, fs};
-use std::fmt::Write;
 
 const LIMIT: usize = 400;
 
@@ -202,7 +201,24 @@ pub(super) fn mcp(h: Harness, v: &Value) -> String {
     )
 }
 
-/// Event, matcher and the command each hook runs.
+/// Row name for a hook group: its event and the first command it runs, so two
+/// groups on one event read differently instead of as `PostToolUse #1/#2`.
+pub(super) fn hook_name(event: &str, v: &Value) -> String {
+    let first = v
+        .get("hooks")
+        .and_then(Value::as_array)
+        .and_then(|hooks| hooks.first())
+        .map(|hook| match hook.get("type").and_then(Value::as_str) {
+            Some("command") | None => hook
+                .get("command")
+                .and_then(Value::as_str)
+                .map_or_else(|| "command".into(), |c| command_summary(&[c.to_owned()])),
+            Some(other) => format!("{other} hook"),
+        });
+    first.map_or_else(|| event.to_owned(), |first| format!("{event} · {first}"))
+}
+
+/// Matcher and the commands a hook group runs.
 pub(super) fn hook(event: &str, v: &Value) -> String {
     if let Some(argv) = v.as_array().filter(|_| event == "notify").map(|a| {
         a.iter()
@@ -229,16 +245,19 @@ pub(super) fn hook(event: &str, v: &Value) -> String {
             Some(other) => format!("a {other} hook"),
         })
         .collect();
-    let mut text = event.to_owned();
-    if let Some(matcher) = matcher {
-        let _ = write!(text, " on {}", squash(matcher, 60));
-    }
-    let _ = match actions.split_first() {
-        None => write!(text, ": no actions"),
-        Some((first, [])) => write!(text, ": runs {first}"),
-        Some((first, rest)) => write!(text, ": runs {first} and {} more", rest.len()),
+    // The row name already carries the event, so the description starts at the matcher.
+    let actions = match actions.split_first() {
+        None => "no actions".to_owned(),
+        Some((first, [])) => format!("runs {first}"),
+        Some((first, rest)) => format!("runs {first} and {} more", rest.len()),
     };
-    text
+    if let Some(matcher) = matcher {
+        return format!("On {}: {actions}", squash(matcher, 60));
+    }
+    let mut chars = actions.chars();
+    chars
+        .next()
+        .map_or_else(String::new, |c| c.to_uppercase().chain(chars).collect())
 }
 
 fn read_small(path: &Path) -> Option<String> {

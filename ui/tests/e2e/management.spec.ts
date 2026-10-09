@@ -27,53 +27,54 @@ test("skill install and removal keep the independent original", async ({
   page,
 }) => {
   await page.goto(inventoryUrl);
-  await page.getByRole("button", { name: "Manage protocol-check" }).click();
-  const manager = page.getByRole("dialog", { name: "Manage protocol-check" });
-  await manager.getByRole("tab", { name: "File" }).click();
+  await page
+    .getByRole("button", { name: "protocol-check", exact: true })
+    .click();
+  const manager = page.getByRole("complementary", { name: "protocol-check" });
   await expect(
     manager.getByRole("textbox", { name: "Source content" }),
   ).not.toHaveValue("");
-  await manager.getByRole("button", { name: /Install to…/ }).click();
-  const targets = manager.getByRole("list", { name: "Install to a harness" });
-  await expect(targets.locator(".quiet-badge--installed")).toHaveText(
-    /Installed/,
-  );
-  await targets.getByRole("button", { name: "Install to Claude Code" }).click();
+  const harnesses = manager.getByRole("list", { name: "Harnesses" });
+  await harnesses
+    .getByRole("button", { name: "Install to Claude Code" })
+    .click();
   const install = page.getByRole("dialog", {
     name: "Install protocol-check to Claude Code",
   });
   await expect(
     install.getByText("Supporting files are copied", { exact: false }),
   ).toBeVisible();
-  await install
-    .getByRole("button", { name: "Confirm install to Claude Code" })
-    .click();
+  await install.getByRole("button", { name: "Install to Claude Code" }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
-  const copies = page.locator("article").filter({
-    has: page.getByRole("button", { name: "Manage protocol-check" }),
+  const row = page.locator("tr.tool-row").filter({
+    has: page.getByRole("button", { name: "protocol-check", exact: true }),
   });
-  await expect(copies).toHaveCount(2);
-  const copy = copies.filter({ hasText: "Claude Code" });
-  await copy.getByRole("button", { name: "Manage protocol-check" }).click();
-  await manager.getByRole("tab", { name: "File" }).click();
+  await expect(row).toHaveCount(1);
+  await expect(
+    row.getByRole("img", { name: "Installed in Claude Code" }),
+  ).toBeVisible();
+  await harnesses.getByRole("button", { name: /^Claude Code/ }).click();
   await manager.getByRole("button", { name: "Remove", exact: true }).click();
   const removal = page.getByRole("dialog", { name: "Remove protocol-check?" });
+  await expect(removal.getByText("Claude Code", { exact: true })).toBeVisible();
   await removal.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(manager).toBeVisible();
   await manager.getByRole("button", { name: "Remove", exact: true }).click();
   await removal.getByRole("button", { name: "Remove installation" }).click();
-  await expect(copies).toHaveCount(1);
-  await expect(copies.getByText("OpenCode", { exact: true })).toBeVisible();
+  await expect(
+    row.getByRole("img", { name: "Installed in Claude Code" }),
+  ).toHaveCount(0);
+  await expect(
+    row.getByRole("img", { name: "Installed in OpenCode" }),
+  ).toBeVisible();
 });
 
 test("shared instructions explain affected harnesses and editor passes accessibility", async ({
   page,
 }) => {
   await page.goto(inventoryUrl);
-  await page.getByRole("heading", { name: /^Instructions/ }).waitFor();
-  await page.getByRole("button", { name: "Manage AGENTS.md" }).click();
-  const manager = page.getByRole("dialog", { name: "Manage AGENTS.md" });
-  await manager.getByRole("tab", { name: "File" }).click();
+  await page.getByRole("button", { name: "AGENTS.md", exact: true }).click();
+  const manager = page.getByRole("complementary", { name: "AGENTS.md" });
   await expect(
     manager.getByRole("textbox", { name: "Source content" }),
   ).not.toHaveValue("");
@@ -85,8 +86,30 @@ test("shared instructions explain affected harnesses and editor passes accessibi
     removal.getByText("Codex, OpenCode", { exact: true }),
   ).toBeVisible();
   await removal.getByRole("button", { name: "Cancel", exact: true }).click();
-  await manager.getByRole("button", { name: "Done", exact: true }).click();
+  await manager.getByRole("button", { name: "Close details" }).click();
   await expect(
-    page.getByRole("button", { name: "Manage AGENTS.md" }),
+    page.getByRole("button", { name: "AGENTS.md", exact: true }),
   ).toBeFocused();
+});
+
+test("mouse clicks leave no focus ring; the keyboard brings it back", async ({
+  page,
+}) => {
+  await page.goto(inventoryUrl);
+  await page
+    .getByRole("button", { name: "protocol-check", exact: true })
+    .click();
+  const tab = page.getByRole("tab", { name: "Details" });
+  await tab.click();
+  await expect(tab).toBeFocused();
+  const outline = () =>
+    tab.evaluate((node) => getComputedStyle(node).outlineStyle);
+  expect(await outline()).toBe("none");
+  await page.keyboard.press("ArrowLeft");
+  await expect(page.getByRole("tab", { name: "File" })).toBeFocused();
+  expect(
+    await page
+      .getByRole("tab", { name: "File" })
+      .evaluate((node) => getComputedStyle(node).outlineStyle),
+  ).toBe("solid");
 });

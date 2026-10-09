@@ -6,7 +6,11 @@ export const HARNESS_NAMES: Readonly<Record<Harness, string>> = {
   opencode: "OpenCode",
 };
 
-const HARNESS_ORDER: readonly Harness[] = ["claude_code", "codex", "opencode"];
+export const HARNESS_ORDER: readonly Harness[] = [
+  "claude_code",
+  "codex",
+  "opencode",
+];
 
 /**
  * Single-path 24x24 marks, drawn with currentColor so they follow both themes.
