@@ -41,6 +41,12 @@ const SECTIONS: readonly {
 ];
 
 const ROUTINE_STATES = new Set(["enabled", "installed", "configured"]);
+/** A switched-off MCP server is a choice, not a problem, and its switch shows it. */
+const unusualState = (item: InventoryItem) =>
+  !ROUTINE_STATES.has(item.state) &&
+  !(item.kind === "mcp" && item.state === "disabled");
+const switchable = (item: InventoryItem) =>
+  item.kind === "mcp" && !item.managedByCutokyo;
 /** Mirrors the core install planner: hooks and plugins never convert. */
 const PORTABLE_KINDS = new Set<InventoryKind>(["skill", "mcp", "instruction"]);
 
@@ -57,11 +63,17 @@ interface Tool {
 
 const harnessesOf = (tool: Tool) =>
   new Set(tool.items.flatMap((item) => item.harnesses));
-const needsAttention = (tool: Tool) =>
-  tool.items.some((item) => !ROUTINE_STATES.has(item.state));
+const needsAttention = (tool: Tool) => tool.items.some(unusualState);
 const portable = (tool: Tool) =>
   PORTABLE_KINDS.has(tool.kind) &&
   tool.items.some((item) => !item.managedByCutokyo);
+const offIn = (tool: Tool, harness: Harness) =>
+  tool.items.some(
+    (item) =>
+      item.harnesses.includes(harness) &&
+      item.kind === "mcp" &&
+      item.state === "disabled",
+  );
 const hasGap = (tool: Tool) =>
   portable(tool) && harnessesOf(tool).size < HARNESS_ORDER.length;
 
@@ -105,6 +117,8 @@ export function InventoryPage() {
     null,
   );
   const [receipt, setReceipt] = useState<string | null>(null);
+  const [toggleError, setToggleError] = useState<string | null>(null);
+  const [toggling, setToggling] = useState<ReadonlySet<string>>(new Set());
   const announce = useAnnounce();
   const rowButtons = useRef(new Map<string, HTMLButtonElement>());
 
@@ -151,6 +165,41 @@ export function InventoryPage() {
     setReceipt(message);
     announce(message);
     resource.reload();
+  };
+  /** Turns every switchable installation of a tool on or off, in order. */
+  const toggle = async (
+    key: string,
+    items: readonly InventoryItem[],
+    on: boolean,
+  ) => {
+    setToggleError(null);
+    setToggling((current) => new Set(current).add(key));
+    try {
+      let message = "";
+      for (const item of items.filter(switchable)) {
+        if ((item.state !== "disabled") === on) continue;
+        const document = await commands.getInventoryDocument(item.id);
+        const result = await commands.setInventoryItemEnabled(
+          item.id,
+          document.revision,
+          on,
+        );
+        if (!result.ok || result.status !== "success") {
+          throw new Error(result.message);
+        }
+        message = result.message;
+      }
+      if (message !== "") complete(message);
+    } catch (reason) {
+      setToggleError(reason instanceof Error ? reason.message : String(reason));
+      resource.reload();
+    } finally {
+      setToggling((current) => {
+        const next = new Set(current);
+        next.delete(key);
+        return next;
+      });
+    }
   };
   const count = (predicate: (tool: Tool) => boolean) =>
     searched.filter(predicate).length;
@@ -211,6 +260,11 @@ export function InventoryPage() {
         />
       ) : null}
       {receipt === null ? null : <SuccessMessage>{receipt}</SuccessMessage>}
+      {toggleError === null ? null : (
+        <p className="form-error tools-error" role="alert">
+          {toggleError}
+        </p>
+      )}
 
       <div className={`tools-layout${selected ? " has-panel" : ""}`}>
         <nav className="tool-rail" aria-label="Tool filters">
@@ -324,6 +378,8 @@ export function InventoryPage() {
                             rowButtons.current.delete(tool.key);
                           } else rowButtons.current.set(tool.key, button);
                         }}
+                        toggleBusy={toggling.has(tool.key)}
+                        onToggle={(on) => void toggle(tool.key, tool.items, on)}
                         onSelect={() => select(tool)}
                         onInstall={(harness) => {
                           select(tool);
@@ -345,6 +401,8 @@ export function InventoryPage() {
             installations={selected.items}
             installRequest={installRequest}
             onSelect={(item) => select(selected, item)}
+            toggleBusy={toggling.has(selected.key)}
+            onToggle={(item, on) => void toggle(selected.key, [item], on)}
             onClose={() => {
               rowButtons.current.get(selected.key)?.focus();
               setSelectedKey(null);
@@ -362,19 +420,25 @@ function ToolRow({
   tool,
   selected,
   buttonRef,
+  toggleBusy,
+  onToggle,
   onSelect,
   onInstall,
 }: {
   readonly tool: Tool;
   readonly selected: boolean;
   readonly buttonRef: (button: HTMLButtonElement | null) => void;
+  readonly toggleBusy: boolean;
+  readonly onToggle: (on: boolean) => void;
   readonly onSelect: () => void;
   readonly onInstall: (harness: Harness) => void;
 }) {
   const descriptionId = useId();
   const installed = harnessesOf(tool);
   const first = tool.items[0]!;
-  const unusual = tool.items.find((item) => !ROUTINE_STATES.has(item.state));
+  const unusual = tool.items.find(unusualState);
+  const switches = tool.items.filter(switchable);
+  const on = switches.some((item) => item.state !== "disabled");
   const scopes = [...new Set(tool.items.map((item) => item.scope))].filter(
     (scope) => scope !== "user",
   );
@@ -383,7 +447,7 @@ function ToolRow({
       className="tool-row"
       aria-selected={selected}
       onClick={(event) => {
-        if ((event.target as HTMLElement).closest("button")) return;
+        if ((event.target as HTMLElement).closest("button, label")) return;
         onSelect();
       }}
     >
@@ -426,15 +490,36 @@ function ToolRow({
             </span>
           </span>
         </button>
+        {switches.length === 0 ? null : (
+          <label className="switch-control tool-row__switch">
+            <span className="sr-only">{on ? "On" : "Off"}</span>
+            <input
+              type="checkbox"
+              role="switch"
+              aria-label={`${tool.name} enabled`}
+              checked={on}
+              disabled={toggleBusy}
+              onChange={() => onToggle(!on)}
+            />
+          </label>
+        )}
       </td>
       {HARNESS_ORDER.map((harness) => (
         <td key={harness} className="tool-row__cell">
           {installed.has(harness) ? (
-            <span
-              className={`tool-dot tool-dot--${harness}`}
-              role="img"
-              aria-label={`Installed in ${HARNESS_NAMES[harness]}`}
-            />
+            offIn(tool, harness) ? (
+              <span
+                className={`tool-dot tool-dot--off tool-dot--${harness}`}
+                role="img"
+                aria-label={`Turned off in ${HARNESS_NAMES[harness]}`}
+              />
+            ) : (
+              <span
+                className={`tool-dot tool-dot--${harness}`}
+                role="img"
+                aria-label={`Installed in ${HARNESS_NAMES[harness]}`}
+              />
+            )
           ) : portable(tool) ? (
             <button
               type="button"

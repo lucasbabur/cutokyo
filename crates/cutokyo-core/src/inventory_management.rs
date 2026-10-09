@@ -999,7 +999,31 @@ fn discover_entries(roots: &InventoryRoots) -> InventoryResult<(Vec<Entry>, Vec<
             0,
         );
     }
+    mark_claude_denied(roots, &mut entries);
     Ok(finish_entries(roots, entries, notices))
+}
+/// Claude Code has no per-server switch. Its documented global off-switch is a
+/// `{"serverName": ...}` entry in `deniedMcpServers` of the user settings.
+fn claude_settings(roots: &InventoryRoots) -> PathBuf {
+    roots.claude.join("settings.json")
+}
+fn denied_entry(value: &Value, name: &str) -> bool {
+    value.as_object().is_some_and(|o| o.len() == 1)
+        && value.get("serverName").and_then(Value::as_str) == Some(name)
+}
+fn mark_claude_denied(roots: &InventoryRoots, entries: &mut [Entry]) {
+    let denied = read_file(&claude_settings(roots))
+        .and_then(|bytes| json_value(&bytes))
+        .ok()
+        .and_then(|v| v.get("deniedMcpServers").and_then(Value::as_array).cloned())
+        .unwrap_or_default();
+    for e in entries.iter_mut().filter(|e| {
+        e.harness == Harness::ClaudeCode && e.item.kind == "mcp" && !e.item.managed_by_cutokyo
+    }) {
+        if denied.iter().any(|v| denied_entry(v, &e.name)) {
+            e.item.state = "disabled".into();
+        }
+    }
 }
 pub(crate) fn discover(roots: &InventoryRoots) -> InventoryResult<LiveInventory> {
     let (entries, notices) = discover_entries(roots)?;
@@ -1760,6 +1784,202 @@ pub(crate) fn save(
         "Saved native source. A private recovery copy was retained.",
     ))
 }
+/// Turns one MCP server on or off without removing its configuration.
+pub(crate) fn set_enabled(
+    roots: &InventoryRoots,
+    recovery: &Path,
+    id: &str,
+    revision: &str,
+    enabled: bool,
+) -> InventoryResult<InventoryReceipt> {
+    let _lock = mutation_lock(recovery)?;
+    let (e, s) = checked(roots, id, revision)?;
+    if e.item.kind != "mcp" {
+        return Err("Only MCP servers can be turned on or off".into());
+    }
+    if e.item.managed_by_cutokyo {
+        return Err("Turn Cutokyo search on or off in Settings.".into());
+    }
+    let message = if enabled {
+        "Turned on. Restart the agent to load it."
+    } else {
+        "Turned off. Its configuration is kept."
+    };
+    if e.harness == Harness::ClaudeCode {
+        set_claude_denied(roots, recovery, &e, enabled)?;
+        return Ok(receipt(message));
+    }
+    let Source::Node { keys, index } = &e.source else {
+        return Err("This MCP server has no native configuration entry".into());
+    };
+    let mut value = source_value(&e, &s)?;
+    let server = value
+        .as_object_mut()
+        .ok_or("MCP server entry must be an object")?;
+    // A missing flag means on in every agent, so turning on drops the key.
+    let flag = (!enabled).then_some(Value::Bool(false));
+    match &flag {
+        Some(value) => server.insert("enabled".into(), value.clone()),
+        None => server.remove("enabled"),
+    };
+    validate_node(&e, &value)?;
+    if index.is_some() {
+        return Err("This MCP server is an array entry and cannot be toggled".into());
+    }
+    // Touch only the `enabled` key so comments and layout around the entry survive.
+    let mut keys = keys.clone();
+    keys.push("enabled".into());
+    let bytes = mutate_node(&e.path, &s.bytes, &keys, None, flag.as_ref())?;
+    let recovery_dir = prepare_recovery(recovery, &e, &s, "toggle")?;
+    recheck(&e, &s)?;
+    atomic_write(&e.path, &bytes, Some(&s.bytes))?;
+    sync_directory(&recovery_dir)?;
+    Ok(receipt(message))
+}
+fn set_claude_denied(
+    roots: &InventoryRoots,
+    recovery: &Path,
+    e: &Entry,
+    enabled: bool,
+) -> InventoryResult<()> {
+    let path = claude_settings(roots);
+    safe_path(&path)?;
+    let before = path.exists().then(|| read_file(&path)).transpose()?;
+    let bytes = before.clone().unwrap_or_else(|| b"{}".to_vec());
+    let mut denied = json_value(&bytes)?
+        .get("deniedMcpServers")
+        .map(|v| {
+            v.as_array()
+                .cloned()
+                .ok_or("deniedMcpServers must be an array")
+        })
+        .transpose()?
+        .unwrap_or_default();
+    let listed = denied.iter().any(|v| denied_entry(v, &e.name));
+    if listed != enabled {
+        return Ok(());
+    }
+    if enabled {
+        denied.retain(|v| !denied_entry(v, &e.name));
+    } else {
+        denied.push(json!({ "serverName": e.name }));
+    }
+    let keys = ["deniedMcpServers".to_owned()];
+    let next = if denied.is_empty() {
+        mutate_node(&path, &bytes, &keys, None, None)?
+    } else {
+        mutate_node(&path, &bytes, &keys, None, Some(&Value::Array(denied)))?
+    };
+    record_recovery(recovery, "toggle", &path, before.as_deref())?;
+    atomic_write(&path, &next, before.as_deref())
+}
+/// Persists a private copy of a native file (or that it did not exist) before it changes.
+fn record_recovery(
+    recovery: &Path,
+    operation: &str,
+    path: &Path,
+    before: Option<&[u8]>,
+) -> InventoryResult<()> {
+    safe_path(recovery)?;
+    fs::create_dir_all(recovery).map_err(|_| "Cannot create inventory recovery directory")?;
+    private(recovery, true)?;
+    let dir = recovery.join(uuid::Uuid::new_v4().to_string());
+    fs::create_dir(&dir).map_err(|_| "Cannot create recovery intent")?;
+    private(&dir, true)?;
+    backup_file(
+        &dir.join("intent.json"),
+        json!({"version":1,"operation":operation,"path":path,"existed":before.is_some()})
+            .to_string()
+            .as_bytes(),
+    )?;
+    if let Some(before) = before {
+        backup_file(&dir.join("source"), before)?;
+    }
+    sync_directory(&dir)
+}
+/// Name of the read-only search server Cutokyo registers in every detected agent.
+pub(crate) const SEARCH_MCP: &str = "cutokyo-search";
+/// Adds (or, when `enabled` is false, removes) Cutokyo's own search MCP entry in
+/// each agent whose configuration directory exists. Only that entry is touched;
+/// an agent already in the wanted state is left byte-for-byte unchanged.
+/// Returns one notice per agent that could not be updated.
+pub(crate) fn reconcile_search_mcp(
+    roots: &InventoryRoots,
+    recovery: &Path,
+    command: &[String],
+    enabled: bool,
+) -> Vec<String> {
+    let Some((program, args)) = command.split_first() else {
+        return vec!["Cutokyo search has no command to register".into()];
+    };
+    let mut notices = Vec::new();
+    let _lock = match mutation_lock(recovery) {
+        Ok(lock) => lock,
+        Err(e) => return vec![e],
+    };
+    let claude = roots.home.join(".claude.json");
+    if roots.claude.is_dir() || claude.exists() {
+        let entry = json!({"command": program, "args": args});
+        if let Err(e) = ensure_node(
+            &claude,
+            &["mcpServers"],
+            enabled.then_some(&entry),
+            recovery,
+        ) {
+            notices.push(format!("Claude Code: {e}"));
+        }
+    }
+    if roots.codex.is_dir() {
+        let entry = json!({"command": program, "args": args});
+        let path = roots.codex.join("config.toml");
+        if let Err(e) = ensure_node(&path, &["mcp_servers"], enabled.then_some(&entry), recovery) {
+            notices.push(format!("Codex: {e}"));
+        }
+    }
+    if roots.opencode.is_dir() || roots.opencode_config.is_some() {
+        let path = roots.opencode_config.clone().unwrap_or_else(|| {
+            let jsonc = roots.opencode.join("opencode.jsonc");
+            if jsonc.exists() {
+                jsonc
+            } else {
+                roots.opencode.join("opencode.json")
+            }
+        });
+        let entry = json!({"type": "local", "command": command});
+        let v2 = read_file(&path)
+            .and_then(|bytes| json_value(&bytes))
+            .is_ok_and(|v| v.pointer("/mcp/servers").is_some_and(Value::is_object));
+        let container: &[&str] = if v2 { &["mcp", "servers"] } else { &["mcp"] };
+        if let Err(e) = ensure_node(&path, container, enabled.then_some(&entry), recovery) {
+            notices.push(format!("OpenCode: {e}"));
+        }
+    }
+    notices
+}
+fn ensure_node(
+    path: &Path,
+    container: &[&str],
+    wanted: Option<&Value>,
+    recovery: &Path,
+) -> InventoryResult<()> {
+    safe_path(path)?;
+    let before = path.exists().then(|| read_file(path)).transpose()?;
+    let toml = path.extension().is_some_and(|e| e == "toml");
+    let bytes = before
+        .clone()
+        .unwrap_or_else(|| if toml { Vec::new() } else { b"{}".to_vec() });
+    let current = config_value(path, &bytes)?;
+    let mut keys: Vec<String> = container.iter().map(|k| (*k).to_owned()).collect();
+    keys.push(SEARCH_MCP.to_owned());
+    let pointer = format!("/{}", keys.join("/"));
+    if current.pointer(&pointer) == wanted {
+        return Ok(());
+    }
+    let next = mutate_node(path, &bytes, &keys, None, wanted)?;
+    record_recovery(recovery, "search-mcp", path, before.as_deref())?;
+    atomic_write(path, &next, before.as_deref())
+}
+
 /// Removes only the symlink itself; the directory it points to is never touched.
 fn unlink(e: &Entry, recovery: &Path) -> InventoryResult<InventoryReceipt> {
     let parent = e.path.parent().ok_or("Link has no parent")?;

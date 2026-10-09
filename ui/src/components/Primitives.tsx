@@ -196,7 +196,13 @@ export function ProvenanceDetails({
         </div>
         <div>
           <dt>Records</dt>
-          <dd>{provenance.observationIds.join(", ")}</dd>
+          <dd>
+            {provenance.observationIds.join(", ")}
+            {(provenance.observationCount ?? 0) >
+            provenance.observationIds.length
+              ? ` and ${(provenance.observationCount ?? 0) - provenance.observationIds.length} more`
+              : null}
+          </dd>
         </div>
       </dl>
       {provenance.coverage.gaps.length === 0 ? null : (
@@ -235,6 +241,7 @@ export function Modal({
   description,
   children,
   footer,
+  actions,
   onClose,
   closeLabel = "Close dialog",
   closeDisabled = false,
@@ -243,10 +250,12 @@ export function Modal({
   readonly title: string;
   readonly description?: string;
   readonly footer?: ReactNode;
+  /** Controls shown in the header, before the close button. */
+  readonly actions?: ReactNode;
   readonly onClose: () => void;
   readonly closeLabel?: string;
   readonly closeDisabled?: boolean;
-  readonly size?: "regular" | "wide";
+  readonly size?: "regular" | "wide" | "full";
 }>) {
   const titleId = useId();
   const descriptionId = useId();
@@ -327,6 +336,9 @@ export function Modal({
               <p id={descriptionId}>{description}</p>
             )}
           </div>
+          {actions === undefined ? null : (
+            <div className="modal__actions">{actions}</div>
+          )}
           <Button
             variant="quiet"
             size="small"

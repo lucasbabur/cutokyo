@@ -225,6 +225,17 @@ impl DesktopCore {
         }
     }
 
+    fn usage_for(
+        &self,
+        session_ids: &[SessionId],
+    ) -> Result<std::collections::BTreeMap<SessionId, UsageTotals>, String> {
+        match self {
+            Self::Owner(core) => core.usage_for(session_ids).map_err(contract_error),
+            Self::ReadOnly(core) => core.usage_for(session_ids).map_err(contract_error),
+            Self::Unavailable(message) => Err(message.clone()),
+        }
+    }
+
     fn usage(&self, session_id: &SessionId) -> Result<UsageTotals, String> {
         match self {
             Self::Owner(core) => core.usage(session_id).map_err(contract_error),
@@ -307,6 +318,8 @@ pub(crate) struct DesktopService {
     mutable: Mutex<MutableState>,
     resume_executor: Arc<dyn ResumeExecutor>,
     history_import: Mutex<HistoryImportProgress>,
+    /// Why Cutokyo search could not be registered in some agent, if it could not.
+    search_mcp_notice: Mutex<Option<String>>,
     #[cfg(any(test, feature = "native-e2e"))]
     inventory_test_roots: Mutex<Option<cutokyo_core::app::InventoryRoots>>,
 }
@@ -412,6 +425,7 @@ impl DesktopService {
             #[cfg(any(test, feature = "native-e2e"))]
             inventory_test_roots: Mutex::new(None),
             history_import: Mutex::new(HistoryImportProgress::default()),
+            search_mcp_notice: Mutex::new(None),
             core: Mutex::new(core),
             mutable: Mutex::new(MutableState {
                 persisted,
@@ -507,8 +521,9 @@ impl DesktopService {
     }
 
     /// Imports one short slice of native history. Returns whether every source was
-    /// reached. The core lock is held only for this slice so queries stay responsive.
-    pub(crate) fn import_history_slice(&self) -> Result<bool, String> {
+    /// reached and how many new observations it stored. The core lock is held only
+    /// for this slice so queries stay responsive.
+    pub(crate) fn import_history_slice(&self) -> Result<(bool, u64), String> {
         let roots = {
             let progress = self
                 .history_import
@@ -527,18 +542,23 @@ impl DesktopService {
         // without it, so searches, the dashboard and health keep answering meanwhile.
         let owner = match &*self.core()? {
             DesktopCore::Owner(core) => Arc::clone(core),
-            DesktopCore::ReadOnly(_) | DesktopCore::Unavailable(_) => return Ok(true),
+            DesktopCore::ReadOnly(_) | DesktopCore::Unavailable(_) => return Ok((true, 0)),
         };
         let report = owner
             .import_native_history(&roots, &options)
             .map_err(contract_error)?;
         let complete = report.complete;
+        let inserted = report
+            .harnesses
+            .iter()
+            .map(|harness| harness.observations_inserted)
+            .sum();
         let mut progress = self
             .history_import
             .lock()
             .map_err(|_| "import state poisoned".to_owned())?;
         progress.last = Some(report);
-        Ok(complete)
+        Ok((complete, inserted))
     }
 
     /// Releases the import slot, recording a failure for the next bootstrap.
@@ -565,10 +585,16 @@ impl DesktopService {
             .lock()
             .ok()
             .and_then(|progress| progress.notice());
+        let search_notice = self
+            .search_mcp_notice
+            .lock()
+            .ok()
+            .and_then(|notice| notice.clone());
         let mut notices = Vec::new();
         for notice in [
             state.desktop_state_notice.as_deref(),
             self.core_startup_notice.as_deref(),
+            search_notice.as_deref(),
             core.unavailable_message(),
             import_notice.as_deref(),
         ]
@@ -1226,6 +1252,22 @@ impl DesktopService {
         .map_err(|_| "Cannot serialize inventory receipt".to_owned())
     }
 
+    pub(crate) fn set_inventory_item_enabled(
+        &self,
+        item_id: &str,
+        revision: &str,
+        enabled: bool,
+    ) -> Result<Value, String> {
+        serde_json::to_value(self.application.set_inventory_item_enabled(
+            &self.inventory_roots()?,
+            &self.root.join("inventory-recovery"),
+            item_id,
+            revision,
+            enabled,
+        )?)
+        .map_err(|_| "Cannot serialize inventory receipt".to_owned())
+    }
+
     pub(crate) fn plugin_verification(&self, item_id: &str) -> Result<Value, String> {
         let inventory = self.inventory()?;
         let item = inventory
@@ -1396,6 +1438,74 @@ impl DesktopService {
         ))
     }
 
+    /// Native agent roots the search MCP may be written to. Tests and native E2E
+    /// use only their isolated fixture roots, never the real home directory.
+    #[cfg_attr(
+        not(any(test, feature = "native-e2e")),
+        expect(clippy::unused_self, reason = "only test builds read fixture roots")
+    )]
+    fn search_mcp_roots(&self) -> Option<cutokyo_core::app::InventoryRoots> {
+        #[cfg(any(test, feature = "native-e2e"))]
+        return self.inventory_test_roots.lock().ok()?.clone();
+        #[cfg(not(any(test, feature = "native-e2e")))]
+        cutokyo_core::app::InventoryRoots::discover(Vec::new()).ok()
+    }
+
+    /// Keeps Cutokyo search registered in every detected agent while Agent search
+    /// is on, and removes Cutokyo's entry when it is off.
+    pub(crate) fn reconcile_search_mcp(&self) {
+        let Some(roots) = self.search_mcp_roots() else {
+            return;
+        };
+        let enabled = self
+            .shared_settings()
+            .is_ok_and(|settings| settings.search_mcp_enabled);
+        let cli = std::env::current_exe().ok().and_then(|exe| {
+            let name = if cfg!(windows) {
+                "cutokyo.exe"
+            } else {
+                "cutokyo"
+            };
+            Some(exe.parent()?.join(name)).filter(|path| path.is_file())
+        });
+        let notices = match cli {
+            Some(cli) => {
+                let command = [
+                    cli.as_os_str(),
+                    "--data-dir".as_ref(),
+                    self.paths.data_dir.as_os_str(),
+                    "--config-file".as_ref(),
+                    self.paths.config_file.as_os_str(),
+                    "mcp".as_ref(),
+                    "serve".as_ref(),
+                ]
+                .map(|part| part.to_string_lossy().into_owned());
+                self.application.reconcile_search_mcp(
+                    &roots,
+                    &self.root.join("inventory-recovery"),
+                    &command,
+                    enabled,
+                )
+            }
+            None if enabled => vec!["the cutokyo command was not found next to the app".to_owned()],
+            // Removal does not need the command; only Cutokyo's entry name matters.
+            None => self.application.reconcile_search_mcp(
+                &roots,
+                &self.root.join("inventory-recovery"),
+                &["cutokyo".to_owned()],
+                false,
+            ),
+        };
+        if let Ok(mut notice) = self.search_mcp_notice.lock() {
+            *notice = (!notices.is_empty()).then(|| {
+                format!(
+                    "Cutokyo search could not be registered everywhere: {}.",
+                    notices.join("; ")
+                )
+            });
+        }
+    }
+
     fn shared_settings(&self) -> Result<Settings, String> {
         self.application
             .resolve_settings(&self.paths, &SettingsOverrides::default())
@@ -1422,6 +1532,9 @@ impl DesktopService {
         self.application
             .write_settings_patch(&self.paths, patch)
             .map_err(contract_error)?;
+        if patch.search_mcp_enabled.is_some() {
+            self.reconcile_search_mcp();
+        }
         Ok(settings_value(&state.persisted, &self.shared_settings()?))
     }
 
@@ -1495,15 +1608,34 @@ impl DesktopService {
     }
 
     fn session_values(&self, results: &[SearchResult]) -> Result<Vec<Value>, String> {
+        let ids = results
+            .iter()
+            .map(|result| result.session_id.clone())
+            .collect::<Vec<_>>();
+        // One read for the whole page instead of one connection per row.
+        let usage = self.core()?.usage_for(&ids)?;
         results
             .iter()
-            .map(|result| self.session_value(result))
+            .map(|result| {
+                let usage = usage
+                    .get(&result.session_id)
+                    .ok_or_else(|| format!("Usage for {} was not read.", result.session_id))?;
+                Ok(Self::session_json(result, usage))
+            })
             .collect()
     }
 
     fn session_value(&self, result: &SearchResult) -> Result<Value, String> {
         let usage = self.core()?.usage(&result.session_id)?;
-        let provenance = provenance_value(&result.provenance, &result.observation_ids);
+        Ok(Self::session_json(result, &usage))
+    }
+
+    fn session_json(result: &SearchResult, usage: &UsageTotals) -> Value {
+        let provenance = provenance_value(
+            &result.provenance,
+            &result.observation_ids,
+            result.observation_count,
+        );
         let usage_value = json!({
             "nativeUsageKey": format!("aggregate:{}", result.session_id),
             "harness": harness_key(result.harness),
@@ -1516,7 +1648,7 @@ impl DesktopService {
             "billingBasis": if usage.provider_cost_micros.is_some() { "provider_reported" } else { "unknown" },
             "provenance": provenance.clone(),
         });
-        Ok(json!({
+        json!({
             "id": result.session_id.as_str(),
             "harness": harness_key(result.harness),
             "nativeSessionKey": result.provenance.native.session_key,
@@ -1535,7 +1667,7 @@ impl DesktopService {
             "usage": [usage_value],
             "timeline": [],
             "provenance": provenance,
-        }))
+        })
     }
 
     #[cfg(any(test, feature = "native-e2e"))]
@@ -1716,7 +1848,11 @@ fn detail_timeline(detail: &SessionDetail) -> Value {
 }
 
 fn attribution_value(attribution: &Attribution) -> Value {
-    provenance_value(&attribution.source, &attribution.observation_ids)
+    provenance_value(
+        &attribution.source,
+        &attribution.observation_ids,
+        attribution.observation_ids.len() as u64,
+    )
 }
 
 const fn run_state_label(state: RunState) -> &'static str {
@@ -1798,9 +1934,11 @@ fn proxy_status_value(settings: &Settings) -> Result<Value, String> {
     }))
 }
 
+/// `observation_ids` may be the first few of `observation_count` records.
 fn provenance_value(
     source: &SourceProvenance,
     observation_ids: &[cutokyo_domain::ObservationId],
+    observation_count: u64,
 ) -> Value {
     json!({
         "channel": channel_label(source.channel),
@@ -1810,6 +1948,7 @@ fn provenance_value(
         "confidence": confidence_key(source.confidence),
         "coverage": coverage_value(&source.coverage),
         "observationIds": observation_ids.iter().map(cutokyo_domain::ObservationId::as_str).collect::<Vec<_>>(),
+        "observationCount": observation_count,
     })
 }
 
@@ -2641,6 +2780,53 @@ mod tests {
         assert!(runtime.contains("fn desktop_capabilities()"));
         assert!(runtime.contains("            desktop_capabilities,"));
         assert!(!runtime.contains("guard_coverage"));
+        Ok(())
+    }
+
+    #[test]
+    fn agent_search_switch_registers_and_removes_cutokyo_search_in_agents()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let directory = tempfile::tempdir()?;
+        let service = DesktopService::open(test_paths(directory.path())?)?;
+        let home = directory.path().join("isolated-home");
+        let roots = cutokyo_core::app::InventoryRoots {
+            claude: home.join(".claude"),
+            codex: home.join(".codex"),
+            opencode: home.join(".config/opencode"),
+            opencode_config: None,
+            opencode_global: None,
+            projects: Vec::new(),
+            home,
+        };
+        fs::create_dir_all(&roots.claude)?;
+        let claude = roots.home.join(".claude.json");
+        fs::write(
+            &claude,
+            r#"{"mcpServers":{"cutokyo-search":{"command":"old"},"notes":{"command":"n"}}}"#,
+        )?;
+        *service
+            .inventory_test_roots
+            .lock()
+            .map_err(|_| "fixture lock")? = Some(roots.clone());
+        service.patch_settings(&SettingsPatch {
+            search_mcp_enabled: Some(false),
+            ..SettingsPatch::default()
+        })?;
+        let value: Value = serde_json::from_slice(&fs::read(&claude)?)?;
+        assert!(value["mcpServers"].get("cutokyo-search").is_none());
+        assert_eq!(value["mcpServers"]["notes"]["command"], "n");
+        // The test binary has no `cutokyo` beside it, so turning search on must say so.
+        service.patch_settings(&SettingsPatch {
+            search_mcp_enabled: Some(true),
+            ..SettingsPatch::default()
+        })?;
+        let notice = service
+            .search_mcp_notice
+            .lock()
+            .map_err(|_| "notice lock")?
+            .clone()
+            .ok_or("missing search notice")?;
+        assert!(notice.contains("not found next to the app"), "{notice}");
         Ok(())
     }
 

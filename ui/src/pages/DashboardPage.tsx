@@ -1,5 +1,5 @@
 import { ArrowRight, CircleDashed, ShieldAlert } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 import { useCommands, useCommandResource } from "../commands/context.js";
 import type { DashboardResponse } from "../contracts.js";
@@ -27,6 +27,11 @@ export function DashboardPage() {
   const resource = useCommandResource(
     () => commands.getDashboard(),
     "dashboard",
+  );
+  // Sessions created since the page opened arrive through background imports.
+  useEffect(
+    () => commands.onHistoryImported(resource.reload),
+    [commands, resource.reload],
   );
 
   if (resource.state === "loading" && resource.data === null) {

@@ -100,6 +100,10 @@ runtime application code.
 | @tauri-apps/api | 2.11.1 | Apache-2.0 OR MIT |
 | React / React DOM | 19.3.0 | MIT |
 | Lucide React | 1.47.0 | ISC |
+| CodeMirror view / state / language / commands | 6.43.13 / 6.7.6 / 6.12.4 / 6.11.1 | MIT |
+| CodeMirror Markdown / YAML language, Lezer highlight | 6.5.2 / 6.1.3 / 1.2.4 | MIT |
+| react-markdown / remark-gfm | 10.1.0 / 4.0.1 | MIT |
+| gpt-tokenizer (estimated token counts) | 4.0.0 | MIT |
 | TypeScript | 7.0.2 | Apache-2.0 |
 | Vite / React plugin | 8.3.0 / 6.1.1 | MIT |
 | Vitest | 5.0.1 | MIT |

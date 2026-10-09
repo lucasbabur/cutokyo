@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  Maximize2,
   Copy,
   Link2,
   Plus,
@@ -8,6 +9,8 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+
+import { MarkdownEditor } from "./MarkdownEditor.js";
 
 import { useCommands, useCommandResource } from "../commands/context.js";
 import type { ActionReceipt, Harness, InventoryItem } from "../contracts.js";
@@ -47,6 +50,8 @@ export function InventoryManager({
   installations,
   installRequest,
   onSelect,
+  toggleBusy,
+  onToggle,
   onClose,
   onComplete,
 }: {
@@ -55,6 +60,9 @@ export function InventoryManager({
   readonly installations: readonly InventoryItem[];
   readonly installRequest: InstallRequest | null;
   readonly onSelect: (item: InventoryItem) => void;
+  readonly toggleBusy: boolean;
+  /** Turns one MCP installation on or off. */
+  readonly onToggle: (item: InventoryItem, on: boolean) => void;
   readonly onClose: () => void;
   readonly onComplete: (message: string) => void;
 }) {
@@ -68,13 +76,20 @@ export function InventoryManager({
   const [target, setTarget] = useState<Harness | "">("");
   const [acknowledgedDrops, setAcknowledgedDrops] = useState(false);
   const [tab, setTab] = useState<Tab>("file");
+  const [editorOpen, setEditorOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [leave, setLeave] = useState<(() => void) | null>(null);
   const inFlight = useRef(false);
   const handledRequest = useRef<number | null>(null);
+  const savedDraft = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   const document = resource.data;
+  useEffect(() => {
+    if (!savedDraft.current) return;
+    savedDraft.current = false;
+    setDraft(null);
+  }, [document]);
   const content = draft ?? document?.content ?? "";
   const dirty = document !== null && content !== document.content;
   const managedCaptureHook =
@@ -145,7 +160,9 @@ export function InventoryManager({
       if (!receipt.ok || receipt.status !== "success") {
         throw new Error(receipt.message);
       }
-      setDraft(null);
+      // Keep the draft visible until the reloaded file replaces it, so the
+      // editor never flashes the old content; the effect below then drops it.
+      savedDraft.current = true;
       setMode("edit");
       onComplete(receipt.message);
       if (reloadDocument) resource.reload();
@@ -157,10 +174,12 @@ export function InventoryManager({
     }
   };
 
+  // A switched-off MCP server already shows that through its switch.
   const unusual =
     item.state === "enabled" ||
     item.state === "installed" ||
-    item.state === "configured"
+    item.state === "configured" ||
+    (item.kind === "mcp" && item.state === "disabled")
       ? null
       : item.state;
 
@@ -169,7 +188,7 @@ export function InventoryManager({
       className="tool-panel"
       aria-label={item.name}
       onKeyDown={(event) => {
-        if (event.key !== "Escape" || mode !== "edit") return;
+        if (event.key !== "Escape" || mode !== "edit" || editorOpen) return;
         event.preventDefault();
         guard(onClose);
       }}
@@ -241,6 +260,20 @@ export function InventoryManager({
                     </code>
                   </div>
                 )}
+                {owner.kind === "mcp" && !owner.managedByCutokyo ? (
+                  <label className="switch-control tool-panel__switch">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      aria-label={`${item.name} enabled in ${HARNESS_NAMES[harness]}`}
+                      checked={owner.state !== "disabled"}
+                      disabled={busy || toggleBusy}
+                      onChange={() =>
+                        onToggle(owner, owner.state === "disabled")
+                      }
+                    />
+                  </label>
+                ) : null}
               </li>
             );
           }
@@ -331,6 +364,16 @@ export function InventoryManager({
             {document.unavailableReason === null ? null : (
               <Disclosure>{document.unavailableReason}</Disclosure>
             )}
+            {document.format === "markdown" ? (
+              <Button
+                size="small"
+                className="tool-panel__open-editor"
+                disabled={busy}
+                onClick={() => setEditorOpen(true)}
+              >
+                <Maximize2 aria-hidden="true" /> Open editor
+              </Button>
+            ) : null}
             <textarea
               className="source-editor tool-panel__editor"
               aria-label="Source content"
@@ -450,6 +493,28 @@ export function InventoryManager({
         </footer>
       )}
 
+      {editorOpen && document !== null ? (
+        <MarkdownEditor
+          title={item.name}
+          path={item.origin}
+          value={content}
+          readOnly={!document.editable}
+          dirty={dirty}
+          saving={busy}
+          error={error}
+          onChange={setDraft}
+          onSave={() => {
+            void mutate(() =>
+              commands.saveInventoryDocument(
+                item.id,
+                document.revision,
+                content,
+              ),
+            );
+          }}
+          onClose={() => setEditorOpen(false)}
+        />
+      ) : null}
       {mode === "discard" ? (
         <Modal
           title="Discard unsaved changes?"

@@ -113,3 +113,49 @@ test("mouse clicks leave no focus ring; the keyboard brings it back", async ({
       .evaluate((node) => getComputedStyle(node).outlineStyle),
   ).toBe("solid");
 });
+
+test("markdown files open a full-window editor that saves with Ctrl+S", async ({
+  page,
+}) => {
+  await page.goto(inventoryUrl);
+  await page
+    .getByRole("button", { name: "protocol-check", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Open editor" }).click();
+  const editor = page.getByRole("dialog", { name: "protocol-check" });
+  const box = await editor.boundingBox();
+  const viewport = page.viewportSize();
+  expect(box?.width).toBe(viewport?.width);
+  expect(box?.height).toBe(viewport?.height);
+  const source = editor.getByRole("textbox", { name: "Markdown source" });
+  await source.click();
+  await page.keyboard.press("Control+End");
+  await page.keyboard.type("\n## Added from the editor\n");
+  await expect(editor.getByRole("status")).toHaveText("Unsaved changes");
+  await page.keyboard.press("Control+s");
+  await expect(editor.getByRole("status")).toHaveText("Saved");
+  // Split is the default: source and rendered preview side by side.
+  await expect(editor.getByRole("button", { name: "Split" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(editor.getByText(/^\d+ words$/)).toBeVisible();
+  await expect(editor.getByText(/^≈ \d+ tokens$/)).toBeVisible();
+  // Live rendering: away from the cursor the heading reads without its `##`.
+  await page.keyboard.press("Control+Home");
+  await expect(
+    source.locator(".cm-md-h2", { hasText: "Added from the editor" }),
+  ).toHaveText("Added from the editor");
+  await expect(
+    editor
+      .getByRole("article", { name: "Preview" })
+      .getByRole("heading", { name: "Added from the editor" }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(editor).not.toBeVisible();
+  await expect(
+    page
+      .getByRole("complementary", { name: "protocol-check" })
+      .getByRole("textbox", { name: "Source content" }),
+  ).toHaveValue(/## Added from the editor/);
+});

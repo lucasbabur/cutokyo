@@ -28,6 +28,18 @@ pub(crate) enum InventoryCommand {
         #[arg(long)]
         confirm_item: String,
     },
+    /// Turn an MCP server back on.
+    Enable {
+        item_id: String,
+        #[arg(long)]
+        revision: String,
+    },
+    /// Turn an MCP server off without removing its configuration.
+    Disable {
+        item_id: String,
+        #[arg(long)]
+        revision: String,
+    },
     /// Copy a skill bundle or safely translate an MCP node into another harness.
     Install {
         item_id: String,
@@ -109,6 +121,16 @@ pub(crate) fn run(
                     .map_err(error)?,
             )
         }
+        InventoryCommand::Enable { item_id, revision } => json_success(
+            "inventory.enable",
+            &app.set_inventory_item_enabled(&roots, &recovery, &item_id, &revision, true)
+                .map_err(error)?,
+        ),
+        InventoryCommand::Disable { item_id, revision } => json_success(
+            "inventory.disable",
+            &app.set_inventory_item_enabled(&roots, &recovery, &item_id, &revision, false)
+                .map_err(error)?,
+        ),
         InventoryCommand::Install {
             item_id,
             revision,

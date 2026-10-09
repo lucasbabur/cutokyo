@@ -447,6 +447,34 @@ impl Application {
         crate::inventory_management::install(roots, recovery, item_id, revision, harness)
     }
 
+    /// Turns an MCP server on or off, keeping its configuration.
+    ///
+    /// # Errors
+    /// Refuses stale revisions, non-MCP or Cutokyo-owned entries and unsafe targets.
+    pub fn set_inventory_item_enabled(
+        &self,
+        roots: &InventoryRoots,
+        recovery: &Path,
+        item_id: &str,
+        revision: &str,
+        enabled: bool,
+    ) -> std::result::Result<InventoryReceipt, String> {
+        crate::inventory_management::set_enabled(roots, recovery, item_id, revision, enabled)
+    }
+
+    /// Registers (or removes) Cutokyo's read-only search MCP in every detected agent.
+    /// Returns one notice per agent whose configuration could not be updated.
+    #[must_use]
+    pub fn reconcile_search_mcp(
+        &self,
+        roots: &InventoryRoots,
+        recovery: &Path,
+        command: &[String],
+        enabled: bool,
+    ) -> Vec<String> {
+        crate::inventory_management::reconcile_search_mcp(roots, recovery, command, enabled)
+    }
+
     /// Returns a serializable contract snapshot for frontend and doctor wiring.
     #[must_use]
     pub fn contract_snapshot(&self) -> ContractSnapshot {
@@ -824,6 +852,18 @@ impl QueryUseCases {
         self.store.usage_totals(session_id)
     }
 
+    /// Returns usage for a page of sessions in one read.
+    ///
+    /// # Errors
+    ///
+    /// Returns a store error if usage cannot be read.
+    pub fn usage_for(
+        &self,
+        session_ids: &[SessionId],
+    ) -> Result<std::collections::BTreeMap<SessionId, UsageTotals>> {
+        self.store.usage_totals_for(session_ids)
+    }
+
     /// Reads a quota window without converting unknown values to zero.
     ///
     /// # Errors
@@ -1125,6 +1165,18 @@ impl LocalCore {
     /// Returns a store error if usage cannot be read.
     pub fn usage(&self, session_id: &SessionId) -> Result<UsageTotals> {
         self.store.usage_totals(session_id)
+    }
+
+    /// Returns usage for a page of sessions in one read.
+    ///
+    /// # Errors
+    ///
+    /// Returns a store error if usage cannot be read.
+    pub fn usage_for(
+        &self,
+        session_ids: &[SessionId],
+    ) -> Result<std::collections::BTreeMap<SessionId, UsageTotals>> {
+        self.store.usage_totals_for(session_ids)
     }
 
     /// Resolves pricing through its half-open validity interval and source precedence.

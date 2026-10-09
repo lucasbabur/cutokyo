@@ -117,6 +117,11 @@ function SessionHistory() {
     async () => ({ result: await commands.searchSessions(requested), key }),
     key,
   );
+  // Sessions created since the page opened arrive through background imports.
+  useEffect(
+    () => commands.onHistoryImported(resource.reload),
+    [commands, resource.reload],
+  );
   useEffect(() => {
     const timer = globalThis.setTimeout(
       () => setDebouncedText(filters.text),
@@ -481,14 +486,16 @@ function SessionRow({ session }: { readonly session: SessionRecord }) {
           <p>{session.summary}</p>
         )}
         <div className="session-row__meta">
-          <span>{session.project ?? "Project unknown"}</span>
-          <span>
-            <CalendarDays aria-hidden="true" />{" "}
-            {formatDateTime(session.startedAt)}
+          <span title={session.project ?? undefined}>
+            <span>{session.project ?? "Project unknown"}</span>
           </span>
-          <span>
-            <GitBranch aria-hidden="true" />{" "}
-            {session.branch ?? "Branch unknown"}
+          <span className="session-row__date">
+            <CalendarDays aria-hidden="true" />
+            <span>{formatDateTime(session.startedAt)}</span>
+          </span>
+          <span title={session.branch ?? undefined}>
+            <GitBranch aria-hidden="true" />
+            <span>{session.branch ?? "Branch unknown"}</span>
           </span>
         </div>
       </div>

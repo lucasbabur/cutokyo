@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 
 import type { SettingsPatch } from "../generated/settings.js";
 import type {
@@ -105,6 +106,27 @@ export function createTauriCommandClient(): CommandClient {
         revision,
         harness,
       }),
+    setInventoryItemEnabled: (itemId, revision, enabled) =>
+      command<ActionReceipt>("set_inventory_item_enabled", {
+        itemId,
+        revision,
+        enabled,
+      }),
+    onHistoryImported: (listener) => {
+      let stop: (() => void) | null = null;
+      let stopped = false;
+      // A window without event permission simply never refreshes on its own.
+      listen("history-imported", () => listener())
+        .then((unlisten) => {
+          if (stopped) unlisten();
+          else stop = unlisten;
+        })
+        .catch(() => undefined);
+      return () => {
+        stopped = true;
+        stop?.();
+      };
+    },
     getPluginVerification: (itemId: string) =>
       command<PluginVerification>("plugin_verification", { itemId }),
     getProxyStatus: () => command<ProxyStatus>("proxy_status"),

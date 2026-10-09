@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use cutokyo_core::app::Application;
 use cutokyo_domain::SettingsPatch;
 use serde_json::Value;
-use tauri::Manager as _;
+use tauri::{Emitter as _, Manager as _};
 
 use crate::service::{
     CompleteOnboardingRequest, DesktopPreferencesPatch, DesktopService, SessionFilters,
@@ -38,6 +38,12 @@ fn desktop_bootstrap(
 
 /// Imports past sessions without blocking the window: short slices, each holding the
 /// core lock briefly, with a pause between them so queries stay responsive.
+/// Event telling the window that newly imported history is available.
+const HISTORY_IMPORTED: &str = "history-imported";
+
+/// How often native history is re-read for sessions created since the last import.
+const HISTORY_REFRESH: std::time::Duration = std::time::Duration::from_secs(45);
+
 fn spawn_history_import(app: &tauri::AppHandle) {
     if !app.state::<DesktopService>().begin_history_import() {
         return;
@@ -45,14 +51,24 @@ fn spawn_history_import(app: &tauri::AppHandle) {
     let app = app.clone();
     std::thread::spawn(move || {
         let service = app.state::<DesktopService>();
+        let mut inserted = 0_u64;
         let outcome = loop {
             match service.import_history_slice() {
-                Ok(true) => break Ok(()),
-                Ok(false) => std::thread::sleep(std::time::Duration::from_millis(150)),
+                Ok((complete, added)) => {
+                    inserted += added;
+                    if complete {
+                        break Ok(());
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(150));
+                }
                 Err(error) => break Err(error),
             }
         };
         service.finish_history_import(outcome);
+        // Open pages refresh only when the import actually brought something new.
+        if inserted > 0 {
+            let _ = app.emit(HISTORY_IMPORTED, inserted);
+        }
     });
 }
 
@@ -298,6 +314,17 @@ fn install_inventory_item(
     state.install_inventory_item(item_id, revision, harness)
 }
 
+#[expect(clippy::needless_pass_by_value, reason = "Tauri CommandArg owns State")]
+#[tauri::command]
+fn set_inventory_item_enabled(
+    state: tauri::State<'_, DesktopService>,
+    item_id: &str,
+    revision: &str,
+    enabled: bool,
+) -> Result<Value, String> {
+    state.set_inventory_item_enabled(item_id, revision, enabled)
+}
+
 #[expect(
     clippy::needless_pass_by_value,
     reason = "Tauri implements `CommandArg` for `State`, not `&State`"
@@ -459,9 +486,26 @@ pub(crate) fn run() -> Result<(), String> {
                     .seed_native_test_fixture(&fixture)
                     .map_err(io::Error::other)?;
             }
+            service.reconcile_search_mcp();
             app.manage(service);
             spawn_history_import(app.handle());
+            // Without capture hooks, new sessions only exist in each harness's own
+            // history; re-import on a timer so they appear without a restart.
+            // Unchanged transcripts are skipped by their cursors, so a quiet run is cheap.
+            let handle = app.handle().clone();
+            std::thread::spawn(move || {
+                loop {
+                    std::thread::sleep(HISTORY_REFRESH);
+                    spawn_history_import(&handle);
+                }
+            });
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            // Coming back to the window is when someone expects the newest sessions.
+            if let tauri::WindowEvent::Focused(true) = event {
+                spawn_history_import(window.app_handle());
+            }
         })
         .invoke_handler(tauri::generate_handler![
             contract_snapshot,
@@ -490,6 +534,7 @@ pub(crate) fn run() -> Result<(), String> {
             save_inventory_document,
             remove_inventory_item,
             install_inventory_item,
+            set_inventory_item_enabled,
             plugin_verification,
             proxy_status,
             preview_proxy_consent,

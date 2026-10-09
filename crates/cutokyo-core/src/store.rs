@@ -8,7 +8,7 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{Read, Write},
     path::{Path, PathBuf},
-    sync::{Mutex, MutexGuard},
+    sync::{Arc, Mutex, MutexGuard},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
@@ -405,11 +405,17 @@ pub struct SearchResult {
     /// Bounded plain-text query match context. Empty on non-search lookups.
     #[serde(default)]
     pub matches: Vec<SearchMatch>,
-    /// Matching/winning raw evidence IDs.
+    /// The first matching/winning raw evidence IDs, at most [`LISTED_EVIDENCE`].
+    /// Long sessions have tens of thousands; listing them all made every page slow.
     pub observation_ids: Vec<ObservationId>,
+    /// Total supporting raw observations, including any not listed.
+    pub observation_count: u64,
     /// Winning source provenance.
     pub provenance: SourceProvenance,
 }
+
+/// Evidence IDs carried per search result; the remainder is counted, not listed.
+pub const LISTED_EVIDENCE: usize = 20;
 
 /// Stored detail for one exact session, read from a single SQLite snapshot.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -598,7 +604,12 @@ pub struct RestoreReceipt {
 #[derive(Clone, Debug)]
 pub struct ReadStore {
     path: PathBuf,
+    facets: FacetCache,
 }
+
+/// Search facets keyed by a cheap history fingerprint. Recomputing them scans
+/// every indexed message, so it happens only when stored history changes.
+type FacetCache = Arc<Mutex<Option<(String, SearchFacets)>>>;
 
 /// Single process writer. The OS advisory lock lives as long as this value.
 #[derive(Debug)]
@@ -608,6 +619,7 @@ pub struct WriterStore {
     owner: LockOwner,
     lock_file: File,
     write_serialization: Mutex<()>,
+    facets: FacetCache,
 }
 
 impl WriterStore {
@@ -637,6 +649,7 @@ impl WriterStore {
             owner,
             lock_file,
             write_serialization: Mutex::new(()),
+            facets: FacetCache::default(),
         };
         let mut connection = open_write_connection(&store.path)?;
         migrate_forward(&mut connection)?;
@@ -712,6 +725,7 @@ impl WriterStore {
     pub fn reader(&self) -> ReadStore {
         ReadStore {
             path: self.path.clone(),
+            facets: Arc::clone(&self.facets),
         }
     }
 
@@ -1008,6 +1022,18 @@ impl WriterStore {
     /// Returns a store error if the usage projection cannot be read.
     pub fn usage_totals(&self, session_id: &SessionId) -> Result<UsageTotals> {
         self.reader().usage_totals(session_id)
+    }
+
+    /// Usage totals for several sessions through one connection and query.
+    ///
+    /// # Errors
+    ///
+    /// Returns a store or contract-decoding error if usage cannot be read.
+    pub fn usage_totals_for(
+        &self,
+        session_ids: &[SessionId],
+    ) -> Result<BTreeMap<SessionId, UsageTotals>> {
+        self.reader().usage_totals_for(session_ids)
     }
 
     /// Returns the applicable price selected by declared source precedence,
@@ -2125,6 +2151,28 @@ impl Drop for WriterStore {
 }
 
 impl ReadStore {
+    fn cached_facets(&self, connection: &Connection) -> Result<SearchFacets> {
+        let fingerprint: String = connection
+            .query_row(
+                "SELECT (SELECT ifnull(max(rowid), 0) FROM raw_observations) || ':' || (SELECT count(*) FROM sessions)",
+                [],
+                |row| row.get(0),
+            )
+            .map_err(|error| sqlite_error("fingerprint search facets", &error))?;
+        let mut cache = self
+            .facets
+            .lock()
+            .map_err(|_| ContractError::new(ErrorCode::Internal, "search facet cache poisoned"))?;
+        if let Some((cached, facets)) = cache.as_ref()
+            && *cached == fingerprint
+        {
+            return Ok(facets.clone());
+        }
+        let facets = search_facets(connection)?;
+        *cache = Some((fingerprint, facets.clone()));
+        Ok(facets)
+    }
+
     /// Opens a read-only handle after local-path and schema compatibility checks.
     ///
     /// # Errors
@@ -2136,7 +2184,10 @@ impl ReadStore {
         let connection = open_read_connection(&path)?;
         refuse_newer_schema(&connection)?;
         validate_sqlite_runtime(&connection)?;
-        Ok(Self { path })
+        Ok(Self {
+            path,
+            facets: FacetCache::default(),
+        })
     }
 
     /// Proves every read connection receives required connection settings.
@@ -2286,7 +2337,7 @@ impl ReadStore {
             ContractError::new(ErrorCode::Internal, "negative matching session count")
         })?;
         let has_more = u64::from(query.offset) + (sessions.len() as u64) < total;
-        let facets = search_facets(&transaction)?;
+        let facets = self.cached_facets(&transaction)?;
         Ok(SearchPage {
             sessions,
             total,
@@ -2400,6 +2451,70 @@ impl ReadStore {
                 },
             )
             .map_err(|error| sqlite_error("read usage totals", &error))
+    }
+
+    /// Usage totals for several sessions through one connection and query, so a
+    /// page of sessions does not open one connection per row.
+    ///
+    /// # Errors
+    ///
+    /// Returns a store or contract-decoding error if usage cannot be read.
+    pub fn usage_totals_for(
+        &self,
+        session_ids: &[SessionId],
+    ) -> Result<BTreeMap<SessionId, UsageTotals>> {
+        let mut totals = BTreeMap::new();
+        if session_ids.is_empty() {
+            return Ok(totals);
+        }
+        let connection = open_read_connection(&self.path)?;
+        let placeholders = vec!["?"; session_ids.len()].join(",");
+        let mut statement = connection
+            .prepare(&format!(
+                "SELECT session_id, SUM(value) FILTER (WHERE metric = 'input_tokens'), SUM(value) FILTER (WHERE metric = 'output_tokens'), SUM(value) FILTER (WHERE metric = 'cache_read_tokens'), SUM(value) FILTER (WHERE metric = 'cache_write_tokens'), SUM(value) FILTER (WHERE metric = 'provider_cost_micros') FROM usage_values WHERE session_id IN ({placeholders}) GROUP BY session_id"
+            ))
+            .map_err(|error| sqlite_error("prepare usage totals", &error))?;
+        let rows = statement
+            .query_map(
+                params_from_iter(session_ids.iter().map(SessionId::as_str)),
+                |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        UsageTotals {
+                            input_tokens: row.get::<_, Option<i64>>(1)?.map(nonnegative_i64_to_u64),
+                            output_tokens: row
+                                .get::<_, Option<i64>>(2)?
+                                .map(nonnegative_i64_to_u64),
+                            cache_read_tokens: row
+                                .get::<_, Option<i64>>(3)?
+                                .map(nonnegative_i64_to_u64),
+                            cache_write_tokens: row
+                                .get::<_, Option<i64>>(4)?
+                                .map(nonnegative_i64_to_u64),
+                            provider_cost_micros: row
+                                .get::<_, Option<i64>>(5)?
+                                .map(nonnegative_i64_to_u64),
+                        },
+                    ))
+                },
+            )
+            .map_err(|error| sqlite_error("read usage totals", &error))?;
+        for row in rows {
+            let (session_id, usage) =
+                row.map_err(|error| sqlite_error("decode usage totals", &error))?;
+            totals.insert(SessionId::parse(session_id)?, usage);
+        }
+        // Sessions without usage rows keep every metric unknown, exactly like `usage_totals`.
+        for session_id in session_ids {
+            totals.entry(session_id.clone()).or_insert(UsageTotals {
+                input_tokens: None,
+                output_tokens: None,
+                cache_read_tokens: None,
+                cache_write_tokens: None,
+                provider_cost_micros: None,
+            });
+        }
+        Ok(totals)
     }
 
     /// Resolves a price only inside its half-open validity interval.
@@ -4406,7 +4521,7 @@ fn session_connection(
     let Some(row) = row else {
         return Ok(None);
     };
-    let evidence = projection_evidence(connection, "session", session_id.as_str())?;
+    let (evidence, evidence_count) = listed_evidence(connection, "session", session_id.as_str())?;
     let winning = load_observation_provenance(connection, &row.7)?;
     Ok(Some(SearchResult {
         session_id: session_id.clone(),
@@ -4419,6 +4534,7 @@ fn session_connection(
         started_at: Timestamp::parse(row.6)?,
         matches: Vec::new(),
         observation_ids: evidence,
+        observation_count: evidence_count,
         provenance: winning,
     }))
 }
@@ -4502,15 +4618,21 @@ fn search_clause(query: &SearchQuery) -> (String, Vec<SqlValue>) {
 
 fn search_connection(connection: &Connection, query: &SearchQuery) -> Result<Vec<SearchResult>> {
     let (clause, mut values) = search_clause(query);
+    let searching = query
+        .text
+        .as_deref()
+        .is_some_and(|text| !search_terms(text).is_empty());
+    // The search document's rowid lets match previews use FTS5's rowid lookup;
+    // filtering its unindexed session_id column instead costs a match scan per field.
+    let document = if searching {
+        "session_search.rowid"
+    } else {
+        "NULL"
+    };
     let mut sql = format!(
-        "SELECT s.session_id, s.harness, s.native_resume_id, s.project_id, p.name, s.branch, s.title, s.started_at, s.winning_observation_id {clause}"
+        "SELECT s.session_id, s.harness, s.native_resume_id, s.project_id, p.name, s.branch, s.title, s.started_at, s.winning_observation_id, {document} {clause}"
     );
-    if query.sort == SearchSort::Relevance
-        && query
-            .text
-            .as_deref()
-            .is_some_and(|text| !search_terms(text).is_empty())
-    {
+    if query.sort == SearchSort::Relevance && searching {
         sql.push_str(" ORDER BY bm25(session_search, 0, 8, 5, 3, 6, 1), s.started_at_epoch DESC, s.session_id");
     } else {
         sql.push_str(" ORDER BY s.started_at_epoch DESC, s.session_id");
@@ -4535,6 +4657,7 @@ fn search_connection(connection: &Connection, query: &SearchQuery) -> Result<Vec
                 row.get::<_, Option<String>>(6)?,
                 row.get::<_, String>(7)?,
                 row.get::<_, String>(8)?,
+                row.get::<_, Option<i64>>(9)?,
             ))
         })
         .map_err(|error| sqlite_error("query session search", &error))?;
@@ -4542,9 +4665,13 @@ fn search_connection(connection: &Connection, query: &SearchQuery) -> Result<Vec
     for row in rows {
         let row = row.map_err(|error| sqlite_error("decode session search", &error))?;
         let session_id = SessionId::parse(row.0)?;
-        let evidence = projection_evidence(connection, "session", session_id.as_str())?;
+        let (evidence, evidence_count) =
+            listed_evidence(connection, "session", session_id.as_str())?;
         let winning = load_observation_provenance(connection, &row.8)?;
-        let matches = search_matches(connection, &session_id, query)?;
+        let matches = match row.9 {
+            Some(document) => search_matches(connection, document, &session_id, query)?,
+            None => Vec::new(),
+        };
         results.push(SearchResult {
             matches,
             session_id,
@@ -4556,6 +4683,7 @@ fn search_connection(connection: &Connection, query: &SearchQuery) -> Result<Vec
             title: row.6,
             started_at: Timestamp::parse(row.7)?,
             observation_ids: evidence,
+            observation_count: evidence_count,
             provenance: winning,
         });
     }
@@ -4564,6 +4692,7 @@ fn search_connection(connection: &Connection, query: &SearchQuery) -> Result<Vec
 
 fn search_matches(
     connection: &Connection,
+    document: i64,
     session_id: &SessionId,
     query: &SearchQuery,
 ) -> Result<Vec<SearchMatch>> {
@@ -4588,10 +4717,15 @@ fn search_matches(
     let end_marker = format!("\u{e000}{marker}end\u{e001}");
     // Give sources containing the entire query priority over partial contributors.
     // Both passes use FTS5, so preview choice has the same Unicode semantics as search.
-    for expression in [
-        fts_query(query.text.as_deref().unwrap_or_default(), query.mode),
-        expression,
-    ] {
+    let mut passes = vec![fts_query(
+        query.text.as_deref().unwrap_or_default(),
+        query.mode,
+    )];
+    // A one-term query reads the same either way; a repeated pass finds nothing new.
+    if !passes.contains(&expression) {
+        passes.push(expression);
+    }
+    for expression in passes {
         for (column, source) in [
             (1, "title"),
             (2, "project"),
@@ -4613,8 +4747,8 @@ fn search_matches(
             ).optional()
         } else {
             connection.query_row(
-                "SELECT snippet(session_search, ?1, ?4, ?5, '…', 32) FROM session_search WHERE session_id=?2 AND session_search MATCH ?3",
-                params![column, session_id.as_str(), column_query, start_marker, end_marker], |row| row.get(0)
+                "SELECT snippet(session_search, ?1, ?4, ?5, '…', 32) FROM session_search WHERE rowid=?2 AND session_search MATCH ?3",
+                params![column, document, column_query, start_marker, end_marker], |row| row.get(0)
             ).optional()
         }.map_err(|error| sqlite_error("read search match context", &error))?;
             if let Some(text) = text {
@@ -4646,37 +4780,63 @@ fn search_matches(
 }
 
 fn search_facets(connection: &Connection) -> Result<SearchFacets> {
-    fn values(connection: &Connection, sql: &str) -> Result<Vec<String>> {
+    fn collect(
+        connection: &Connection,
+        sql: &str,
+        mut each: impl FnMut(&rusqlite::Row<'_>) -> rusqlite::Result<()>,
+    ) -> Result<()> {
         let mut statement = connection
             .prepare(sql)
             .map_err(|error| sqlite_error("prepare search facets", &error))?;
-        let rows = statement
-            .query_map([], |row| row.get::<_, String>(0))
+        let mut rows = statement
+            .query([])
             .map_err(|error| sqlite_error("query search facets", &error))?;
-        rows.map(|row| row.map_err(|error| sqlite_error("decode search facet", &error)))
-            .collect()
+        while let Some(row) = rows
+            .next()
+            .map_err(|error| sqlite_error("read search facets", &error))?
+        {
+            each(row).map_err(|error| sqlite_error("decode search facet", &error))?;
+        }
+        Ok(())
     }
+    let mut projects = BTreeSet::new();
+    let mut branches = BTreeSet::new();
+    let mut tools = BTreeSet::new();
+    let mut skills = BTreeSet::new();
+    let mut agents = BTreeSet::new();
+    let keep = |set: &mut BTreeSet<String>, value: Option<String>| {
+        if let Some(value) = value.filter(|value| !value.is_empty()) {
+            set.insert(value);
+        }
+    };
+    collect(
+        connection,
+        "SELECT COALESCE(p.name, p.path, s.project_id), s.branch FROM sessions s LEFT JOIN projects p ON p.project_id=s.project_id",
+        |row| {
+            keep(&mut projects, row.get(0)?);
+            keep(&mut branches, row.get(1)?);
+            Ok(())
+        },
+    )?;
+    // One pass over the message index instead of one scan per facet.
+    collect(
+        connection,
+        "SELECT DISTINCT project, branch, tool, skill, agent FROM message_fts",
+        |row| {
+            keep(&mut projects, row.get(0)?);
+            keep(&mut branches, row.get(1)?);
+            keep(&mut tools, row.get(2)?);
+            keep(&mut skills, row.get(3)?);
+            keep(&mut agents, row.get(4)?);
+            Ok(())
+        },
+    )?;
     Ok(SearchFacets {
-        projects: values(
-            connection,
-            "SELECT COALESCE(p.name, p.path, s.project_id) AS value FROM sessions s LEFT JOIN projects p ON p.project_id=s.project_id WHERE value IS NOT NULL AND value<>'' UNION SELECT project FROM message_fts WHERE project<>'' ORDER BY 1",
-        )?,
-        branches: values(
-            connection,
-            "SELECT branch FROM sessions WHERE branch IS NOT NULL AND branch<>'' UNION SELECT branch FROM message_fts WHERE branch<>'' ORDER BY 1",
-        )?,
-        tools: values(
-            connection,
-            "SELECT DISTINCT tool FROM message_fts WHERE tool<>'' ORDER BY tool",
-        )?,
-        skills: values(
-            connection,
-            "SELECT DISTINCT skill FROM message_fts WHERE skill<>'' ORDER BY skill",
-        )?,
-        agents: values(
-            connection,
-            "SELECT DISTINCT agent FROM message_fts WHERE agent<>'' ORDER BY agent",
-        )?,
+        projects: projects.into_iter().collect(),
+        branches: branches.into_iter().collect(),
+        tools: tools.into_iter().collect(),
+        skills: skills.into_iter().collect(),
+        agents: agents.into_iter().collect(),
     })
 }
 
@@ -4883,6 +5043,42 @@ fn latest_session_summary(
         attribution: serde_json::from_str(&row.7)
             .map_err(|error| serialization_error("decode summary attribution", &error))?,
     }))
+}
+
+/// The first [`LISTED_EVIDENCE`] evidence IDs in the usual order, plus the exact total.
+fn listed_evidence(
+    connection: &Connection,
+    kind: &str,
+    key: &str,
+) -> Result<(Vec<ObservationId>, u64)> {
+    let mut statement = connection
+        .prepare_cached(
+            "SELECT observation_id FROM projection_sources WHERE projection_kind=?1 AND projection_key=?2 ORDER BY selected DESC, source_priority, observation_id LIMIT ?3",
+        )
+        .map_err(|error| sqlite_error("prepare listed evidence", &error))?;
+    let limit = i64::try_from(LISTED_EVIDENCE).unwrap_or(i64::MAX);
+    let rows = statement
+        .query_map(params![kind, key, limit], |row| row.get::<_, String>(0))
+        .map_err(|error| sqlite_error("query listed evidence", &error))?;
+    let mut evidence = Vec::new();
+    for row in rows {
+        evidence.push(ObservationId::parse(
+            row.map_err(|error| sqlite_error("decode listed evidence", &error))?,
+        )?);
+    }
+    let count = if evidence.len() < LISTED_EVIDENCE {
+        evidence.len() as u64
+    } else {
+        let total: i64 = connection
+            .query_row(
+                "SELECT count(*) FROM projection_sources WHERE projection_kind=?1 AND projection_key=?2",
+                params![kind, key],
+                |row| row.get(0),
+            )
+            .map_err(|error| sqlite_error("count listed evidence", &error))?;
+        u64::try_from(total).unwrap_or(0)
+    };
+    Ok((evidence, count))
 }
 
 fn projection_evidence(
@@ -6237,6 +6433,12 @@ mod tests {
                 .input_tokens,
             Some(100)
         );
+        let one = SessionId::parse("session:one")?;
+        let missing = SessionId::parse("session:missing")?;
+        let batch = store.usage_totals_for(&[one.clone(), missing.clone()])?;
+        assert_eq!(batch.get(&one), Some(&store.usage_totals(&one)?));
+        assert_eq!(batch.get(&missing), Some(&store.usage_totals(&missing)?));
+        assert_eq!(batch.get(&missing).and_then(|u| u.input_tokens), None);
         let results = store.search(&SearchQuery {
             text: Some("needle transcript".to_owned()),
             project: Some("alpha".to_owned()),
@@ -6252,6 +6454,7 @@ mod tests {
         assert_eq!(results[0].project_name.as_deref(), Some("alpha"));
         assert_eq!(results[0].branch.as_deref(), Some("main"));
         assert_eq!(results[0].observation_ids.len(), 2);
+        assert_eq!(results[0].observation_count, 2);
         let price = store
             .price_at(
                 "synthetic",
@@ -6816,6 +7019,48 @@ mod tests {
             store
                 .quota_window(&QuotaWindowId::parse("quota:shared")?)?
                 .is_none()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn search_pages_list_bounded_evidence_and_reuse_facets_until_history_changes()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let directory = tempfile::tempdir()?;
+        let store = WriterStore::open(directory.path().join("cutokyo.db"), owner("test")?)?;
+        for n in 0..25 {
+            let event = observation(
+                &format!("obs:bulk:{n:02}"),
+                "session:bulk",
+                CaptureChannel::HookOrPlugin,
+                json!({"session_id":"session:bulk","project_id":"project:alpha","project":"alpha","text":format!("bulk message {n}"),"message_id":format!("message:bulk:{n}"),"tool_name":"Read"}),
+                &format!("2026-09-19T10:00:{n:02}Z"),
+            )?;
+            assert!(
+                store
+                    .ingest_observation(&format!("{n:03}.jsonl"), &event)?
+                    .inserted
+            );
+        }
+        let page = store.search_page(&SearchQuery::default())?;
+        assert_eq!(page.sessions.len(), 1);
+        assert_eq!(page.sessions[0].observation_ids.len(), LISTED_EVIDENCE);
+        assert_eq!(page.sessions[0].observation_count, 25);
+        assert_eq!(page.facets.tools, vec!["Read".to_owned()]);
+
+        // New history changes the fingerprint, so the cached facets are replaced.
+        let event = observation(
+            "obs:bulk:new",
+            "session:other",
+            CaptureChannel::HookOrPlugin,
+            json!({"session_id":"session:other","project_id":"project:beta","project":"beta","text":"new","message_id":"message:other","tool_name":"Write"}),
+            "2026-09-19T11:00:00Z",
+        )?;
+        assert!(store.ingest_observation("new.jsonl", &event)?.inserted);
+        let page = store.search_page(&SearchQuery::default())?;
+        assert_eq!(
+            page.facets.tools,
+            vec!["Read".to_owned(), "Write".to_owned()]
         );
         Ok(())
     }

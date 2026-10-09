@@ -36,15 +36,35 @@ fn roots(root: &Path) -> Result<HistoryRoots, Box<dyn Error>> {
     })
 }
 
-fn drive(service: &DesktopService) -> Result<(), String> {
+/// Runs one whole import and returns how many new observations it stored.
+fn drive(service: &DesktopService) -> Result<u64, String> {
     assert!(service.begin_history_import());
     assert!(!service.begin_history_import(), "one import at a time");
     let mut guard = 0;
-    while !service.import_history_slice()? {
+    let mut inserted = 0;
+    loop {
+        let (complete, added) = service.import_history_slice()?;
+        inserted += added;
+        if complete {
+            break;
+        }
         guard += 1;
         assert!(guard < 50);
     }
     service.finish_history_import(Ok(()));
+    Ok(inserted)
+}
+
+#[test]
+fn a_quiet_reimport_reports_nothing_new_so_open_pages_do_not_refresh() -> TestResult {
+    let world = tempfile::tempdir()?;
+    let service = DesktopService::open(test_paths(world.path())?)?;
+    service.set_history_roots(roots(world.path())?);
+    assert!(
+        drive(&service)? > 0,
+        "the first import stores past sessions"
+    );
+    assert_eq!(drive(&service)?, 0, "unchanged history adds nothing");
     Ok(())
 }
 

@@ -24,7 +24,9 @@ export interface Provenance {
   readonly parserVersion: string;
   readonly confidence: Confidence;
   readonly coverage: Coverage;
+  /** May list only the first records; `observationCount` is the total. */
   readonly observationIds: readonly string[];
+  readonly observationCount?: number;
 }
 
 export interface RouteMeta {
@@ -500,7 +502,15 @@ export interface CommandClient {
     revision: string,
     harness: Harness,
   ): Promise<ActionReceipt>;
+  /** Turns an MCP server on or off; its configuration is kept either way. */
+  setInventoryItemEnabled(
+    itemId: string,
+    revision: string,
+    enabled: boolean,
+  ): Promise<ActionReceipt>;
   getPluginVerification(itemId: string): Promise<PluginVerification>;
+  /** Calls `listener` whenever a background import stores new history; returns an unsubscribe. */
+  onHistoryImported(listener: () => void): () => void;
   getProxyStatus(): Promise<ProxyStatus>;
   previewProxy(): Promise<ProxyPreview>;
   setProxyEnabled(

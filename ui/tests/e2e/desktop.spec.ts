@@ -784,3 +784,56 @@ test("agent tool rows show description, kind symbols, harness marks and an align
   await dialog.getByRole("tab", { name: "Details" }).click();
   await expect(dialog.locator("summary", { hasText: "Source" })).toBeVisible();
 });
+
+test("session rows center their harness mark and long values never overflow", async ({
+  page,
+}) => {
+  await openCase(page, "populated-dashboard", "/sessions", "Sessions");
+  await page.locator(".session-row").first().waitFor();
+  const long =
+    "/home/lucas/Developer/personal/cutokyo-community/.claude/worktrees/agent-a1b2c3d4e5f6a7b8c9d0/crates/cutokyo-core/src/inventory_management/describe.rs:206:57";
+  await page.evaluate((text) => {
+    const row = document.querySelector(".session-row")!;
+    row.querySelector(".session-row__title a")!.textContent = text;
+    for (const value of row.querySelectorAll(
+      ".session-row__meta > span > span",
+    )) {
+      value.textContent = text;
+    }
+  }, long);
+  const offsets = await page.locator(".session-row").evaluateAll((rows) =>
+    rows.map((row) => {
+      const mark = row
+        .querySelector(".session-row__harness")!
+        .getBoundingClientRect();
+      const box = row.getBoundingClientRect();
+      return Math.abs(mark.top + mark.height / 2 - (box.top + box.height / 2));
+    }),
+  );
+  for (const offset of offsets) expect(offset).toBeLessThanOrEqual(1);
+  // Project, date and branch stay on one line; long values truncate instead.
+  const tops = await page
+    .locator(".session-row__meta")
+    .first()
+    .evaluate((node) =>
+      [...node.children].map((child) => child.getBoundingClientRect().top),
+    );
+  expect(new Set(tops).size).toBe(1);
+  await expectNoWindowOverflow(page);
+  await openCase(
+    page,
+    "populated-dashboard",
+    "/sessions/session-claude-73A9",
+    "Reconcile usage capture",
+  );
+  await page.locator("main dd").first().waitFor();
+  await page.evaluate((text) => {
+    for (const node of document.querySelectorAll("main p, main dd, main h1")) {
+      if (node.children.length === 0) node.textContent += ` ${text}`;
+    }
+  }, long);
+  const main = await page
+    .locator("#main-content")
+    .evaluate((node) => node.scrollWidth - node.clientWidth);
+  expect(main).toBeLessThanOrEqual(0);
+});

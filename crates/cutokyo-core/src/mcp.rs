@@ -26,8 +26,8 @@ use rmcp::{
         wrapper::{Json, Parameters},
     },
     model::{
-        CallToolRequestParams, CallToolResponse, CallToolResult, ContentBlock, ListToolsResult,
-        PaginatedRequestParams, ServerCapabilities, ServerConfig, Tool,
+        CacheScope, CallToolRequestParams, CallToolResponse, CallToolResult, ContentBlock,
+        ListToolsResult, PaginatedRequestParams, ServerCapabilities, ServerConfig, Tool,
     },
     service::RequestContext,
     tool, tool_handler, tool_router,
@@ -140,8 +140,11 @@ pub struct McpSession {
     pub title: Option<String>,
     /// RFC 3339 start timestamp.
     pub started_at: String,
-    /// Immutable observations supporting this projection.
+    /// The first immutable observations supporting this projection, at most
+    /// [`crate::store::LISTED_EVIDENCE`]; long sessions have thousands, which would flood an agent.
     pub observation_ids: Vec<String>,
+    /// Total number of supporting observations, including any not listed above.
+    pub observation_count: u64,
     /// Bounded plain-text query context, never HTML.
     #[serde(default)]
     pub matches: Vec<McpSearchMatch>,
@@ -179,6 +182,7 @@ impl From<SearchResult> for McpSession {
             branch: value.branch,
             title: value.title,
             started_at: value.started_at.as_str().to_owned(),
+            observation_count: value.observation_count,
             observation_ids: value
                 .observation_ids
                 .into_iter()
@@ -799,7 +803,11 @@ impl ServerHandler for CutokyoMcpServer {
         _context: RequestContext<RoleServer>,
     ) -> std::result::Result<ListToolsResult, McpError> {
         tokio::task::yield_now().await;
-        Ok(ListToolsResult::with_all_items(self.tool_router.list_all()))
+        // Clients on the 2026-07-28 schema (Claude Code 2.1.295) reject a list
+        // without cache hints; local history is never shared or reused stale.
+        Ok(ListToolsResult::with_all_items(self.tool_router.list_all())
+            .with_ttl_ms(0)
+            .with_cache_scope(CacheScope::Private))
     }
 }
 

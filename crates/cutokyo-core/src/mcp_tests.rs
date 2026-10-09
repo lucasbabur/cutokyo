@@ -98,6 +98,7 @@ fn session() -> McpSession {
         title: Some("Read only".to_owned()),
         started_at: "2026-09-20T12:00:00Z".to_owned(),
         observation_ids: vec!["obs:mcp:test".to_owned()],
+        observation_count: 1,
         matches: Vec::new(),
     }
 }

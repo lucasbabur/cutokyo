@@ -20,6 +20,7 @@ type ManagementCommands = Pick<
   | "saveInventoryDocument"
   | "removeInventoryItem"
   | "installInventoryItem"
+  | "setInventoryItemEnabled"
 >;
 
 /** Models command state only. Native tests prove actual file mutations. */
@@ -158,6 +159,28 @@ export function createInventoryFixtureManagement(
       revisions.delete(itemId);
       return success(
         `Removed ${item.name} from this harness. Other installations are unchanged.`,
+      );
+    },
+    async setInventoryItemEnabled(itemId, expected, enabled) {
+      checkRevision(itemId, expected);
+      const item = find(itemId);
+      if (item.kind !== "mcp")
+        throw new Error("Only MCP servers can be turned on or off");
+      if (item.managedByCutokyo)
+        throw new Error("Turn Cutokyo search on or off in Settings.");
+      state.inventory = {
+        ...state.inventory,
+        items: state.inventory.items.map((entry) =>
+          entry.id === itemId
+            ? { ...entry, state: enabled ? "configured" : "disabled" }
+            : entry,
+        ),
+      };
+      revisions.set(itemId, (revisions.get(itemId) ?? 0) + 1);
+      return success(
+        enabled
+          ? "Turned on. Restart the agent to load it."
+          : "Turned off. Its configuration is kept.",
       );
     },
     async installInventoryItem(itemId, expected, harness) {

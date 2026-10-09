@@ -1357,3 +1357,162 @@ fn bundle_directory_modes_are_revisioned_preserved_and_readonly_removal_leaves_n
     }
     Ok(())
 }
+#[test]
+fn mcp_servers_turn_off_and_on_without_losing_configuration()
+-> Result<(), Box<dyn std::error::Error>> {
+    let temp = tempfile::tempdir()?;
+    let r = roots(temp.path());
+    let recovery = temp.path().join("recovery");
+    let toggle = |name: &str, h: Harness, on: bool| -> InventoryResult<String> {
+        let entry = item(&r, "mcp", name, h)?;
+        let d = document(&r, &entry.id)?;
+        set_enabled(&r, &recovery, &entry.id, &d.revision, on)?;
+        Ok(item(&r, "mcp", name, h)?.state)
+    };
+
+    // Codex and OpenCode carry a native `enabled` field on the server entry.
+    write(
+        &r.codex.join("config.toml"),
+        b"# keep me\n[mcp_servers.docs]\ncommand = \"docs\"\n",
+    )?;
+    write(
+        &r.opencode.join("opencode.json"),
+        br#"{"theme":"keep","mcp":{"docs":{"type":"local","command":["docs"]}}}"#,
+    )?;
+    assert_eq!(toggle("docs", Harness::Codex, false)?, "disabled");
+    let codex = fs::read_to_string(r.codex.join("config.toml"))?;
+    assert!(
+        codex.contains("# keep me") && codex.contains("enabled = false"),
+        "{codex}"
+    );
+    assert_eq!(toggle("docs", Harness::Codex, true)?, "configured");
+    assert!(!fs::read_to_string(r.codex.join("config.toml"))?.contains("enabled"));
+    assert_eq!(
+        item(&r, "mcp", "docs", Harness::OpenCode)?.state,
+        "configured"
+    );
+    assert_eq!(toggle("docs", Harness::OpenCode, false)?, "disabled");
+    let open = json_value(&fs::read(r.opencode.join("opencode.json"))?)?;
+    assert_eq!(open["mcp"]["docs"]["enabled"], false);
+    assert_eq!(open["theme"], "keep");
+    assert_eq!(toggle("docs", Harness::OpenCode, true)?, "configured");
+    let open = json_value(&fs::read(r.opencode.join("opencode.json"))?)?;
+    assert!(open["mcp"]["docs"].get("enabled").is_none());
+
+    // Claude Code: the server entry is untouched; `deniedMcpServers` is the switch.
+    let claude = br#"{"mcpServers":{"docs":{"command":"docs"},"refero":{"url":"https://x"}}}"#;
+    write(&r.home.join(".claude.json"), claude)?;
+    assert_eq!(toggle("docs", Harness::ClaudeCode, false)?, "disabled");
+    assert_eq!(
+        item(&r, "mcp", "refero", Harness::ClaudeCode)?.state,
+        "configured"
+    );
+    let settings = r.claude.join("settings.json");
+    assert_eq!(
+        json_value(&fs::read(&settings)?)?["deniedMcpServers"],
+        json!([{"serverName": "docs"}])
+    );
+    assert_eq!(fs::read(r.home.join(".claude.json"))?, claude.to_vec());
+    write(&settings, br#"{"theme":"keep","deniedMcpServers":[{"serverName":"docs"},{"serverUrl":"https://y/*"}]}"#)?;
+    assert_eq!(toggle("docs", Harness::ClaudeCode, true)?, "configured");
+    let after = json_value(&fs::read(&settings)?)?;
+    assert_eq!(
+        after["deniedMcpServers"],
+        json!([{"serverUrl": "https://y/*"}])
+    );
+    assert_eq!(after["theme"], "keep");
+
+    // Only user MCP servers have a switch here.
+    write(
+        &r.home.join(".claude.json"),
+        br#"{"mcpServers":{"cutokyo-search":{"command":"cutokyo","args":["mcp"]}}}"#,
+    )?;
+    let owned = item(&r, "mcp", "cutokyo-search", Harness::ClaudeCode)?;
+    let d = document(&r, &owned.id)?;
+    assert!(set_enabled(&r, &recovery, &owned.id, &d.revision, false).is_err());
+    write(&r.claude.join("CLAUDE.md"), b"# Rules")?;
+    let rules = item(&r, "instruction", "CLAUDE.md", Harness::ClaudeCode)?;
+    let d = document(&r, &rules.id)?;
+    assert!(set_enabled(&r, &recovery, &rules.id, &d.revision, false).is_err());
+    Ok(())
+}
+#[test]
+fn search_mcp_is_registered_in_every_detected_agent_and_removed_cleanly()
+-> Result<(), Box<dyn std::error::Error>> {
+    let temp = tempfile::tempdir()?;
+    let r = roots(temp.path());
+    let recovery = temp.path().join("recovery");
+    let command: Vec<String> = ["/opt/cutokyo", "--data-dir", "/d", "mcp", "serve"]
+        .map(str::to_owned)
+        .into();
+    // Detected agents: Claude (dir), Codex (dir with a commented config), OpenCode V2.
+    fs::create_dir_all(&r.claude)?;
+    write(&r.codex.join("config.toml"), b"# mine\nmodel = \"x\"\n")?;
+    write(
+        &r.opencode.join("opencode.jsonc"),
+        b"{\n  // keep\n  \"mcp\": {\"servers\": {\"other\": {\"type\": \"local\", \"command\": [\"o\"]}}}\n}\n",
+    )?;
+    assert!(reconcile_search_mcp(&r, &recovery, &command, true).is_empty());
+    let claude = json_value(&fs::read(r.home.join(".claude.json"))?)?;
+    assert_eq!(claude["mcpServers"]["cutokyo-search"]["args"][2], "mcp");
+    let codex = fs::read_to_string(r.codex.join("config.toml"))?;
+    assert!(codex.starts_with("# mine") && codex.contains("[mcp_servers.cutokyo-search]"));
+    let open = fs::read_to_string(r.opencode.join("opencode.jsonc"))?;
+    assert!(open.contains("// keep"));
+    let open = json_value(open.as_bytes())?;
+    assert_eq!(
+        open["mcp"]["servers"]["cutokyo-search"]["command"][0],
+        "/opt/cutokyo"
+    );
+    assert_eq!(open["mcp"]["servers"]["other"]["command"], json!(["o"]));
+    for h in [Harness::ClaudeCode, Harness::Codex, Harness::OpenCode] {
+        assert!(item(&r, "mcp", "cutokyo-search", h)?.managed_by_cutokyo);
+    }
+
+    // Already in the wanted state: nothing is rewritten and no recovery note is added.
+    let snapshot = |r: &InventoryRoots| -> std::io::Result<Vec<Vec<u8>>> {
+        Ok(vec![
+            fs::read(r.home.join(".claude.json"))?,
+            fs::read(r.codex.join("config.toml"))?,
+            fs::read(r.opencode.join("opencode.jsonc"))?,
+        ])
+    };
+    let notes = fs::read_dir(&recovery)?.count();
+    let before = snapshot(&r)?;
+    assert!(reconcile_search_mcp(&r, &recovery, &command, true).is_empty());
+    assert_eq!(snapshot(&r)?, before);
+    assert_eq!(fs::read_dir(&recovery)?.count(), notes);
+
+    // Turning Agent search off removes only Cutokyo's entry.
+    assert!(reconcile_search_mcp(&r, &recovery, &command, false).is_empty());
+    let codex = fs::read_to_string(r.codex.join("config.toml"))?;
+    assert!(codex.starts_with("# mine") && !codex.contains("cutokyo-search"));
+    let open = json_value(&fs::read(r.opencode.join("opencode.jsonc"))?)?;
+    assert!(open["mcp"]["servers"].get("cutokyo-search").is_none());
+    assert_eq!(open["mcp"]["servers"]["other"]["command"], json!(["o"]));
+    assert!(
+        json_value(&fs::read(r.home.join(".claude.json"))?)?["mcpServers"]
+            .get("cutokyo-search")
+            .is_none()
+    );
+
+    // Agents that are not installed are never touched, and symlinked configs are refused.
+    let other = tempfile::tempdir()?;
+    let bare = roots(other.path());
+    assert!(reconcile_search_mcp(&bare, &recovery, &command, true).is_empty());
+    assert!(!bare.home.join(".claude.json").exists() && !bare.codex.exists());
+    #[cfg(unix)]
+    {
+        fs::create_dir_all(&bare.codex)?;
+        let real = other.path().join("real.toml");
+        fs::write(&real, b"")?;
+        std::os::unix::fs::symlink(&real, bare.codex.join("config.toml"))?;
+        let notices = reconcile_search_mcp(&bare, &recovery, &command, true);
+        assert!(
+            notices.iter().any(|n| n.starts_with("Codex:")),
+            "{notices:?}"
+        );
+        assert!(fs::read(&real)?.is_empty());
+    }
+    Ok(())
+}

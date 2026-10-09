@@ -98,6 +98,86 @@ describe("agent tool management", () => {
     ).toBeTruthy();
   });
 
+  it("turns an MCP server off and on without treating it as a problem", async () => {
+    const client = show();
+    const toggle = await screen.findByRole("switch", {
+      name: "docs-73A9 enabled",
+    });
+    expect((toggle as HTMLInputElement).checked).toBe(true);
+    const attention = screen.getByRole("button", { name: /^Needs attention/ });
+    const before = attention.textContent;
+    await userEvent.click(toggle);
+    expect(
+      await screen.findByRole("img", { name: "Turned off in Claude Code" }),
+    ).toBeTruthy();
+    expect(
+      (
+        screen.getByRole("switch", {
+          name: "docs-73A9 enabled",
+        }) as HTMLInputElement
+      ).checked,
+    ).toBe(false);
+    expect(screen.queryByRole("complementary")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /^Needs attention/ }).textContent,
+    ).toBe(before);
+    const item = (await client.getInventory()).items.find(
+      (entry) => entry.id === "mcp-docs-73A9",
+    );
+    expect(item?.state).toBe("disabled");
+    await userEvent.click(
+      screen.getByRole("switch", { name: "docs-73A9 enabled" }),
+    );
+    const row = screen
+      .getByRole("button", { name: "docs-73A9" })
+      .closest("tr")!;
+    expect(
+      await within(row).findByRole("img", { name: "Installed in Claude Code" }),
+    ).toBeTruthy();
+  });
+
+  it("clears the draft once a re-formatted save reloads, so installing stays possible", async () => {
+    const base = createBrowserFixtureClient("mcp-plugin-inventory");
+    show({
+      ...base,
+      // The native writer re-serializes JSON, so the saved file differs from the draft text.
+      getInventoryDocument: async (id) => {
+        const document = await base.getInventoryDocument(id);
+        return {
+          ...document,
+          content: JSON.stringify(JSON.parse(document.content), null, 2),
+        };
+      },
+    });
+    const panel = await select("docs-73A9");
+    const editor = await within(panel).findByRole("textbox", {
+      name: "Source content",
+    });
+    fireEvent.change(editor, {
+      target: { value: '{"command":"local-docs","args":[],"env":{}}' },
+    });
+    await userEvent.click(
+      within(panel).getByRole("button", { name: "Save changes" }),
+    );
+    await waitFor(() =>
+      expect((editor as HTMLTextAreaElement).value).toContain('\n  "command"'),
+    );
+    await userEvent.click(
+      within(panel).getByRole("button", { name: "Install to Codex" }),
+    );
+    expect(
+      await screen.findByRole("dialog", { name: "Install docs-73A9 to Codex" }),
+    ).toBeTruthy();
+  });
+
+  it("gives Cutokyo's own search server no switch here", async () => {
+    show();
+    await screen.findByRole("button", { name: "Cutokyo search MCP" });
+    expect(
+      screen.queryByRole("switch", { name: "Cutokyo search MCP enabled" }),
+    ).toBeNull();
+  });
+
   it("never offers to copy hooks or plugins across harnesses", async () => {
     show();
     const row = (

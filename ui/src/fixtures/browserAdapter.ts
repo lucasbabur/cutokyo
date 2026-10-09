@@ -166,6 +166,8 @@ interface FixtureAudit {
 
 export interface BrowserFixtureClient extends CommandClient {
   fixtureAudit(): FixtureAudit;
+  /** Simulates the desktop finishing an import that stored new history. */
+  emitHistoryImported(): void;
 }
 
 /**
@@ -186,6 +188,7 @@ export function createBrowserFixtureClient(
   const installedCapture = new Set<Harness>();
   let captureSequence = 0;
   const previews = new Map<string, DeletionPreview>();
+  const historyListeners = new Set<() => void>();
   let holdFirstAppearanceRead = caseName === "appearance-dark-delayed";
 
   async function getInventory(): Promise<InventoryResponse> {
@@ -476,6 +479,13 @@ export function createBrowserFixtureClient(
     ...createBackupFixtureManagement(state, () => {
       previews.clear();
     }),
+    onHistoryImported(listener) {
+      historyListeners.add(listener);
+      return () => historyListeners.delete(listener);
+    },
+    emitHistoryImported() {
+      for (const listener of historyListeners) listener();
+    },
     async getPluginVerification(itemId: string): Promise<PluginVerification> {
       await wait();
       const item = state.inventory.items.find(
