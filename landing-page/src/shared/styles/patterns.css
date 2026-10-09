@@ -1,0 +1,64 @@
+.page-shell {
+  position: relative;
+  overflow: hidden;
+}
+
+.page-shell::before {
+  content: "";
+  position: absolute;
+  inset: -10rem auto auto -10rem;
+  width: 22rem;
+  height: 22rem;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(21, 94, 99, 0.16), transparent 70%);
+  pointer-events: none;
+}
+
+.page-shell::after {
+  content: "";
+  position: absolute;
+  inset: auto -8rem 8rem auto;
+  width: 18rem;
+  height: 18rem;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(207, 125, 54, 0.16), transparent 68%);
+  pointer-events: none;
+}
+
+.surface-panel {
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 0.25rem);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+}
+
+.grid-pattern {
+  position: relative;
+}
+
+.grid-pattern::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image:
+    linear-gradient(rgba(34, 48, 61, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 48, 61, 0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: var(--font-size-label);
+  color: var(--primary);
+}
+
+.hero-glow {
+  box-shadow: var(--shadow-glow);
+}

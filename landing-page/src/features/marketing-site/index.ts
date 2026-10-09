@@ -1,0 +1,1 @@
+export { MarketingSiteView } from "./view";

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Cutokyo",
+  "mainBinaryName": "cutokyo",
+  "version": "0.1.0",
+  "identifier": "com.cutokyo.desktop",
+  "build": {
+    "beforeDevCommand": "bun run dev",
+    "devUrl": "http://localhost:3000",
+    "beforeBuildCommand": "bun run build:desktop",
+    "frontendDist": "../out"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Cutokyo",
+        "label": "main",
+        "url": "desktop.html",
+        "width": 1180,
+        "height": 780,
+        "minWidth": 960,
+        "minHeight": 640,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": {
+        "default-src": "'self' customprotocol: asset:",
+        "connect-src": "ipc: http://ipc.localhost http://localhost:49321 http://127.0.0.1:49321",
+        "font-src": "'self' data:",
+        "img-src": "'self' asset: http://asset.localhost blob: data:",
+        "style-src": "'self' 'unsafe-inline'",
+        "object-src": "'none'",
+        "base-uri": "'none'",
+        "form-action": "'none'",
+        "frame-ancestors": "'none'"
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "category": "DeveloperTool",
+    "shortDescription": "AI observability and security endpoint",
+    "longDescription": "Cutokyo observes and governs AI harness traffic with metadata telemetry, redaction, and optional safe token optimization.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "nsis": {
+        "installerHooks": "windows/nsis-hooks.nsh",
+        "installerIcon": "icons/icon.ico"
+      }
+    },
+    "linux": {
+      "appimage": {
+        "files": {
+          "/usr/bin/xdg-open": "linux/xdg-open"
+        }
+      }
+    },
+    "targets": ["appimage", "nsis", "dmg"]
+  }
+}

@@ -1,0 +1,37 @@
+:root {
+  --background: #131314;
+  --foreground: #e5e2e3;
+  --surface: #201f20;
+  --surface-strong: #353436;
+  --muted: #c4c9ac;
+  --border: rgba(68, 73, 51, 0.78);
+  --primary: #c3f400;
+  --primary-foreground: #556d00;
+  --secondary: #00eefc;
+  --accent: #ffdadb;
+  --accent-soft: rgba(195, 244, 0, 0.16);
+  --ring: rgba(195, 244, 0, 0.34);
+  --radius: 0.75rem;
+  --shadow-soft: 0 28px 70px rgba(0, 0, 0, 0.34);
+  --shadow-glow: 0 0 40px rgba(195, 244, 0, 0.24);
+  --font-size-label: 0.78rem;
+  --font-size-body: 1rem;
+  --font-size-title: clamp(2.8rem, 6vw, 5.2rem);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-geist);
+  --font-mono: var(--font-jetbrains-mono);
+}

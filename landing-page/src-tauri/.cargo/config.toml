@@ -1,0 +1,6 @@
+# The Tauri shell keeps its own target directory. `tauri build` renames the
+# `cutokyo-app` binary to `cutokyo` (tauri.conf.json mainBinaryName) inside the
+# cargo output dir; a separate dir keeps that from overwriting the headless
+# `cutokyo` binary built by the workspace root into <repo>/target.
+[build]
+target-dir = "target"

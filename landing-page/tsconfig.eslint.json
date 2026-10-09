@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "eslint/**/*.mjs",
+    "next.config.ts",
+    "postcss.config.mjs",
+    "scripts/**/*.mjs",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "vitest.config.mts",
+    "vitest.setup.ts"
+  ],
+  "exclude": [
+    ".next",
+    ".lighthouseci",
+    "build",
+    "coverage",
+    "node_modules",
+    "out",
+    "src-tauri/gen",
+    "src-tauri/target",
+    "src/generated/fastapi/schema.ts"
+  ]
+}

@@ -1,0 +1,250 @@
+.shell {
+  --bg: #050607;
+  --blue: #32b7ff;
+  --cream: #f5f4ea;
+  --ink: var(--cream);
+  --lime: #c3f400;
+  --line: #292c29;
+  --muted: #858981;
+  --panel: #0d0f0e;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px), var(--bg);
+  background-size: 48px 48px;
+  color: var(--cream);
+  display: grid;
+  grid-template-columns: 224px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: rgba(5, 6, 7, 0.97);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 24px 18px 18px;
+  position: sticky;
+  top: 0;
+}
+
+.brand {
+  align-items: center;
+  color: var(--cream);
+  display: flex;
+  gap: 11px;
+}
+
+.brand img {
+  height: 38px;
+  width: 38px;
+}
+
+.brand span {
+  font-family: var(--font-anybody), sans-serif;
+  font-size: 1.32rem;
+  font-weight: 850;
+  letter-spacing: -0.055em;
+}
+
+.sideLabel {
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  margin: 22px 0 12px;
+  padding-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.sidebar nav {
+  display: grid;
+  gap: 3px;
+}
+
+.sidebar nav a {
+  align-items: center;
+  border: 1px solid transparent;
+  color: #9a9e96;
+  display: grid;
+  font-size: 0.83rem;
+  grid-template-columns: 27px 1fr auto;
+  padding: 11px 10px;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.sidebar nav small,
+.sidebar nav em,
+.identity em {
+  color: #555a53;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.58rem;
+  font-style: normal;
+}
+
+.navIcon {
+  color: #62675f;
+  height: 16px;
+  width: 16px;
+}
+
+.sidebar nav a:hover,
+.sidebar nav a[aria-current="page"] {
+  background: #121512;
+  border-color: #30352e;
+  color: var(--cream);
+}
+
+.sidebar nav a[aria-current="page"] .navIcon,
+.sidebar nav a[aria-current="page"] em {
+  color: var(--lime);
+}
+
+.identity {
+  align-items: center;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  margin-top: auto;
+  padding: 18px 8px 3px;
+  transition: color 140ms ease;
+}
+
+.shell > :not(.sidebar) {
+  animation: admin-content-in 180ms cubic-bezier(0.2, 0.75, 0.3, 1) both;
+}
+
+.shell :is(a, button) {
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.shell :is(a, button):active {
+  transform: translateY(1px);
+}
+
+@keyframes admin-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.identity:hover strong,
+.identity:hover em {
+  color: var(--lime);
+}
+
+.avatar {
+  align-items: center;
+  background: var(--lime);
+  color: #111800;
+  display: flex;
+  font-family: var(--font-anybody), sans-serif;
+  font-size: 0.7rem;
+  font-weight: 850;
+  height: 32px;
+  justify-content: center;
+  letter-spacing: -0.04em;
+  width: 32px;
+  overflow: hidden;
+}
+
+.avatar img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.identityCopy,
+.identityCopy strong,
+.identityCopy small {
+  display: block;
+  min-width: 0;
+}
+
+.identityCopy strong,
+.identityCopy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identityCopy strong {
+  font-size: 0.7rem;
+  transition: color 140ms ease;
+}
+
+.identityCopy small {
+  color: var(--muted);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.52rem;
+  margin-top: 3px;
+}
+
+.shell :is(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell > :not(.sidebar) {
+    animation: none;
+  }
+
+  .shell :is(a, button),
+  .sidebar nav a,
+  .identity {
+    transition: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .shell {
+    display: block;
+  }
+
+  .sidebar {
+    height: auto;
+    padding: 16px;
+    position: static;
+  }
+
+  .sideLabel {
+    margin: 14px 0 8px;
+  }
+
+  .sidebar nav {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .sidebar nav a {
+    flex: 0 0 auto;
+    grid-template-columns: 22px auto;
+  }
+
+  .sidebar nav em {
+    display: none;
+  }
+
+  .identity {
+    display: none;
+  }
+}

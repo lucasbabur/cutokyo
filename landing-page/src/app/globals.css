@@ -1,0 +1,67 @@
+@import "tailwindcss";
+@import "../shared/styles/tokens.css";
+@import "../shared/styles/patterns.css";
+
+@font-face {
+  font-family: "Anybody";
+  src: url("/fonts/cutokyo/anybody-latin.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 600 900;
+}
+
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/cutokyo/geist-latin.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 100 900;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/cutokyo/jetbrains-mono-latin.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 500 700;
+}
+
+:root {
+  --font-anybody: "Anybody", Arial, sans-serif;
+  --font-geist: "Geist", Arial, sans-serif;
+  --font-jetbrains-mono: "JetBrains Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+
+* {
+  border-color: var(--border);
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background: #131314;
+  color: var(--foreground);
+  font-family: var(--font-geist), sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: #c3f400;
+  color: #556d00;
+}

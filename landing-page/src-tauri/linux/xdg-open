@@ -1,0 +1,33 @@
+#!/bin/sh
+set -eu
+
+self_path="$(readlink -f "$0" 2>/dev/null || printf '%s\n' "$0")"
+
+try_open() {
+  opener="$1"
+  opener_path="$(command -v "$opener" 2>/dev/null || true)"
+  if [ -z "$opener_path" ]; then
+    return 1
+  fi
+
+  opener_real_path="$(readlink -f "$opener_path" 2>/dev/null || printf '%s\n' "$opener_path")"
+  if [ "$opener_real_path" = "$self_path" ]; then
+    return 1
+  fi
+
+  exec "$opener_path" "$@"
+}
+
+for opener in gio kde-open5 kde-open x-www-browser sensible-browser open; do
+  try_open "$opener" "$@" || true
+done
+
+if [ -x /usr/bin/xdg-open ]; then
+  host_xdg_open="$(readlink -f /usr/bin/xdg-open 2>/dev/null || printf '%s\n' /usr/bin/xdg-open)"
+  if [ "$host_xdg_open" != "$self_path" ]; then
+    exec /usr/bin/xdg-open "$@"
+  fi
+fi
+
+printf '%s\n' "Cutokyo could not find a system opener for: $*" >&2
+exit 1

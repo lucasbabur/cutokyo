@@ -1,0 +1,13 @@
+.git
+.next
+node_modules
+out
+src-tauri/target
+run-*
+
+.env
+.env.*
+
+*.log
+.eslintcache
+tsconfig.tsbuildinfo

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["src/app/**/*.{ts,tsx}", "scripts/**/*.mjs"],
+  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.mjs"],
+  "ignore": [
+    "src/generated/**/*",
+    // AuthKit adapters are swapped in by next.config.ts resolve aliases, not imported:
+    // static-* for NEXT_OUTPUT=export, e2e-* only under CUTOKYO_E2E_AUTHKIT=1.
+    "src/infrastructure/workos/static-authkit-server.ts",
+    "src/infrastructure/workos/e2e-authkit-server.ts",
+    "src/infrastructure/workos/e2e-authkit-components.tsx",
+  ],
+  "ignoreDependencies": [
+    "@secretlint/secretlint-rule-preset-recommend",
+    "eslint-import-resolver-typescript",
+    "secretlint",
+    "tailwindcss",
+  ],
+}

@@ -1,0 +1,337 @@
+.workspace {
+  margin: 0 auto;
+  max-width: 1180px;
+  min-width: 0;
+  padding: 25px 32px 64px;
+  width: 100%;
+}
+
+.topbar {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.topbar p,
+.profileIdentity span,
+.detailCard header span,
+.permissionsCard header span,
+.dangerZone span {
+  color: var(--muted);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+
+.topbar h1 {
+  font-family: var(--font-anybody), sans-serif;
+  font-size: clamp(1.55rem, 3vw, 2.45rem);
+  letter-spacing: -0.052em;
+  line-height: 1;
+  margin: 0;
+}
+
+.backButton {
+  background: #151815;
+  border: 1px solid #363b34;
+  color: var(--cream);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 9px 12px;
+}
+
+.backButton:hover {
+  border-color: var(--lime);
+  color: var(--lime);
+}
+
+.profileHero,
+.detailCard,
+.permissionsCard,
+.dangerZone {
+  background: linear-gradient(145deg, rgba(17, 19, 17, 0.98), rgba(9, 11, 10, 0.98));
+  border: 1px solid var(--line);
+}
+
+.profileHero {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  min-height: 190px;
+  overflow: hidden;
+  padding: 28px;
+  position: relative;
+}
+
+.profileHero::after {
+  background: var(--lime);
+  content: "";
+  height: 220px;
+  opacity: 0.06;
+  position: absolute;
+  right: -80px;
+  top: -100px;
+  transform: rotate(24deg);
+  width: 220px;
+}
+
+.profileIdentity {
+  align-items: center;
+  display: flex;
+  gap: 22px;
+}
+
+.avatar {
+  align-items: center;
+  background: var(--lime);
+  color: #111800;
+  display: flex;
+  flex: 0 0 auto;
+  font-family: var(--font-anybody), sans-serif;
+  font-size: 2rem;
+  font-weight: 900;
+  height: 92px;
+  justify-content: center;
+  letter-spacing: -0.07em;
+  overflow: hidden;
+  width: 92px;
+}
+
+.avatar img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.profileIdentity h2 {
+  font-family: var(--font-anybody), sans-serif;
+  font-size: clamp(1.8rem, 4vw, 3.25rem);
+  letter-spacing: -0.06em;
+  line-height: 0.95;
+  margin: 8px 0 10px;
+}
+
+.profileIdentity p {
+  color: var(--muted);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.7rem;
+  margin: 0;
+}
+
+.syncPhoto {
+  color: var(--lime);
+  display: inline-block;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.62rem;
+  margin-top: 12px;
+  text-decoration: underline;
+  text-decoration-color: rgba(195, 244, 0, 0.4);
+  text-underline-offset: 3px;
+}
+
+.syncPhoto:hover {
+  text-decoration-color: var(--lime);
+}
+
+.sessionStatus {
+  align-items: center;
+  border: 1px solid rgba(195, 244, 0, 0.28);
+  display: flex;
+  gap: 10px;
+  padding: 11px 13px;
+  position: relative;
+  z-index: 1;
+}
+
+.sessionStatus i {
+  background: var(--lime);
+  border-radius: 99px;
+  box-shadow: 0 0 14px rgba(195, 244, 0, 0.45);
+  height: 7px;
+  width: 7px;
+}
+
+.sessionStatus strong,
+.sessionStatus small {
+  display: block;
+}
+
+.sessionStatus strong {
+  color: var(--lime);
+  font-size: 0.67rem;
+}
+
+.sessionStatus small {
+  color: var(--muted);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.53rem;
+  margin-top: 3px;
+}
+
+.accountGrid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 8px;
+}
+
+.detailCard,
+.permissionsCard {
+  padding: 22px;
+}
+
+.detailCard header,
+.permissionsCard header {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+}
+
+.detailCard h2,
+.permissionsCard h2,
+.dangerZone h2 {
+  font-family: var(--font-anybody), sans-serif;
+  font-size: 1.15rem;
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+
+.detailCard dl {
+  margin: 0;
+}
+
+.detailCard dl > div {
+  align-items: baseline;
+  border-bottom: 1px solid #20231f;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 120px minmax(0, 1fr);
+  padding: 14px 0;
+}
+
+.detailCard dl > div:last-child {
+  border-bottom: 0;
+}
+
+.detailCard dt {
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+
+.detailCard dd {
+  font-size: 0.72rem;
+  margin: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.detailCard .verified {
+  color: var(--lime);
+}
+
+.detailCard .mono {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.6rem;
+}
+
+.permissionsCard {
+  margin-bottom: 8px;
+}
+
+.permissionsCard header {
+  align-items: flex-end;
+  display: flex;
+  justify-content: space-between;
+}
+
+.permissionsCard header em {
+  color: var(--lime);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.62rem;
+  font-style: normal;
+}
+
+.permissionList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding-top: 18px;
+}
+
+.permissionList span {
+  background: rgba(195, 244, 0, 0.07);
+  border: 1px solid rgba(195, 244, 0, 0.2);
+  color: var(--lime);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.59rem;
+  padding: 7px 9px;
+}
+
+.permissionList p {
+  color: var(--muted);
+  font-size: 0.7rem;
+  margin: 0;
+}
+
+.dangerZone {
+  align-items: center;
+  border-color: rgba(255, 101, 119, 0.3);
+  display: flex;
+  justify-content: space-between;
+  padding: 22px;
+}
+
+.dangerZone p {
+  color: var(--muted);
+  font-size: 0.68rem;
+  margin: 8px 0 0;
+}
+
+.dangerZone button {
+  background: rgba(255, 101, 119, 0.08);
+  border: 1px solid rgba(255, 101, 119, 0.48);
+  color: #ff9dab;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 750;
+  padding: 10px 15px;
+}
+
+.dangerZone button:hover {
+  background: #ff6577;
+  color: #210509;
+}
+
+@media (max-width: 760px) {
+  .workspace {
+    padding: 22px 16px 40px;
+  }
+
+  .profileHero,
+  .dangerZone,
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .profileIdentity {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .accountGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .detailCard dl > div {
+    grid-template-columns: 1fr;
+  }
+
+  .detailCard dd {
+    text-align: left;
+  }
+}

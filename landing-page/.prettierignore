@@ -1,0 +1,10 @@
+.next
+.lighthouseci
+coverage
+.pytest_cache
+node_modules
+out
+src-tauri/gen
+src-tauri/gen.root-owned-*
+src-tauri/target
+src/generated/fastapi/schema.ts
