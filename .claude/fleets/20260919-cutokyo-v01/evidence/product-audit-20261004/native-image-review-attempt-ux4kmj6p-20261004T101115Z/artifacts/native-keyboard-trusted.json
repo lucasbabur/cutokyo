@@ -1,0 +1,57 @@
+{
+  "verdict": "FAIL",
+  "dispatches": [],
+  "before": {
+    "className": "",
+    "events": [
+      {
+        "className": "",
+        "id": "",
+        "isTrusted": true,
+        "key": null,
+        "tag": "H1",
+        "time": 23579,
+        "type": "focusout"
+      },
+      {
+        "className": "",
+        "id": "",
+        "isTrusted": true,
+        "key": null,
+        "tag": "BODY",
+        "time": 23579,
+        "type": "focusin"
+      }
+    ],
+    "id": "",
+    "tag": "BODY",
+    "url": "tauri://localhost#/sessions"
+  },
+  "error": "Trusted native keyboard blocked: refusing input while a different XWayland window is active",
+  "failureSnapshot": {
+    "className": "",
+    "events": [
+      {
+        "className": "",
+        "id": "",
+        "isTrusted": true,
+        "key": null,
+        "tag": "H1",
+        "time": 23579,
+        "type": "focusout"
+      },
+      {
+        "className": "",
+        "id": "",
+        "isTrusted": true,
+        "key": null,
+        "tag": "BODY",
+        "time": 23579,
+        "type": "focusin"
+      }
+    ],
+    "id": "",
+    "tag": "BODY",
+    "url": "tauri://localhost#/sessions"
+  }
+}

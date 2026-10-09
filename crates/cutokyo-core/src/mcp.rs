@@ -74,8 +74,15 @@ pub const MAX_BROKER_TIMEOUT_MS: u64 = 30_000;
 #[derive(Clone, Debug, Default, Deserialize, JsonSchema, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct SessionSearchInput {
-    /// Optional transcript phrase.
+    /// Literal words in session metadata and transcript, not FTS syntax.
     pub text: Option<String>,
+    /// `terms` (default) requires every word; `phrase` requires consecutive words.
+    pub query_mode: Option<String>,
+    /// `relevance` (default) or `newest`.
+    pub sort: Option<String>,
+    /// Matching sessions to skip, independent of the bounded page size.
+    #[serde(default)]
+    pub offset: u32,
     /// Optional exact project identity, name, or path.
     pub project: Option<String>,
     /// Optional exact branch.
@@ -135,11 +142,35 @@ pub struct McpSession {
     pub started_at: String,
     /// Immutable observations supporting this projection.
     pub observation_ids: Vec<String>,
+    /// Bounded plain-text query context, never HTML.
+    #[serde(default)]
+    pub matches: Vec<McpSearchMatch>,
+}
+
+/// Plain-text search context suitable for escaped display.
+#[derive(Clone, Debug, Deserialize, JsonSchema, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct McpSearchMatch {
+    /// title, project, branch, `native_id`, or transcript.
+    pub source: String,
+    /// At most 320 Unicode characters.
+    pub text: String,
+    /// Literal words for safe presentation highlighting.
+    pub terms: Vec<String>,
 }
 
 impl From<SearchResult> for McpSession {
     fn from(value: SearchResult) -> Self {
         Self {
+            matches: value
+                .matches
+                .into_iter()
+                .map(|item| McpSearchMatch {
+                    source: item.source,
+                    text: item.text,
+                    terms: item.terms,
+                })
+                .collect(),
             session_id: value.session_id.as_str().to_owned(),
             harness: value.harness.as_str().to_owned(),
             native_resume_id: value.native_resume_id,
@@ -165,6 +196,18 @@ pub struct SessionSearchOutput {
     pub sessions: Vec<McpSession>,
     /// Honest query coverage statement.
     pub coverage: String,
+    /// Exact matching count before paging.
+    #[serde(default)]
+    pub total: u64,
+    /// Applied offset.
+    #[serde(default)]
+    pub offset: u32,
+    /// Applied bounded page size.
+    #[serde(default)]
+    pub limit: u32,
+    /// Whether another page exists.
+    #[serde(default)]
+    pub has_more: bool,
 }
 
 /// Usage values preserve unknown as `null` rather than inventing zero.
@@ -303,15 +346,14 @@ pub trait CutokyoReadPort: Send + Sync {
 impl CutokyoReadPort for QueryUseCases {
     fn search_sessions(&self, input: &SessionSearchInput) -> DomainResult<SessionSearchOutput> {
         let query = search_query(input)?;
-        let sessions = self
-            .search(&query)?
-            .into_iter()
-            .map(McpSession::from)
-            .collect();
+        let page = self.search_page(&query)?;
         Ok(SessionSearchOutput {
-            sessions,
-            coverage: "bounded attributable local session projections; unknown facts remain null"
-                .to_owned(),
+            sessions: page.sessions.into_iter().map(McpSession::from).collect(),
+            total: page.total,
+            offset: page.offset,
+            limit: page.limit,
+            has_more: page.has_more,
+            coverage: "exact local matching count; bounded page of attributable sessions; unknown facts remain null".to_owned(),
         })
     }
 
@@ -465,6 +507,27 @@ fn search_query(input: &SessionSearchInput) -> DomainResult<SearchQuery> {
         skill: input.skill.clone(),
         agent: input.agent.clone(),
         limit: if input.limit == 0 { 50 } else { input.limit },
+        offset: input.offset,
+        mode: match input.query_mode.as_deref() {
+            None | Some("terms") => crate::store::SearchMode::Terms,
+            Some("phrase") => crate::store::SearchMode::Phrase,
+            Some(_) => {
+                return Err(ContractError::new(
+                    DomainErrorCode::InvalidInput,
+                    "query_mode must be terms or phrase",
+                ));
+            }
+        },
+        sort: match input.sort.as_deref() {
+            None | Some("relevance") => crate::store::SearchSort::Relevance,
+            Some("newest") => crate::store::SearchSort::Newest,
+            Some(_) => {
+                return Err(ContractError::new(
+                    DomainErrorCode::InvalidInput,
+                    "sort must be relevance or newest",
+                ));
+            }
+        },
     })
 }
 

@@ -3,7 +3,6 @@ import {
   Check,
   CircleHelp,
   Database,
-  Info,
   LoaderCircle,
   RefreshCw,
   X,
@@ -11,19 +10,14 @@ import {
 import {
   type ButtonHTMLAttributes,
   type PropsWithChildren,
+  type Ref,
   type ReactNode,
   useEffect,
   useId,
   useRef,
 } from "react";
 
-import type {
-  Confidence,
-  Coverage,
-  HealthState,
-  Provenance,
-  RouteMeta,
-} from "../contracts.js";
+import type { Coverage, HealthState, Provenance } from "../contracts.js";
 
 export function Button({
   variant = "secondary",
@@ -32,6 +26,7 @@ export function Button({
   children,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
+  readonly ref?: Ref<HTMLButtonElement>;
   readonly variant?: "primary" | "secondary" | "quiet" | "danger";
   readonly size?: "regular" | "small";
 }) {
@@ -54,6 +49,8 @@ export function StatusPill({
     | HealthState
     | Coverage["state"]
     | "enabled"
+    | "configured"
+    | "installed"
     | "disabled"
     | "active"
     | "inactive"
@@ -73,6 +70,7 @@ export function StatusPill({
         {state === "healthy" ||
         state === "complete" ||
         state === "enabled" ||
+        state === "installed" ||
         state === "observed"
           ? "✓"
           : state === "degraded" ||
@@ -86,76 +84,24 @@ export function StatusPill({
   );
 }
 
-export function CoverageBadge({ coverage }: { readonly coverage: Coverage }) {
-  return (
-    <StatusPill state={coverage.state}>
-      {coverage.state.replaceAll("_", " ")}
-    </StatusPill>
-  );
-}
-
-export function ConfidenceBadge({
-  confidence,
-}: {
-  readonly confidence: Confidence;
-}) {
-  return (
-    <StatusPill state={confidence}>
-      {confidence.replaceAll("_", " ")}
-    </StatusPill>
-  );
-}
-
 export function PageHeader({
-  eyebrow,
   title,
-  description,
   actions,
 }: {
-  readonly eyebrow: string;
   readonly title: string;
-  readonly description: string;
   readonly actions?: ReactNode;
 }) {
   return (
     <header className="page-header">
       <div>
-        <p className="eyebrow">{eyebrow}</p>
         <h1 tabIndex={-1} data-page-heading>
           {title}
         </h1>
-        <p className="page-header__description">{description}</p>
       </div>
       {actions === undefined ? null : (
         <div className="page-header__actions">{actions}</div>
       )}
     </header>
-  );
-}
-
-export function RouteNotice({ meta }: { readonly meta: RouteMeta }) {
-  if (meta.notices.length === 0 && meta.freshness === "complete") return null;
-  return (
-    <aside
-      className={`route-notice route-notice--${meta.freshness}`}
-      aria-label={`${meta.freshness} data notice`}
-    >
-      {meta.freshness === "degraded" ? (
-        <AlertTriangle aria-hidden="true" />
-      ) : (
-        <Info aria-hidden="true" />
-      )}
-      <div>
-        <strong>
-          {meta.freshness === "complete"
-            ? "Current data"
-            : `${meta.freshness} data`}
-        </strong>
-        {meta.notices.map((notice) => (
-          <p key={notice}>{notice}</p>
-        ))}
-      </div>
-    </aside>
   );
 }
 
@@ -165,9 +111,6 @@ export function LoadingState({ label }: { readonly label: string }) {
       <LoaderCircle className="spin" aria-hidden="true" />
       <div>
         <strong>{label}</strong>
-        <p>
-          Reading the local application service. No network request is made.
-        </p>
       </div>
     </div>
   );
@@ -219,7 +162,7 @@ export function EmptyState({
 
 export function ProvenanceDetails({
   provenance,
-  label = "View provenance",
+  label = "Source",
 }: {
   readonly provenance: Provenance;
   readonly label?: string;
@@ -237,9 +180,7 @@ export function ProvenanceDetails({
         </div>
         <div>
           <dt>Confidence</dt>
-          <dd>
-            <ConfidenceBadge confidence={provenance.confidence} />
-          </dd>
+          <dd>{provenance.confidence.replaceAll("_", " ")}</dd>
         </div>
         <div>
           <dt>Captured</dt>
@@ -254,7 +195,7 @@ export function ProvenanceDetails({
           <dd>{provenance.coverage.scope}</dd>
         </div>
         <div>
-          <dt>Evidence</dt>
+          <dt>Records</dt>
           <dd>{provenance.observationIds.join(", ")}</dd>
         </div>
       </dl>
@@ -296,6 +237,7 @@ export function Modal({
   footer,
   onClose,
   closeLabel = "Close dialog",
+  closeDisabled = false,
   size = "regular",
 }: PropsWithChildren<{
   readonly title: string;
@@ -303,6 +245,7 @@ export function Modal({
   readonly footer?: ReactNode;
   readonly onClose: () => void;
   readonly closeLabel?: string;
+  readonly closeDisabled?: boolean;
   readonly size?: "regular" | "wide";
 }>) {
   const titleId = useId();
@@ -310,7 +253,9 @@ export function Modal({
   const backdropRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  onCloseRef.current = () => {
+    if (!closeDisabled) onClose();
+  };
 
   useEffect(() => {
     const previousFocus =
@@ -377,7 +322,6 @@ export function Modal({
       >
         <header className="modal__header">
           <div>
-            <p className="eyebrow">Confirmation</p>
             <h2 id={titleId}>{title}</h2>
             {description === undefined ? null : (
               <p id={descriptionId}>{description}</p>
@@ -386,7 +330,8 @@ export function Modal({
           <Button
             variant="quiet"
             size="small"
-            onClick={onClose}
+            onClick={() => onCloseRef.current()}
+            disabled={closeDisabled}
             aria-label={closeLabel}
           >
             <X aria-hidden="true" />

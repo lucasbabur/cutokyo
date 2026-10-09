@@ -19,8 +19,19 @@ configuration use platform-native user directories. Cutokyo is not a cloud
 account and does not require a hosted service to search local history.
 
 Native capture is preferred. A proxy is an explicit fallback for facts that a
-native source cannot establish. Enabling proxy capture is separate from enabling
-an outgoing secret guard, and neither setting silently enables AI analysis.
+native source cannot establish. Proxy capture requires its own content preview
+and consent. Controls live in Settings.
+This desktop build has no provider-proxy listener and reports that limitation
+instead of claiming active capture.
+
+Onboarding permits browsing without installing capture. Selecting a harness is
+not consent to silently modify its configuration. Preview shows the native targets;
+confirmation requires the plaintext-storage acknowledgement. Per-harness verification
+checks configuration, not live events or complete transcript coverage. Neither
+installation nor browsing enables proxy capture, telemetry, or provider analysis.
+Installed hooks and the OpenCode plugin delegate to the selected local CLI receiver.
+The receiver publishes private atomic spool files, never opens SQLite, and contains
+capture failures so the native harness can continue.
 
 ## What is stored
 
@@ -28,7 +39,7 @@ Raw observations are immutable local evidence. They can include session content
 provided by an enabled harness channel. Derived sessions, messages, search rows,
 and summaries retain links to their evidence and record parser/source coverage.
 A channel that is disabled, unavailable, or uninspectable is reported as unknown
-coverage—not as zero findings or protection.
+coverage—not as an invented measurement.
 
 Cutokyo `0.x` uses owner-only files where the operating system supports Unix
 permissions, but the SQLite database is **not encrypted by Cutokyo**. Anyone who
@@ -40,6 +51,10 @@ encryption, a locked user account, and appropriate device backups.
 Public settings may be written to the versioned TOML file. Keys whose names look
 like tokens, passwords, credentials, API keys, or secrets are rejected by the
 public config command.
+
+The removed `outgoing_guard_enabled` field is not accepted in settings patches,
+TOML, or CLI flags. Existing configuration containing it is rejected explicitly;
+remove that obsolete field before loading it. No hidden enforcement switch remains.
 
 Secret APIs first use the operating system credential store. If that service is
 unavailable, Cutokyo fails closed unless the user explicitly selected the
@@ -68,7 +83,7 @@ plus `--clear-crash`.
 
 - bundle manifest and application/contract versions;
 - safe effective configuration with secret-like values omitted;
-- doctor output and guard coverage state;
+- doctor output and baseline redaction receipt;
 - aggregate database row counts;
 - conservatively projected, redacted log records;
 - the bounded crash record only after explicit opt-in.
@@ -83,20 +98,21 @@ extract it in an isolated directory, and inspect every file before sending it.
 
 ## Provider egress
 
-AI analysis and any provider-bound feature must show, before transmission:
+AI analysis (CLI only; the desktop app has no analysis feature) and any provider-bound feature must show, before transmission:
 
 - exact source session IDs;
 - categories and extent of content leaving the device;
 - provider and model;
 - prompt contract version;
-- redaction performed and guard coverage;
+- baseline redaction performed;
 - unavailable or uninspectable channels.
 
 Confirmation is explicit. Cancel sends nothing. Retries use an idempotency key,
 and a stored summary records provider, model, prompt version, source IDs, and
-coverage. Telemetry redaction, local bundle redaction, provider request
-inspection, and provider request mutation are different claims and must remain
-visibly separate.
+coverage. Baseline redaction of retained diagnostics and consented analysis is
+not an outgoing traffic filter. Proxy requests pass unchanged to the harness's
+configured provider/model; credentials and raw payloads are not retained in
+proxy traces. Native capture coverage does not imply universal secret scanning.
 
 ## Deletion limits
 

@@ -1,0 +1,266 @@
+[
+  {
+    "args": [
+      "open",
+      "http://127.0.0.1:4318/?jev_case=search-resume#/sessions"
+    ],
+    "exitCode": 0,
+    "output": "[agent-browser] launched browser\n\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=search-resume#/sessions\n"
+  },
+  {
+    "args": [
+      "set",
+      "viewport",
+      "1280",
+      "800"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "wait",
+      "--text",
+      "Newest first"
+    ],
+    "exitCode": 0,
+    "output": "Newest first\n"
+  },
+  {
+    "args": [
+      "press",
+      "Tab"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "eval",
+      "JSON.stringify({text:document.activeElement.textContent,href:document.activeElement.getAttribute(\"href\")})"
+    ],
+    "exitCode": 0,
+    "output": "\"{\\\"text\\\":\\\"Skip to content\\\",\\\"href\\\":\\\"#main-content\\\"}\"\n"
+  },
+  {
+    "args": [
+      "press",
+      "Enter"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "get",
+      "url"
+    ],
+    "exitCode": 0,
+    "output": "http://127.0.0.1:4318/?jev_case=search-resume#main-content\n"
+  },
+  {
+    "args": [
+      "screenshot",
+      "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/skip-link-wrong-route-1280x800.png"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/skip-link-wrong-route-1280x800.png\n"
+  },
+  {
+    "args": [
+      "open",
+      "http://127.0.0.1:4318/?jev_case=guards-proxy#/guards"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=guards-proxy#/guards\n"
+  },
+  {
+    "args": [
+      "set",
+      "viewport",
+      "1280",
+      "800"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "wait",
+      "--text",
+      "Guards & capture"
+    ],
+    "exitCode": 1,
+    "output": "\u2717 Wait timed out after 25000ms\n"
+  },
+  {
+    "args": [
+      "find",
+      "role",
+      "button",
+      "click",
+      "--name",
+      "Review before enabling",
+      "--exact"
+    ],
+    "exitCode": 1,
+    "output": "\u2717 No element found: getByRole('button', { name: 'Review before enabling', exact: true }). Verify the selector, role, or name is correct and the element exists in the DOM.\n"
+  },
+  {
+    "args": [
+      "find",
+      "role",
+      "button",
+      "click",
+      "--name",
+      "I understand \u2014 enable proxy",
+      "--exact"
+    ],
+    "exitCode": 1,
+    "output": "\u2717 No element found: getByRole('button', { name: 'I understand \u2014 enable proxy', exact: true }). Verify the selector, role, or name is correct and the element exists in the DOM.\n"
+  },
+  {
+    "args": [
+      "eval",
+      "JSON.stringify({topbar:document.querySelector(\".topbar\").innerText,main:document.querySelector(\"main\").innerText})"
+    ],
+    "exitCode": 1,
+    "output": "\u2717 Evaluation error: TypeError: Cannot read properties of null (reading 'innerText')\n    at <anonymous>:1:57\n"
+  },
+  {
+    "args": [
+      "screenshot",
+      "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/proxy-status-conflict-1280x800.png"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/proxy-status-conflict-1280x800.png\n"
+  },
+  {
+    "args": [
+      "open",
+      "http://127.0.0.1:4318/?jev_case=analysis-error#/analysis"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=analysis-error#/analysis\n"
+  },
+  {
+    "args": [
+      "set",
+      "viewport",
+      "1280",
+      "800"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "wait",
+      "--text",
+      "Sessions eligible for preview"
+    ],
+    "exitCode": 0,
+    "output": "Sessions eligible for preview\n"
+  },
+  {
+    "args": [
+      "find",
+      "role",
+      "button",
+      "click",
+      "--name",
+      "Analyze",
+      "--exact",
+      "--nth",
+      "0"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "snapshot",
+      "-i"
+    ],
+    "exitCode": 0,
+    "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisInventoryHealthDataSettingsLocal wr\" [ref=e2] clickable [onclick]\n  - heading \"Review AI analysis egress\" [level=2, ref=e4]\n  - button \"Close dialog\" [ref=e5]\n  - region \"Dialog content\" [ref=e3] focusable [tabindex]\n    - heading \"Payload scope\" [level=3, ref=e8]\n    - heading \"Redaction before send\" [level=3, ref=e9]\n  - button \"Cancel \u2014 send nothing\" [ref=e6]\n  - button \"Confirm and send redacted payload\" [ref=e7]\n"
+  },
+  {
+    "args": [
+      "find",
+      "role",
+      "button",
+      "click",
+      "--name",
+      "Cancel \u2014 send nothing",
+      "--exact"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "eval",
+      "JSON.stringify(__CUTOKYO_FIXTURE_AUDIT__())"
+    ],
+    "exitCode": 0,
+    "output": "\"{\\\"outboundAnalysisRequests\\\":0,\\\"resumeRequests\\\":[],\\\"bundleCreated\\\":false,\\\"sessionIds\\\":[\\\"session-claude-73A9\\\",\\\"session-codex-91B2\\\",\\\"session-opencode-42C7\\\",\\\"analysis-73A9\\\"]}\"\n"
+  },
+  {
+    "args": [
+      "find",
+      "role",
+      "button",
+      "click",
+      "--name",
+      "Analyze",
+      "--exact",
+      "--nth",
+      "0"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "find",
+      "role",
+      "button",
+      "click",
+      "--name",
+      "Confirm and send redacted payload",
+      "--exact"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "screenshot",
+      "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/analysis-error-1280x800.png"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/analysis-error-1280x800.png\n"
+  },
+  {
+    "args": [
+      "find",
+      "role",
+      "button",
+      "click",
+      "--name",
+      "Retry same idempotent request",
+      "--exact"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "eval",
+      "JSON.stringify(__CUTOKYO_FIXTURE_AUDIT__())"
+    ],
+    "exitCode": 0,
+    "output": "\"{\\\"outboundAnalysisRequests\\\":0,\\\"resumeRequests\\\":[],\\\"bundleCreated\\\":false,\\\"sessionIds\\\":[\\\"session-claude-73A9\\\",\\\"session-codex-91B2\\\",\\\"session-opencode-42C7\\\",\\\"analysis-73A9\\\"]}\"\n"
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "scope": "Coordinator record of an unfinished independent artifact review, not a product verdict",
+  "agent_id": "a47a3d8b974b536a6",
+  "action": "Stopped long-running review analysis and resumed the same agent with its existing context and bounded scope",
+  "last_observed_helper_failure": {
+    "exit_code": 1,
+    "error": "AssertionError",
+    "line": 44,
+    "observed_tool_result_timestamp": "2026-10-04T12:35:41.246Z"
+  },
+  "stopped_task_handback": "The helper counted four Vite build checkmarks as test cases, yielding 20 instead of 16. The native reporter itself contains exactly 16 passing cases across the five expected phases. I’ll retain the failed helper output and partial verification record, then use native reporter lines only; the required case counts and product acceptance remain unchanged.",
+  "resumption_constraints": [
+    "Preserve failed helper and partial receipts",
+    "Correct only helper counting to native reporter lines",
+    "Retain the original sixteen cases and five phase assertions",
+    "Use already inspected actual images without unnecessary rereads",
+    "No application launch, product source change, acceptance relaxation, or scope expansion",
+    "Return verified bounded verdict or explicit blocker"
+  ],
+  "independent_native_visual_verdict": "pending",
+  "actual_packaged_command_exit_code": 0,
+  "actual_negative_retest_exit_code": 0,
+  "clean_release_proof": false
+}

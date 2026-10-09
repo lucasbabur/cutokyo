@@ -1,0 +1,63 @@
+{
+  "archive": "evidence/management/native-review/native6-negative-execution-20261004.tar.gz",
+  "sha256": "ffe6ad53688623ddc96e014dc8ca3f8d41303996785972ff7fee94bbe89f7c53",
+  "members": [
+    {
+      "member": "execution-record.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-79ca6q6j/execution-record.json",
+      "sha256": "b8acb88693b9cddc87a9b2fe67b578e7ac18f4b195389889fa76c526037647de"
+    },
+    {
+      "member": "execution.log",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-79ca6q6j/execution.log",
+      "sha256": "e96f1b60bd313949e5a8c02ff5439e3bd57063d93d945ef8bf46bc7ce5ddcaf5"
+    },
+    {
+      "member": "negative-geometry-1280x800.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-79ca6q6j/negative-geometry-1280x800.json",
+      "sha256": "cef5b94fe337a0a553810cc48e463f3fa302a28ae0b9648e3759853f7b130638"
+    },
+    {
+      "member": "package-launch.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-79ca6q6j/package-launch.json",
+      "sha256": "7d43ef3f877452a9ea0d5dcefed8bae305255bf564d1150c83c8b40a2f28d627"
+    },
+    {
+      "member": "resume-inline-failure-dom.html",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-79ca6q6j/resume-inline-failure-dom.html",
+      "sha256": "c28e8cd028fd768686451d6f1efa3d49b6b32e64c51c28c1ef19964daa59daaf"
+    },
+    {
+      "member": "resume-inline-launch-failure-1280x800.png",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-79ca6q6j/resume-inline-launch-failure-1280x800.png",
+      "sha256": "fa5f0918d314546252b890988c7f0969c782df0beaa921f2bfb4b6942dd0ad25"
+    },
+    {
+      "member": "resume-negative-retest-assertions.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-79ca6q6j/resume-negative-retest-assertions.json",
+      "sha256": "0975b7c22191809ec89382bb1241dde28cd076bb22e8683bfbbf7854d2064041"
+    },
+    {
+      "member": "resume-negative-retest.spec-0-0.log",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-79ca6q6j/resume-negative-retest.spec-0-0.log",
+      "sha256": "996dd94865b0c63e3bfa612fa47191d4c63d0c721e5b241de099fc91b37a2858"
+    },
+    {
+      "member": "wdio-2026-10-04T11-10-44-717Z.log",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-79ca6q6j/wdio-2026-10-04T11-10-44-717Z.log",
+      "sha256": "ada79d068c51e02c687aa1c4f9323ecebb6889bef6f186f8a8a2d4b1343f0c78"
+    },
+    {
+      "member": "wdio.log",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-79ca6q6j/wdio.log",
+      "sha256": "59054d96f486400d069e45332a52abe129d17a2ebcb754b9878ef43a9569bf77"
+    },
+    {
+      "member": "outer-execution.output",
+      "source": "/tmp/claude-1000/-home-lucas-Developer-personal-cutokyo-community/bef15e81-1dde-4a4a-b63b-a981d304023c/tasks/bw68eeavs.output",
+      "sha256": "85ce3318fe08e87c426cd14d73f1f48361d20931f77b02bb98522418958f76a1"
+    }
+  ],
+  "fresh_aggregate_acceptance": false,
+  "source_mutation": false
+}

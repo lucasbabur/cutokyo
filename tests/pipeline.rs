@@ -12,7 +12,9 @@ use std::{
 use cutokyo_core::{
     app::Application,
     ingest::{Spool, SpoolCapReason, SpoolLimits},
-    store::{CheckpointMode, DELETE_ALL_CONFIRMATION, LockOwner, SearchQuery},
+    store::{
+        CheckpointMode, DELETE_ALL_CONFIRMATION, LockOwner, SearchMode, SearchQuery, SearchSort,
+    },
 };
 use cutokyo_domain::{
     Attribution, CaptureChannel, Confidence, ConfigItemKind, ConfigItemState, Coverage,
@@ -338,6 +340,9 @@ fn dashboard_reconciles() -> Result<(), Box<dyn std::error::Error>> {
         skill: Some("cutokyo-contract".to_owned()),
         agent: Some("core-builder".to_owned()),
         limit: 10,
+        offset: 0,
+        mode: SearchMode::Terms,
+        sort: SearchSort::Relevance,
     })?;
     assert_eq!(results.len(), 1);
     assert_eq!(results[0].session_id.as_str(), "session:pipeline");
@@ -358,8 +363,8 @@ fn dashboard_reconciles() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(writer_health, query_health);
     assert_eq!(writer_health.drain_pending_count, 0);
     assert_eq!(writer_health.current_quarantine_count, 0);
-    assert_eq!(writer_health.schema_version, 2);
-    assert_eq!(writer_health.derive_version, 1);
+    assert_eq!(writer_health.schema_version, 3);
+    assert_eq!(writer_health.derive_version, 3);
     assert_eq!(writer_health.dimensions.len(), 11);
     Ok(())
 }
@@ -433,7 +438,7 @@ fn sqlite_concurrency_backup_integrity() -> Result<(), Box<dyn std::error::Error
     let valid_backup = directory.path().join("valid-backup.db");
     let manifest = core.backup(&valid_backup)?;
     assert_eq!(manifest.integrity_result, "ok");
-    assert_eq!(manifest.schema_version, 2);
+    assert_eq!(manifest.schema_version, 3);
     assert!(manifest.byte_length > 0);
 
     let tampered_backup = directory.path().join("tampered-backup.db");
@@ -635,7 +640,7 @@ fn retention_deletion_is_previewed_confirmed_and_transactional()
     assert_eq!(receipt.raw_observations, 1);
     assert_eq!(receipt.messages, 1);
     assert_eq!(receipt.summaries, 1);
-    assert_eq!(receipt.fts_rows, 1);
+    assert_eq!(receipt.fts_rows, 3);
     assert!(
         core.search(&SearchQuery {
             text: Some("old deletion needle".to_owned()),
@@ -657,5 +662,36 @@ fn retention_deletion_is_previewed_confirmed_and_transactional()
     assert_eq!(all.sessions, 2);
     assert!(core.search(&SearchQuery::default())?.is_empty());
     assert!(all.disclosure.contains("existing backups"));
+    Ok(())
+}
+
+#[test]
+fn guard_feature_removed_from_settings_bundle_and_desktop_surface()
+-> Result<(), Box<dyn std::error::Error>> {
+    let root = repository_root()?;
+    let schema = json_file(&root.join("schemas/settings/settings-patch.v1.json"))?;
+    let validator =
+        jsonschema::validator_for(&schema).map_err(|error| io::Error::other(error.to_string()))?;
+    assert!(!validator.is_valid(&json!({"outgoing_guard_enabled": true})));
+    assert!(validator.is_valid(&json!({"proxy_enabled": false, "search_mcp_enabled": true})));
+    let settings = serde_json::to_value(cutokyo_domain::Settings::default())?;
+    assert!(settings.get("outgoing_guard_enabled").is_none());
+    let bundle = serde_json::to_value(cutokyo_core::bundle::build_diagnostic_bundle(&[])?)?;
+    assert!(bundle.get("guards").is_none());
+    assert!(bundle.get("redaction_findings").is_none());
+    assert_eq!(bundle["coverage"], "inspected");
+    let runtime = fs::read_to_string(root.join("crates/cutokyo-desktop/src/runtime.rs"))?;
+    for removed in ["guard_coverage", "set_outgoing_guard_enabled"] {
+        assert!(
+            !runtime.contains(removed),
+            "removed IPC command remains: {removed}"
+        );
+    }
+    assert!(runtime.contains("proxy_status"));
+    assert!(runtime.contains("preview_proxy_consent"));
+    let router = fs::read_to_string(root.join("ui/src/router.ts"))?;
+    assert!(!router.contains("\"/guards\""));
+    assert!(!root.join("ui/src/pages/GuardsPage.tsx").exists());
+    assert!(!root.join("crates/cutokyo-core/src/guards.rs").exists());
     Ok(())
 }

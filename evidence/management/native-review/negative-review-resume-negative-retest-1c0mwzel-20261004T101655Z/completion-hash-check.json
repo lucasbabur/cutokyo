@@ -1,0 +1,11 @@
+{
+  "completed_utc": "2026-10-04T10:16:55.628922+00:00",
+  "native5_all_artifact_source_and_preserved_hashes_stable": true,
+  "native5_all10_png_actual_dimensions1280x800": true,
+  "retained_debian_sha256_matches_both_launch_receipts": true,
+  "packaged_executable_sha256_independently_matches_both_launch_receipts": true,
+  "negative_all10_artifacts_hashes_stable_before_archive": true,
+  "negative_archived_copies_match": true,
+  "native5_before_after_source_records_identical": true,
+  "Git_not_queried_by_reviewer": true
+}

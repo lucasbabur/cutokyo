@@ -1,0 +1,7 @@
+{
+  "TMPDIR": "/home/lucas/.cache/cutokyo-native-e2e-20261004-bef15e81",
+  "purpose": "fresh native build after preserved tmp-quota failure",
+  "mode": "0o700",
+  "source_modified": false,
+  "disk_device": 66311
+}

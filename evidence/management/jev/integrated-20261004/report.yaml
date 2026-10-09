@@ -1,0 +1,918 @@
+cases:
+  - name: management-mcp-save-failure-preserves-draft
+    status: BLOCKED
+    steps:
+      - status: BLOCKED
+        reason: Jev verdict is below the confidence threshold
+        expect: The Manage docs-73A9 dialog shows nonempty JSON in Source content,
+          Claude Code, user scope, and the source Claude Code user MCP
+          configuration. Save changes is disabled before editing.
+        observed: >-
+          - generic [ref=e1] clickable [onclick]
+            - main
+              - dialog "Manage docs-73A9"
+                - sectionheader
+                  - paragraph
+                    - StaticText "AGENT TOOLS"
+                  - heading "Manage docs-73A9" [level=2, ref=e40]
+                  - paragraph
+                    - StaticText "Changes apply to the native installation shown below. Nothing is sent to a provider."
+                  - button "Close dialog" [ref=e41]
+                - region "Dialog content" [ref=e39] focusable [tabindex]
+                  - DescriptionList
+                    - term "INSTALLATION"
+                    - definition
+                      - StaticText "docs-73A9"
+                    - term "HARNESS"
+                    - definition
+                      - StaticText "Claude Code"
+                    - term "SCOPE"
+                    - definition
+                      - StaticText "user"
+                    - term "SOURCE"
+                    - definition
+                      - code
+                        - StaticText "Claude Code user MCP configuration"
+                  - button "Install in another harness" [ref=e42]
+                  - button "Remove" [ref=e43]
+                  - LabelText
+                    - StaticText "SOURCE CONTENT"
+                    - StaticText "json"
+                    - textbox "Source content" [ref=e46]: {
+            "command": "npx",
+            "args": [
+              "-y",
+              "@example/docs-mcp"
+            ],
+            "env": {}
+          }
+                      - generic
+                        - StaticText "{"
+                        - LineBreak "\n"
+                        - StaticText "  \"command\": \"npx\","
+                        - LineBreak "\n"
+                        - StaticText "  \"args\": ["
+                        - LineBreak "\n"
+                        - StaticText "    \"-y\","
+                        - LineBreak "\n"
+                        - StaticText "    \"@example/docs-mcp\""
+                        - LineBreak "\n"
+                        - StaticText "  ],"
+                        - LineBreak "\n"
+                        - StaticText "  \"env\": {}"
+                        - LineBreak "\n"
+                        - StaticText "}"
+                  - paragraph
+                    - StaticText "Edit this installation's content. Cutokyo validates it before saving and keeps a recovery copy. Credentials stay local."
+                - sectionfooter
+                  - button "Done" [ref=e44]
+                  - button "Save changes" [disabled, ref=e45]
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/1/001.png
+    not_run: 8
+  - name: management-skill-copy-independent-edit-remove-cancel
+    status: BLOCKED
+    steps:
+      - status: PASS
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/2/001.png
+      - status: PASS
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/2/002.png
+      - status: BLOCKED
+        reason: Jev could not verify the interaction or outcome
+        expect: Will be installed at shows
+          Project/.claude/skills/protocol-check/SKILL.md and Install in Claude
+          Code is enabled. OpenCode is unavailable because this skill is already
+          installed there.
+        observed: >-
+          - generic [ref=e1] clickable [onclick]
+            - link "Skip to content" [ref=e2]
+            - complementary "Application"
+              - strong
+                - StaticText "Cutokyo"
+              - StaticText "LOCAL OBSERVABILITY"
+              - navigation "Primary navigation" [ref=e3]
+                - link "Overview" [ref=e6]
+                  - StaticText "Overview"
+                - link "Sessions" [ref=e7]
+                  - StaticText "Sessions"
+                - link "Analysis" [ref=e8]
+                  - StaticText "Analysis"
+                - link "Agent tools" [ref=e9]
+                  - StaticText "Agent tools"
+                - link "Health" [ref=e10]
+                  - StaticText "Health"
+                - link "Data" [ref=e11]
+                  - StaticText "Data"
+                - link "Settings" [ref=e12]
+                  - StaticText "Settings"
+              - StaticText "Local writer"
+              - StaticText "LOCAL ONLY"
+              - StaticText "v"
+              - StaticText "0.1.0-test"
+            - banner
+              - StaticText "WORKSPACE"
+              - strong
+                - StaticText "All local projects"
+              - group "Capture and egress status"
+                - StaticText "PROXY OFF"
+                - StaticText "AI EGRESS"
+                - StaticText "ON CONFIRMATION ONLY"
+            - main
+              - sectionheader
+                - paragraph
+                  - StaticText "YOUR LOCAL INSTALLATIONS"
+                - heading "Agent tools" [level=1, ref=e13]
+                - paragraph
+                  - StaticText "Manage skills, MCP servers, hooks, plugins, and instructions. Edit their native configuration or install a copy in another supported harness."
+                - button "Refresh installations" [ref=e14]
+              - complementary "partial data notice"
+                - generic
+                  - strong
+                    - StaticText "partial data"
+                  - StaticText " · "
+                  - StaticText "One project plugin has incomplete runtime evidence. Its native configuration can still be managed."
+              - status
+                - paragraph
+                  - StaticText "Installed protocol-check in Claude Code."
+              - region "Agent tool filters" [ref=e4]
+                - LabelText
+                  - StaticText "Search installed tools"
+                  - searchbox "Search installed tools" [ref=e23]
+                - LabelText
+                  - StaticText "HARNESS"
+                  - combobox "HARNESS" [expanded=false, ref=e24]: All harnesses
+                    - MenuListPopup
+                      - option "All harnesses" [selected, ref=e35]
+                      - option "Claude Code" [ref=e36]
+                      - option "Codex" [ref=e37]
+                      - option "OpenCode" [ref=e38]
+              - tablist "Inventory type"
+                - tab "All 9" [selected, ref=e15]
+                  - StaticText "All"
+                  - StaticText "9"
+                - tab "MCP servers 2" [ref=e16]
+                  - StaticText "MCP servers"
+                  - StaticText "2"
+                - tab "Plugins 2" [ref=e17]
+                  - StaticText "Plugins"
+                  - StaticText "2"
+                - tab "Hooks 2" [ref=e18]
+                  - StaticText "Hooks"
+                  - StaticText "2"
+                - tab "Skills 2" [ref=e19]
+                  - StaticText "Skills"
+                  - StaticText "2"
+                - tab "Instructions 1" [ref=e20]
+                  - StaticText "Instructions"
+                  - StaticText "1"
+              - tabpanel "All 9"
+                - status
+                  - strong
+                    - StaticText "9 installations"
+                  - StaticText "Select Manage to view or change an in
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/2/003.png
+    not_run: 11
+  - name: management-shared-instructions-impact-save-and-cancel
+    status: BLOCKED
+    steps:
+      - status: PASS
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/3/001.png
+      - status: PASS
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/3/002.png
+      - status: BLOCKED
+        reason: Jev verdict is below the confidence threshold
+        expect: Source content contains exactly the supplied text and Save changes is
+          enabled; the source is still Project/AGENTS.md shared by Codex and
+          OpenCode.
+        observed: >-
+          - generic [ref=e1] clickable [onclick]
+            - main
+              - dialog "Manage AGENTS.md"
+                - sectionheader
+                  - paragraph
+                    - StaticText "AGENT TOOLS"
+                  - heading "Manage AGENTS.md" [level=2, ref=e41]
+                  - paragraph
+                    - StaticText "Changes apply to the native installation shown below. Nothing is sent to a provider."
+                  - button "Close dialog" [ref=e42]
+                - region "Dialog content" [ref=e40] focusable [tabindex]
+                  - DescriptionList
+                    - term "INSTALLATION"
+                    - definition
+                      - StaticText "AGENTS.md"
+                    - term "HARNESS"
+                    - definition
+                      - StaticText "Codex, OpenCode"
+                    - term "SCOPE"
+                    - definition
+                      - StaticText "project"
+                    - term "SOURCE"
+                    - definition
+                      - code
+                        - StaticText "Project/AGENTS.md"
+                  - button "Install in another harness" [disabled, ref=e43]
+                  - button "Remove" [disabled, ref=e44]
+                  - status
+                    - StaticText "Unsaved changes. Save before installing or removing this item."
+                  - LabelText
+                    - StaticText "SOURCE CONTENT"
+                    - StaticText "markdown"
+                    - textbox "Source content" [ref=e47]: # Shared project instructions — JEV management QA
+                      - StaticText "# Shared project instructions — JEV management QA"
+                  - paragraph
+                    - StaticText "Edit this installation's content. Cutokyo validates it before saving and keeps a recovery copy. Credentials stay local."
+                - sectionfooter
+                  - button "Cancel" [ref=e45]
+                  - button "Save changes" [ref=e46]
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/3/003.png
+    not_run: 5
+  - name: management-backup-create-preview-cancel-restore-history
+    status: BLOCKED
+    steps:
+      - status: PASS
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/4/001.png
+      - status: PASS
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/4/002.png
+      - status: PASS
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/4/003.png
+      - status: PASS
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/4/004.png
+      - status: PASS
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/4/005.png
+      - status: PASS
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/4/006.png
+      - status: BLOCKED
+        reason: Jev could not verify the interaction or outcome
+        expect: The dialog closes; delete-me-73A9 is absent from Delete one session,
+          keep-me-73A9 remains, and the existing backup still contains 2
+          sessions.
+        observed: >-
+          - generic [ref=e1] clickable [onclick]
+            - link "Skip to content" [ref=e2]
+            - complementary "Application"
+              - strong
+                - StaticText "Cutokyo"
+              - StaticText "LOCAL OBSERVABILITY"
+              - navigation "Primary navigation" [ref=e3]
+                - link "Overview" [ref=e8]
+                  - StaticText "Overview"
+                - link "Sessions" [ref=e9]
+                  - StaticText "Sessions"
+                - link "Analysis" [ref=e10]
+                  - StaticText "Analysis"
+                - link "Agent tools" [ref=e11]
+                  - StaticText "Agent tools"
+                - link "Health" [ref=e12]
+                  - StaticText "Health"
+                - link "Data" [ref=e13]
+                  - StaticText "Data"
+                - link "Settings" [ref=e14]
+                  - StaticText "Settings"
+              - StaticText "Local writer"
+              - StaticText "LOCAL ONLY"
+              - StaticText "v"
+              - StaticText "0.1.0-test"
+            - banner
+              - StaticText "WORKSPACE"
+              - strong
+                - StaticText "All local projects"
+              - group "Capture and egress status"
+                - StaticText "PROXY OFF"
+                - StaticText "AI EGRESS"
+                - StaticText "ON CONFIRMATION ONLY"
+            - main
+              - sectionheader
+                - paragraph
+                  - StaticText "PREVIEW BEFORE MUTATION"
+                - heading "Data controls" [level=1, ref=e15]
+                - paragraph
+                  - StaticText "History stays until you delete it. Retention, one-session deletion, and delete-all operate on exact previews across raw evidence, projections, search rows, and summaries."
+              - status
+                - paragraph
+                  - StaticText "Deleted delete-me-73A9; 1 session removed."
+              - region "Data retention" [ref=e4]
+                - paragraph
+                  - StaticText "POLICY PREVIEW"
+                - heading "Data retention" [level=2, ref=e16]
+                - paragraph
+                  - StaticText "Save a policy without deleting history. Cleanup is a separate, explicitly confirmed action."
+                - LabelText
+                  - StaticText "KEEP SESSIONS FOR"
+                  - combobox "KEEP SESSIONS FOR" [expanded=false, ref=e25]: Until explicitly deleted
+                    - MenuListPopup
+                      - option "Until explicitly deleted" [selected, ref=e28]
+                      - option "7 days" [ref=e29]
+                      - option "30 days" [ref=e30]
+                      - option "90 days" [ref=e31]
+                      - option "1 year" [ref=e32]
+                - button "Save retention policy" [ref=e17]
+                - button "Cleanup unavailable for keep-until-deleted" [disabled, ref=e18]
+              - region "Backups" [ref=e5]
+                - paragraph
+                  - StaticText "LOCAL RECOVERY"
+                - heading "Backups" [level=2, ref=e19]
+                - paragraph
+                  - StaticText "Local session history, raw evidence, search projections, and summaries. Settings, harness configuration, and pending spool entries are excluded."
+                - button "Create backup" [ref=e20]
+                - heading "Available backups" [level=3, ref=e21]
+                - article
+                  - strong
+                    - StaticText "9/19/2026, 1:42:00 PM"
+                  - StaticText "2"
+                  - StaticText " sessions · "
+                  - StaticText "2.5 KiB (2,525 bytes)"
+                  - StaticText "/isolated-cutokyo/backups/backup-1"
+                  - button "Restore…" [ref=
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/4/007.png
+    not_run: 6
+  - name: management-backup-unavailable-preview-no-restore
+    status: BLOCKED
+    steps:
+      - status: BLOCKED
+        reason: Jev could not verify the interaction or outcome
+        expect: The Backup directory field appears and Review backup is disabled while
+          that field is empty.
+        observed: >-
+          - generic [ref=e1] clickable [onclick]
+            - link "Skip to content" [ref=e2]
+            - complementary "Application"
+              - strong
+                - StaticText "Cutokyo"
+              - StaticText "LOCAL OBSERVABILITY"
+              - navigation "Primary navigation" [ref=e3]
+                - link "Overview" [ref=e8]
+                  - StaticText "Overview"
+                - link "Sessions" [ref=e9]
+                  - StaticText "Sessions"
+                - link "Analysis" [ref=e10]
+                  - StaticText "Analysis"
+                - link "Agent tools" [ref=e11]
+                  - StaticText "Agent tools"
+                - link "Health" [ref=e12]
+                  - StaticText "Health"
+                - link "Data" [ref=e13]
+                  - StaticText "Data"
+                - link "Settings" [ref=e14]
+                  - StaticText "Settings"
+              - StaticText "Local writer"
+              - StaticText "LOCAL ONLY"
+              - StaticText "v"
+              - StaticText "0.1.0-test"
+            - banner
+              - StaticText "WORKSPACE"
+              - strong
+                - StaticText "All local projects"
+              - group "Capture and egress status"
+                - StaticText "PROXY OFF"
+                - StaticText "AI EGRESS"
+                - StaticText "ON CONFIRMATION ONLY"
+            - main
+              - sectionheader
+                - paragraph
+                  - StaticText "PREVIEW BEFORE MUTATION"
+                - heading "Data controls" [level=1, ref=e15]
+                - paragraph
+                  - StaticText "History stays until you delete it. Retention, one-session deletion, and delete-all operate on exact previews across raw evidence, projections, search rows, and summaries."
+              - region "Data retention" [ref=e4]
+                - paragraph
+                  - StaticText "POLICY PREVIEW"
+                - heading "Data retention" [level=2, ref=e16]
+                - paragraph
+                  - StaticText "Save a policy without deleting history. Cleanup is a separate, explicitly confirmed action."
+                - LabelText
+                  - StaticText "KEEP SESSIONS FOR"
+                  - combobox "KEEP SESSIONS FOR" [expanded=false, ref=e25]: Until explicitly deleted
+                    - MenuListPopup
+                      - option "Until explicitly deleted" [selected, ref=e28]
+                      - option "7 days" [ref=e29]
+                      - option "30 days" [ref=e30]
+                      - option "90 days" [ref=e31]
+                      - option "1 year" [ref=e32]
+                - button "Save retention policy" [ref=e17]
+                - button "Cleanup unavailable for keep-until-deleted" [disabled, ref=e18]
+              - region "Backups" [ref=e5]
+                - paragraph
+                  - StaticText "LOCAL RECOVERY"
+                - heading "Backups" [level=2, ref=e19]
+                - paragraph
+                  - StaticText "Local session history, raw evidence, search projections, and summaries. Settings, harness configuration, and pending spool entries are excluded."
+                - button "Create backup" [ref=e20]
+                - heading "Available backups" [level=3, ref=e21]
+                - paragraph
+                  - StaticText "No backups yet. Create a recovery copy before replacing or deleting history."
+                - group
+                  - DisclosureTriangle "Restore a backup from another location" [expanded=false]
+                    - StaticText "Restore a backup from another location"
+                - paragraph
+                  - StaticText "Backups are owner-only local files, not application
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/5/001.png
+    not_run: 3
+  - name: management-native-capabilities-unavailable-truthful-actions
+    status: PASS
+    steps:
+      - status: PASS
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/6/001.png
+      - status: PASS
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/6/002.png
+      - status: PASS
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/6/003.png
+  - name: management-skip-link-keeps-route-and-fixture-query
+    status: BLOCKED
+    steps:
+      - status: BLOCKED
+        reason: Jev could not verify the interaction or outcome
+        expect: Skip to content becomes visible as the first keyboard control; Sessions
+          remains the active page at
+          /?jev_case=visual-keyboard-consistency#/sessions.
+        observed: >-
+          - generic [ref=e1] clickable [onclick]
+            - link "Skip to content" [ref=e2]
+            - complementary "Application"
+              - strong
+                - StaticText "Cutokyo"
+              - StaticText "LOCAL OBSERVABILITY"
+              - navigation "Primary navigation" [ref=e3]
+                - link "Overview" [ref=e6]
+                  - StaticText "Overview"
+                - link "Sessions" [ref=e7]
+                  - StaticText "Sessions"
+                - link "Analysis" [ref=e8]
+                  - StaticText "Analysis"
+                - link "Agent tools" [ref=e9]
+                  - StaticText "Agent tools"
+                - link "Health" [ref=e10]
+                  - StaticText "Health"
+                - link "Data" [ref=e11]
+                  - StaticText "Data"
+                - link "Settings" [ref=e12]
+                  - StaticText "Settings"
+              - StaticText "Local writer"
+              - StaticText "LOCAL ONLY"
+              - StaticText "v"
+              - StaticText "0.1.0-test"
+            - banner
+              - StaticText "WORKSPACE"
+              - strong
+                - StaticText "All local projects"
+              - group "Capture and egress status"
+                - StaticText "PROXY OFF"
+                - StaticText "AI EGRESS"
+                - StaticText "ON CONFIRMATION ONLY"
+            - main
+              - sectionheader
+                - paragraph
+                  - StaticText "NATIVE SESSION HISTORY"
+                - heading "Sessions" [level=1, ref=e13]
+                - paragraph
+                  - StaticText "Find sessions by title, project, branch, native ID, or transcript. Words can occur separately; choose Exact phrase to keep them together."
+              - region "Session search filters" [ref=e4]
+                - LabelText
+                  - StaticText "Search session content"
+                  - searchbox "Search session content" [ref=e24]
+                  - StaticText "Ctrl/⌘ K"
+                - LabelText
+                  - StaticText "MATCH"
+                  - combobox "Match" [expanded=false, ref=e25]: All words
+                    - MenuListPopup
+                      - option "All words" [selected, ref=e29]
+                      - option "Exact phrase" [ref=e30]
+                - LabelText
+                  - StaticText "SORT"
+                  - combobox "Sort" [expanded=false, ref=e26]: Most relevant
+                    - MenuListPopup
+                      - option "Most relevant" [selected, ref=e31]
+                      - option "Newest first" [ref=e32]
+                - LabelText
+                  - StaticText "HARNESS"
+                  - combobox "Harness" [expanded=false, ref=e27]: All harnesses
+                    - MenuListPopup
+                      - option "All harnesses" [selected, ref=e33]
+                      - option "Claude Code" [ref=e34]
+                      - option "Codex" [ref=e35]
+                      - option "OpenCode" [ref=e36]
+                - LabelText
+                  - StaticText "DATE"
+                  - combobox "Date" [expanded=false, ref=e28]: Any time
+                    - MenuListPopup
+                      - option "Any time" [selected, ref=e37]
+                      - option "Today" [ref=e38]
+                      - option "Last 7 days" [ref=e39]
+                      - option "Last 30 days" [ref=e40]
+                      - option "Last 90 days" [ref=e41]
+              - group
+                - DisclosureTriangle "More filters" [expanded=false]
+              - status
+                - strong
+                  - StaticText "4 sessions"
+                - StaticText "Newest first"
+              - article
+                - StaticText "Claude Code"
+                - link "analysis-73A9" [ref=e14]
+                - StaticText "COMPLE
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/7/001.png
+    not_run: 1
+  - name: management-session-query-filters-back-preservation
+    status: BLOCKED
+    steps:
+      - status: BLOCKED
+        reason: Jev could not verify the interaction or outcome
+        expect: After the search settles, exactly one matching session Reconcile usage
+          capture is listed, with Claude Code and coverage labels; Search
+          session content retains the exact supplied query.
+        observed: >-
+          - generic [ref=e1] clickable [onclick]
+            - link "Skip to content" [ref=e2]
+            - complementary "Application"
+              - strong
+                - StaticText "Cutokyo"
+              - StaticText "LOCAL OBSERVABILITY"
+              - navigation "Primary navigation" [ref=e3]
+                - link "Overview" [ref=e6]
+                  - StaticText "Overview"
+                - link "Sessions" [ref=e7]
+                  - StaticText "Sessions"
+                - link "Analysis" [ref=e8]
+                  - StaticText "Analysis"
+                - link "Agent tools" [ref=e9]
+                  - StaticText "Agent tools"
+                - link "Health" [ref=e10]
+                  - StaticText "Health"
+                - link "Data" [ref=e11]
+                  - StaticText "Data"
+                - link "Settings" [ref=e12]
+                  - StaticText "Settings"
+              - StaticText "Local writer"
+              - StaticText "LOCAL ONLY"
+              - StaticText "v"
+              - StaticText "0.1.0-test"
+            - banner
+              - StaticText "WORKSPACE"
+              - strong
+                - StaticText "All local projects"
+              - group "Capture and egress status"
+                - StaticText "PROXY OFF"
+                - StaticText "AI EGRESS"
+                - StaticText "ON CONFIRMATION ONLY"
+            - main
+              - sectionheader
+                - paragraph
+                  - StaticText "NATIVE SESSION HISTORY"
+                - heading "Sessions" [level=1, ref=e13]
+                - paragraph
+                  - StaticText "Find sessions by title, project, branch, native ID, or transcript. Words can occur separately; choose Exact phrase to keep them together."
+              - region "Session search filters" [ref=e4]
+                - LabelText
+                  - StaticText "Search session content"
+                  - searchbox "Search session content" [ref=e24]
+                  - StaticText "Ctrl/⌘ K"
+                - LabelText
+                  - StaticText "MATCH"
+                  - combobox "Match" [expanded=false, ref=e25]: All words
+                    - MenuListPopup
+                      - option "All words" [selected, ref=e29]
+                      - option "Exact phrase" [ref=e30]
+                - LabelText
+                  - StaticText "SORT"
+                  - combobox "Sort" [expanded=false, ref=e26]: Most relevant
+                    - MenuListPopup
+                      - option "Most relevant" [selected, ref=e31]
+                      - option "Newest first" [ref=e32]
+                - LabelText
+                  - StaticText "HARNESS"
+                  - combobox "Harness" [expanded=false, ref=e27]: All harnesses
+                    - MenuListPopup
+                      - option "All harnesses" [selected, ref=e33]
+                      - option "Claude Code" [ref=e34]
+                      - option "Codex" [ref=e35]
+                      - option "OpenCode" [ref=e36]
+                - LabelText
+                  - StaticText "DATE"
+                  - combobox "Date" [expanded=false, ref=e28]: Any time
+                    - MenuListPopup
+                      - option "Any time" [selected, ref=e37]
+                      - option "Today" [ref=e38]
+                      - option "Last 7 days" [ref=e39]
+                      - option "Last 30 days" [ref=e40]
+                      - option "Last 90 days" [ref=e41]
+              - group
+                - DisclosureTriangle "More filters" [expanded=false]
+              - status
+                - strong
+                  - StaticText "4 sessions"
+                - StaticText "Newest first"
+              - article
+                - StaticText "Claude Code"
+                - link "analysis-73A9" [ref=e14]
+                - StaticText "COMPLE
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/8/001.png
+    not_run: 6
+  - name: management-dark-editor-install-preview-consistency
+    status: ERROR
+    steps:
+      - status: PASS
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/9/001.png
+      - status: ERROR
+        expect: Install protocol-check in another harness shows Destination harness,
+          Will be installed at, independent-copy and supporting-files
+          disclosures, Back, and Install in Claude Code for independent visual
+          review; nothing is installed by opening this preview.
+        observed: >-
+          - generic [ref=e1] clickable [onclick]
+            - link "Skip to content" [ref=e2]
+            - complementary "Application"
+              - strong
+                - StaticText "Cutokyo"
+              - StaticText "LOCAL OBSERVABILITY"
+              - navigation "Primary navigation" [ref=e3]
+                - link "Overview" [ref=e6]
+                  - StaticText "Overview"
+                - link "Sessions" [ref=e7]
+                  - StaticText "Sessions"
+                - link "Analysis" [ref=e8]
+                  - StaticText "Analysis"
+                - link "Agent tools" [ref=e9]
+                  - StaticText "Agent tools"
+                - link "Health" [ref=e10]
+                  - StaticText "Health"
+                - link "Data" [ref=e11]
+                  - StaticText "Data"
+                - link "Settings" [ref=e12]
+                  - StaticText "Settings"
+              - StaticText "Local writer"
+              - StaticText "LOCAL ONLY"
+              - StaticText "v"
+              - StaticText "0.1.0-test"
+            - banner
+              - StaticText "WORKSPACE"
+              - strong
+                - StaticText "All local projects"
+              - group "Capture and egress status"
+                - StaticText "PROXY OFF"
+                - StaticText "AI EGRESS"
+                - StaticText "ON CONFIRMATION ONLY"
+            - main
+              - sectionheader
+                - paragraph
+                  - StaticText "YOUR LOCAL INSTALLATIONS"
+                - heading "Agent tools" [level=1, ref=e13]
+                - paragraph
+                  - StaticText "Manage skills, MCP servers, hooks, plugins, and instructions. Edit their native configuration or install a copy in another supported harness."
+                - button "Refresh installations" [ref=e14]
+              - complementary "partial data notice"
+                - generic
+                  - strong
+                    - StaticText "partial data"
+                  - StaticText " · "
+                  - StaticText "One project plugin has incomplete runtime evidence. Its native configuration can still be managed."
+              - status
+                - paragraph
+                  - StaticText "Installed protocol-check in Claude Code."
+              - region "Agent tool filters" [ref=e4]
+                - LabelText
+                  - StaticText "Search installed tools"
+                  - searchbox "Search installed tools" [ref=e23]
+                - LabelText
+                  - StaticText "HARNESS"
+                  - combobox "HARNESS" [expanded=false, ref=e24]: All harnesses
+                    - MenuListPopup
+                      - option "All harnesses" [selected, ref=e35]
+                      - option "Claude Code" [ref=e36]
+                      - option "Codex" [ref=e37]
+                      - option "OpenCode" [ref=e38]
+              - tablist "Inventory type"
+                - tab "All 9" [selected, ref=e15]
+                  - StaticText "All"
+                  - StaticText "9"
+                - tab "MCP servers 2" [ref=e16]
+                  - StaticText "MCP servers"
+                  - StaticText "2"
+                - tab "Plugins 2" [ref=e17]
+                  - StaticText "Plugins"
+                  - StaticText "2"
+                - tab "Hooks 2" [ref=e18]
+                  - StaticText "Hooks"
+                  - StaticText "2"
+                - tab "Skills 2" [ref=e19]
+                  - StaticText "Skills"
+                  - StaticText "2"
+                - tab "Instructions 1" [ref=e20]
+                  - StaticText "Instructions"
+                  - StaticText "1"
+              - tabpanel "All 9"
+                - status
+                  - strong
+                    - StaticText "9 installations"
+                  - StaticText "Select Manage to view or change an in
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/9/002.png
+    not_run: 2
+  - name: management-onboarding-browse-only-no-harness-selected
+    status: BLOCKED
+    steps:
+      - status: BLOCKED
+        reason: Jev verdict is below the confidence threshold
+        expect: See your agent work without sending it away shows Preview and install
+          native capture and Confirm local storage. Claude Code, Codex, and
+          OpenCode harness checkboxes are all unchecked. Browse without
+          installing and Finish with verified capture are disabled until local
+          storage is acknowledged. The page says Browse-only does not install or
+          remove capture. Proxy capture and AI analysis stay disabled.
+        observed: >-
+          - generic [ref=e1] clickable [onclick]
+            - link "Skip to content" [ref=e2]
+            - complementary "Application"
+              - strong
+                - StaticText "Cutokyo"
+              - StaticText "LOCAL OBSERVABILITY"
+              - StaticText "FIRST RUN"
+              - strong
+                - StaticText "Choose what Cutokyo may observe."
+              - paragraph
+                - StaticText "No proxy or model-provider request is enabled by default."
+              - StaticText "Local writer"
+              - StaticText "LOCAL ONLY"
+              - StaticText "v"
+              - StaticText "0.1.0-test"
+            - banner
+              - StaticText "WORKSPACE"
+              - strong
+                - StaticText "All local projects"
+              - group "Capture and egress status"
+                - StaticText "PROXY OFF"
+                - StaticText "AI EGRESS"
+                - StaticText "ON CONFIRMATION ONLY"
+            - main
+              - sectionheader
+                - paragraph
+                  - StaticText "PRIVATE BY DEFAULT"
+                - heading "See your agent work without sending it away" [level=1, ref=e4]
+                - paragraph
+                  - StaticText "Cutokyo reads supported native surfaces, keeps evidence on this device, and labels every gap. Choose the harnesses you want to observe."
+              - region "Preview and install native capture" [ref=e3]
+                - paragraph
+                  - StaticText "STEP 1 OF 2"
+                - heading "Preview and install native capture" [level=2, ref=e5]
+                - StaticText "NO PROXY"
+                - LabelText [ref=e6] clickable [cursor:pointer]
+                  - checkbox "Claude Code COMPLETE Native hooks + OpenTelemetry" [checked=false, ref=e23]
+                  - strong
+                    - StaticText "Claude Code"
+                  - StaticText "COMPLETE"
+                  - StaticText "Native hooks + OpenTelemetry"
+                - button "Preview Claude Code install" [ref=e7]
+                  - StaticText "Preview Claude Code install"
+                - button "Recover Claude Code" [ref=e8]
+                  - StaticText "Recover Claude Code"
+                - button "Preview Claude Code removal" [ref=e9]
+                  - StaticText "Preview Claude Code removal"
+                - StaticText "Configuration not verified."
+                - LabelText [ref=e10] clickable [cursor:pointer]
+                  - checkbox "Codex PARTIAL App server + local state Refresh app-server history to attempt the missing page." [checked=false, ref=e24]
+                  - strong
+                    - StaticText "Codex"
+                  - StaticText "PARTIAL"
+                  - StaticText "App server + local state"
+                  - StaticText "Refresh app-server history to attempt the missing page."
+                - button "Preview Codex install" [ref=e11]
+                  - StaticText "Preview Codex install"
+                - button "Recover Codex" [ref=e12]
+                  - StaticText "Recover Codex"
+                - button "Preview Codex removal" [ref=e13]
+                  - StaticText "Preview Codex removal"
+                - StaticText "Configuration not verified."
+                - LabelText [ref=e14] clickable [cursor:pointer]
+                  - checkbox "OpenCode DISABLED Server API (inventory only) Install the Cutokyo OpenCode capture plugin." [checked=false, ref=e25]
+                  - strong
+                    - StaticText "OpenCode"
+                  - StaticText "DISABLED"
+                  - StaticText "Server API (inventory only)"
+                  - StaticText "Install the
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/10/001.png
+    not_run: 3
+  - name: management-native-capture-preview-cancel-browser-only
+    status: BLOCKED
+    steps:
+      - status: BLOCKED
+        reason: Jev verdict is below the confidence threshold
+        expect: Claude Code is selected, Codex and OpenCode remain unselected,
+          Configuration not verified is shown, and Finish with verified capture
+          remains disabled. Selecting a harness has not installed or verified
+          capture.
+        observed: >-
+          - generic [ref=e1] clickable [onclick]
+            - link "Skip to content" [ref=e2]
+            - complementary "Application"
+              - strong
+                - StaticText "Cutokyo"
+              - StaticText "LOCAL OBSERVABILITY"
+              - StaticText "FIRST RUN"
+              - strong
+                - StaticText "Choose what Cutokyo may observe."
+              - paragraph
+                - StaticText "No proxy or model-provider request is enabled by default."
+              - StaticText "Local writer"
+              - StaticText "LOCAL ONLY"
+              - StaticText "v"
+              - StaticText "0.1.0-test"
+            - banner
+              - StaticText "WORKSPACE"
+              - strong
+                - StaticText "All local projects"
+              - group "Capture and egress status"
+                - StaticText "PROXY OFF"
+                - StaticText "AI EGRESS"
+                - StaticText "ON CONFIRMATION ONLY"
+            - main
+              - sectionheader
+                - paragraph
+                  - StaticText "PRIVATE BY DEFAULT"
+                - heading "See your agent work without sending it away" [level=1, ref=e4]
+                - paragraph
+                  - StaticText "Cutokyo reads supported native surfaces, keeps evidence on this device, and labels every gap. Choose the harnesses you want to observe."
+              - region "Preview and install native capture" [ref=e3]
+                - paragraph
+                  - StaticText "STEP 1 OF 2"
+                - heading "Preview and install native capture" [level=2, ref=e5]
+                - StaticText "NO PROXY"
+                - LabelText [ref=e6] clickable [cursor:pointer]
+                  - checkbox "Claude Code COMPLETE Native hooks + OpenTelemetry" [checked=true, ref=e23]
+                  - strong
+                    - StaticText "Claude Code"
+                  - StaticText "COMPLETE"
+                  - StaticText "Native hooks + OpenTelemetry"
+                - button "Preview Claude Code install" [ref=e7]
+                  - StaticText "Preview Claude Code install"
+                - button "Recover Claude Code" [ref=e8]
+                  - StaticText "Recover Claude Code"
+                - button "Preview Claude Code removal" [ref=e9]
+                  - StaticText "Preview Claude Code removal"
+                - StaticText "Configuration not verified."
+                - LabelText [ref=e10] clickable [cursor:pointer]
+                  - checkbox "Codex PARTIAL App server + local state Refresh app-server history to attempt the missing page." [checked=false, ref=e24]
+                  - strong
+                    - StaticText "Codex"
+                  - StaticText "PARTIAL"
+                  - StaticText "App server + local state"
+                  - StaticText "Refresh app-server history to attempt the missing page."
+                - button "Preview Codex install" [ref=e11]
+                  - StaticText "Preview Codex install"
+                - button "Recover Codex" [ref=e12]
+                  - StaticText "Recover Codex"
+                - button "Preview Codex removal" [ref=e13]
+                  - StaticText "Preview Codex removal"
+                - StaticText "Configuration not verified."
+                - LabelText [ref=e14] clickable [cursor:pointer]
+                  - checkbox "OpenCode DISABLED Server API (inventory only) Install the Cutokyo OpenCode capture plugin." [checked=false, ref=e25]
+                  - strong
+                    - StaticText "OpenCode"
+                  - StaticText "DISABLED"
+                  - StaticText "Server API (inventory only)"
+                  - StaticText "Install the 
+        screenshots:
+          - action: Verify expectation
+            file: /home/lucas/Developer/personal/cutokyo-community/evidence/management/jev/integrated-20261004/11/001.png
+    not_run: 7

@@ -277,6 +277,15 @@ impl ClaudeSetup {
         })
     }
 
+    /// Verifies completed durable setup and all owned hooks without mutation.
+    ///
+    /// # Errors
+    /// Refuses unsafe targets and unreadable configuration or state.
+    pub fn verify(&self) -> Result<bool> {
+        let plan = self.dry_run(SetupOperation::Install)?;
+        Ok(plan.state_health == SetupStateHealth::Installed && plan.actions == [SetupAction::Noop])
+    }
+
     /// Plans and installs managed hooks.
     ///
     /// # Errors

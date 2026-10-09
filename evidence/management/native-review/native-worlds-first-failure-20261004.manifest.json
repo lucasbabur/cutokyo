@@ -1,0 +1,63 @@
+{
+  "archive": "evidence/management/native-review/native-worlds-first-failure-20261004.tar.gz",
+  "sha256": "d587e2b4259969cb8ded5a36c4c9a2cbd37bb143fd5e8dfe5ac968a7dffbde51",
+  "members": [
+    {
+      "member": "browse-desktop-state.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-zvr0qdmh/browse-desktop-state.json",
+      "sha256": "2c80390005ad0d52409016e86de679a1450b3648825c3be63682f7c6036dcb49"
+    },
+    {
+      "member": "execution-record.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-zvr0qdmh/execution-record.json",
+      "sha256": "f0812b589feb374be40a5261140398f1d20e131f576af36f021b48fcee69ad43"
+    },
+    {
+      "member": "native-desktop.spec-0-0.log",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-zvr0qdmh/native-desktop.spec-0-0.log",
+      "sha256": "28b70ee4654fd633d542a0e90bcff12b92b0082bf47cbbf5a102d2ffff75090e"
+    },
+    {
+      "member": "onboarding-browse-1280x800.png",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-zvr0qdmh/onboarding-browse-1280x800.png",
+      "sha256": "95a5321ff9fa5d07a833500c05e6571e8c294051cc0ef8dfda0d50c4db99303c"
+    },
+    {
+      "member": "onboarding-native-verified-1280x800.png",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-zvr0qdmh/onboarding-native-verified-1280x800.png",
+      "sha256": "978c10fb55248cdb5214d5bc9df1d4c8adf7a7a00c0c9e3be3972df37c7eacf6"
+    },
+    {
+      "member": "onboarding-package-worlds.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-zvr0qdmh/onboarding-package-worlds.json",
+      "sha256": "4bd886ba60130a157377c55341588df1fae66e6806b90cd054b338cbb3281ba5"
+    },
+    {
+      "member": "package-launch.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-zvr0qdmh/package-launch.json",
+      "sha256": "199507f6281c53fbcc3f813dc33245cf9566812af6ebc15b26c0edc6333b78d9"
+    },
+    {
+      "member": "wdio-2026-10-04T11-05-55-636Z.log",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-zvr0qdmh/wdio-2026-10-04T11-05-55-636Z.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "member": "wdio-2026-10-04T11-06-12-718Z.log",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-zvr0qdmh/wdio-2026-10-04T11-06-12-718Z.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "member": "wdio.log",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-zvr0qdmh/wdio.log",
+      "sha256": "b571344e47fe7f4bc00cac3c71c7be5bb8a270464dc9eea66dcf22f5860f9147"
+    },
+    {
+      "member": "outer-execution.output",
+      "source": "/tmp/claude-1000/-home-lucas-Developer-personal-cutokyo-community/bef15e81-1dde-4a4a-b63b-a981d304023c/tasks/beq99nw39.output",
+      "sha256": "a7926ee567a455f8c38b0da8df201555403ece9bc034b6c1e80ef077d6c18e2c"
+    }
+  ],
+  "fresh_aggregate_acceptance": false,
+  "source_mutation": false
+}

@@ -1,0 +1,129 @@
+{
+  "archive": "evidence/management/native-review/resume-failure-diagnostics-20261004.tar.gz",
+  "archive_sha256": "fc14110365e98336cf344e24c0e3a1b3a4fedafa72cc6fa5f2b4b671a1bbabc7",
+  "members": [
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-tio_zrmq/appearance-dark-1280x800.png",
+      "sha256": "b3ade8cb7ea091ef08214d06d67efadc1884b7330332682adc5e30a5c5b28d1a",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "individually_read_by_main": true
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-tio_zrmq/execution-record.json",
+      "sha256": "c6c90a8adc2316ddea845549f2c0ed97ea7da302b05717fb837a75de0fd542d5"
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-tio_zrmq/execution.log",
+      "sha256": "7ec46c1efbf65c292cb2edcb7852dd2750b2a452c6832da88a9528596bccd2f2"
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-tio_zrmq/geometry-1280x800.json",
+      "sha256": "cef5b94fe337a0a553810cc48e463f3fa302a28ae0b9648e3759853f7b130638"
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-tio_zrmq/package-launch.json",
+      "sha256": "d1bd4d50e2ade9ab085e91251906f6b87654375971e6382ffb4f70ae724df505"
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-tio_zrmq/resume-diagnostic.spec-0-0.log",
+      "sha256": "9c944b5cb91afe4aaed17f66610c5eea526b2ef2abfc4f4f93261df4ee1f9147"
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-tio_zrmq/resume-failure-dom.html",
+      "sha256": "5161b1e6dff132932b43102f739c82d123720198fc8337eab9e9da5e3e5dad07"
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-tio_zrmq/resume-failure-state.json",
+      "sha256": "89c23cbe5224e76c1bff49363e5ab502db55065d34293f7120dea619a2607005"
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-tio_zrmq/resume-failure.png",
+      "sha256": "bf752df6e3f9c7ddadad8572c3f630c4d81006739e3e7b9cce2dcaca956d61a2",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "individually_read_by_main": true
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-tio_zrmq/wdio-2026-10-04T09-27-24-266Z.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-tio_zrmq/wdio.log",
+      "sha256": "44187248f65d9b9243841a282c908a1aded3d1e185f42b6443bc7238221c99ca"
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-rthamcsh/appearance-dark-1280x800.png",
+      "sha256": "b3ade8cb7ea091ef08214d06d67efadc1884b7330332682adc5e30a5c5b28d1a",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "individually_read_by_main": true
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-rthamcsh/execution-record.json",
+      "sha256": "f036c2e3c9061797129a6144fa2b39bcaae50106c4fabfb6135cad474fe7f1dd"
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-rthamcsh/execution.log",
+      "sha256": "0fc473bd0caa2b4546673262459355f4a1636a33330b0c986577de540bbe9c7c"
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-rthamcsh/geometry-1280x800.json",
+      "sha256": "cef5b94fe337a0a553810cc48e463f3fa302a28ae0b9648e3759853f7b130638"
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-rthamcsh/package-launch.json",
+      "sha256": "592986343da9b9d2b28cba66807879e241c701d971084c62891c2d36820f1c9b"
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-rthamcsh/resume-diagnostic.spec-0-0.log",
+      "sha256": "4f1d47dddaa4206db0976e78fc80ca2d01b327bcb01dac00de868194300b1efa"
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-rthamcsh/resume-failure-dom.html",
+      "sha256": "b9c240679fb9397cea00b5ca1005bfefc1a1906667f233fabb1a3eb1a65c3d5a"
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-rthamcsh/resume-failure-state.json",
+      "sha256": "bba092a3030222e69f2bd95f32d4afb44332d07ace5dd732d3a2efa8999dbcfd"
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-rthamcsh/resume-failure.png",
+      "sha256": "fd3039abd6c56fa6d87f2dc1f0e43b9a693777b4a2013b696fa7c05f2262139f",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "individually_read_by_main": true
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-rthamcsh/search-detail-resume-1280x800.png",
+      "sha256": "6102cbc90343c5cb2bc3a6690b498c9f67e43b16249cfd9f02fbf4c47a890666",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "individually_read_by_main": true
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-rthamcsh/wdio-2026-10-04T09-29-57-871Z.log",
+      "sha256": "78fdb9577b7ec1a82485d5f5a380ab108741cc8f125d4eb6f11427aa1a5cf5ec"
+    },
+    {
+      "file": "target/native-evidence/resume-failure-diagnostic-rthamcsh/wdio.log",
+      "sha256": "2ca95d9a9d6833cd46c6ed72dc759ec1ac8f35200b4a99b7b5c8802fa872d21d"
+    }
+  ],
+  "package_sha256": "7ace85ebc2f40fbf4e18664e1b57ac03884d11340c9fc87c74921e1b70c57cd8",
+  "first_replay": "failed before confirmation because loading preview did not contain native target yet",
+  "second_replay": "ordinary confirmation reached actual Kitty failure; visible error is behind active modal and absent from modal text",
+  "error_paragraph_own_inert_attribute": "absent in actual dynamically updated DOM; no stronger claim made",
+  "fresh_aggregate_acceptance": false,
+  "owned_applications_survived": false
+}

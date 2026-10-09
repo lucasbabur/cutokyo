@@ -1,0 +1,380 @@
+{
+  "recorded_at": "2026-10-04T06:38:18.316241+00:00",
+  "scope": "Offline independent visual inspection of all 18 refreshed backup and all 8 refreshed search screenshots",
+  "revision": "Observed HEAD 8e7c6b0e2352c388b59aa4b593110445469a0c49; dirty concurrently edited checkout, not immutable native acceptance",
+  "environment": "Linux; browser fixture screenshots supplied by workflow; no native or browser execution by reviewer in this retest",
+  "findings": [
+    {
+      "key": "VQA-07",
+      "owner": "desktop",
+      "severity": "Low",
+      "status": "open, partially corrected",
+      "actual": "Values now exposed and wrapping succeeds, but dark summary is visibly too low contrast. Light capture passes visual inspection.",
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/search/search-active-filters-dark-900x700.png"
+    },
+    {
+      "key": "VQA-08",
+      "owner": "desktop",
+      "severity": "Low",
+      "status": "closed at supplied screenshot/visual level",
+      "actual": "All 18 captures consistently display 2.5 KiB (2,525 bytes)."
+    }
+  ],
+  "pixel_sample_note": "Most frequent RGB colors from screenshot summary region only; not DOM computed colors or a complete WCAG audit.",
+  "summary_region_common_rgb": [
+    {
+      "rgb": [
+        27,
+        31,
+        27
+      ],
+      "pixels": 33893
+    },
+    {
+      "rgb": [
+        28,
+        31,
+        27
+      ],
+      "pixels": 373
+    },
+    {
+      "rgb": [
+        27,
+        31,
+        30
+      ],
+      "pixels": 257
+    },
+    {
+      "rgb": [
+        28,
+        39,
+        47
+      ],
+      "pixels": 238
+    },
+    {
+      "rgb": [
+        27,
+        31,
+        28
+      ],
+      "pixels": 224
+    },
+    {
+      "rgb": [
+        27,
+        34,
+        37
+      ],
+      "pixels": 221
+    },
+    {
+      "rgb": [
+        55,
+        42,
+        30
+      ],
+      "pixels": 202
+    },
+    {
+      "rgb": [
+        31,
+        49,
+        59
+      ],
+      "pixels": 185
+    }
+  ],
+  "crop_evidence": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/search/active-filter-dark-summary-crop.png",
+  "observations": [
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-created-dark-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-created-dark-1536x960.png",
+      "viewport": [
+        1536,
+        960
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-created-dark-900x700.png",
+      "viewport": [
+        900,
+        700
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-created-light-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-created-light-1536x960.png",
+      "viewport": [
+        1536,
+        960
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-created-light-900x700.png",
+      "viewport": [
+        900,
+        700
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-restore-confirmation-dark-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-restore-confirmation-dark-1536x960.png",
+      "viewport": [
+        1536,
+        960
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-restore-confirmation-dark-900x700.png",
+      "viewport": [
+        900,
+        700
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-restore-confirmation-light-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-restore-confirmation-light-1536x960.png",
+      "viewport": [
+        1536,
+        960
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-restore-confirmation-light-900x700.png",
+      "viewport": [
+        900,
+        700
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-restored-dark-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-restored-dark-1536x960.png",
+      "viewport": [
+        1536,
+        960
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-restored-dark-900x700.png",
+      "viewport": [
+        900,
+        700
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-restored-light-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-restored-light-1536x960.png",
+      "viewport": [
+        1536,
+        960
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/backup/backup-restored-light-900x700.png",
+      "viewport": [
+        900,
+        700
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "A nonempty small backup uses adaptive units and retains exact bytes; relevant disclosures and actions fit the supplied viewport.",
+      "actual": "Size reads 2.5 KiB (2,525 bytes). Dialog metadata and action footer visible; no observed clipping or collisions. Creation disclosure, restore replacement counts, and restored recovery path/integrity result are visible in their respective states.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/search/search-active-filters-dark-900x700.png",
+      "viewport": [
+        900,
+        700
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "Collapsed summary exposes all five active constraints legibly, including long project value, without clipping or horizontal escape.",
+      "actual": "All five constraints are present and long project path wraps within card. Labels and values have visibly insufficient contrast against the dark card; summary is substantially dimmer than surrounding labels.",
+      "verdict": "fail (visual legibility)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/search/search-active-filters-light-900x700.png",
+      "viewport": [
+        900,
+        700
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "Collapsed summary exposes all five active constraints legibly, including long project value, without clipping or horizontal escape.",
+      "actual": "All five constraints present and legible: Project, Branch feature/observability, Tool Read, Skill search-review, Agent archive-agent. Long project path wraps within card. No observed collision or clipping of summary.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/search/search-matches-dark-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "Search result hierarchy and metadata remain readable at supplied viewport, without clipping or collisions.",
+      "actual": "Search controls, field-specific highlights, result metadata, cyan focus treatment and pagination visible. At 900x700 date control and transcript excerpt wrap without observed collision.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/search/search-matches-dark-1536x960.png",
+      "viewport": [
+        1536,
+        960
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "Search result hierarchy and metadata remain readable at supplied viewport, without clipping or collisions.",
+      "actual": "Search controls, field-specific highlights, result metadata, cyan focus treatment and pagination visible. At 900x700 date control and transcript excerpt wrap without observed collision.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/search/search-matches-dark-900x700.png",
+      "viewport": [
+        900,
+        700
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "Search result hierarchy and metadata remain readable at supplied viewport, without clipping or collisions.",
+      "actual": "Search controls, field-specific highlights, result metadata, cyan focus treatment and pagination visible. At 900x700 date control and transcript excerpt wrap without observed collision.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/search/search-matches-light-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "Search result hierarchy and metadata remain readable at supplied viewport, without clipping or collisions.",
+      "actual": "Search controls, field-specific highlights, result metadata, cyan focus treatment and pagination visible. At 900x700 date control and transcript excerpt wrap without observed collision.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/search/search-matches-light-1536x960.png",
+      "viewport": [
+        1536,
+        960
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "Search result hierarchy and metadata remain readable at supplied viewport, without clipping or collisions.",
+      "actual": "Search controls, field-specific highlights, result metadata, cyan focus treatment and pagination visible. At 900x700 date control and transcript excerpt wrap without observed collision.",
+      "verdict": "pass (visual only)"
+    },
+    {
+      "screenshot": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/backup-filter-clarity-retest/search/search-matches-light-900x700.png",
+      "viewport": [
+        900,
+        700
+      ],
+      "steps": "Independently opened and visually inspected preserved refreshed screenshot with Read tool. No app/server launched for this offline inspection.",
+      "expected": "Search result hierarchy and metadata remain readable at supplied viewport, without clipping or collisions.",
+      "actual": "Search controls, field-specific highlights, result metadata, cyan focus treatment and pagination visible. At 900x700 date control and transcript excerpt wrap without observed collision.",
+      "verdict": "pass (visual only)"
+    }
+  ],
+  "limitations": "Static screenshots do not verify filtering correctness, keyboard/screen-reader behavior, backend integrity, native backup/restore, or current integrated native acceptance. No product edits or server start."
+}

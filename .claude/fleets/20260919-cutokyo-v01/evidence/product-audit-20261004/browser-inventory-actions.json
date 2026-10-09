@@ -1,0 +1,100 @@
+[
+  {
+    "args": [
+      "click",
+      "@e19"
+    ],
+    "exitCode": 1,
+    "output": "\u2717 Unknown ref: e19\n"
+  },
+  {
+    "args": [
+      "snapshot"
+    ],
+    "exitCode": 0,
+    "output": "(empty page)\n"
+  },
+  {
+    "args": [
+      "click",
+      "@e18"
+    ],
+    "exitCode": 1,
+    "output": "\u2717 Unknown ref: e18\n"
+  },
+  {
+    "args": [
+      "snapshot"
+    ],
+    "exitCode": 0,
+    "output": "(empty page)\n"
+  },
+  {
+    "args": [
+      "click",
+      "@e17"
+    ],
+    "exitCode": 1,
+    "output": "\u2717 Unknown ref: e17\n"
+  },
+  {
+    "args": [
+      "snapshot"
+    ],
+    "exitCode": 0,
+    "output": "(empty page)\n"
+  },
+  {
+    "args": [
+      "click",
+      "@e21"
+    ],
+    "exitCode": 1,
+    "output": "\u2717 Unknown ref: e21\n"
+  },
+  {
+    "args": [
+      "snapshot"
+    ],
+    "exitCode": 0,
+    "output": "(empty page)\n"
+  },
+  {
+    "args": [
+      "press",
+      "Escape"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "click",
+      "@e16"
+    ],
+    "exitCode": 1,
+    "output": "\u2717 Unknown ref: e16\n"
+  },
+  {
+    "args": [
+      "snapshot"
+    ],
+    "exitCode": 0,
+    "output": "(empty page)\n"
+  },
+  {
+    "args": [
+      "click",
+      "@e23"
+    ],
+    "exitCode": 1,
+    "output": "\u2717 Unknown ref: e23\n"
+  },
+  {
+    "args": [
+      "snapshot"
+    ],
+    "exitCode": 0,
+    "output": "(empty page)\n"
+  }
+]

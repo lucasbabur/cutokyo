@@ -1,0 +1,61 @@
+{
+  "recorded_at": "2026-10-04T07:52:23.444276+00:00",
+  "scope": "Independent safety/fidelity review of frozen trusted-keyboard helper, health keyboard/quarantine assertions, compositor environment forwarding and matching tests; no app/server launch",
+  "observed_head": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "source_sha256_before": {
+    "ui/tests/tauri/trusted-keyboard.ts": "56d6c2f804a392af53d8b7b57881ffdea7e711dbba3c74a35fc89f7c0f3347ac",
+    "ui/tests/tauri/trusted-keyboard.test.ts": "6483c316fa000f7850d9086c801a8b29e24a96748f06d1f9edfa901fb92df8ce",
+    "ui/tests/tauri/zz-health-capabilities.spec.ts": "2eec4011b9d05a1046fba303e397194603092601ea0c8441cdd37d5723c919fa",
+    "ui/scripts/native-e2e.py": "949bddaaa78bd02499ce9e9ba14e5f22fa371eb195caf314b9d39717da001a29",
+    "ui/scripts/test_native_e2e.py": "2702d16d69668d6ad3c7c1cfee6399cfa87871a9554fa9be8d4fb9d3b84ccd57"
+  },
+  "source_sha256_after": {
+    "ui/tests/tauri/trusted-keyboard.ts": "56d6c2f804a392af53d8b7b57881ffdea7e711dbba3c74a35fc89f7c0f3347ac",
+    "ui/tests/tauri/trusted-keyboard.test.ts": "6483c316fa000f7850d9086c801a8b29e24a96748f06d1f9edfa901fb92df8ce",
+    "ui/tests/tauri/zz-health-capabilities.spec.ts": "2eec4011b9d05a1046fba303e397194603092601ea0c8441cdd37d5723c919fa",
+    "ui/scripts/native-e2e.py": "949bddaaa78bd02499ce9e9ba14e5f22fa371eb195caf314b9d39717da001a29",
+    "ui/scripts/test_native_e2e.py": "2702d16d69668d6ad3c7c1cfee6399cfa87871a9554fa9be8d4fb9d3b84ccd57"
+  },
+  "reviewed_sources_unchanged_during_checks": true,
+  "checks": [
+    {
+      "command": [
+        "/home/lucas/.nvm/versions/node/v22.22.3/bin/node",
+        "--import",
+        "/home/lucas/Developer/personal/cutokyo-community/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx/dist/loader.mjs",
+        "--test",
+        "/home/lucas/Developer/personal/cutokyo-community/ui/tests/tauri/trusted-keyboard.test.ts"
+      ],
+      "cwd": "/home/lucas/Developer/personal/cutokyo-community/ui",
+      "exit_code": 0,
+      "transcript": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/trusted-keyboard-helper-review/node-ownership-regressions.log"
+    },
+    {
+      "command": [
+        "python3",
+        "-B",
+        "/home/lucas/Developer/personal/cutokyo-community/ui/scripts/test_native_e2e.py",
+        "NativePackageHarness.test_concurrent_roots_ports_and_runtime_home_are_isolated",
+        "NativePackageHarness.test_x11_requires_a_real_display_and_never_invents_one",
+        "NativePackageHarness.test_compositor_environment_preserves_host_socket_only_for_scoped_helper",
+        "NativePackageHarness.test_missing_compositor_environment_is_not_invented",
+        "NativePackageHarness.test_runtime_environment_excludes_credentials_and_loader_hooks",
+        "-v"
+      ],
+      "cwd": "/home/lucas/Developer/personal/cutokyo-community/ui",
+      "exit_code": 0,
+      "transcript": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/trusted-keyboard-helper-review/python-runtime-regressions.log"
+    }
+  ],
+  "concrete_findings": [],
+  "verdict": "No concrete safety/fidelity issue found in inspected scope; native aggregate still pending",
+  "verified_properties": [
+    "Exact extracted executable path -> unique PID -> unique mapped compositor address; identity pinned across keys and revalidated after dispatch",
+    "Invalid/ambiguous ownership, foreign active XWayland, malformed compositor output, dispatcher refusal, active-window change and missing tooling block further keys; no fallback",
+    "Only Tab and Return explicitly address-targeted; no shell interpolated command, no focuswindow/global dispatch",
+    "Host socket path forwarded under dedicated variable; only hyprctl child replaces XDG_RUNTIME_DIR; application HOME/XDG private and credentials/loader hooks excluded",
+    "Native spec initializes body focus, tests Tab-to-skip and Return-to-main, orders trusted events, preserves MAIN/id/URL/heading expectations, records failures and cleans recorder",
+    "Quarantine Last success assertion binds by native dimension name and requires Unknown rather than epoch-zero success"
+  ],
+  "limitations": "Node regressions use mocked process/compositor IO and do not establish native aggregate passage. This review launches no native app/server. Actual private native proof is separately retained."
+}

@@ -28,8 +28,7 @@ use cutokyo_core::{
             CodexSetupSpec, SetupPhase,
         },
         opencode::{
-            OPENCODE_PLUGIN_SOURCE, OpenCodeResumeLauncher, OpenCodeSetup, SetupFault, SetupMode,
-            SetupSubsystemStatus,
+            OpenCodeResumeLauncher, OpenCodeSetup, SetupFault, SetupMode, SetupSubsystemStatus,
         },
     },
     analysis::{
@@ -40,7 +39,6 @@ use cutokyo_core::{
     },
     app::{Application, DELETE_ALL_CONFIRMATION, LocalCore, RuntimePaths, SessionSearch},
     bundle::{BundleDiagnostic, build_diagnostic_bundle},
-    guards::{BufferedSecretGuard, GuardChannel, REDACTION_MARKER, SecretGuard},
     mcp::{
         BrokerError, BrokerErrorCode, BrokerFuture, McpBroker, McpUpstreamConfig,
         McpUpstreamConnector, McpUpstreamTransport,
@@ -51,9 +49,11 @@ use cutokyo_core::{
         ProviderTransport, ProxyConfig, ProxyConsent, ProxyErrorCode, ProxyFactAvailability,
         ProxyListenerReceipt, ProxyRoute, ProxyTrace, ProxyTraceSink,
     },
+    redaction::{BufferedRedactor, REDACTION_MARKER, RedactionBoundary, Redactor},
     store::{
         DATABASE_SCHEMA_VERSION, DERIVE_VERSION, DiagnosticRowCounts, HealthDimension,
-        HealthSnapshot, HealthStatus, LockOwner, RetentionPlan, SearchQuery, SearchResult,
+        HealthSnapshot, HealthStatus, LockOwner, RetentionPlan, SearchMode, SearchQuery,
+        SearchResult, SearchSort,
     },
 };
 use cutokyo_desktop::health_binding_value;
@@ -353,7 +353,7 @@ fn opencode_setup_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
         fs::set_permissions(&unmanaged_config, fs::Permissions::from_mode(0o640))?;
     }
     let original_mode = config_mode(&unmanaged_config)?;
-    let setup = OpenCodeSetup::new(&config, &state);
+    let setup = OpenCodeSetup::new(&config, &state, state.join("spool"), c16_binary());
 
     let dry_run = setup.run(SetupMode::DryRun, SetupFault::None)?;
     assert!(!dry_run.changed);
@@ -364,7 +364,7 @@ fn opencode_setup_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
     assert!(applied.changed);
     assert_eq!(
         fs::read_to_string(setup.plugin_path())?,
-        OPENCODE_PLUGIN_SOURCE
+        setup.plugin_source()
     );
     assert!(!setup.run(SetupMode::Apply, SetupFault::None)?.changed);
 
@@ -384,6 +384,8 @@ fn opencode_setup_roundtrip_recovers_interruption_and_concurrent_drift()
     let setup = OpenCodeSetup::new(
         temporary_home.path().join(".config/opencode"),
         temporary_home.path().join(".local/state/cutokyo"),
+        temporary_home.path().join(".local/state/cutokyo/spool"),
+        c16_binary(),
     );
     let interrupted = setup.run(SetupMode::Apply, SetupFault::AfterPluginWrite);
     assert_eq!(
@@ -719,6 +721,9 @@ fn assert_scenario_search_and_plan(core: &LocalCore, scenario: &HarnessScenario)
         skill: Some(fields.skill.to_owned()),
         agent: Some(agent),
         limit: 1,
+        offset: 0,
+        mode: SearchMode::Terms,
+        sort: SearchSort::Relevance,
     })?;
     assert_eq!(combined.len(), 1);
     assert_eq!(combined[0].session_id.as_str(), scenario.cutokyo_session_id);
@@ -895,7 +900,7 @@ fn seed_deletion_contract(core: &LocalCore) -> TestResult {
         "session:e2e:retention-target",
         &retention_target,
     )?)?;
-    assert_eq!(row_counts(&core.diagnostic_row_counts()?), (4, 4, 4, 4, 2));
+    assert_eq!(row_counts(&core.diagnostic_row_counts()?), (4, 4, 4, 12, 2));
     Ok(())
 }
 
@@ -910,10 +915,10 @@ fn assert_one_session_deletion(core: &LocalCore) -> TestResult {
             preview.fts_rows,
             preview.summaries,
         ),
-        (1, 1, 1, 1, 1)
+        (1, 1, 1, 3, 1)
     );
     assert_eq!(core.delete_session(&delete_id)?, preview);
-    assert_eq!(row_counts(&core.diagnostic_row_counts()?), (3, 3, 3, 3, 1));
+    assert_eq!(row_counts(&core.diagnostic_row_counts()?), (3, 3, 3, 9, 1));
     assert!(core.session(delete_id.as_str())?.is_none());
     assert!(
         core.search(&SearchQuery {
@@ -948,7 +953,7 @@ fn preview_retention_contract(core: &LocalCore) -> TestResult<RetentionPlan> {
             plan.fts_rows,
             plan.summaries,
         ),
-        (1, 1, 1, 1)
+        (1, 1, 3, 1)
     );
     assert!(!plan.plan_digest.is_empty());
     Ok(plan)
@@ -1181,7 +1186,7 @@ fn assert_opencode_setup_roundtrip(
         fs::set_permissions(&unmanaged, fs::Permissions::from_mode(0o640))?;
     }
     let original_mode = config_mode(&unmanaged)?;
-    let setup = OpenCodeSetup::new(&config, &state);
+    let setup = OpenCodeSetup::new(&config, &state, state.join("spool"), c16_binary());
     let dry_run = setup.run(SetupMode::DryRun, SetupFault::None)?;
     assert!(!dry_run.changed);
     assert_eq!(dry_run.plugin, SetupSubsystemStatus::Planned);
@@ -1213,7 +1218,7 @@ fn assert_opencode_setup_roundtrip(
     assert!(intent_position < mutation_position);
     assert_eq!(
         fs::read_to_string(setup.plugin_path())?,
-        OPENCODE_PLUGIN_SOURCE
+        setup.plugin_source()
     );
     let state_json: Value =
         serde_json::from_slice(&fs::read(state.join("opencode-setup.v1.json"))?)?;
@@ -1392,7 +1397,12 @@ fn assert_opencode_cleanup_recovery() -> TestResult {
     let opencode_recovery = tempfile::tempdir()?;
     let opencode_config = opencode_recovery.path().join("config/opencode");
     let opencode_state = opencode_recovery.path().join("data/opencode");
-    let opencode_setup = OpenCodeSetup::new(&opencode_config, &opencode_state);
+    let opencode_setup = OpenCodeSetup::new(
+        &opencode_config,
+        &opencode_state,
+        opencode_recovery.path().join("spool"),
+        c16_binary(),
+    );
     let interrupted = opencode_setup
         .run(SetupMode::Apply, SetupFault::AfterIntent)
         .err()
@@ -1433,6 +1443,8 @@ fn assert_opencode_state_worlds() -> TestResult {
     let opencode_state_setup = OpenCodeSetup::new(
         opencode_states.path().join("config/opencode"),
         &opencode_state_root,
+        opencode_states.path().join("spool"),
+        c16_binary(),
     );
     assert!(
         !opencode_state_setup
@@ -1461,6 +1473,8 @@ fn assert_opencode_concurrent_edit() -> TestResult {
     let opencode_concurrent_setup = OpenCodeSetup::new(
         opencode_concurrent.path().join("config/opencode"),
         opencode_concurrent.path().join("data/opencode"),
+        opencode_concurrent.path().join("spool"),
+        c16_binary(),
     );
     let stale_plan = opencode_concurrent_setup.plan(SetupMode::Apply)?;
     fs::create_dir_all(
@@ -1492,6 +1506,8 @@ fn assert_opencode_permission_preservation() -> TestResult {
     let opencode_permissions_setup = OpenCodeSetup::new(
         opencode_permissions.path().join("config/opencode"),
         opencode_permissions.path().join("data/opencode"),
+        opencode_permissions.path().join("spool"),
+        c16_binary(),
     );
     fs::create_dir_all(
         opencode_permissions_setup
@@ -1501,7 +1517,7 @@ fn assert_opencode_permission_preservation() -> TestResult {
     )?;
     fs::write(
         opencode_permissions_setup.plugin_path(),
-        OPENCODE_PLUGIN_SOURCE,
+        opencode_permissions_setup.plugin_source().as_bytes(),
     )?;
     fs::set_permissions(
         opencode_permissions_setup.plugin_path(),
@@ -1620,6 +1636,8 @@ fn assert_opencode_unsafe_targets() -> TestResult {
     let opencode_symlink_setup = OpenCodeSetup::new(
         opencode_symlink.path().join("config/opencode"),
         opencode_symlink.path().join("data/opencode"),
+        opencode_symlink.path().join("spool"),
+        c16_binary(),
     );
     fs::create_dir_all(
         opencode_symlink_setup
@@ -1641,6 +1659,8 @@ fn assert_opencode_unsafe_targets() -> TestResult {
     let opencode_directory_setup = OpenCodeSetup::new(
         opencode_directory.path().join("config/opencode"),
         opencode_directory.path().join("data/opencode"),
+        opencode_directory.path().join("spool"),
+        c16_binary(),
     );
     fs::create_dir_all(opencode_directory_setup.plugin_path())?;
     let opencode_directory_error = opencode_directory_setup
@@ -1679,7 +1699,7 @@ fn synthetic_secret() -> String {
 #[test]
 fn synthetic_secret_leak_scan() -> Result<(), Box<dyn std::error::Error>> {
     let secret = synthetic_secret();
-    let guard = SecretGuard::new()?;
+    let guard = Redactor::new()?;
     let mut artifacts = Vec::new();
 
     let mut headers = BTreeMap::new();
@@ -1688,25 +1708,25 @@ fn synthetic_secret_leak_scan() -> Result<(), Box<dyn std::error::Error>> {
     artifacts.push(
         guard
             .redact_text(
-                GuardChannel::Url,
+                RedactionBoundary::Url,
                 &format!("https://provider.invalid/path?access_token={secret}"),
             )?
             .value,
     );
     artifacts.push(serde_json::to_string(&guard.redact_json(
-        GuardChannel::Projection,
+        RedactionBoundary::Projection,
         &json!({"nested":{"tool_output":["safe", secret]}}),
     )?)?);
     artifacts.push(
         guard
             .redact_text(
-                GuardChannel::Log,
+                RedactionBoundary::Log,
                 &format!("line one\nTOKEN={secret}\nline three"),
             )?
             .value,
     );
     let complete = format!("split-tool-output:{secret}");
-    let mut buffered = BufferedSecretGuard::new(guard.clone(), GuardChannel::ToolOutput);
+    let mut buffered = BufferedRedactor::new(guard.clone(), RedactionBoundary::ToolOutput);
     let midpoint = complete.len() / 2;
     buffered.push(&complete.as_bytes()[..midpoint])?;
     buffered.push(&complete.as_bytes()[midpoint..])?;
@@ -1728,8 +1748,7 @@ fn synthetic_secret_leak_scan() -> Result<(), Box<dyn std::error::Error>> {
         "sha256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "session_title=Quarterly architecture review",
     ] {
-        let guarded = guard.redact_text(GuardChannel::Log, benign)?;
-        assert!(guarded.findings.is_empty());
+        let guarded = guard.redact_text(RedactionBoundary::Log, benign)?;
         assert_eq!(guarded.value, benign);
     }
     Ok(())
@@ -1830,7 +1849,7 @@ fn proxy_consent_precedence_fail_open() -> Result<(), Box<dyn std::error::Error>
 
     let denied = proxy
         .activate(
-            ProxyConfig::default(),
+            &ProxyConfig::default(),
             &e2e_proxy_consent(false),
             &e2e_proxy_listener(),
         )
@@ -1839,10 +1858,7 @@ fn proxy_consent_precedence_fail_open() -> Result<(), Box<dyn std::error::Error>
     assert_eq!(denied.code, ProxyErrorCode::ConsentRequired);
 
     proxy.activate(
-        ProxyConfig {
-            outgoing_guard_enabled: true,
-            ..ProxyConfig::default()
-        },
+        &ProxyConfig::default(),
         &e2e_proxy_consent(true),
         &e2e_proxy_listener(),
     )?;
@@ -1860,8 +1876,8 @@ fn proxy_consent_precedence_fail_open() -> Result<(), Box<dyn std::error::Error>
         captured[0].headers.get("Authorization"),
         Some(&format!("Bearer {secret}"))
     );
-    assert!(!captured[0].url.contains(&secret));
-    assert!(!captured[0].body.contains(&secret));
+    assert!(captured[0].url.contains(&secret));
+    assert!(captured[0].body.contains(&secret));
     drop(captured);
 
     proxy.mark_failed("synthetic listener failure")?;
@@ -1872,33 +1888,10 @@ fn proxy_consent_precedence_fail_open() -> Result<(), Box<dyn std::error::Error>
         1
     );
 
-    let blocked_calls = Arc::new(Mutex::new(Vec::new()));
-    let mut guarded_proxy = ProviderProxy::disabled(
-        E2eProxyTransport {
-            calls: Arc::clone(&blocked_calls),
-        },
-        FailingTraceSink,
-    )?;
-    guarded_proxy.activate(
-        ProxyConfig {
-            outgoing_guard_enabled: true,
-            body_inspectable: false,
-            ..ProxyConfig::default()
-        },
-        &e2e_proxy_consent(true),
-        &e2e_proxy_listener(),
-    )?;
-    let blocked = guarded_proxy
-        .route(e2e_proxy_request("provider-credential"))
-        .err()
-        .ok_or("uninspectable guarded request was forwarded")?;
-    assert_eq!(blocked.code, ProxyErrorCode::GuardBlocked);
-    assert!(
-        blocked_calls
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .is_empty()
-    );
+    let removed_setting = serde_json::from_value::<ProxyConfig>(json!({
+        "bind": "127.0.0.1:0", "allow_non_loopback": false, "outgoing_guard_enabled": true
+    }));
+    assert!(removed_setting.is_err());
     Ok(())
 }
 

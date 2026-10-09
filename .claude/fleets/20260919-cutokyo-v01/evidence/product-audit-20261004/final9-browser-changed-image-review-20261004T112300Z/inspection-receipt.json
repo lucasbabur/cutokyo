@@ -1,0 +1,182 @@
+{
+  "scope": "Independent final9 artifact-only browser follow-up",
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "dirty_working_tree": true,
+  "clean_release_proof": false,
+  "verdict": "PASS_BOUNDED_BROWSER_RENDER_ONLY",
+  "comparison": {
+    "baseline": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final8-browser-changed-image-review-20261004T110658Z/manifest.json",
+    "total": 88,
+    "changed": 7,
+    "unchanged": 81,
+    "individually_read_this_followup": 7,
+    "dimensions": {
+      "1280x800": 29,
+      "1536x960": 28,
+      "900x700": 31
+    },
+    "unchanged_images_not_reread_this_followup": true
+  },
+  "actual_execution": {
+    "browser_passed": 36,
+    "browser_reporter_seconds": 42.7,
+    "browser_command_seconds": 43.27,
+    "all_six_recorded_commands_exit0": true,
+    "frontend_reported_totals": {
+      "react": 156,
+      "python": 25,
+      "node": 34
+    },
+    "reviewer_reran": false
+  },
+  "changed_images": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/analysis-consent-1536x960.png",
+      "sha256": "79e9e42c986ba0797f8163fd3e24b1f4ca0b573530885bb57360c23fbb8402a0",
+      "final8_sha256": "16e3966eff7b43a63e82792a71721fae53d4d5fa572fceb677ba5ff1b4d868c5",
+      "changed_vs_final8": true,
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "read_inspected_this_followup": true,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final9-browser-changed-image-review-20261004T112300Z/evidence/final/screens/analysis-consent-1536x960.png",
+      "inspection_method": "Individual actual original PNG displayed through functions.Read",
+      "expected": "Truthful labels, legible hierarchy and visible relevant controls at actual viewport.",
+      "actual": "Warm-paper consent modal fits; synthetic provider/model explicit; estimated1240 tokens/Unknown price and no-authoritative-price notice; payload scope/redaction/Cancel-send-nothing/Confirm footer readable.",
+      "rendered_regression": null
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/session-resume-1536x960.png",
+      "sha256": "93495644c31902962752fc3b46e47d8578dae7730e9c3b52a5091bf680cb46e9",
+      "final8_sha256": "1fb8182cabd6c7d14eb80aef1c42c5d987a6e6db29cd9e925515a1802805a9b1",
+      "changed_vs_final8": true,
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "read_inspected_this_followup": true,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final9-browser-changed-image-review-20261004T112300Z/evidence/final/screens/session-resume-1536x960.png",
+      "inspection_method": "Individual actual original PNG displayed through functions.Read",
+      "expected": "Truthful labels, legible hierarchy and visible relevant controls at actual viewport.",
+      "actual": "Exact claude-jev-73A9 preview and explicitly unknown recorded cwd; startup-not-activation caveat; footer fits. Dark primary Resume styling does not establish enabled semantics or native launch; preconfirmation fixture only.",
+      "rendered_regression": null
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/settings-conflict-900x700.png",
+      "sha256": "e2beb351bee9531a379a4fa87838f964e0271ddf95f0b8921871c95a1be58566",
+      "final8_sha256": "e9019d258f0f4c45d98003282be27840d6180a21992a908f76764434e21bd31d",
+      "changed_vs_final8": true,
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "read_inspected_this_followup": true,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final9-browser-changed-image-review-20261004T112300Z/evidence/theme/screens/settings-conflict-900x700.png",
+      "inspection_method": "Individual actual original PNG displayed through functions.Read",
+      "expected": "Truthful labels, legible hierarchy and visible relevant controls at actual viewport.",
+      "actual": "System winner/light-not-saved conflict readable and System selected; native management/search MCP controls and unavailable proxy visible; no clipping.",
+      "rendered_regression": null
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/skill-editor-dark-1280x800.png",
+      "sha256": "5cc6cea7d2ccf04e69e6fb959ebc872b7dab571acc44d1cc074d76d8bbd85f81",
+      "final8_sha256": "37abc5c5495c19458ac2b8595488fcb4907a617b43364dacd5bd3705f2ec478b",
+      "changed_vs_final8": true,
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected_this_followup": true,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final9-browser-changed-image-review-20261004T112300Z/evidence/management/screens/skill-editor-dark-1280x800.png",
+      "inspection_method": "Individual actual original PNG displayed through functions.Read",
+      "expected": "Truthful labels, legible hierarchy and visible relevant controls at actual viewport.",
+      "actual": "OpenCode/project/source and native-edit/no-provider scope explicit; monospaced markdown legible; footer fits. Dim unchanged-content Save not inferred to be a defect.",
+      "rendered_regression": null
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/skill-editor-light-900x700.png",
+      "sha256": "1ef164aa492da21ffce07ae12b03df0a64dd68eede73105239b4d07de49ab78c",
+      "final8_sha256": "7926aa0b09b861f70c8f50860ae3d2ab0a4acdcecfce6f435d88101ceea0c072",
+      "changed_vs_final8": true,
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "read_inspected_this_followup": true,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final9-browser-changed-image-review-20261004T112300Z/evidence/management/screens/skill-editor-light-900x700.png",
+      "inspection_method": "Individual actual original PNG displayed through functions.Read",
+      "expected": "Truthful labels, legible hierarchy and visible relevant controls at actual viewport.",
+      "actual": "Compact warm-paper editor retains clear identity/source/action hierarchy; content legible and fixed footer fits; scrollable content not a clipping claim.",
+      "rendered_regression": null
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/search/search-matches-dark-1280x800.png",
+      "sha256": "bd44766c816cdac8b3046be5c86c9759f315eebc7c873b8c98b3584ca6afa7ea",
+      "final8_sha256": "50cdc9099942c3887e63fe0300165ede3b4cc0e21e629ad2fec409588d9fe73d",
+      "changed_vs_final8": true,
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected_this_followup": true,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final9-browser-changed-image-review-20261004T112300Z/evidence/management/search/search-matches-dark-1280x800.png",
+      "inspection_method": "Individual actual original PNG displayed through functions.Read",
+      "expected": "Truthful labels, legible hierarchy and visible relevant controls at actual viewport.",
+      "actual": "Focus ring, exact matching-source highlights, raw token counts, complete badge and pagination legible; restrained rows align without overlap.",
+      "rendered_regression": null
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/search/search-matches-dark-900x700.png",
+      "sha256": "c81bb6725a4b7f6cc98ec6e36853a15a393d7e39fffe45c30636922d23a0db18",
+      "final8_sha256": "71a9863f7ee399b04c5060a15007f815c7807f1699fd2a863a7ce690face8342",
+      "changed_vs_final8": true,
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "read_inspected_this_followup": true,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final9-browser-changed-image-review-20261004T112300Z/evidence/management/search/search-matches-dark-900x700.png",
+      "inspection_method": "Individual actual original PNG displayed through functions.Read",
+      "expected": "Truthful labels, legible hierarchy and visible relevant controls at actual viewport.",
+      "actual": "Compact filter/date wrapping and highlighted result metadata/transcript readable; focused search and pagination fit; no overlapping controls.",
+      "rendered_regression": null
+    }
+  ],
+  "findings": [],
+  "visual_judgment": "No new concrete rendered regression in seven changed actual PNGs. Graphite/warm-paper/cyan focus/vermilion error direction remains coherent. Browser fixture success does not close native setup screenshot contradictions or collapsed completed-management layout found in separate replay.",
+  "gaps": [
+    "Browser CommandClient fixtures are not native Tauri/installed-provider proof.",
+    "No new whole-app native keyboard/screen-reader/reduced-motion assessment.",
+    "Preconfirmation resume image is not post-launch success or failure.",
+    "Fresh native7 pending; no prediction."
+  ],
+  "evidence": {
+    "receipt": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final9-browser-changed-image-review-20261004T112300Z/inspection-receipt.json",
+    "manifest": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final9-browser-changed-image-review-20261004T112300Z/manifest.json",
+    "raw": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/browser-final9-review-20261004T112300Z",
+    "run_evidence": [
+      {
+        "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/final9-browser-e2e-20261004.log",
+        "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/browser-final9-review-20261004T112300Z/final9-browser-e2e-20261004.log",
+        "sha256": "47dd0741a8b08471d6d57d60fa3c0e32fd58d0c28e2ca97909da3307f3bc1bbc"
+      },
+      {
+        "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/final9-frontend-static-executed-20261004.json",
+        "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/browser-final9-review-20261004T112300Z/final9-frontend-static-executed-20261004.json",
+        "sha256": "81f090d22b15121ce8b79106e7a0de969c52e0aeaf9e3c6758835673b9a9affa"
+      },
+      {
+        "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/final9-frontend-check-20261004.log",
+        "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/browser-final9-review-20261004T112300Z/final9-frontend-check-20261004.log",
+        "sha256": "2f85148d78258b8ffbe0297f01a91bf27795348fbcab735cf3c723ab17d1feec"
+      }
+    ]
+  },
+  "reviewer_actions": {
+    "app_browser_provider_compositor_launches_or_dispatches": 0,
+    "source_test_fixture_config_tracked_output_edits": 0,
+    "git_operations": 0,
+    "fixture_regeneration": false
+  }
+}

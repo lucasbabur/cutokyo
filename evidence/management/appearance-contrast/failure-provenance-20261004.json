@@ -1,0 +1,12 @@
+{
+  "raw_log": "evidence/management/checks/post-copy-repairs-web-20261004.log",
+  "command_exit_code": 1,
+  "failed": 1,
+  "passed": 35,
+  "files": {
+    "pending-save-light-failure-20261004.png": "fae40233a8bdd29a2dc38e1d28672a57276fff52d3703519140ca0ac048bb6e1",
+    "pending-save-light-error-20261004.md": "c98e753fa88a9eb6a43956ad66d9d48269ff4fe828a4479b8ad45c41a79498df"
+  },
+  "source_spec_sha256": "dc4e4e05ab22484c541b748fe78a710aaddcb3f5b2ac820885e0be33cef1b809",
+  "no_waivers": true
+}

@@ -1,0 +1,33 @@
+{
+  "recorded_at": "2026-10-04T07:21:28.825711+00:00",
+  "key": "NQA-KEYBOARD-01",
+  "owner": "integration",
+  "severity": "Medium",
+  "native_product_journey": "PASS in three repetitions on fresh extraction of retained package",
+  "maintained_gate_status": "Integration remediation pending; embedded WDIO Enter reproduces original failure and cannot substitute for native trusted keyboard proof",
+  "diagnosis": "In the same settled native Sessions route, verified skip-link focus plus embedded /actions Enter retains A.skip-link with empty id and no activation click. Targeted Hyprland Tab/Return produces trusted events, activates standard link and focuses main-content without route change. This differential establishes the embedded-driver activation limitation for the tested failure; no AppShell handler change needed for tested native journey.",
+  "environment": "Linux / Hyprland 0.53.3 / XWayland GDK x11 / actual retained Debian-packaged Tauri / embedded WebDriver for observation / trusted compositor keys for activation / 1280x800",
+  "steps": [
+    "Created new cutokyo-native-test-wdio-keyboard-* root, extracted retained Debian package and verified package/application/CLI/fake-helper digests",
+    "Launched exactly one private app with isolated HOME and XDG directories, filtered environment without providers; verified listener ownership by native app PID",
+    "Verified exact PID, extracted executable path and compositor address before every targeted sendshortcut",
+    "Reproduced embedded failure on verified focused skip link",
+    "Reset only native DOM initial focus to body, preserving original body tabindex; trusted Tab traversed to skip; trusted Return activated it; main-content focused and Sessions URL unchanged",
+    "Repeated trusted journey three times; captured and visually read native Tab/Enter screenshots",
+    "Deleted owned driver session; stopped and waited for owned process group; no live group or package PID remained"
+  ],
+  "expected": "Trusted body-to-skip Tab traversal; Enter focuses main-content; URL unchanged; no click/direct-main-focus fallback",
+  "actual": "All three trusted repetitions pass with isTrusted true key and click event evidence. Embedded baseline fails exactly as original. Compositor active-window address unchanged around each dispatch.",
+  "evidence": [
+    "native-keyboard-results.json",
+    "package-launch.json",
+    "native-trusted-tab-1280x800.png",
+    "native-trusted-enter-1280x800.png"
+  ],
+  "recommendation": "A fail-closed native-key helper should target only the runner-verified application PID/address, verify /proc/PID/exe and current compositor client immediately before each dispatch, refuse a foreign active XWayland window per 0.53.3 source caveat, send only explicit , Tab, address:... or , Return, address:..., and assert compositor active address unchanged. Keep native focused-element and unchanged-URL assertions plus trusted event checks. Unsupported compositor/backend means blocked, not click fallback.",
+  "source_urls": [
+    "https://wiki.hypr.land/0.52.0/Configuring/Dispatchers/",
+    "https://raw.githubusercontent.com/hyprwm/Hyprland/v0.53.3/src/managers/KeybindManager.cpp"
+  ],
+  "limitations": "Targeted native keyboard diagnosis only; retained package not rebuilt by reviewer; does not establish full native suite or all Fleet journeys passing. Three installed harnesses were not called in this probe. No product/tests/fixtures/config edits."
+}

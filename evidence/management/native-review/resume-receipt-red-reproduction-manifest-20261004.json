@@ -1,0 +1,28 @@
+{
+  "archive": "evidence/management/native-review/resume-receipt-red-reproduction-20261004.tar.gz",
+  "sha256": "1bebecacf0e3521af6a4da5afa0181c24286aa4534a14ad5112d42953ac212b8",
+  "members": [
+    {
+      "name": "resume-receipt-red-original-20261004.log",
+      "sha256": "a3caff9c3353d2ec374987d78b34d42c9badb367ec86ced3b5fd19ced5de0b91",
+      "byte_length": 10138
+    },
+    {
+      "name": "resume-receipt-red-original-executed-20261004.json",
+      "sha256": "2943cefeb74191794ca3ac742a90132e9cc46bcd9fbbd6f1157b1f4ce6d547e9",
+      "byte_length": 1239
+    },
+    {
+      "name": "native-resume-receipt.test.tsx",
+      "sha256": "c76b889b879cfb36eae5680b4735e8b39bace59b184e0c02000d063024adca40",
+      "byte_length": 1715
+    },
+    {
+      "name": "resume-review.vitest.config.mjs",
+      "sha256": "0392a695c8a0427f1360ab784a31a43b80a5698f9cf62bc1c70d8c415c1e0b2c",
+      "byte_length": 390
+    }
+  ],
+  "scope": "original actual-shaped independent red reproduction before producer repair",
+  "raw_log_is_captured_tool_result_with_explicit_truncation_not_unabridged_stdout": true
+}

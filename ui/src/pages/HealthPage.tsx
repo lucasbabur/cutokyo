@@ -1,11 +1,5 @@
-import {
-  Archive,
-  DatabaseZap,
-  FileWarning,
-  LockKeyhole,
-  Stethoscope,
-} from "lucide-react";
-import { useState } from "react";
+import { Archive, Check, CircleDashed, Stethoscope } from "lucide-react";
+import { useRef, useState } from "react";
 
 import { useCommands, useCommandResource } from "../commands/context.js";
 import type { BundlePreview, DoctorReport } from "../contracts.js";
@@ -13,19 +7,22 @@ import { useAnnounce } from "../components/Announcer.js";
 import {
   Button,
   DefinitionList,
-  Disclosure,
   ErrorState,
   LoadingState,
   Modal,
   PageHeader,
-  RouteNotice,
   StatusPill,
   SuccessMessage,
   formatBytes,
   formatDateTime,
 } from "../components/Primitives.js";
+import { RouteNotice } from "../components/Notices.js";
 
-export function HealthPage() {
+export function HealthPage({
+  onHealthChange,
+}: {
+  readonly onHealthChange?: () => void;
+}) {
   const commands = useCommands();
   const resource = useCommandResource(() => commands.getHealth(), "health");
   const [busyDimension, setBusyDimension] = useState<string | null>(null);
@@ -33,10 +30,16 @@ export function HealthPage() {
   const [bundle, setBundle] = useState<BundlePreview | "loading" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [bundleError, setBundleError] = useState<string | null>(null);
+  const [bundleBusy, setBundleBusy] = useState(false);
+  const retryInFlight = useRef(false);
+  const bundleInFlight = useRef(false);
+  const doctorRequest = useRef(0);
+  const bundleRequest = useRef(0);
   const announce = useAnnounce();
 
   if (resource.state === "loading" && resource.data === null) {
-    return <LoadingState label="Reading persisted health projection" />;
+    return <LoadingState label="Loading health" />;
   }
   if (resource.state === "error" && resource.data === null) {
     return (
@@ -49,67 +52,119 @@ export function HealthPage() {
   }
   const data = resource.data;
   if (data === null) return null;
-  const degraded = data.dimensions.filter(
-    (dimension) => dimension.state === "degraded",
-  );
+  const allHealthy =
+    data.dimensions.length > 0 &&
+    data.dimensions.every((dimension) => dimension.state === "healthy");
 
   const retry = async (dimensionId: string) => {
+    if (retryInFlight.current) return;
+    retryInFlight.current = true;
     setBusyDimension(dimensionId);
     setError(null);
+    setMessage(null);
     try {
       const next = await commands.retryHealth(dimensionId);
+      resource.reload();
+      onHealthChange?.();
+      const target = next.dimensions.find(
+        (dimension) => dimension.id === dimensionId,
+      );
+      if (target?.state !== "healthy") {
+        throw new Error(
+          target?.detail ??
+            "Recovery has not been verified. The health dimension remains unavailable.",
+        );
+      }
       const remaining = next.dimensions.filter(
         (dimension) => dimension.state === "degraded",
       );
-      const announcement = `${dimensionId.replaceAll("_", " ")} recovered. ${remaining.length} unrelated ${remaining.length === 1 ? "dimension remains" : "dimensions remain"} degraded.`;
+      const announcement = `${target.name} recovered. ${remaining.length} unrelated ${remaining.length === 1 ? "dimension remains" : "dimensions remain"} degraded.`;
       announce(announcement);
       setMessage(announcement);
-      resource.reload();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
+      retryInFlight.current = false;
       setBusyDimension(null);
     }
   };
 
+  const closeDoctor = () => {
+    doctorRequest.current += 1;
+    setDoctor(null);
+  };
+  const closeBundle = () => {
+    if (bundleInFlight.current) return;
+    bundleRequest.current += 1;
+    setBundle(null);
+  };
   const runDoctor = async () => {
+    const request = ++doctorRequest.current;
     setDoctor("loading");
+    setError(null);
     try {
-      setDoctor(await commands.runDoctor());
+      const result = await commands.runDoctor();
+      if (doctorRequest.current === request) setDoctor(result);
     } catch (reason) {
+      if (doctorRequest.current !== request) return;
       setDoctor(null);
       setError(reason instanceof Error ? reason.message : String(reason));
     }
   };
   const previewBundle = async () => {
+    const request = ++bundleRequest.current;
     setBundle("loading");
+    setBundleError(null);
+    setError(null);
+    setMessage(null);
     try {
-      setBundle(await commands.previewBundle());
+      const result = await commands.previewBundle();
+      if (bundleRequest.current === request) setBundle(result);
     } catch (reason) {
+      if (bundleRequest.current !== request) return;
       setBundle(null);
       setError(reason instanceof Error ? reason.message : String(reason));
     }
   };
   const createBundle = async () => {
-    const receipt = await commands.createBundle();
-    setBundle(null);
-    setMessage(receipt.message);
-    announce(receipt.message);
+    if (bundleInFlight.current) return;
+    bundleInFlight.current = true;
+    setBundleBusy(true);
+    setBundleError(null);
+    try {
+      const receipt = await commands.createBundle();
+      if (!receipt.ok || receipt.status !== "success")
+        throw new Error(receipt.message);
+      setBundle(null);
+      setMessage(receipt.message);
+      announce(receipt.message);
+    } catch (reason) {
+      setBundleError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      bundleInFlight.current = false;
+      setBundleBusy(false);
+    }
   };
 
+  const attention = data.dimensions.filter((item) => item.state === "degraded");
+  const quiet = data.dimensions.filter((item) => item.state !== "degraded");
   return (
     <div className="page">
       <PageHeader
-        eyebrow="Bounded persisted projection"
-        title="System health"
-        description="Writer lock, spool, quarantine, schema, integrity, rebuild, backup, and restore remain independent. Recovery in one dimension never clears another failure."
+        title="Health"
         actions={
           <>
-            <Button onClick={() => void runDoctor()}>
-              <Stethoscope aria-hidden="true" /> Run doctor
+            <Button
+              disabled={doctor !== null || bundle !== null}
+              onClick={() => void runDoctor()}
+            >
+              <Stethoscope aria-hidden="true" /> Run diagnostics
             </Button>
-            <Button onClick={() => void previewBundle()}>
-              <Archive aria-hidden="true" /> Bundle preview
+            <Button
+              disabled={doctor !== null || bundle !== null}
+              onClick={() => void previewBundle()}
+            >
+              <Archive aria-hidden="true" /> Export report
             </Button>
           </>
         }
@@ -120,120 +175,108 @@ export function HealthPage() {
           {error}
         </p>
       )}
-      {message === null ? null : <SuccessMessage>{message}</SuccessMessage>}
-
-      <section className="health-summary" aria-label="Health summary">
-        <article>
-          <StatusPill state={degraded.length === 0 ? "healthy" : "degraded"}>
-            {degraded.length === 0 ? "Ready" : `${degraded.length} degraded`}
-          </StatusPill>
-          <strong>
-            {degraded.length === 0
-              ? "All bounded checks healthy"
-              : "Attention is useful"}
-          </strong>
-          <span>Snapshot generation is independent of history size.</span>
-        </article>
-        <article>
-          <FileWarning aria-hidden="true" />
-          <div>
-            <span>Quarantine</span>
-            <strong>
-              {data.currentQuarantineCount} current ·{" "}
-              {data.lifetimeQuarantineCount} lifetime
-            </strong>
-          </div>
-        </article>
-        <article>
-          <DatabaseZap aria-hidden="true" />
-          <div>
-            <span>Spool backlog</span>
-            <strong>
-              {data.drainPendingCount} files ·{" "}
-              {formatBytes(data.drainPendingBytes)}
-            </strong>
-          </div>
-        </article>
-        <article>
-          <LockKeyhole aria-hidden="true" />
-          <div>
-            <span>Writer owner</span>
-            <strong>{data.writerOwner ?? "Unknown"}</strong>
-          </div>
-        </article>
-      </section>
-
-      {data.firstAffectedObservationId === null ? null : (
-        <div className="first-affected" role="status">
-          <FileWarning aria-hidden="true" />
-          <div>
-            <span>First currently affected observation</span>
-            <code>{data.firstAffectedObservationId}</code>
-          </div>
+      {message === null ? null : (
+        <div className="toast">
+          <SuccessMessage>{message}</SuccessMessage>
         </div>
       )}
 
-      <section className="panel" aria-labelledby="dimension-heading">
-        <div className="panel__header">
-          <div>
-            <p className="eyebrow">Independent dimensions</p>
-            <h2 id="dimension-heading">Current and lifetime state</h2>
-          </div>
-          <span className="quiet-label">
-            Schema {data.schemaVersion} · derive {data.deriveVersion}
-          </span>
-        </div>
+      <p className="health-line" role="status">
+        {attention.length === 0
+          ? allHealthy
+            ? "All systems healthy"
+            : "Some checks have not run yet"
+          : `${attention.length} ${attention.length === 1 ? "issue" : "issues"}`}
+      </p>
+
+      {attention.length === 0 ? null : (
         <div className="health-dimensions">
-          {data.dimensions.map((dimension) => (
+          {attention.map((dimension) => (
             <article
               key={dimension.id}
               className={`health-dimension health-dimension--${dimension.state}`}
             >
-              <div className="health-dimension__title">
-                <strong>{dimension.name}</strong>
-                <StatusPill state={dimension.state}>
-                  {dimension.state}
-                </StatusPill>
-              </div>
+              <strong>{dimension.name}</strong>
               <p>{dimension.detail}</p>
-              <DefinitionList
-                rows={[
-                  {
-                    term: "Last success",
-                    value: formatDateTime(dimension.lastSuccessAt),
-                  },
-                  {
-                    term: "Last failure",
-                    value: formatDateTime(dimension.lastFailureAt),
-                  },
-                  {
-                    term: "Category",
-                    value: dimension.failureCategory ?? "None",
-                  },
-                ]}
-              />
-              {dimension.actionLabel === null ? null : (
-                <Button
-                  size="small"
-                  variant={
-                    dimension.id === "writer_lock" ? "primary" : "secondary"
-                  }
-                  disabled={busyDimension !== null}
-                  onClick={() => void retry(dimension.id)}
-                >
-                  {busyDimension === dimension.id
-                    ? "Retrying…"
-                    : dimension.actionLabel}
-                </Button>
-              )}
+              <div className="control-row">
+                {dimension.actionLabel === null ? null : (
+                  <Button
+                    size="small"
+                    variant={
+                      dimension.id === "writer_lock" ? "primary" : "secondary"
+                    }
+                    disabled={busyDimension !== null}
+                    onClick={() => void retry(dimension.id)}
+                  >
+                    {busyDimension === dimension.id
+                      ? "Retrying…"
+                      : dimension.actionLabel}
+                  </Button>
+                )}
+              </div>
+              <details className="advanced">
+                <summary>Details</summary>
+                <DefinitionList
+                  rows={[
+                    {
+                      term: "Last success",
+                      value: formatDateTime(dimension.lastSuccessAt),
+                    },
+                    {
+                      term: "Last failure",
+                      value: formatDateTime(dimension.lastFailureAt),
+                    },
+                    {
+                      term: "Category",
+                      value: dimension.failureCategory ?? "None",
+                    },
+                  ]}
+                />
+              </details>
             </article>
           ))}
         </div>
-      </section>
+      )}
 
-      <section className="health-footnotes">
+      {quiet.length === 0 ? null : (
+        <ul className="health-checklist" aria-label="Other checks">
+          {quiet.map((dimension) => (
+            <li key={dimension.id}>
+              {dimension.state === "healthy" ? (
+                <Check aria-hidden="true" />
+              ) : (
+                <CircleDashed aria-hidden="true" />
+              )}
+              <span>{dimension.name}</span>
+              {dimension.state === "healthy" ? null : (
+                <span className="sr-only"> not checked yet</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <details className="advanced">
+        <summary>Technical details</summary>
         <DefinitionList
           rows={[
+            {
+              term: "Quarantine",
+              value: `${data.currentQuarantineCount} current · ${data.lifetimeQuarantineCount} lifetime`,
+            },
+            {
+              term: "Waiting files",
+              value: `${data.drainPendingCount} files · ${formatBytes(data.drainPendingBytes)}`,
+            },
+            { term: "Writer owner", value: data.writerOwner ?? "Unknown" },
+            ...(data.firstAffectedObservationId === null
+              ? []
+              : [
+                  {
+                    term: "First affected record",
+                    value: <code>{data.firstAffectedObservationId}</code>,
+                  },
+                ]),
             {
               term: "Last integrity result",
               value: data.lastIntegrityResult ?? "Not run",
@@ -245,21 +288,27 @@ export function HealthPage() {
                   ? "Unknown"
                   : `${data.drainLagSeconds} seconds`,
             },
-            { term: "Spool cap", value: data.spoolCapReason ?? "Not active" },
+            {
+              term: "Storage limit",
+              value: data.spoolCapReason ?? "Not active",
+            },
+            {
+              term: "Schema",
+              value: `${data.schemaVersion} · derive ${data.deriveVersion}`,
+            },
           ]}
         />
-      </section>
+      </details>
 
       {doctor === null ? null : (
         <Modal
-          title="Doctor report"
-          description="The desktop and CLI read this same persisted health snapshot."
+          title="Diagnostics"
           size="wide"
-          onClose={() => setDoctor(null)}
-          footer={<Button onClick={() => setDoctor(null)}>Done</Button>}
+          onClose={closeDoctor}
+          footer={<Button onClick={closeDoctor}>Done</Button>}
         >
           {doctor === "loading" ? (
-            <LoadingState label="Running bounded diagnostics" />
+            <LoadingState label="Running" />
           ) : (
             <div>
               <StatusPill state={doctor.overall}>
@@ -283,25 +332,32 @@ export function HealthPage() {
 
       {bundle === null ? null : (
         <Modal
-          title="Diagnostic bundle preview"
-          description="Review the bounded manifest before Cutokyo creates a local archive. Nothing is uploaded."
+          title="Export report"
           size="wide"
-          onClose={() => setBundle(null)}
+          onClose={closeBundle}
+          closeDisabled={bundleBusy}
           footer={
             <>
-              <Button onClick={() => setBundle(null)}>Cancel</Button>
+              <Button disabled={bundleBusy} onClick={closeBundle}>
+                Cancel
+              </Button>
               <Button
                 variant="primary"
-                disabled={bundle === "loading"}
+                disabled={bundle === "loading" || bundleBusy}
                 onClick={() => void createBundle()}
               >
-                Create local bundle
+                {bundleBusy ? "Exporting…" : "Export"}
               </Button>
             </>
           }
         >
+          {bundleError === null ? null : (
+            <p className="form-error" role="alert">
+              {bundleError}
+            </p>
+          )}
           {bundle === "loading" ? (
-            <LoadingState label="Projecting safe bundle manifest" />
+            <LoadingState label="Preparing" />
           ) : (
             <div className="bundle-preview">
               <DefinitionList
@@ -329,11 +385,6 @@ export function HealthPage() {
                   ))}
                 </ul>
               </section>
-              <Disclosure>
-                Bundle redaction is not provider-bound request protection.
-                Prompts, transcripts, raw secrets, and full project paths are
-                omitted from this diagnostic artifact.
-              </Disclosure>
             </div>
           )}
         </Modal>

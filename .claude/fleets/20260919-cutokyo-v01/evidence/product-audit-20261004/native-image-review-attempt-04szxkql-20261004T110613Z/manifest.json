@@ -1,0 +1,439 @@
+{
+  "review_created_utc": "20261004T110613Z",
+  "review_root": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z",
+  "raw_root": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z",
+  "original_attempt": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql",
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "revision_qualification": "Dirty integrated working tree; HEAD alone is not immutable source identity or clean release proof.",
+  "artifacts": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/Cutokyo_0.1.0_amd64.deb",
+      "relative": "Cutokyo_0.1.0_amd64.deb",
+      "sha256": "de3e9a6d97825298612da554c8219cc67f461bf7ccb8da2a56e51bd385712316",
+      "bytes": 24183504,
+      "preservation": "retained-original-large-binary-with-independent-hash"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/analysis-unavailable-1280x800.png",
+      "relative": "analysis-unavailable-1280x800.png",
+      "sha256": "e489aa6f5065cfb1e27e1480f3fcda6c219318964910c5496a8a48cf844ffeab",
+      "bytes": 90205,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/analysis-unavailable-1280x800.png"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/appearance-dark-1280x800.png",
+      "relative": "appearance-dark-1280x800.png",
+      "sha256": "b3ade8cb7ea091ef08214d06d67efadc1884b7330332682adc5e30a5c5b28d1a",
+      "bytes": 115301,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/appearance-dark-1280x800.png"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/backup-created-1280x800.png",
+      "relative": "backup-created-1280x800.png",
+      "sha256": "8142e4a6318e3ed361d0a013f5a3669e61b9a16925a2aabdaa19b19f14e5752b",
+      "bytes": 126832,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/backup-created-1280x800.png"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/backup-restore-confirmation-1280x800.png",
+      "relative": "backup-restore-confirmation-1280x800.png",
+      "sha256": "1e12f2beed9c68d5b56e5c521a571aa04b0fd664f29f637c06e997cc559052ab",
+      "bytes": 144516,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/backup-restore-confirmation-1280x800.png"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/backup-restore-receipt.json",
+      "relative": "backup-restore-receipt.json",
+      "sha256": "9e5d5bbb314f80c765fc0e11bab29cb2ec7cc3f099c1795d9a5dbd1b5d334783",
+      "bytes": 493,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/attempt-artifacts/backup-restore-receipt.json"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/backup-restore.spec-0-0.log",
+      "relative": "backup-restore.spec-0-0.log",
+      "sha256": "c8e7cfe3a0371291be57805a1f8aee6c3c016f8fb6134466d8b2f3ce3c286dd3",
+      "bytes": 7365,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/attempt-artifacts/backup-restore.spec-0-0.log"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/backup-restored-1280x800.png",
+      "relative": "backup-restored-1280x800.png",
+      "sha256": "e979a48d436daa44764be6cc002c4692c25bb25f5822b24df0d839e21e4614d0",
+      "bytes": 130874,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/backup-restored-1280x800.png"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/diagnostic-created-1280x800.png",
+      "relative": "diagnostic-created-1280x800.png",
+      "sha256": "b7c01c16c63920b27c99036ccdae705d386322e06760a36896788475692a3c46",
+      "bytes": 132960,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/diagnostic-created-1280x800.png"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/diagnostic-preview-1280x800.png",
+      "relative": "diagnostic-preview-1280x800.png",
+      "sha256": "84b3a86caeb5eaf4e9caf6b093c7928b132478f0a21117d5060520efb2df0a1b",
+      "bytes": 108852,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/diagnostic-preview-1280x800.png"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/geometry-1280x800.json",
+      "relative": "geometry-1280x800.json",
+      "sha256": "cef5b94fe337a0a553810cc48e463f3fa302a28ae0b9648e3759853f7b130638",
+      "bytes": 81,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/attempt-artifacts/geometry-1280x800.json"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/inventory-management.spec-0-1.log",
+      "relative": "inventory-management.spec-0-1.log",
+      "sha256": "323ad1bf57c086aabe0c19ad87547c92318fa4f45031185ab7366251d6acd791",
+      "bytes": 7401,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/attempt-artifacts/inventory-management.spec-0-1.log"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/inventory-native-configured-1280x800.png",
+      "relative": "inventory-native-configured-1280x800.png",
+      "sha256": "bc495eab8f9ffe7a2eaca6006137aa292b59073ae04a71e4d31dc22324a4ccff",
+      "bytes": 96188,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/inventory-native-configured-1280x800.png"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/inventory-remove-confirmation-1280x800.png",
+      "relative": "inventory-remove-confirmation-1280x800.png",
+      "sha256": "ab9755aac17e7fd0851a772e1515ca1f94afd58bd0c3d44f4002f19668bab7d9",
+      "bytes": 109504,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/inventory-remove-confirmation-1280x800.png"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/native-desktop.spec-0-2.log",
+      "relative": "native-desktop.spec-0-2.log",
+      "sha256": "80fec0e6e8ad1dd09853b933c7e7f84af58711b1abc9f505a70d1ee9cedfa14d",
+      "bytes": 19850,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/attempt-artifacts/native-desktop.spec-0-2.log"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/native-keyboard-trusted.json",
+      "relative": "native-keyboard-trusted.json",
+      "sha256": "042d383a41ec2f787ef5d970fedf90d072e6f695f72c93f9f0e2e2a30df7ab6b",
+      "bytes": 5109,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/attempt-artifacts/native-keyboard-trusted.json"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/native-process-restart.json",
+      "relative": "native-process-restart.json",
+      "sha256": "76f8a985530148d44b9c89acfe424b4926007ba560f456aef50425fa833c6631",
+      "bytes": 40,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/attempt-artifacts/native-process-restart.json"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/native-resume-terminal-before-save.json",
+      "relative": "native-resume-terminal-before-save.json",
+      "sha256": "55fe7b241768ec61ed20187c3323d7e0791ce95e689009373e7b4193d70c48b8",
+      "bytes": 1131,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/attempt-artifacts/native-resume-terminal-before-save.json"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/native-resume-terminal-cleanup-save.json",
+      "relative": "native-resume-terminal-cleanup-save.json",
+      "sha256": "7e389641b95d09fac684cd517044c0ebaa3d12f64060e875bbefe5f41091aff4",
+      "bytes": 1354,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/attempt-artifacts/native-resume-terminal-cleanup-save.json"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/onboarding-browse-1280x800.png",
+      "relative": "onboarding-browse-1280x800.png",
+      "sha256": "95a5321ff9fa5d07a833500c05e6571e8c294051cc0ef8dfda0d50c4db99303c",
+      "bytes": 82479,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/onboarding-browse-1280x800.png"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/onboarding-package-worlds.json",
+      "relative": "onboarding-package-worlds.json",
+      "sha256": "4d043cc3e38c7f0d45b032507e179fda4ff3ff3b74b2b8de891ebadf387d912c",
+      "bytes": 487,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/attempt-artifacts/onboarding-package-worlds.json"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/package-launch.json",
+      "relative": "package-launch.json",
+      "sha256": "199507f6281c53fbcc3f813dc33245cf9566812af6ebc15b26c0edc6333b78d9",
+      "bytes": 1109,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/attempt-artifacts/package-launch.json"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/search-detail-resume-1280x800.png",
+      "relative": "search-detail-resume-1280x800.png",
+      "sha256": "181111e9d0febf487085468603d20ac28912389bbef43035d409003aa43a12e5",
+      "bytes": 114753,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/search-detail-resume-1280x800.png"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/verified-replay-inputs/claude",
+      "relative": "verified-replay-inputs/claude",
+      "sha256": "74b0648c3b0bd21ad2f61c354e364b016a3475cbb491f9f73d20c1d49eab5536",
+      "bytes": 984344,
+      "preservation": "retained-original-large-binary-with-independent-hash"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/verified-replay-inputs/cutokyo",
+      "relative": "verified-replay-inputs/cutokyo",
+      "sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+      "bytes": 81540552,
+      "preservation": "retained-original-large-binary-with-independent-hash"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/verified-replay-inputs/manifest.json",
+      "relative": "verified-replay-inputs/manifest.json",
+      "sha256": "ae665ff7e54f6e15f956957ed2525656cbf1662625059f6acea49dfb051c0cc8",
+      "bytes": 941,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/attempt-artifacts/verified-replay-inputs/manifest.json"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/wdio-2026-10-04T10-49-28-379Z.log",
+      "relative": "wdio-2026-10-04T10-49-28-379Z.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/attempt-artifacts/wdio-2026-10-04T10-49-28-379Z.log"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/wdio-2026-10-04T10-49-47-787Z.log",
+      "relative": "wdio-2026-10-04T10-49-47-787Z.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/attempt-artifacts/wdio-2026-10-04T10-49-47-787Z.log"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/wdio-2026-10-04T10-50-06-642Z.log",
+      "relative": "wdio-2026-10-04T10-50-06-642Z.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/attempt-artifacts/wdio-2026-10-04T10-50-06-642Z.log"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/wdio.log",
+      "relative": "wdio.log",
+      "sha256": "bd98d192231e3519ed4648fd82c3882e3f79c6e5256e10bc464cbced007a4c7b",
+      "bytes": 5357,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/attempt-artifacts/wdio.log"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/zz-health-capabilities.spec-0-3.log",
+      "relative": "zz-health-capabilities.spec-0-3.log",
+      "sha256": "6f800811b228d6c5bb2211e6bb1fb9ab1ca31248e143ef94a3ef7b202142dba6",
+      "bytes": 74,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/attempt-artifacts/zz-health-capabilities.spec-0-3.log"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun6-20261004.log",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/native-packaged-rerun6-20261004.log",
+      "sha256": "f90b5f3cf31c781fabf541a4e4e76d8431106628b99be5123e307f2969026ef6",
+      "bytes": 41664
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-executed-rerun6-20261004.json",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/native-packaged-executed-rerun6-20261004.json",
+      "sha256": "f1b4b086e4e02b747483129ba08fa2111e289bc3c6c6881bb4366f92c803b35a",
+      "bytes": 459
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-local-source-before-rerun6-20261004.json",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/native-local-source-before-rerun6-20261004.json",
+      "sha256": "5e48b7d737573f2ea039d99f089a13671e274b237da073dfa696c27c2d90682f",
+      "bytes": 108121
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-local-source-after-rerun6-20261004.json",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-review-attempt-04szxkql-20261004T110613Z/native-local-source-after-rerun6-20261004.json",
+      "sha256": "5e48b7d737573f2ea039d99f089a13671e274b237da073dfa696c27c2d90682f",
+      "bytes": 108121
+    }
+  ],
+  "screenshots": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/analysis-unavailable-1280x800.png",
+      "relative": "analysis-unavailable-1280x800.png",
+      "sha256": "e489aa6f5065cfb1e27e1480f3fcda6c219318964910c5496a8a48cf844ffeab",
+      "bytes": 90205,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/analysis-unavailable-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individually Read actual original PNG; independently decode PNG IHDR and SHA256; preserve matching copy.",
+      "expected": "Truthful labels, legible hierarchy, focus, source/scope/consent and visible relevant actions.",
+      "actual": "Unavailable provider and no-content-sent disclosure are legible; no eligible sessions empty state is explicit. Not a live provider confirmation proof.",
+      "rendered_regression": null
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/appearance-dark-1280x800.png",
+      "relative": "appearance-dark-1280x800.png",
+      "sha256": "b3ade8cb7ea091ef08214d06d67efadc1884b7330332682adc5e30a5c5b28d1a",
+      "bytes": 115301,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/appearance-dark-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individually Read actual original PNG; independently decode PNG IHDR and SHA256; preserve matching copy.",
+      "expected": "Truthful labels, legible hierarchy, focus, source/scope/consent and visible relevant actions.",
+      "actual": "Dark selected state and cyan focus ring visible; proxy unavailable, native capture unaffected, and unknown live capture until evidence remain explicit.",
+      "rendered_regression": null
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/backup-created-1280x800.png",
+      "relative": "backup-created-1280x800.png",
+      "sha256": "8142e4a6318e3ed361d0a013f5a3669e61b9a16925a2aabdaa19b19f14e5752b",
+      "bytes": 126832,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/backup-created-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individually Read actual original PNG; independently decode PNG IHDR and SHA256; preserve matching copy.",
+      "expected": "Truthful labels, legible hierarchy, focus, source/scope/consent and visible relevant actions.",
+      "actual": "One-session backup and 340.0 KiB / 348160 bytes shown; private destination wraps and scope exclusions/Done fit.",
+      "rendered_regression": null
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/backup-restore-confirmation-1280x800.png",
+      "relative": "backup-restore-confirmation-1280x800.png",
+      "sha256": "1e12f2beed9c68d5b56e5c521a571aa04b0fd664f29f637c06e997cc559052ab",
+      "bytes": 144516,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/backup-restore-confirmation-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individually Read actual original PNG; independently decode PNG IHDR and SHA256; preserve matching copy.",
+      "expected": "Truthful labels, legible hierarchy, focus, source/scope/consent and visible relevant actions.",
+      "actual": "Correct singular 1 backed-up session; zero current sessions replaced; recovery retained; Cancel/Restore fit.",
+      "rendered_regression": null
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/backup-restored-1280x800.png",
+      "relative": "backup-restored-1280x800.png",
+      "sha256": "e979a48d436daa44764be6cc002c4692c25bb25f5822b24df0d839e21e4614d0",
+      "bytes": 130874,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/backup-restored-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individually Read actual original PNG; independently decode PNG IHDR and SHA256; preserve matching copy.",
+      "expected": "Truthful labels, legible hierarchy, focus, source/scope/consent and visible relevant actions.",
+      "actual": "Correct singular Restored 1 session; recovery path/integrity ok/Done visible.",
+      "rendered_regression": null
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/diagnostic-created-1280x800.png",
+      "relative": "diagnostic-created-1280x800.png",
+      "sha256": "b7c01c16c63920b27c99036ccdae705d386322e06760a36896788475692a3c46",
+      "bytes": 132960,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/diagnostic-created-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individually Read actual original PNG; independently decode PNG IHDR and SHA256; preserve matching copy.",
+      "expected": "Truthful labels, legible hierarchy, focus, source/scope/consent and visible relevant actions.",
+      "actual": "Local output path visible; Not fully checked; zero current and lifetime quarantine and independent unknown dimensions labelled. No large-history proof.",
+      "rendered_regression": null
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/diagnostic-preview-1280x800.png",
+      "relative": "diagnostic-preview-1280x800.png",
+      "sha256": "84b3a86caeb5eaf4e9caf6b093c7928b132478f0a21117d5060520efb2df0a1b",
+      "bytes": 108852,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/diagnostic-preview-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individually Read actual original PNG; independently decode PNG IHDR and SHA256; preserve matching copy.",
+      "expected": "Truthful labels, legible hierarchy, focus, source/scope/consent and visible relevant actions.",
+      "actual": "Preview exclusion list, sanitation caveat, estimated size and local-only/no-upload action clear; cyan close focus and both footer actions fit.",
+      "rendered_regression": null
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/inventory-native-configured-1280x800.png",
+      "relative": "inventory-native-configured-1280x800.png",
+      "sha256": "bc495eab8f9ffe7a2eaca6006137aa292b59073ae04a71e4d31dc22324a4ccff",
+      "bytes": 96188,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/inventory-native-configured-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individually Read actual original PNG; independently decode PNG IHDR and SHA256; preserve matching copy.",
+      "expected": "Truthful labels, legible hierarchy, focus, source/scope/consent and visible relevant actions.",
+      "actual": "Filtered Claude capture hook has CONFIGURED and Cutokyo-owned labels; source/provenance visible; explicitly does not establish runtime loading or broker health; Manage focus clear.",
+      "rendered_regression": null
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/inventory-remove-confirmation-1280x800.png",
+      "relative": "inventory-remove-confirmation-1280x800.png",
+      "sha256": "ab9755aac17e7fd0851a772e1515ca1f94afd58bd0c3d44f4002f19668bab7d9",
+      "bytes": 109504,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/inventory-remove-confirmation-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individually Read actual original PNG; independently decode PNG IHDR and SHA256; preserve matching copy.",
+      "expected": "Truthful labels, legible hierarchy, focus, source/scope/consent and visible relevant actions.",
+      "actual": "Source-wide impact across Claude Code/OpenCode, user scope, wrapped source path, retained recovery and history-not-deleted warning explicit; vermilion Remove distinct from Cancel.",
+      "rendered_regression": null
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/onboarding-browse-1280x800.png",
+      "relative": "onboarding-browse-1280x800.png",
+      "sha256": "95a5321ff9fa5d07a833500c05e6571e8c294051cc0ef8dfda0d50c4db99303c",
+      "bytes": 82479,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/onboarding-browse-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individually Read actual original PNG; independently decode PNG IHDR and SHA256; preserve matching copy.",
+      "expected": "Truthful labels, legible hierarchy, focus, source/scope/consent and visible relevant actions.",
+      "actual": "Unfiltered empty history is truthful, not fabricated zero usage; clear Review capture setup action; all filters and recovery panel fit. This is browse world, not post-delete save-state screenshot.",
+      "rendered_regression": null
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/search-detail-resume-1280x800.png",
+      "relative": "search-detail-resume-1280x800.png",
+      "sha256": "181111e9d0febf487085468603d20ac28912389bbef43035d409003aa43a12e5",
+      "bytes": 114753,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-04szxkql-20261004T110613Z/screens/search-detail-resume-1280x800.png",
+      "viewport": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individually Read actual original PNG; independently decode PNG IHDR and SHA256; preserve matching copy.",
+      "expected": "Truthful labels, legible hierarchy, focus, source/scope/consent and visible relevant actions.",
+      "actual": "Exact claude-native-73A9 and recorded private cwd shown; process-startup-not-session-activation caveat legible; Cancel/Resume fit. Pre-confirmation image only.",
+      "rendered_regression": null
+    }
+  ],
+  "source_fingerprints": {
+    "equal": true,
+    "count": 394,
+    "head_equal": true,
+    "index_equal": true
+  },
+  "reviewer_product_edits": false,
+  "reviewer_app_launches": false,
+  "reviewer_input_dispatches": false,
+  "reviewer_git_operations": false
+}

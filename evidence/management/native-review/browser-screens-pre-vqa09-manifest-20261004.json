@@ -1,0 +1,7 @@
+{
+  "archive": "evidence/management/native-review/browser-screens-pre-vqa09-20261004.tar.gz",
+  "sha256": "606f5b0940a3e79b8ac1f05fb2647e44b9e90fb585b8f0efce6737b427d692f4",
+  "bytes": 10202576,
+  "verified_images": 88,
+  "original_finding_preserved": "VQA-09 forced-colors1280x720 labelled1280x800; VQA-10 dim resume observation unverified"
+}

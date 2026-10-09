@@ -1,0 +1,6 @@
+{
+  "source": "/home/lucas/Developer/personal/cutokyo-community/ui/tests/tauri/native-desktop.spec.ts",
+  "sha256": "2768b349ed0e6aa67a0f1c1b24afa095afeaa7919670a762f024c0447bfda311",
+  "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-ux4kmj6p-20261004T101115Z/artifacts/reviewed-test/native-desktop.spec.ts",
+  "note": "Read-only current frozen test; retained aggregate fails at line132 after success text and exact argv/cwd/TTY assertions; audits themselves are not retained in this attempt directory"
+}

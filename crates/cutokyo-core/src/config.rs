@@ -21,12 +21,7 @@ pub const SETUP_STATE_VERSION: u32 = 1;
 
 const CONFIG_FILE_ENV: &str = "CUTOKYO_CONFIG_FILE";
 const DATA_DIR_ENV: &str = "CUTOKYO_DATA_DIR";
-const SETTING_KEYS: [&str; 4] = [
-    "proxy_enabled",
-    "outgoing_guard_enabled",
-    "search_mcp_enabled",
-    "retention_days",
-];
+const SETTING_KEYS: [&str; 3] = ["proxy_enabled", "search_mcp_enabled", "retention_days"];
 
 /// All platform-native paths used by a local Cutokyo installation.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -117,8 +112,6 @@ impl RetentionOverride {
 pub struct SettingsOverrides {
     /// Proxy consent override.
     pub proxy_enabled: Option<bool>,
-    /// Outgoing guard override.
-    pub outgoing_guard_enabled: Option<bool>,
     /// Search MCP override.
     pub search_mcp_enabled: Option<bool>,
     /// Retention override; omission means this precedence layer has no candidate.
@@ -236,7 +229,6 @@ pub struct SecretReceipt {
 struct ConfigFile {
     config_version: u32,
     proxy_enabled: bool,
-    outgoing_guard_enabled: bool,
     search_mcp_enabled: bool,
     retention_days: Option<u32>,
 }
@@ -252,7 +244,6 @@ impl From<Settings> for ConfigFile {
         Self {
             config_version: CONFIG_VERSION,
             proxy_enabled: settings.proxy_enabled,
-            outgoing_guard_enabled: settings.outgoing_guard_enabled,
             search_mcp_enabled: settings.search_mcp_enabled,
             retention_days: settings.retention_days,
         }
@@ -263,7 +254,6 @@ impl From<ConfigFile> for Settings {
     fn from(config: ConfigFile) -> Self {
         Self {
             proxy_enabled: config.proxy_enabled,
-            outgoing_guard_enabled: config.outgoing_guard_enabled,
             search_mcp_enabled: config.search_mcp_enabled,
             retention_days: config.retention_days,
         }
@@ -305,7 +295,6 @@ pub fn resolve(paths: &RuntimePaths, overrides: &SettingsOverrides) -> Result<Re
     let mut effective = BTreeMap::new();
 
     let env_proxy = optional_env_bool("CUTOKYO_PROXY_ENABLED")?;
-    let env_guard = optional_env_bool("CUTOKYO_OUTGOING_GUARD_ENABLED")?;
     let env_mcp = optional_env_bool("CUTOKYO_SEARCH_MCP_ENABLED")?;
     let env_retention = optional_env_retention("CUTOKYO_RETENTION_DAYS")?;
 
@@ -315,14 +304,6 @@ pub fn resolve(paths: &RuntimePaths, overrides: &SettingsOverrides) -> Result<Re
         file.as_ref().map(|value| value.proxy_enabled),
         env_proxy,
         overrides.proxy_enabled,
-        &mut effective,
-    );
-    settings.outgoing_guard_enabled = choose_bool(
-        "outgoing_guard_enabled",
-        defaults.outgoing_guard_enabled,
-        file.as_ref().map(|value| value.outgoing_guard_enabled),
-        env_guard,
-        overrides.outgoing_guard_enabled,
         &mut effective,
     );
     settings.search_mcp_enabled = choose_bool(
@@ -1105,7 +1086,7 @@ fn io_error(action: &str, error: &impl std::fmt::Display) -> ContractError {
 mod tests {
     use std::fs;
 
-    use cutokyo_domain::{RetentionPatch, SettingsPatch};
+    use cutokyo_domain::{ErrorCode, RetentionPatch, SettingsPatch};
 
     use super::{
         RetentionOverride, RuntimePaths, SecretBackend, SecretBackendPreference, SettingsOverrides,
@@ -1131,6 +1112,25 @@ mod tests {
     use std::path::Path;
 
     #[test]
+    fn config_rejects_removed_guard_field_without_a_hidden_compatibility_path()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let directory = tempfile::tempdir()?;
+        let paths = paths(directory.path());
+        setup(&paths, false)?;
+        let source = fs::read_to_string(&paths.config_file)?;
+        assert!(!source.contains("outgoing_guard"));
+        fs::write(
+            &paths.config_file,
+            format!("{source}outgoing_guard_enabled = true\n"),
+        )?;
+        let error = resolve(&paths, &SettingsOverrides::default())
+            .err()
+            .ok_or("obsolete guard setting was accepted")?;
+        assert_eq!(error.code, ErrorCode::InvalidContract);
+        Ok(())
+    }
+
+    #[test]
     fn config_defaults_file_and_cli_origins_are_explicit() -> Result<(), Box<dyn std::error::Error>>
     {
         let directory = tempfile::tempdir()?;
@@ -1139,7 +1139,7 @@ mod tests {
         write_patch(
             &paths,
             &SettingsPatch {
-                outgoing_guard_enabled: Some(true),
+                search_mcp_enabled: Some(false),
                 retention_days: RetentionPatch::Days(30),
                 ..SettingsPatch::default()
             },
@@ -1151,10 +1151,10 @@ mod tests {
                 ..SettingsOverrides::default()
             },
         )?;
-        assert!(resolved.settings.outgoing_guard_enabled);
+        assert!(!resolved.settings.search_mcp_enabled);
         assert_eq!(resolved.settings.retention_days, None);
-        assert_eq!(resolved.effective.len(), 4);
-        assert_eq!(resolved.effective["outgoing_guard_enabled"].origin, "file");
+        assert_eq!(resolved.effective.len(), 3);
+        assert_eq!(resolved.effective["search_mcp_enabled"].origin, "file");
         assert_eq!(resolved.effective["retention_days"].origin, "cli");
         assert!(resolved.effective.values().all(|value| {
             value
@@ -1274,7 +1274,6 @@ mod tests {
             "# user-owned comment\n",
             "config_version = 1\n",
             "proxy_enabled = false\n",
-            "outgoing_guard_enabled = false\n",
             "search_mcp_enabled = false\n",
         )
         .as_bytes();
@@ -1317,11 +1316,7 @@ mod tests {
         fs::create_dir_all(paths.config_file.parent().ok_or("missing parent")?)?;
         fs::write(
             &paths.config_file,
-            concat!(
-                "proxy_enabled = false\n",
-                "outgoing_guard_enabled = false\n",
-                "search_mcp_enabled = false\n"
-            ),
+            concat!("proxy_enabled = false\n", "search_mcp_enabled = false\n"),
         )?;
         assert!(resolve(&paths, &SettingsOverrides::default()).is_err());
         fs::write(
@@ -1329,7 +1324,6 @@ mod tests {
             concat!(
                 "config_version = 1\n",
                 "proxy_enabled = false\n",
-                "outgoing_guard_enabled = false\n",
                 "search_mcp_enabled = false\n",
                 "api_token = 'forbidden'\n"
             ),

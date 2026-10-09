@@ -1,0 +1,34 @@
+{
+  "reviewer": "ad8f7bc88350024b7",
+  "verdict": "accepted bounded native producer receipt correction",
+  "command": [
+    "cargo",
+    "test",
+    "--offline",
+    "--manifest-path",
+    "/home/lucas/Developer/personal/cutokyo-community/Cargo.toml",
+    "-p",
+    "cutokyo-desktop",
+    "--no-default-features",
+    "--lib",
+    "service::tests::native_",
+    "--",
+    "--nocapture"
+  ],
+  "exit_code": 0,
+  "tests_passed": 2,
+  "raw_log": "evidence/management/native-review/native-producer-receipt-tests-20261004.log",
+  "raw_log_sha256": "ce641c419fd6a1dc3a13a720e36e40e37b9a053c67c8c2a438c17903b5d15436",
+  "source_sha256": {
+    "crates/cutokyo-desktop/src/service.rs": "aee52611adcac8f3ad2dfba128c58819d4012d185c06875cc29adddb655990ac",
+    "ui/src/contracts.ts": "111633c166ad4290e989964e10078a4ba89951982106eb647a1a1d102cb7bf6d"
+  },
+  "boundaries": [
+    "Injected executor and isolated SQLite tests, not actual terminal launch",
+    "Acknowledged startup returns ok true with warning severity and unknown activation",
+    "Preview error, launch error, and false acknowledgement remain errors",
+    "Generic warning helper byte-identical",
+    "No-default build warnings are not strict-Clippy evidence"
+  ],
+  "waivers": []
+}

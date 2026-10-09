@@ -1,9 +1,8 @@
 import type {
-  AnalysisResult,
   Coverage,
   DashboardResponse,
   DesktopSettings,
-  GuardsResponse,
+  ProxyStatus,
   HealthResponse,
   InventoryResponse,
   OnboardingResponse,
@@ -81,6 +80,7 @@ export const dashboardSessions: readonly SessionRecord[] = [
   {
     id: "session-claude-73A9",
     harness: "claude_code",
+    matches: [],
     nativeSessionKey: "claude-tree-73A9",
     nativeResumeId: "claude-jev-73A9",
     title: "Reconcile usage capture",
@@ -103,7 +103,7 @@ export const dashboardSessions: readonly SessionRecord[] = [
         kind: "user",
         at: "2026-09-19T14:08:00Z",
         title: "Inspect reconciliation mismatch",
-        body: "Compare native OTel usage with the overlapping proxy observation.",
+        body: "JEV exact resume needle 73A9. Compare native OTel usage with the overlapping proxy observation.",
         state: "succeeded",
         provenance: provenance("claude_code"),
       },
@@ -131,6 +131,7 @@ export const dashboardSessions: readonly SessionRecord[] = [
   {
     id: "session-codex-91B2",
     harness: "codex",
+    matches: [],
     nativeSessionKey: "codex-session-tree-91B2",
     nativeResumeId: "thread-codex-91B2",
     title: "Verify migration boundaries",
@@ -161,6 +162,7 @@ export const dashboardSessions: readonly SessionRecord[] = [
   {
     id: "session-opencode-42C7",
     harness: "opencode",
+    matches: [],
     nativeSessionKey: "opencode-session-42C7",
     nativeResumeId: "opencode-session-42C7",
     title: "Trace plugin finalization",
@@ -188,16 +190,6 @@ export const dashboardSessions: readonly SessionRecord[] = [
     provenance: provenance("opencode"),
   },
 ];
-
-const analysisSession: SessionRecord = {
-  ...dashboardSessions[0]!,
-  id: "analysis-73A9",
-  nativeSessionKey: "analysis-tree-73A9",
-  nativeResumeId: "analysis-native-73A9",
-  title: "analysis-73A9",
-  summary: "A fixture session selected for consented analysis.",
-  usage: [],
-};
 
 const deleteSession: SessionRecord = {
   ...dashboardSessions[1]!,
@@ -231,7 +223,7 @@ const baseOnboarding: OnboardingResponse = {
   storageDisclosure:
     "History is stored locally in a plaintext SQLite database with owner-only permissions. Cutokyo v0.x is not application-encrypted; full-disk encryption is recommended.",
   telemetryDisclosure:
-    "Telemetry is off. Proxy capture and AI analysis are separate optional egress paths and remain disabled until you explicitly consent.",
+    "Telemetry is off. Proxy capture is an optional egress path and remains disabled until you explicitly consent.",
   harnesses: [
     {
       harness: "claude_code",
@@ -358,7 +350,7 @@ const baseInventory: InventoryResponse = {
   meta: {
     freshness: "partial",
     notices: [
-      "One project plugin is degraded; other broker routes remain available.",
+      "One project plugin has incomplete runtime evidence. Its native configuration can still be managed.",
     ],
     generatedAt: FIXTURE_NOW,
   },
@@ -369,13 +361,13 @@ const baseInventory: InventoryResponse = {
       id: "mcp-docs-73A9",
       kind: "mcp",
       name: "docs-73A9",
-      harnesses: ["claude_code", "codex", "opencode"],
-      scope: "managed",
-      origin: "Cutokyo central broker · managed upstream",
-      state: "enabled",
-      managedByCutokyo: true,
+      harnesses: ["claude_code"],
+      scope: "user",
+      origin: "Claude Code user MCP configuration",
+      state: "configured",
+      managedByCutokyo: false,
       description:
-        "Namespaced documentation tools routed consistently to all three harnesses.",
+        "Documentation tools configured in Claude Code. Install a copy for another harness.",
       provenance: provenance("claude_code", "local_state"),
     },
     {
@@ -430,6 +422,30 @@ const baseInventory: InventoryResponse = {
       provenance: provenance("claude_code", "local_state"),
     },
     {
+      id: "instruction-project",
+      kind: "instruction",
+      name: "AGENTS.md",
+      harnesses: ["codex", "opencode"],
+      scope: "project",
+      origin: "Project/AGENTS.md",
+      state: "installed",
+      managedByCutokyo: false,
+      description: "Shared project instructions for Codex and OpenCode.",
+      provenance: provenance("codex", "local_state"),
+    },
+    {
+      id: "hook-user-check",
+      kind: "hook",
+      name: "PreToolUse project check",
+      harnesses: ["claude_code"],
+      scope: "project",
+      origin: "Project/.claude/settings.json",
+      state: "configured",
+      managedByCutokyo: false,
+      description: "Run a local check before selected tool calls.",
+      provenance: provenance("claude_code", "local_state"),
+    },
+    {
       id: "skill-protocol-check",
       kind: "skill",
       name: "protocol-check",
@@ -444,62 +460,19 @@ const baseInventory: InventoryResponse = {
   ],
 };
 
-const baseGuards: GuardsResponse = {
+const baseProxy: ProxyStatus = {
   meta: {
     freshness: "partial",
     notices: [
-      "Provider-bound request inspection is unavailable while proxy capture is disabled.",
+      "This desktop build has no provider-proxy listener. Native capture configuration is unaffected; live capture remains unknown until evidence arrives. No proxy was started.",
     ],
     generatedAt: FIXTURE_NOW,
   },
-  outgoingGuardEnabled: false,
   proxyEnabled: false,
-  proxyStatus: "inactive",
+  proxyStatus: "unavailable",
+  detail:
+    "Proxy capture is unavailable: this desktop build has no provider-proxy listener. Native capture configuration is unaffected; live capture remains unknown until evidence arrives. No proxy was started.",
   contextBreakdownAvailable: false,
-  channels: [
-    {
-      id: "persisted",
-      name: "On-disk persistence",
-      category: "on_disk",
-      state: "inspected",
-      findings: 3,
-      description:
-        "Synthetic secrets are redacted before spool and SQLite persistence.",
-      limitation:
-        "Local transcripts remain plaintext after redaction; use full-disk encryption.",
-    },
-    {
-      id: "telemetry",
-      name: "Cutokyo telemetry",
-      category: "telemetry",
-      state: "disabled",
-      findings: null,
-      description:
-        "Cutokyo telemetry is off. Disabled does not mean zero findings.",
-      limitation: null,
-    },
-    {
-      id: "bundle",
-      name: "Diagnostic bundle",
-      category: "bundle",
-      state: "inspected",
-      findings: 1,
-      description:
-        "Bundle projection excludes prompts, transcripts, raw secrets, and full project paths.",
-      limitation: null,
-    },
-    {
-      id: "provider",
-      name: "Provider-bound requests",
-      category: "provider_bound",
-      state: "unavailable",
-      findings: null,
-      description:
-        "Native capture does not inspect or mutate traffic sent to a model provider.",
-      limitation:
-        "Enable the outgoing guard and a supported inspection channel to block detected secrets.",
-    },
-  ],
 };
 
 const healthyDimensions = [
@@ -585,11 +558,11 @@ const degradedHealth: HealthResponse = {
 
 const baseSettings: DesktopSettings = {
   proxy_enabled: false,
-  outgoing_guard_enabled: false,
   search_mcp_enabled: true,
   retention_days: null,
   updater_choice: "notify",
   crash_reports_enabled: false,
+  appearance: "system",
 };
 
 export interface FixtureState {
@@ -597,20 +570,18 @@ export interface FixtureState {
   dashboard: DashboardResponse;
   sessions: SessionRecord[];
   inventory: InventoryResponse;
-  guards: GuardsResponse;
+  proxy: ProxyStatus;
   health: HealthResponse;
   settings: DesktopSettings;
-  analysisResults: AnalysisResult[];
-  outboundAnalysisRequests: number;
   resumeRequests: string[];
   bundleCreated: boolean;
-  failNextAnalysis: boolean;
+  failAppearanceSave: boolean;
 }
 
 export function createScenario(caseName: string | null): FixtureState {
   let onboarding = structuredClone(baseOnboarding);
   let dashboard = structuredClone(baseDashboard);
-  let sessions = structuredClone([...dashboardSessions, analysisSession]);
+  let sessions = structuredClone([...dashboardSessions]);
   let health = structuredClone(baseHealth);
 
   if (caseName === "onboarding-empty" || caseName === "empty-history") {
@@ -637,6 +608,30 @@ export function createScenario(caseName: string | null): FixtureState {
       meta: { freshness: "complete", notices: [], generatedAt: FIXTURE_NOW },
     };
   }
+  if (caseName === "search-pagination") {
+    const base = dashboardSessions[0]!;
+    sessions = Array.from({ length: 57 }, (_, index) => ({
+      ...structuredClone(base),
+      id: `session:search-page-${String(index).padStart(3, "0")}`,
+      nativeSessionKey: `page-native-${index}`,
+      nativeResumeId: `page-resume-${index}`,
+      title: index === 0 ? "Archive needle" : `Archive work ${index}`,
+      startedAt: new Date(
+        Date.parse(FIXTURE_NOW) - (57 - index) * 60_000,
+      ).toISOString(),
+      updatedAt: FIXTURE_NOW,
+      tools: index === 56 ? ["LateTool"] : ["Read"],
+      skills: ["search-review"],
+      agents: ["archive-agent"],
+      timeline: [
+        {
+          ...base.timeline[0]!,
+          id: `page-message-${index}`,
+          body: "archive needle context",
+        },
+      ],
+    }));
+  }
   if (caseName === "retention-delete") {
     sessions = structuredClone([deleteSession, keepSession]);
   }
@@ -649,13 +644,19 @@ export function createScenario(caseName: string | null): FixtureState {
     dashboard,
     sessions,
     inventory: structuredClone(baseInventory),
-    guards: structuredClone(baseGuards),
+    proxy: structuredClone(baseProxy),
     health,
-    settings: structuredClone(baseSettings),
-    analysisResults: [],
-    outboundAnalysisRequests: 0,
+    settings: {
+      ...structuredClone(baseSettings),
+      appearance:
+        caseName === "appearance-dark" ||
+        caseName === "appearance-dark-delayed" ||
+        caseName === "appearance-conflict"
+          ? "dark"
+          : "system",
+    },
     resumeRequests: [],
     bundleCreated: false,
-    failNextAnalysis: caseName === "analysis-error",
+    failAppearanceSave: caseName === "appearance-save-error",
   };
 }

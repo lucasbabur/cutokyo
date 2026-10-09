@@ -1,0 +1,38 @@
+{
+  "archive": "evidence/management/native-review/final8-browser-image-review-20261004.tar.gz",
+  "sha256": "fc2779400f71a4fa28891e246819cd6a27226203fc009976578be49115e58ea8",
+  "members": [
+    {
+      "member": "evidence/final/screens/analysis-consent-1536x960.png",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final8-browser-changed-image-review-20261004T110658Z/evidence/final/screens/analysis-consent-1536x960.png",
+      "sha256": "16e3966eff7b43a63e82792a71721fae53d4d5fa572fceb677ba5ff1b4d868c5"
+    },
+    {
+      "member": "evidence/final/screens/session-resume-1536x960.png",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final8-browser-changed-image-review-20261004T110658Z/evidence/final/screens/session-resume-1536x960.png",
+      "sha256": "1fb8182cabd6c7d14eb80aef1c42c5d987a6e6db29cd9e925515a1802805a9b1"
+    },
+    {
+      "member": "evidence/management/search/search-matches-dark-900x700.png",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final8-browser-changed-image-review-20261004T110658Z/evidence/management/search/search-matches-dark-900x700.png",
+      "sha256": "71a9863f7ee399b04c5060a15007f815c7807f1699fd2a863a7ce690face8342"
+    },
+    {
+      "member": "evidence/theme/screens/settings-conflict-900x700.png",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final8-browser-changed-image-review-20261004T110658Z/evidence/theme/screens/settings-conflict-900x700.png",
+      "sha256": "e9019d258f0f4c45d98003282be27840d6180a21992a908f76764434e21bd31d"
+    },
+    {
+      "member": "inspection-receipt.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final8-browser-changed-image-review-20261004T110658Z/inspection-receipt.json",
+      "sha256": "b927283d856c7953b7e21ef9d8c363801c55add7998df08e6c177ff4a3692702"
+    },
+    {
+      "member": "manifest.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final8-browser-changed-image-review-20261004T110658Z/manifest.json",
+      "sha256": "18fcfe01bdcc3b39c700225317ede40a392a46e7ceeb4bb354211be60830dec1"
+    }
+  ],
+  "source_mutation": false,
+  "fresh_aggregate_acceptance": false
+}

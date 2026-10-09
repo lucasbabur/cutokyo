@@ -1,0 +1,16 @@
+{
+  "command": [
+    "/home/lucas/Developer/personal/cutokyo-community/target/debug/cutokyo",
+    "--config-file",
+    "/tmp/cutokyo-product-audit-20261004/config/settings.toml",
+    "--data-dir",
+    "/tmp/cutokyo-product-audit-20261004/data/cli",
+    "--json",
+    "bundle",
+    "--dry-run"
+  ],
+  "exitCode": 64,
+  "output": "{\"schema_version\":\"1.0.0\",\"command\":\"usage\",\"ok\":false,\"error\":{\"code\":\"invalid_input\",\"message\":\"invalid command line\",\"field\":\"cli\",\"expected\":\"a supported command shape; run --help\",\"actual\":\"UnknownArgument\"},\"meta\":{\"app_version\":\"0.1.0\",\"pending_crash_record\":false}}\n",
+  "isolatedHome": "/tmp/cutokyo-product-audit-20261004/home",
+  "utc": "2026-10-04T04:44:08.379487+00:00"
+}

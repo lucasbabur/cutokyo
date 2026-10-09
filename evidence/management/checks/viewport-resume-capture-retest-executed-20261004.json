@@ -1,0 +1,22 @@
+{
+  "command": [
+    "pnpm",
+    "--dir",
+    "ui",
+    "exec",
+    "playwright",
+    "test",
+    "tests/e2e/desktop.spec.ts",
+    "-g",
+    "forced colors retains|dark dashboard, empty history|captures the seven representative"
+  ],
+  "exit_code": 0,
+  "duration_seconds": 11.13,
+  "log": "evidence/management/checks/viewport-resume-capture-retest-20261004.log",
+  "unchanged_expectations": true,
+  "added_semantic_readiness": true,
+  "explicit_forced_colors_viewport": [
+    1280,
+    800
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "recorded_at": "2026-10-04T06:42:05.671639+00:00",
+  "observed_head": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "scope": "Only two refreshed collapsed active-filter screenshots; independent visual review pending",
+  "environment": "Offline supplied browser fixture screenshots, Linux reviewer; no server/native app started",
+  "files": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/search/search-active-filters-dark-900x700.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/active-filter-capture-retest/search-active-filters-dark-900x700.png",
+      "sha256": "49c7dd362ba49cda354014bb8e5c6389ef6a8661ccd9ebd9b85a8beb92444700",
+      "previous_sha256": "24319aaef604a908bf0dcd09251203df3f95d4f467e95956aa369ff3d8d0647f",
+      "changed_from_previous": true,
+      "source_mtime_ns": 1791096021480304023,
+      "viewport": [
+        900,
+        700
+      ]
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/search/search-active-filters-light-900x700.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/active-filter-capture-retest/search-active-filters-light-900x700.png",
+      "sha256": "d854bd8d128d8b22465917cbfcb65dff05332b8c665bcdcf0303cb6284f77fef",
+      "previous_sha256": "d854bd8d128d8b22465917cbfcb65dff05332b8c665bcdcf0303cb6284f77fef",
+      "changed_from_previous": false,
+      "source_mtime_ns": 1791096021278301019,
+      "viewport": [
+        900,
+        700
+      ]
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "fixtureOnly": true,
+  "viewport": [
+    900,
+    700
+  ],
+  "actions": [
+    {
+      "time": "2026-10-04T05:52:02.358844+00:00",
+      "args": [
+        "open",
+        "http://127.0.0.1:4173/?jev_case=health-degraded#/health"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Cutokyo\n  http://127.0.0.1:4173/?jev_case=health-degraded#/health\n"
+    },
+    {
+      "time": "2026-10-04T05:52:02.360802+00:00",
+      "args": [
+        "set",
+        "media",
+        "dark",
+        "reduced-motion"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:52:02.774631+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsRead-o\" [ref=e85] clickable [onclick]\n  - link \"Skip to content\" [ref=e86]\n  - navigation \"Primary navigation\" [ref=e87]\n    - link \"Overview\" [ref=e90]\n    - link \"Sessions\" [ref=e91]\n    - link \"Analysis\" [ref=e92]\n    - link \"Agent tools\" [ref=e93]\n    - link \"Health\" [ref=e94]\n    - link \"Data\" [ref=e95]\n    - link \"Settings\" [ref=e96]\n  - heading \"System health\" [level=1, ref=e97]\n  - button \"Run doctor\" [ref=e98]\n  - button \"Bundle preview\" [ref=e99]\n  - region \"Health summary\" [ref=e88]\n  - region \"Current and lifetime state\" [ref=e89]\n    - heading \"Current and lifetime state\" [level=2, ref=e100]\n    - button \"Open quarantine guidance\" [ref=e101]\n    - button \"Retry writer lock\" [ref=e102]\n"
+    },
+    {
+      "time": "2026-10-04T05:52:02.776325+00:00",
+      "args": [
+        "eval",
+        "JSON.stringify({sidebar:document.querySelector(\".sidebar__footer\")?.textContent,dimensions:[...document.querySelectorAll(\".health-dimension\")].map(x=>({name:x.querySelector(\"strong\")?.textContent,state:x.querySelector(\".status-pill\")?.textContent,button:x.querySelector(\"button\")?.textContent})),summary:document.querySelector(\".health-summary\")?.textContent})"
+      ],
+      "exitCode": 0,
+      "output": "\"{\\\"sidebar\\\":\\\"Read-only view\u2713Local onlyv0.1.0-test\\\",\\\"dimensions\\\":[{\\\"name\\\":\\\"health persistence\\\",\\\"state\\\":\\\"\u2713healthy\\\"},{\\\"name\\\":\\\"quarantine\\\",\\\"state\\\":\\\"!degraded\\\",\\\"button\\\":\\\"Open quarantine guidance\\\"},{\\\"name\\\":\\\"spool cap\\\",\\\"state\\\":\\\"\u2713healthy\\\"},{\\\"name\\\":\\\"spool drain\\\",\\\"state\\\":\\\"\u2713healthy\\\"},{\\\"name\\\":\\\"writer lock\\\",\\\"state\\\":\\\"!degraded\\\",\\\"button\\\":\\\"Retry writer lock\\\"},{\\\"name\\\":\\\"schema\\\",\\\"state\\\":\\\"\u2713healthy\\\"},{\\\"name\\\":\\\"derive\\\",\\\"state\\\":\\\"\u2713healthy\\\"},{\\\"name\\\":\\\"integrity\\\",\\\"state\\\":\\\"\u2713healthy\\\"},{\\\"name\\\":\\\"rebuild\\\",\\\"state\\\":\\\"\u2713healthy\\\"},{\\\"name\\\":\\\"backup\\\",\\\"state\\\":\\\"\u2713healthy\\\"},{\\\"name\\\":\\\"restore\\\",\\\"state\\\":\\\"\u2713healthy\\\"}],\\\"summary\\\":\\\"!2 degradedAttention is neededSnapshot generation is independent of history size.Quarantine1 current \u00b7 7 lifetimeSpool backlog3 files \u00b7 8.0 KiBWriter ownercli \u00b7 pid 7301 (released)\\\"}\"\n"
+    },
+    {
+      "time": "2026-10-04T05:52:02.859357+00:00",
+      "args": [
+        "open",
+        "http://127.0.0.1:4173/?jev_case=native-capabilities-unavailable#/settings"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Cutokyo\n  http://127.0.0.1:4173/?jev_case=native-capabilities-unavailable#/settings\n"
+    },
+    {
+      "time": "2026-10-04T05:52:03.268216+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsLocal\" [ref=e103] clickable [onclick]\n  - link \"Skip to content\" [ref=e104]\n  - navigation \"Primary navigation\" [ref=e105]\n    - link \"Overview\" [ref=e111]\n    - link \"Sessions\" [ref=e112]\n    - link \"Analysis\" [ref=e113]\n    - link \"Agent tools\" [ref=e114]\n    - link \"Health\" [ref=e115]\n    - link \"Data\" [ref=e116]\n    - link \"Settings\" [ref=e117]\n  - heading \"Settings\" [level=1, ref=e118]\n  - region \"Appearance\" [ref=e106]\n    - heading \"Appearance\" [level=2, ref=e119]\n    - button \"Light\" [ref=e131]\n    - button \"Dark\" [ref=e132]\n    - button \"System\" [ref=e133]\n  - region \"Capture and agent access\" [ref=e107]\n    - heading \"Capture and agent access\" [level=2, ref=e120]\n    - LabelText \"Enabled\" [ref=e121] clickable [cursor:pointer]\n      - switch \"Toggle read-only Cutokyo search MCP\" [checked=true, ref=e134]\n    - button \"Enable proxy\" [disabled, ref=e122]\n    - button \"Review data handling\" [ref=e123]\n  - region \"Retention default\" [ref=e108]\n    - heading \"Retention default\" [level=2, ref=e124]\n    - combobox \"Default history retention\" [expanded=false, ref=e125]: Keep until deleted\n      - option \"Keep until deleted\" [selected, ref=e136]\n      - option \"30 days\" [ref=e137]\n      - option \"90 days\" [ref=e138]\n      - option \"1 year\" [ref=e139]\n  - region \"Updates and crash records\" [ref=e109]\n    - heading \"Updates and crash records\" [level=2, ref=e126]\n    - combobox \"Updater behavior\" [expanded=false, disabled, ref=e127]: Notify before downloading\n      - option \"Download signed updates automatically\" [disabled, ref=e140]\n      - option \"Notify before downloading\" [disabled, ref=e141]\n      - option \"Check manually\" [disabled, ref=e142]\n    - LabelText \"Disabled\" [ref=e128] clickable [cursor:pointer]\n      - switch \"Toggle bounded local crash records\" [checked=false, ref=e135]\n    - button \"Check now\" [disabled, ref=e129]\n  - region \"OS keychain only\" [ref=e110]\n    - heading \"OS keychain only\" [level=2, ref=e130]\n"
+    },
+    {
+      "time": "2026-10-04T05:52:03.269786+00:00",
+      "args": [
+        "eval",
+        "JSON.stringify({buttons:[...document.querySelectorAll(\"button\")].map(x=>({text:x.textContent,disabled:x.disabled})),proxyRow:[...document.querySelectorAll(\".settings-row\")].find(x=>x.textContent.includes(\"Proxy capture fallback\"))?.textContent})"
+      ],
+      "exitCode": 0,
+      "output": "\"{\\\"buttons\\\":[{\\\"text\\\":\\\"Light\\\",\\\"disabled\\\":false},{\\\"text\\\":\\\"Dark\\\",\\\"disabled\\\":false},{\\\"text\\\":\\\"System\\\",\\\"disabled\\\":false},{\\\"text\\\":\\\"Enable proxy\\\",\\\"disabled\\\":true},{\\\"text\\\":\\\"Review data handling\\\",\\\"disabled\\\":false},{\\\"text\\\":\\\" Check now\\\",\\\"disabled\\\":true}],\\\"proxyRow\\\":\\\"Proxy capture fallbackOptional provider-traffic attribution. Review content, provider routing, and local redaction before enabling. Native capture remains the default.\u00b7UnavailableEnable proxyReview data handling\\\"}\"\n"
+    }
+  ]
+}

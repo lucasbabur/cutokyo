@@ -1,0 +1,9 @@
+{
+  "source_manifest": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/package-launch.json",
+  "package_sha256": "de3e9a6d97825298612da554c8219cc67f461bf7ccb8da2a56e51bd385712316",
+  "evidence": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z",
+  "purpose": "Execute unchanged maintained browse/capture setup/capture history worlds with repaired phase orchestration. Not fresh aggregate acceptance.",
+  "fresh_aggregate_acceptance": false,
+  "exit_code": 0,
+  "duration_seconds": 114.1
+}

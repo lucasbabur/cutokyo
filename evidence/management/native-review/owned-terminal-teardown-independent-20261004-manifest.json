@@ -1,0 +1,33 @@
+{
+  "archive": "evidence/management/native-review/owned-terminal-teardown-independent-20261004.tar.gz",
+  "sha256": "b0d8fbb4611ad7fa9f4073e66cf1a4aa71a08af16adac6f7e0119fea74b65a22",
+  "source_directory": "/tmp/cutokyo-independent-onboarding-review",
+  "members": [
+    {
+      "path": "native-terminal-teardown-delta-1.raw",
+      "sha256": "61f0ecf1b76f49020330659d1bf123d63fa9a1e78157e79ff51f38e9ad96db7a"
+    },
+    {
+      "path": "native-terminal-teardown-extra-1.raw",
+      "sha256": "09f4b6a06b7d777023e29dd6cd746ba9287de52a37e6328a367db8d1b550161a"
+    },
+    {
+      "path": "native-terminal-teardown-extra-2.raw",
+      "sha256": "32a6d1b92617f5012cf64ffd95053e9b7f372edab6f647b840ae99d97debae71"
+    },
+    {
+      "path": "native-terminal-teardown-extra-pyright-1.raw",
+      "sha256": "f552d237ad0bd249c05f97eb62dbc65d2d0e4a5fe2346608e10fb7838dba9ed1"
+    },
+    {
+      "path": "native-terminal-teardown-extra.py",
+      "sha256": "c79247816d2484f902bd7c50a789d306ce79b9de62672f35c39e9b7e846eb70d"
+    },
+    {
+      "path": "native-terminal-teardown-tests-1.raw",
+      "sha256": "57845e536741bf094ee32753e929f10a20b02d6138e2468c4c87848ce2aca205"
+    }
+  ],
+  "boundary": "Independent mock-safe source and unit review only. Six maintained and eight reviewer tests passed. Earlier extra-1 failure retained. No real app, terminal, provider or signals. Not actual cleanup or fresh aggregate acceptance.",
+  "waivers": []
+}

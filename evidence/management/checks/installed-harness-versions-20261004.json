@@ -1,0 +1,51 @@
+{
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+  "architecture": "x86_64",
+  "isolatedHomes": true,
+  "realHarnessConfigurationMutated": false,
+  "results": [
+    {
+      "harness": "claude",
+      "command": [
+        "/home/lucas/.local/bin/claude",
+        "--version"
+      ],
+      "exitCode": 0,
+      "stdout": "2.1.289 (Claude Code)\n",
+      "stderr": "",
+      "operations": [
+        "version-only"
+      ],
+      "providerRequests": 0
+    },
+    {
+      "harness": "codex",
+      "command": [
+        "/home/lucas/.local/bin/codex",
+        "--version"
+      ],
+      "exitCode": 0,
+      "stdout": "codex-cli 0.160.0\n",
+      "stderr": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp/cutokyo-readonly-version-probe-u6nttz6t/home/.codex\"))\n",
+      "operations": [
+        "version-only"
+      ],
+      "providerRequests": 0
+    },
+    {
+      "harness": "opencode",
+      "command": [
+        "/home/lucas/.bun/bin/opencode",
+        "--version"
+      ],
+      "exitCode": 0,
+      "stdout": "1.18.28\n",
+      "stderr": "",
+      "operations": [
+        "version-only"
+      ],
+      "providerRequests": 0
+    }
+  ]
+}

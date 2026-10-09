@@ -1,0 +1,12 @@
+{
+  "command": [
+    "git",
+    "diff",
+    "--check"
+  ],
+  "exit_code": 0,
+  "duration_seconds": 0.03,
+  "stdout": "",
+  "stderr": "",
+  "scope": "Post-native9 report-only documentation updates. Product checks and execution proofs remain separately recorded."
+}

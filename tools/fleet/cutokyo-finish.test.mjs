@@ -27,7 +27,7 @@ const JOURNEYS = [
 ]
 const CASES = [
   'onboarding-empty-history', 'search-detail-resume', 'retention-delete-confirmation',
-  'guard-proxy-coverage-language', 'analysis-preview-cancel', 'degraded-health-recovery',
+  'guard-proxy-coverage-language', 'degraded-health-recovery',
   'mcp-plugin-inventory', 'visual-keyboard-consistency',
 ]
 const sha = (s) => createHash('sha1').update(s).digest('hex')

@@ -1,0 +1,82 @@
+[
+  {
+    "command": [
+      "hyprctl",
+      "dispatch",
+      "sendshortcut",
+      ",Tab,address:0x5c07e2f7ec20"
+    ],
+    "exitCode": 0,
+    "output": "ok\n"
+  },
+  {
+    "command": [
+      "hyprctl",
+      "dispatch",
+      "sendshortcut",
+      ",Tab,address:0x5c07e2f7ec20"
+    ],
+    "exitCode": 0,
+    "output": "ok\n"
+  },
+  {
+    "command": [
+      "hyprctl",
+      "dispatch",
+      "sendshortcut",
+      ",Tab,address:0x5c07e2f7ec20"
+    ],
+    "exitCode": 0,
+    "output": "ok\n"
+  },
+  {
+    "command": [
+      "hyprctl",
+      "dispatch",
+      "sendshortcut",
+      ",Tab,address:0x5c07e2f7ec20"
+    ],
+    "exitCode": 0,
+    "output": "ok\n"
+  },
+  {
+    "command": [
+      "hyprctl",
+      "dispatch",
+      "sendshortcut",
+      ",Tab,address:0x5c07e2f7ec20"
+    ],
+    "exitCode": 0,
+    "output": "ok\n"
+  },
+  {
+    "command": [
+      "hyprctl",
+      "dispatch",
+      "sendshortcut",
+      ",space,address:0x5c07e2f7ec20"
+    ],
+    "exitCode": 0,
+    "output": "ok\n"
+  },
+  {
+    "command": [
+      "hyprctl",
+      "dispatch",
+      "sendshortcut",
+      ",Tab,address:0x5c07e2f7ec20"
+    ],
+    "exitCode": 0,
+    "output": "ok\n"
+  },
+  {
+    "command": [
+      "hyprctl",
+      "dispatch",
+      "sendshortcut",
+      ",Return,address:0x5c07e2f7ec20"
+    ],
+    "exitCode": 0,
+    "output": "ok\n"
+  }
+]

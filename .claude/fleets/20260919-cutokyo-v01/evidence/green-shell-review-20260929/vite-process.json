@@ -1,0 +1,15 @@
+{
+  "command": [
+    "pnpm",
+    "--dir",
+    "/home/lucas/Developer/personal/cutokyo-green-theme/ui",
+    "dev",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "4179",
+    "--strictPort"
+  ],
+  "pid": 1768777,
+  "port": 4179
+}

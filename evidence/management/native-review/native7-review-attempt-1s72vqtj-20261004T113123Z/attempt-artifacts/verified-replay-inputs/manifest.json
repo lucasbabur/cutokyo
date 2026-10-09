@@ -1,0 +1,17 @@
+{
+  "launch_manifest": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/package-launch.json",
+  "package_sha256": "8a653612ae3b09388c3c5156226c501de27c6e52082fe7169a7486c632c8b70c",
+  "inputs": [
+    {
+      "source": "/tmp/cutokyo-native-test-wdio-rlaiw0kw/bin/cutokyo",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/verified-replay-inputs/cutokyo",
+      "sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa"
+    },
+    {
+      "source": "/tmp/cutokyo-native-test-wdio-rlaiw0kw/bin/claude",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/verified-replay-inputs/claude",
+      "sha256": "74b0648c3b0bd21ad2f61c354e364b016a3475cbb491f9f73d20c1d49eab5536"
+    }
+  ],
+  "purpose": "Retain matching compiled inputs before successful isolated-root teardown. No desktop substitution."
+}

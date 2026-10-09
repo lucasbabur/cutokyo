@@ -1,0 +1,24 @@
+{
+  "pid": 1693899,
+  "command": [
+    "/home/lucas/Developer/personal/cutokyo-community/target/debug/cutokyo-desktop"
+  ],
+  "environment": {
+    "LANG": "en_US.UTF-8",
+    "WAYLAND_DISPLAY": "wayland-1",
+    "DISPLAY": ":0",
+    "XDG_RUNTIME_DIR": "/run/user/1000",
+    "PATH": "/home/lucas/.local/share/mise/dotnet-root:/home/lucas/.local/share/mise/installs/flutter/3.0.5/bin:/home/lucas/.local/share/mise/installs/java/temurin-11/bin:/home/lucas/.local/share/mise/installs/terraform/1.13:/home/lucas/.local/share/mise/installs/rclone/latest/rclone-v1.75.1-linux-amd64:/home/lucas/.local/share/mise/shims:/home/lucas/.local/bin:/home/lucas/.bun/bin:/home/lucas/go/bin:/home/lucas/.nvm/versions/node/v22.22.3/bin:/home/lucas/.local/bin:/home/lucas/.bun/bin:/home/lucas/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin:/home/lucas/.cargo/bin",
+    "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/1000/bus",
+    "HOME": "/tmp/cutokyo-product-audit-20261004/home",
+    "XDG_CONFIG_HOME": "/tmp/cutokyo-product-audit-20261004/config",
+    "XDG_DATA_HOME": "/tmp/cutokyo-product-audit-20261004/data",
+    "XDG_CACHE_HOME": "/tmp/cutokyo-product-audit-20261004/cache",
+    "CUTOKYO_CONFIG_HOME": "/tmp/cutokyo-product-audit-20261004/config",
+    "CUTOKYO_DATA_HOME": "/tmp/cutokyo-product-audit-20261004/data",
+    "GDK_BACKEND": "x11",
+    "WEBKIT_DISABLE_DMABUF_RENDERER": "1"
+  },
+  "sameWorkingTreeVerified": false,
+  "reason": "Current production UI build failed; this existing binary is supplemental only"
+}

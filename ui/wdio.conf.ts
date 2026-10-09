@@ -39,9 +39,37 @@ const capability: TauriCapabilities = {
   "tauri:options": { application },
 };
 
+const desktopSpec = "./tests/tauri/native-desktop.spec.ts";
+const persistenceSpecs = [
+  "./tests/tauri/backup-restore.spec.ts",
+  "./tests/tauri/inventory-management.spec.ts",
+  desktopSpec,
+];
+
 export const config: WebdriverIO.Config = {
   runner: "local",
-  specs: ["./tests/tauri/**/*.spec.ts"],
+  // Defer selection until WDIO reads the config, keeping static-tool imports
+  // side-effect-free while refusing invalid phases before services can launch.
+  get specs() {
+    switch (process.env.CUTOKYO_NATIVE_PHASE) {
+      case "save":
+        return [
+          ...persistenceSpecs,
+          "./tests/tauri/zz-health-capabilities.spec.ts",
+        ];
+      case "reopen":
+        return [...persistenceSpecs];
+      case "browse":
+      case "state-recovery":
+      case "capture-setup":
+      case "capture-history":
+        return [desktopSpec];
+      default:
+        throw new Error(
+          "CUTOKYO_NATIVE_PHASE must select save, reopen, browse, state-recovery, capture-setup, or capture-history.",
+        );
+    }
+  },
   maxInstances: 1,
   services: [["@wdio/tauri-service", serviceOptions]],
   capabilities: [capability],

@@ -5,7 +5,6 @@ export const SETTINGS_PATCH_SCHEMA_ID =
 /** Omission-preserving settings mutation. Missing fields remain unchanged. */
 export interface SettingsPatch {
   readonly proxy_enabled?: boolean;
-  readonly outgoing_guard_enabled?: boolean;
   readonly search_mcp_enabled?: boolean;
   readonly retention_days?: number | null;
 }

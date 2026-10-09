@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "gates": [
+    {
+      "name": "layout",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "name": "architecture",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "name": "contracts",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "name": "legal",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "name": "ci",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "name": "scope",
+      "passed": true,
+      "errors": []
+    }
+  ]
+}

@@ -6,6 +6,10 @@ use std::{
 };
 
 use cutokyo_domain::{ContractError, ErrorCode, Result};
+use jsonc_parser::{
+    ParseOptions,
+    cst::{CstInputValue, CstRootNode},
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map as JsonMap, Value as JsonValue, json};
 use sha2::{Digest, Sha256};
@@ -383,6 +387,45 @@ impl CodexSetup {
             changed: true,
             gaps: state.cleanup_gaps,
         })
+    }
+
+    /// Inspects durable recovery phase without changing any file.
+    ///
+    /// # Errors
+    /// Refuses corrupt or mismatched recovery state.
+    pub fn phase(&self) -> Result<Option<SetupPhase>> {
+        match self.read_state()? {
+            StateRead::MissingOrEmpty => Ok(None),
+            StateRead::Present(state) => {
+                self.require_matching_state(&state)?;
+                Ok(Some(state.phase))
+            }
+        }
+    }
+
+    /// Verifies active state and every configured capture hook without mutation.
+    ///
+    /// # Errors
+    /// Refuses unsafe targets, corrupt state, or changed managed entries.
+    pub fn verify(&self) -> Result<bool> {
+        let StateRead::Present(state) = self.read_state()? else {
+            return Ok(false);
+        };
+        self.require_matching_state(&state)?;
+        if state.phase != SetupPhase::Active {
+            return Ok(false);
+        }
+        self.validate_active_state(&state)?;
+        let current = read_regular_or_missing(&self.spec.hooks_path, "Codex hooks config")?;
+        let root = parse_hooks(&current.bytes)?;
+        let desired = managed_hook_entry(&self.spec.hook_command);
+        Ok(MANAGED_HOOK_EVENTS.iter().all(|event| {
+            root.get("hooks")
+                .and_then(JsonValue::as_object)
+                .and_then(|hooks| hooks.get(*event))
+                .and_then(JsonValue::as_array)
+                .is_some_and(|entries| entries.contains(&desired))
+        }))
     }
 
     fn verify_plan_baselines(&self, plan: &CodexSetupPlan) -> Result<()> {
@@ -961,7 +1004,7 @@ fn plan_hooks(bytes: &[u8], command: &str) -> Result<(Vec<u8>, HooksOwnership)> 
             entries.insert(event.to_owned(), desired.clone());
         }
     }
-    let bytes = pretty_json(&JsonValue::Object(root))?;
+    let bytes = edit_hooks_bytes(bytes, &root)?;
     Ok((
         bytes,
         HooksOwnership {
@@ -1021,7 +1064,7 @@ fn apply_hook_ownership(
         entries.push(desired.clone());
         changed = true;
     }
-    Ok((pretty_json(&JsonValue::Object(root))?, changed))
+    Ok((edit_hooks_bytes(bytes, &root)?, changed))
 }
 
 fn remove_hook_ownership(
@@ -1067,7 +1110,7 @@ fn remove_hook_ownership(
     }
     let empty = root.is_empty();
     let output = if changed {
-        pretty_json(&JsonValue::Object(root))?
+        edit_hooks_bytes(bytes, &root)?
     } else {
         bytes.to_vec()
     };
@@ -1143,15 +1186,93 @@ fn parse_hooks(bytes: &[u8]) -> Result<JsonMap<String, JsonValue>> {
     })
 }
 
-fn pretty_json(value: &JsonValue) -> Result<Vec<u8>> {
-    let mut bytes = serde_json::to_vec_pretty(value).map_err(|_| {
-        ContractError::new(
-            ErrorCode::Internal,
-            "failed to serialize Codex hooks config",
-        )
-    })?;
-    bytes.push(b'\n');
-    Ok(bytes)
+// Apply the already-validated ownership delta to the concrete syntax tree.
+// Serde owns the semantic plan; jsonc-parser preserves unmanaged bytes.
+fn edit_hooks_bytes(bytes: &[u8], desired: &JsonMap<String, JsonValue>) -> Result<Vec<u8>> {
+    let text = if bytes.iter().all(u8::is_ascii_whitespace) {
+        "{}\n"
+    } else {
+        std::str::from_utf8(bytes).map_err(|_| invalid_hooks_edit())?
+    };
+    let root = CstRootNode::parse(
+        text,
+        &ParseOptions {
+            allow_comments: false,
+            allow_loose_object_property_names: false,
+            allow_trailing_commas: false,
+            allow_missing_commas: false,
+            allow_single_quoted_strings: false,
+            allow_hexadecimal_numbers: false,
+            allow_unary_plus_numbers: false,
+        },
+    )
+    .map_err(|_| invalid_hooks_edit())?;
+    let object = root.object_value().ok_or_else(invalid_hooks_edit)?;
+    let Some(desired_hooks) = desired.get("hooks").and_then(JsonValue::as_object) else {
+        if let Some(property) = object.get("hooks") {
+            property.remove();
+        }
+        return Ok(root.to_string().into_bytes());
+    };
+    let hooks = object.object_value_or_set("hooks");
+    for event in MANAGED_HOOK_EVENTS {
+        let Some(wanted) = desired_hooks.get(event).and_then(JsonValue::as_array) else {
+            if let Some(property) = hooks.get(event) {
+                property.remove();
+            }
+            continue;
+        };
+        let array = hooks.array_value_or_set(event);
+        let mut retained = vec![false; wanted.len()];
+        for node in array.elements() {
+            let value = node.to_serde_value().ok_or_else(invalid_hooks_edit)?;
+            if let Some(index) = wanted
+                .iter()
+                .enumerate()
+                .position(|(index, entry)| !retained[index] && *entry == value)
+            {
+                retained[index] = true;
+            } else {
+                node.remove();
+            }
+        }
+        for (entry, retained) in wanted.iter().zip(retained) {
+            if !retained {
+                array.append(hook_cst_input(entry)?);
+            }
+        }
+    }
+    let rendered = root.to_string();
+    if parse_hooks(rendered.as_bytes())? != *desired {
+        return Err(invalid_hooks_edit());
+    }
+    Ok(rendered.into_bytes())
+}
+
+fn hook_cst_input(value: &JsonValue) -> Result<CstInputValue> {
+    match value {
+        JsonValue::Null => Ok(CstInputValue::Null),
+        JsonValue::Bool(value) => Ok(CstInputValue::Bool(*value)),
+        JsonValue::Number(value) => Ok(CstInputValue::Number(value.to_string())),
+        JsonValue::String(value) => Ok(CstInputValue::String(value.clone())),
+        JsonValue::Array(values) => values
+            .iter()
+            .map(hook_cst_input)
+            .collect::<Result<Vec<_>>>()
+            .map(CstInputValue::Array),
+        JsonValue::Object(values) => values
+            .iter()
+            .map(|(key, value)| Ok((key.clone(), hook_cst_input(value)?)))
+            .collect::<Result<Vec<_>>>()
+            .map(CstInputValue::Object),
+    }
+}
+
+fn invalid_hooks_edit() -> ContractError {
+    ContractError::new(
+        ErrorCode::InvalidContract,
+        "Codex hook ownership edit could not preserve the native configuration",
+    )
 }
 
 fn plan_otel(bytes: &[u8], endpoint: &str) -> Result<(Vec<u8>, OtelOwnership)> {

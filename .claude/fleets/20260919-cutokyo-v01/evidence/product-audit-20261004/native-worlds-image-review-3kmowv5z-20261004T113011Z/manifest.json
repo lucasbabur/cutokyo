@@ -1,0 +1,223 @@
+{
+  "scope": "Independent all-image and actual-receipt review of retained native6 package worlds replay",
+  "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z",
+  "review": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-worlds-image-review-3kmowv5z-20261004T113011Z",
+  "raw": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z",
+  "artifacts": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/browse-desktop-state.json",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/browse-desktop-state.json",
+      "sha256": "2c80390005ad0d52409016e86de679a1450b3648825c3be63682f7c6036dcb49",
+      "bytes": 151
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/capture-setup-desktop-state.json",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/capture-setup-desktop-state.json",
+      "sha256": "81d173d640cca1ae84e67f73f6c1986f0b2fd048b93247b9694626245add3320",
+      "bytes": 201
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/completed-capture-removal-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-worlds-image-review-3kmowv5z-20261004T113011Z/screens/completed-capture-removal-1280x800.png",
+      "sha256": "b71f7bea6aeb8ccd4c1b30e12767ddd2a325b816afa1bd2e862004aa34af04a8",
+      "bytes": 112064
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/execution-record.json",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/execution-record.json",
+      "sha256": "0ec71c5ea6ebcafc5c15c3f4393f100f8d4594befadf46f66210faf583c578c3",
+      "bytes": 584
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/native-desktop.spec-0-0.log",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/native-desktop.spec-0-0.log",
+      "sha256": "5198fc994f61279642bf4b4a6eb4f669c35db5bd63c73ae46edd1f02e57c6e31",
+      "bytes": 51648
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/native-hook-capture-drain.json",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/native-hook-capture-drain.json",
+      "sha256": "20a73c3b106dc3f647e02aa8dc161e302948cf1043983db6906252f248f6732a",
+      "bytes": 625
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/native-hook-detail-resume-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-worlds-image-review-3kmowv5z-20261004T113011Z/screens/native-hook-detail-resume-1280x800.png",
+      "sha256": "d19782e016d24f98093fdd959377e1b5e26c23104f1b17f68a7b51f42ca45781",
+      "bytes": 96835
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/native-hook-resume-audit.context.json",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/native-hook-resume-audit.context.json",
+      "sha256": "b1c1a79ead3046df4aef096c7de882f4dde363b02fe13e9eb435975671e648f0",
+      "bytes": 116
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/native-hook-resume-audit.txt",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/native-hook-resume-audit.txt",
+      "sha256": "0c301c15eb57d0e58ddc9ca62f71d7d977bca145b12fe88beff062d611e09b2b",
+      "bytes": 46
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/native-resume-terminal-before-capture-history.json",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/native-resume-terminal-before-capture-history.json",
+      "sha256": "cbfcb7685f53bb3f2797c0e435b8c804d048fe7ce6a2f2e679fa7e25b8279196",
+      "bytes": 1152
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/native-resume-terminal-cleanup-capture-history.json",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/native-resume-terminal-cleanup-capture-history.json",
+      "sha256": "9f99c1761d6629f9ac32543ea4f74f1f0002a7838594b9eb4e4ac4eb1e1df1ab",
+      "bytes": 1375
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/onboarding-browse-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-worlds-image-review-3kmowv5z-20261004T113011Z/screens/onboarding-browse-1280x800.png",
+      "sha256": "95a5321ff9fa5d07a833500c05e6571e8c294051cc0ef8dfda0d50c4db99303c",
+      "bytes": 82479
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/onboarding-native-verified-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-worlds-image-review-3kmowv5z-20261004T113011Z/screens/onboarding-native-verified-1280x800.png",
+      "sha256": "978c10fb55248cdb5214d5bc9df1d4c8adf7a7a00c0c9e3be3972df37c7eacf6",
+      "bytes": 138767
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/onboarding-package-worlds.json",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/onboarding-package-worlds.json",
+      "sha256": "d0d2b0e82c74fb9d9c5b3e7c45e74b2fe11b8a1b0ef09f1f5a7bd44005e8fe92",
+      "bytes": 979
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/package-launch.json",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/package-launch.json",
+      "sha256": "199507f6281c53fbcc3f813dc33245cf9566812af6ebc15b26c0edc6333b78d9",
+      "bytes": 1109
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/wdio-2026-10-04T11-19-13-838Z.log",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/wdio-2026-10-04T11-19-13-838Z.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/wdio-2026-10-04T11-19-30-889Z.log",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/wdio-2026-10-04T11-19-30-889Z.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/wdio-2026-10-04T11-20-47-336Z.log",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/wdio-2026-10-04T11-20-47-336Z.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/wdio.log",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/wdio.log",
+      "sha256": "bad2a97bc5a11924b9e78467afd212979f2f607efeaa1dd1f20e6428768361af",
+      "bytes": 2385
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/ui/tests/tauri/native-desktop.spec.ts",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/read-only-context/ui/tests/tauri/native-desktop.spec.ts",
+      "sha256": "16c37dbb0bf191ddd594d6a8d98e05068bfa0d4fba8b42ab8082e68b1bf90803",
+      "bytes": 25191,
+      "purpose": "Read-only current assertion/source context or historical failed receipt, not immutable packaged source identity."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/ui/scripts/native-e2e.py",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/read-only-context/ui/scripts/native-e2e.py",
+      "sha256": "8a8d781cfc687943e816f671f715998edb59291c872f3b86c1046100843f8d3f",
+      "bytes": 31567,
+      "purpose": "Read-only current assertion/source context or historical failed receipt, not immutable packaged source identity."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/ui/src/pages/OnboardingPage.tsx",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/read-only-context/ui/src/pages/OnboardingPage.tsx",
+      "sha256": "872bd0e27dd49f2402ee273c2c70694e24e16fd2e6e65f45516817ec0d92b83b",
+      "bytes": 14159,
+      "purpose": "Read-only current assertion/source context or historical failed receipt, not immutable packaged source identity."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/ui/src/styles.css",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/read-only-context/ui/src/styles.css",
+      "sha256": "5f2019bf3389857d38f188c22ff2771765b9af49ce4a170d8e817e8d6ceec742",
+      "bytes": 60239,
+      "purpose": "Read-only current assertion/source context or historical failed receipt, not immutable packaged source identity."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay.py",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/read-only-context/target/native-evidence/native-worlds-replay.py",
+      "sha256": "5e7bff77dccd3aa138faf583465702afa0126191f710f21a4df30861be0da57a",
+      "bytes": 2323,
+      "purpose": "Read-only current assertion/source context or historical failed receipt, not immutable packaged source identity."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-zvr0qdmh/execution-record.json",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/read-only-context/target/native-evidence/native-worlds-replay-zvr0qdmh/execution-record.json",
+      "sha256": "f0812b589feb374be40a5261140398f1d20e131f576af36f021b48fcee69ad43",
+      "bytes": 675,
+      "purpose": "Read-only current assertion/source context or historical failed receipt, not immutable packaged source identity."
+    }
+  ],
+  "images": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/completed-capture-removal-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-worlds-image-review-3kmowv5z-20261004T113011Z/screens/completed-capture-removal-1280x800.png",
+      "sha256": "b71f7bea6aeb8ccd4c1b30e12767ddd2a325b816afa1bd2e862004aa34af04a8",
+      "bytes": 112064,
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individual Read actual original PNG; independently decode IHDR/hash and preserve exact copy.",
+      "expected": "Readable capture cards and truthful self-consistent per-harness state, exact identity/consent, visible relevant controls.",
+      "actual": "FAIL visual: management card content falls into narrow first grid column, wrapping Claude Code and source description into a tall word stack despite wide card. This is page scroll, not clipped modal. Newly opened inline install preview is below viewport; no screenshot proof of its footer."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/native-hook-detail-resume-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-worlds-image-review-3kmowv5z-20261004T113011Z/screens/native-hook-detail-resume-1280x800.png",
+      "sha256": "d19782e016d24f98093fdd959377e1b5e26c23104f1b17f68a7b51f42ca45781",
+      "bytes": 96835,
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individual Read actual original PNG; independently decode IHDR/hash and preserve exact copy.",
+      "expected": "Readable capture cards and truthful self-consistent per-harness state, exact identity/consent, visible relevant controls.",
+      "actual": "PASS rendered post-launch startup receipt: exact UUID shown; cannot verify native activation caveat, hook/transcript messages, unknown branch and raw identity panel readable; long ID wraps; Resume focus ring clear."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/onboarding-browse-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-worlds-image-review-3kmowv5z-20261004T113011Z/screens/onboarding-browse-1280x800.png",
+      "sha256": "95a5321ff9fa5d07a833500c05e6571e8c294051cc0ef8dfda0d50c4db99303c",
+      "bytes": 82479,
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individual Read actual original PNG; independently decode IHDR/hash and preserve exact copy.",
+      "expected": "Readable capture cards and truthful self-consistent per-harness state, exact identity/consent, visible relevant controls.",
+      "actual": "PASS rendered empty unseeded history with explicit no-fabricated-zero explanation and Review capture setup recovery; filters fit."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/onboarding-native-verified-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-worlds-image-review-3kmowv5z-20261004T113011Z/screens/onboarding-native-verified-1280x800.png",
+      "sha256": "978c10fb55248cdb5214d5bc9df1d4c8adf7a7a00c0c9e3be3972df37c7eacf6",
+      "bytes": 138767,
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individual Read actual original PNG; independently decode IHDR/hash and preserve exact copy.",
+      "expected": "Readable capture cards and truthful self-consistent per-harness state, exact identity/consent, visible relevant controls.",
+      "actual": "FAIL evidence/state consistency: global Native capture configuration installed and verified message appears while checked harness cards show DISABLED and Configuration not verified. No screenshot closure for per-harness verified state; persistent runtime cause not established."
+    }
+  ],
+  "package_sha256": "de3e9a6d97825298612da554c8219cc67f461bf7ccb8da2a56e51bd385712316"
+}

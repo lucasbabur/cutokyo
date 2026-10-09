@@ -1,0 +1,20 @@
+[
+  {
+    "journey": "browse",
+    "root": "/tmp/cutokyo-native-test-wdio-89ewhibz",
+    "application": "/tmp/cutokyo-native-test-wdio-89ewhibz/package/usr/bin/cutokyo-desktop",
+    "application_sha256": "518eaf26d0fe4477249381faaaa00959f1732fc7bc53d99a7070c55dd6156c01",
+    "package_sha256": "8a653612ae3b09388c3c5156226c501de27c6e52082fe7169a7486c632c8b70c",
+    "receiver_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+    "fixture_seeding": false
+  },
+  {
+    "journey": "capture-setup",
+    "root": "/tmp/cutokyo-native-test-wdio-nogc0bo8",
+    "application": "/tmp/cutokyo-native-test-wdio-nogc0bo8/package/usr/bin/cutokyo-desktop",
+    "application_sha256": "518eaf26d0fe4477249381faaaa00959f1732fc7bc53d99a7070c55dd6156c01",
+    "package_sha256": "8a653612ae3b09388c3c5156226c501de27c6e52082fe7169a7486c632c8b70c",
+    "receiver_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+    "fixture_seeding": false
+  }
+]

@@ -1,0 +1,56 @@
+{
+  "results": [
+    {
+      "command": [
+        "/home/lucas/Developer/personal/cutokyo-community/target/debug/cutokyo",
+        "--config-file",
+        "/tmp/cutokyo-final-sqlite-kd2c60ge/config/config.toml",
+        "--data-dir",
+        "/tmp/cutokyo-final-sqlite-kd2c60ge/data",
+        "drain",
+        "--json"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"schema_version\":\"1.0.0\",\"command\":\"drain\",\"ok\":true,\"data\":{\"attempted\":0,\"duplicates\":0,\"inserted\":0,\"quarantined\":0,\"status\":{\"cap_reason\":null,\"drain_lag_seconds\":null,\"oldest_pending_unix\":null,\"pending_bytes\":0,\"pending_entries\":0}},\"meta\":{\"app_version\":\"0.1.0\",\"pending_crash_record\":false}}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/home/lucas/Developer/personal/cutokyo-community/target/debug/cutokyo",
+        "--config-file",
+        "/tmp/cutokyo-final-sqlite-kd2c60ge/config/config.toml",
+        "--data-dir",
+        "/tmp/cutokyo-final-sqlite-kd2c60ge/data",
+        "doctor",
+        "--json"
+      ],
+      "exit_code": 69,
+      "stdout": "{\"schema_version\":\"1.0.0\",\"command\":\"doctor\",\"ok\":false,\"data\":{\"checks\":[{\"id\":\"config\",\"message\":\"user configuration is absent; built-in defaults are active\",\"remediation\":\"run `cutokyo setup` to create the private user file\",\"status\":\"warn\"},{\"id\":\"config_permissions\",\"message\":\"permission state is unavailable because the target does not exist\",\"remediation\":\"run `cutokyo setup` and re-run doctor\",\"status\":\"warn\"},{\"id\":\"database_permissions\",\"message\":\"owner-only permissions are enforced\",\"remediation\":null,\"status\":\"pass\"},{\"id\":\"spool_permissions\",\"message\":\"owner-only permissions are enforced\",\"remediation\":null,\"status\":\"pass\"},{\"id\":\"spool\",\"message\":\"atomic spool has no pending entries\",\"remediation\":null,\"status\":\"pass\"},{\"id\":\"quarantine\",\"message\":\"no durable quarantine entries are present\",\"remediation\":null,\"status\":\"pass\"},{\"id\":\"health_persistence_file\",\"message\":\"no unreconciled health-persistence failure marker is present\",\"remediation\":null,\"status\":\"pass\"},{\"id\":\"sqlite_fts5\",\"message\":\"bundled SQLite 3.53.2 has FTS5 and required pragmas\",\"remediation\":null,\"status\":\"pass\"},{\"id\":\"database_integrity\",\"message\":\"integrity_check is ok\",\"remediation\":null,\"status\":\"pass\"},{\"id\":\"schema\",\"message\":\"schema 3 and derive 3 are current\",\"remediation\":null,\"status\":\"pass\"},{\"id\":\"persisted_health\",\"message\":\"no persisted health dimension is degraded\",\"remediation\":null,\"status\":\"pass\"},{\"id\":\"writer_lock\",\"message\":\"writer ownership metadata is present\",\"remediation\":null,\"status\":\"pass\"},{\"id\":\"harness_claude_code\",\"message\":\"installed harness reports 2.1.289 (Claude Code)\",\"remediation\":null,\"status\":\"pass\"},{\"id\":\"harness_codex\",\"message\":\"installed harness reports codex-cli 0.160.0\",\"remediation\":null,\"status\":\"pass\"},{\"id\":\"harness_opencode\",\"message\":\"installed harness reports 1.18.28\",\"remediation\":null,\"status\":\"pass\"},{\"id\":\"plugins\",\"message\":\"no external plugin directory is configured\",\"remediation\":null,\"status\":\"pass\"}],\"health\":{\"current_quarantine_count\":0,\"derive_version\":3,\"dimensions\":{\"backup\":{\"detail\":null,\"dimension\":\"backup\",\"failure_category\":null,\"first_affected_observation_id\":null,\"last_failure_at_epoch\":null,\"last_success_at_epoch\":null,\"status\":\"unknown\",\"updated_at_epoch\":0},\"derive\":{\"detail\":\"derive 3\",\"dimension\":\"derive\",\"failure_category\":null,\"first_affected_observation_id\":null,\"last_failure_at_epoch\":null,\"last_success_at_epoch\":1791097724,\"status\":\"healthy\",\"updated_at_epoch\":1791097724},\"health_persistence\":{\"detail\":null,\"dimension\":\"health_persistence\",\"failure_category\":null,\"first_affected_observation_id\":null,\"last_failure_at_epoch\":null,\"last_success_at_epoch\":null,\"status\":\"unknown\",\"updated_at_epoch\":0},\"integrity\":{\"detail\":null,\"dimension\":\"integrity\",\"failure_category\":null,\"first_affected_observation_id\":null,\"last_failure_at_epoch\":null,\"last_success_at_epoch\":null,\"status\":\"unknown\",\"updated_at_epoch\":0},\"quarantine\":{\"detail\":null,\"dimension\":\"quarantine\",\"failure_category\":null,\"first_affected_observation_id\":null,\"last_failure_at_epoch\":null,\"last_success_at_epoch\":0,\"status\":\"healthy\",\"updated_at_epoch\":0},\"rebuild\":{\"detail\":\"derived projections rebuilt from immutable observations\",\"dimension\":\"rebuild\",\"failure_category\":null,\"first_affected_observation_id\":null,\"last_failure_at_epoch\":null,\"last_success_at_epoch\":1791097724,\"status\":\"healthy\",\"updated_at_epoch\":1791097724},\"restore\":{\"detail\":null,\"dimension\":\"restore\",\"failure_category\":null,\"first_affected_observation_id\":null,\"last_failure_at_epoch\":null,\"last_success_at_epoch\":null,\"status\":\"unknown\",\"updated_at_epoch\":0},\"schema\":{\"detail\":\"schema 3\",\"dimension\":\"schema\",\"failure_category\":null,\"first_affected_observation_id\":null,\"last_failure_at_epoch\":null,\"last_success_at_epoch\":1791097724,\"status\":\"healthy\",\"updated_at_epoch\":1791097724},\"spool_cap\":{\"detail\":\"spool remains below age and byte caps\",\"dimension\":\"spool_cap\",\"failure_category\":null,\"first_affected_observation_id\":null,\"last_failure_at_epoch\":null,\"last_success_at_epoch\":1791097724,\"status\":\"healthy\",\"updated_at_epoch\":1791097724},\"spool_drain\":{\"detail\":\"spool is drained\",\"dimension\":\"spool_drain\",\"failure_category\":null,\"first_affected_observation_id\":null,\"last_failure_at_epoch\":null,\"last_success_at_epoch\":1791097724,\"status\":\"healthy\",\"updated_at_epoch\":1791097724},\"writer_lock\":{\"detail\":\"cli pid 2770961\",\"dimension\":\"writer_lock\",\"failure_category\":null,\"first_affected_observation_id\":null,\"last_failure_at_epoch\":null,\"last_success_at_epoch\":1791097724,\"status\":\"healthy\",\"updated_at_epoch\":1791097724}},\"drain_lag_seconds\":null,\"drain_oldest_unix\":null,\"drain_pending_bytes\":0,\"drain_pending_count\":0,\"first_affected_observation_id\":null,\"last_integrity_result\":null,\"lifetime_quarantine_count\":0,\"query_generation\":2,\"schema_version\":3,\"spool_cap_reason\":null,\"writer_owner\":\"{\\\"pid\\\":2770961,\\\"frontend\\\":\\\"cli\\\",\\\"started_at\\\":\\\"2026-10-04T07:08:36.419208649Z\\\",\\\"connect_endpoint\\\":null}\"},\"outcome\":\"capability_unavailable\",\"process_liveness\":true,\"product_readiness\":false,\"row_counts\":{\"current_quarantines\":0,\"fts_rows\":0,\"messages\":0,\"raw_observations\":0,\"sessions\":0,\"summaries\":0},\"sqlite\":{\"busy_timeout_millis\":5000,\"foreign_keys\":true,\"fts5_available\":true,\"journal_mode\":\"wal\",\"sqlite_version\":\"3.53.2\",\"sqlite_version_number\":3053002,\"synchronous\":1}},\"meta\":{\"app_version\":\"0.1.0\",\"pending_crash_record\":false}}\n",
+      "stderr": ""
+    }
+  ],
+  "sqlite": {
+    "busy_timeout_millis": 5000,
+    "foreign_keys": true,
+    "fts5_available": true,
+    "journal_mode": "wal",
+    "sqlite_version": "3.53.2",
+    "sqlite_version_number": 3053002,
+    "synchronous": 1
+  },
+  "sqlite_check": {
+    "id": "sqlite_fts5",
+    "message": "bundled SQLite 3.53.2 has FTS5 and required pragmas",
+    "remediation": null,
+    "status": "pass"
+  },
+  "integrity_check": {
+    "id": "database_integrity",
+    "message": "integrity_check is ok",
+    "remediation": null,
+    "status": "pass"
+  },
+  "isolated_home": true,
+  "native_configuration_mutations": false,
+  "provider_requests": false
+}

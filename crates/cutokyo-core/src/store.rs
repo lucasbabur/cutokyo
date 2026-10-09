@@ -30,12 +30,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use time::{OffsetDateTime, format_description::well_known::Rfc3339};
+use unicode_normalization::UnicodeNormalization as _;
 use uuid::Uuid;
 
 /// Current forward-only database schema version.
-pub const DATABASE_SCHEMA_VERSION: u32 = 2;
+pub const DATABASE_SCHEMA_VERSION: u32 = 5;
 /// Current rebuildable projection derivation version.
-pub const DERIVE_VERSION: u32 = 1;
+pub const DERIVE_VERSION: u32 = 4;
 /// Busy timeout required on every SQLite connection.
 pub const SQLITE_BUSY_TIMEOUT_MILLIS: u32 = 5_000;
 /// Automatic passive checkpoint page threshold.
@@ -51,6 +52,9 @@ const PROXY_STATE_META_KEY: &str = "proxy_lifecycle_state_v1";
 const MAX_PROXY_STATE_BYTES: usize = 1_024;
 const MIGRATION_1: &str = include_str!("../migrations/0001_initial.sql");
 const MIGRATION_2: &str = include_str!("../migrations/0002_durable_core.sql");
+const MIGRATION_3: &str = include_str!("../migrations/0003_session_search.sql");
+const MIGRATION_4: &str = include_str!("../migrations/0004_native_history_import.sql");
+const MIGRATION_5: &str = include_str!("../migrations/0005_history_import_usage_rule.sql");
 const HEALTH_DIMENSIONS: [&str; 11] = [
     "health_persistence",
     "quarantine",
@@ -279,6 +283,72 @@ pub struct HealthSnapshot {
     pub query_generation: u64,
 }
 
+/// Interpretation of ordinary text. Neither mode accepts FTS operators.
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SearchMode {
+    /// Every Unicode word must occur somewhere in the session document.
+    #[default]
+    Terms,
+    /// Words must occur consecutively in a single indexed field.
+    Phrase,
+}
+
+/// Stable ordering, with start time and session identity breaking relevance ties.
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SearchSort {
+    /// FTS5 BM25 with higher weights for session metadata.
+    #[default]
+    Relevance,
+    /// Most recent session start first.
+    Newest,
+}
+
+/// Plain text excerpt. Consumers must escape text, never interpret it as HTML.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct SearchMatch {
+    /// title, project, branch, `native_id`, or transcript.
+    pub source: String,
+    /// At most 320 Unicode characters of matching context.
+    pub text: String,
+    /// Literal query words suitable for escaped presentation highlighting.
+    pub terms: Vec<String>,
+}
+
+/// Observed exact filter values across all stored history, not just the first page.
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+pub struct SearchFacets {
+    /// Observed projects.
+    pub projects: Vec<String>,
+    /// Observed branches.
+    pub branches: Vec<String>,
+    /// Observed tools.
+    pub tools: Vec<String>,
+    /// Observed skills.
+    pub skills: Vec<String>,
+    /// Observed agents.
+    pub agents: Vec<String>,
+}
+
+/// One bounded page and an exact count, read in the same SQLite snapshot.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct SearchPage {
+    /// Matching sessions on this page.
+    pub sessions: Vec<SearchResult>,
+    /// Exact number of matching sessions before paging.
+    pub total: u64,
+    /// Applied offset.
+    pub offset: u32,
+    /// Applied page size.
+    pub limit: u32,
+    /// Whether another page exists.
+    pub has_more: bool,
+    /// Actual observed filter choices.
+    pub facets: SearchFacets,
+}
+
 /// Search filters accepted by app use cases.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct SearchQuery {
@@ -304,6 +374,12 @@ pub struct SearchQuery {
     pub agent: Option<String>,
     /// Bounded result count.
     pub limit: u32,
+    /// Number of matching sessions to skip. No 500-session history cutoff.
+    pub offset: u32,
+    /// Literal terms or explicit phrase matching.
+    pub mode: SearchMode,
+    /// Relevance or newest ordering.
+    pub sort: SearchSort,
 }
 
 /// Attributable search result.
@@ -326,6 +402,9 @@ pub struct SearchResult {
     pub title: Option<String>,
     /// Session start.
     pub started_at: Timestamp,
+    /// Bounded plain-text query match context. Empty on non-search lookups.
+    #[serde(default)]
+    pub matches: Vec<SearchMatch>,
     /// Matching/winning raw evidence IDs.
     pub observation_ids: Vec<ObservationId>,
     /// Winning source provenance.
@@ -356,7 +435,7 @@ pub struct SessionDetail {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct UsageTotals {
-    /// Input tokens.
+    /// Total input tokens including the cache breakdown below (never add them again).
     pub input_tokens: Option<u64>,
     /// Output tokens.
     pub output_tokens: Option<u64>,
@@ -470,6 +549,36 @@ pub struct BackupManifest {
     pub integrity_result: String,
 }
 
+/// Honest contents of a database-only local backup.
+pub const BACKUP_SCOPE: &str = "Local session history, raw evidence, search projections, and summaries. Settings, harness configuration, and pending spool entries are excluded. Backups are private local files, not application-encrypted.";
+
+/// One backup directory presented as a single recovery item.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct BackupInfo {
+    /// Absolute directory containing the database and its manifest.
+    pub path: PathBuf,
+    /// Verified manifest creation time.
+    pub created_at: Timestamp,
+    /// Closed database size in bytes.
+    pub byte_length: u64,
+    /// Sessions available to restore.
+    pub session_count: u64,
+    /// Contents and exclusions.
+    pub scope: String,
+}
+
+/// Verified restore selection, bound to both backup and current history.
+#[derive(Clone, Debug)]
+pub struct BackupRestorePlan {
+    /// Selected backup metadata.
+    pub backup: BackupInfo,
+    /// Current sessions that will be replaced, with a recovery copy retained.
+    pub current_session_count: u64,
+    backup_digest: String,
+    history_digest: String,
+}
+
 /// Successful restore receipt.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -480,6 +589,8 @@ pub struct RestoreReceipt {
     pub previous_backup: PathBuf,
     /// Post-replacement integrity result.
     pub integrity_result: String,
+    /// Actual sessions rediscovered in the restored live database.
+    pub restored_session_count: u64,
 }
 
 /// Read-only store handle. Each operation opens and configures a short-lived
@@ -855,6 +966,14 @@ impl WriterStore {
         self.reader().search(query)
     }
 
+    /// Reads an exact count, bounded page, and observed facets together.
+    ///
+    /// # Errors
+    /// Returns invalid input or a store read error.
+    pub fn search_page(&self, query: &SearchQuery) -> Result<SearchPage> {
+        self.reader().search_page(query)
+    }
+
     /// Looks up one exact session projection.
     ///
     /// # Errors
@@ -922,6 +1041,22 @@ impl WriterStore {
     /// Returns a store or contract-decoding error if the snapshot cannot be read.
     pub fn latest_installation(&self, harness: Harness) -> Result<Option<InstallationSnapshot>> {
         self.reader().latest_installation(harness)
+    }
+
+    /// Returns the private project directory established for one exact session.
+    ///
+    /// # Errors
+    /// Returns a store error when project metadata cannot be read.
+    pub fn session_project_directory(&self, session_id: &SessionId) -> Result<Option<PathBuf>> {
+        self.reader().session_project_directory(session_id)
+    }
+
+    /// Returns bounded known project paths for live native inventory discovery.
+    ///
+    /// # Errors
+    /// Returns a store error when project paths cannot be read.
+    pub fn inventory_project_roots(&self) -> Result<Vec<PathBuf>> {
+        self.reader().inventory_project_roots()
     }
 
     /// Writes an idempotent attributable summary and source-session links.
@@ -1110,6 +1245,16 @@ impl WriterStore {
             .map_err(|error| sqlite_error("begin delete-all transaction", &error))?;
         let receipt = deletion_counts_tx(&transaction, None)?;
         transaction
+            .execute(
+                &format!("INSERT OR REPLACE INTO history_import_tombstones(harness, native_session_key, deleted_at_epoch) SELECT harness, native_session_key, {} FROM sessions", unix_now()?),
+                [],
+            )
+            .map_err(|error| sqlite_error("remember deleted native sessions", &error))?;
+        history::record_delete_all_floor(&transaction, unix_now()?)?;
+        transaction
+            .execute("DELETE FROM history_import_sources", [])
+            .map_err(|error| sqlite_error("reset history import cursors", &error))?;
+        transaction
             .execute("DELETE FROM message_fts", [])
             .map_err(|error| sqlite_error("delete all FTS rows", &error))?;
         transaction
@@ -1196,7 +1341,7 @@ impl WriterStore {
     }
 
     /// Creates a coherent online backup, checks it, hashes its closed bytes, and
-    /// atomically publishes the database plus manifest.
+    /// publishes database and manifest without overwriting, cleaning both on failure.
     ///
     /// # Errors
     ///
@@ -1210,54 +1355,350 @@ impl WriterStore {
     }
 
     fn backup_inner(&self, destination: &Path) -> Result<BackupManifest> {
-        if destination == self.path {
+        refuse_live_alias(destination, &self.path)?;
+        let _guard = self.write_guard()?;
+        let manifest_path = backup_manifest_path(destination);
+        if fs::symlink_metadata(destination).is_ok() || fs::symlink_metadata(&manifest_path).is_ok()
+        {
             return Err(ContractError::new(
                 ErrorCode::InvalidInput,
-                "backup destination must differ from the live database",
+                "backup destination already exists; choose a new location",
             ));
         }
-        let _guard = self.write_guard()?;
-        if let Some(parent) = destination.parent() {
-            create_private_directory(parent)?;
+        let parent = destination.parent().ok_or_else(|| {
+            ContractError::new(ErrorCode::InvalidInput, "backup path has no parent")
+        })?;
+        create_private_directory(parent)?;
+        let staging = tempfile::tempdir_in(parent)
+            .map_err(|error| io_error("stage private backup", &error))?;
+        set_private_directory(staging.path())?;
+        let temporary = staging.path().join("history.db");
+        let manifest = self.create_online_backup(&temporary)?;
+        let temporary_manifest = backup_manifest_path(&temporary);
+        write_atomic_json(&temporary_manifest, &manifest)?;
+        // Hard-link publication is create-new: neither file can silently replace
+        // a destination. On a second-file or flush failure, remove only our link.
+        fs::hard_link(&temporary, destination)
+            .map_err(|error| io_error("publish online backup without overwriting", &error))?;
+        if let Err(error) = fs::hard_link(&temporary_manifest, &manifest_path) {
+            let cleanup = fs::remove_file(destination);
+            return Err(publication_error(
+                "publish backup manifest",
+                &error,
+                &cleanup,
+            ));
         }
-        let temporary = temporary_peer(destination, "backup")?;
-        let result = self.create_online_backup(&temporary);
-        let manifest = match result {
-            Ok(manifest) => manifest,
-            Err(error) => {
-                let _ignored = fs::remove_file(&temporary);
-                return Err(error);
-            }
-        };
-        fs::rename(&temporary, destination)
-            .map_err(|error| io_error("publish online backup", &error))?;
-        sync_parent(destination)?;
-        let manifest_path = backup_manifest_path(destination);
-        write_atomic_json(&manifest_path, &manifest)?;
-        let now = unix_now()?;
-        let connection = open_write_connection(&self.path)?;
-        connection
-            .execute(
+        if let Err(error) = sync_parent(destination) {
+            let database_cleanup = fs::remove_file(destination);
+            let manifest_cleanup = fs::remove_file(&manifest_path);
+            return Err(ContractError::new(
+                ErrorCode::Internal,
+                format!(
+                    "{error}; backup cleanup: database={database_cleanup:?}, manifest={manifest_cleanup:?}"
+                ),
+            ));
+        }
+        let metadata_result: Result<()> = (|| {
+            let now = unix_now()?;
+            let connection = open_write_connection(&self.path)?;
+            let transaction = connection
+                .unchecked_transaction()
+                .map_err(|error| sqlite_error("begin backup receipt", &error))?;
+            transaction.execute(
                 "INSERT OR REPLACE INTO backup_history(digest, path_label, byte_length, created_at_epoch, schema_version, integrity_result) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
                 params![manifest.sha256, file_label(destination), u64_to_i64(manifest.byte_length)?, now, manifest.schema_version, manifest.integrity_result],
-            )
-            .map_err(|error| sqlite_error("persist backup history", &error))?;
-        connection
-            .execute(
+            ).map_err(|error| sqlite_error("persist backup history", &error))?;
+            transaction.execute(
                 "UPDATE health_state SET last_backup_at_epoch = ?1, last_backup_digest = ?2, health_query_generation = health_query_generation + 1 WHERE singleton = 1",
                 params![now, manifest.sha256],
-            )
-            .map_err(|error| sqlite_error("persist backup health", &error))?;
-        set_dimension_connection(
-            &connection,
-            "backup",
-            HealthStatus::Healthy,
-            now,
-            None,
-            Some("online backup digest and integrity verified"),
-            None,
-        )?;
+            ).map_err(|error| sqlite_error("persist backup health", &error))?;
+            set_dimension_tx(
+                &transaction,
+                "backup",
+                HealthStatus::Healthy,
+                now,
+                None,
+                Some("online backup digest and integrity verified"),
+                None,
+            )?;
+            transaction
+                .commit()
+                .map_err(|error| sqlite_error("commit backup receipt", &error))
+        })();
+        if let Err(error) = metadata_result {
+            let database_cleanup = fs::remove_file(destination);
+            let manifest_cleanup = fs::remove_file(&manifest_path);
+            return Err(ContractError::new(
+                error.code,
+                format!(
+                    "{}; backup cleanup: database={database_cleanup:?}, manifest={manifest_cleanup:?}",
+                    error.message
+                ),
+            ));
+        }
         Ok(manifest)
+    }
+
+    /// Creates one private backup directory; a collision never overwrites data.
+    ///
+    /// # Errors
+    /// Returns publication, validation, permission, or SQLite errors.
+    pub fn create_backup(&self, destination: Option<&Path>) -> Result<BackupInfo> {
+        let root = self.backup_root()?;
+        let destination = destination.map_or_else(
+            || {
+                root.join(format!(
+                    "backup-{}-{}",
+                    OffsetDateTime::now_utc().unix_timestamp(),
+                    Uuid::new_v4()
+                ))
+            },
+            Path::to_path_buf,
+        );
+        self.publish_backup_directory(&destination, true)?;
+        let result = self.backup_info(&destination).and_then(|info| {
+            self.register_backup_location(&info.path)?;
+            Ok(info)
+        });
+        match result {
+            Ok(info) => Ok(info),
+            Err(error) => Err(ContractError::new(
+                error.code,
+                format!(
+                    "{}; the complete backup is retained at {}",
+                    error.message,
+                    destination.display()
+                ),
+            )),
+        }
+    }
+
+    fn publish_backup_directory(&self, destination: &Path, record_receipt: bool) -> Result<()> {
+        self.publish_backup_directory_inner(destination, record_receipt, |_| Ok(()))
+    }
+
+    fn publish_backup_directory_inner(
+        &self,
+        destination: &Path,
+        record_receipt: bool,
+        before_publish: impl FnOnce(&Path) -> Result<()>,
+    ) -> Result<()> {
+        refuse_symlink_components(destination)?;
+        let parent = destination.parent().ok_or_else(|| {
+            ContractError::new(ErrorCode::InvalidInput, "backup directory has no parent")
+        })?;
+        if fs::symlink_metadata(destination).is_ok() {
+            return Err(ContractError::new(
+                ErrorCode::InvalidInput,
+                "backup directory already exists; existing destinations are not overwritten",
+            ));
+        }
+        if !parent.exists() {
+            create_private_directory(parent)?;
+        }
+        let mut published = false;
+        let result: Result<()> = (|| {
+            let staging = tempfile::Builder::new()
+                .prefix(".cutokyo-backup-")
+                .tempdir_in(parent)
+                .map_err(|error| io_error("stage complete backup directory", &error))?;
+            set_private_directory(staging.path())?;
+            let database = staging.path().join("history.db");
+            if record_receipt {
+                self.backup(&database)?;
+            } else {
+                let manifest = self.create_online_backup(&database)?;
+                write_atomic_json(&backup_manifest_path(&database), &manifest)?;
+            }
+            sync_directory(staging.path())?;
+            before_publish(destination)?;
+            // The destination appears only as a complete DB+manifest directory.
+            // The OS no-replace primitive also refuses a late empty-directory claim.
+            publish_directory_noreplace(staging.path(), destination)?;
+            published = true;
+            sync_parent(destination)
+        })();
+        if let Err(error) = result {
+            if published {
+                return Err(ContractError::new(
+                    error.code,
+                    format!(
+                        "{}; the complete backup is retained at {}",
+                        error.message,
+                        destination.display()
+                    ),
+                ));
+            }
+            // TempDir cleans our private staging. The destination was never ours,
+            // so never remove a directory another process may have claimed.
+            return Err(error);
+        }
+        Ok(())
+    }
+
+    /// Lists complete backup directories from the default location. Verification
+    /// of the selected bytes occurs during restore preview, not on every render.
+    ///
+    /// # Errors
+    /// Returns a directory access error; malformed/incomplete entries are omitted.
+    pub fn list_backups(&self) -> Result<Vec<BackupInfo>> {
+        let root = self.backup_root()?;
+        if !root.exists() {
+            return Ok(Vec::new());
+        }
+        refuse_symlink_components(&root)?;
+        let entries =
+            fs::read_dir(&root).map_err(|error| io_error("list local backups", &error))?;
+        let mut paths = self
+            .read_backup_locations()?
+            .into_iter()
+            .collect::<BTreeSet<_>>();
+        for entry in entries {
+            let entry = entry.map_err(|error| io_error("read local backup entry", &error))?;
+            if !entry.file_name().to_string_lossy().starts_with('.') {
+                paths.insert(entry.path());
+            }
+        }
+        let mut backups = Vec::new();
+        for path in paths {
+            if let Ok(info) = self.backup_info(&path) {
+                backups.push(info);
+            }
+        }
+        backups.sort_by(|left, right| right.created_at.as_str().cmp(left.created_at.as_str()));
+        Ok(backups)
+    }
+
+    /// Validates one selection and binds its digest and the exact current history.
+    /// No database, spool, or settings mutation occurs during preview.
+    ///
+    /// # Errors
+    /// Refuses tampering, corruption, unsupported schema, or unsafe paths.
+    pub fn preview_backup_restore(&self, path: &Path) -> Result<BackupRestorePlan> {
+        let _guard = self.write_guard()?;
+        let mut backup = self.backup_info(path)?;
+        let database = backup.path.join("history.db");
+        let manifest = read_backup_manifest(&database)?;
+        verify_backup_digest(&database, &manifest)?;
+        let staging = tempfile::tempdir_in(self.path.parent().ok_or_else(|| {
+            ContractError::new(ErrorCode::InvalidInput, "live database has no parent")
+        })?)
+        .map_err(|error| io_error("stage restore preview", &error))?;
+        set_private_directory(staging.path())?;
+        let snapshot = staging.path().join("history.db");
+        fs::copy(&database, &snapshot)
+            .map_err(|error| io_error("snapshot selected backup", &error))?;
+        set_private_file(&snapshot)?;
+        verify_backup_digest(&snapshot, &manifest)?;
+        let connection = open_closed_backup(&snapshot)?;
+        validate_backup_connection(&connection, &manifest)?;
+        drop(connection);
+        let (_, prepared_session_count) = prepare_restore_candidate(&snapshot)?;
+        backup.session_count = prepared_session_count;
+        let live = open_read_connection(&self.path)?;
+        Ok(BackupRestorePlan {
+            backup,
+            current_session_count: backup_session_count(&live)?,
+            backup_digest: manifest.sha256,
+            history_digest: history_fingerprint(&live)?,
+        })
+    }
+
+    /// Applies a confirmed preview, refusing stale history or changed backup bytes.
+    ///
+    /// # Errors
+    /// Returns stale-selection, verification, replacement, or recovery errors.
+    pub fn restore_backup(&self, plan: &BackupRestorePlan) -> Result<RestoreReceipt> {
+        let result = self.restore_inner(
+            &plan.backup.path.join("history.db"),
+            RestoreFault::None,
+            Some(plan),
+        );
+        if result.is_err()
+            && self
+                .record_restore_failure("verified_restore_failed")
+                .is_err()
+        {
+            let _sidecar_result = self.persist_health_write_failure("restore_health_write");
+        }
+        result
+    }
+
+    fn backup_root(&self) -> Result<PathBuf> {
+        self.path
+            .parent()
+            .map(|parent| parent.join("backups"))
+            .ok_or_else(|| {
+                ContractError::new(
+                    ErrorCode::InvalidInput,
+                    "live database has no data directory",
+                )
+            })
+    }
+
+    fn read_backup_locations(&self) -> Result<Vec<PathBuf>> {
+        let path = self.backup_root()?.join("locations.json");
+        if !path.exists() {
+            return Ok(Vec::new());
+        }
+        require_regular_file(&path)?;
+        let bytes =
+            fs::read(path).map_err(|error| io_error("read optional backup locations", &error))?;
+        serde_json::from_slice(&bytes)
+            .map_err(|error| serialization_error("decode optional backup locations", &error))
+    }
+
+    fn register_backup_location(&self, location: &Path) -> Result<()> {
+        let _guard = self.write_guard()?;
+        let root = self.backup_root()?;
+        refuse_symlink_components(&root)?;
+        create_private_directory(&root)?;
+        if location.parent() == fs::canonicalize(&root).ok().as_deref() {
+            return Ok(());
+        }
+        let mut locations = self.read_backup_locations()?;
+        if locations.iter().any(|path| path == location) {
+            return Ok(());
+        }
+        locations.push(location.to_path_buf());
+        let mut temporary = tempfile::NamedTempFile::new_in(&root)
+            .map_err(|error| io_error("stage backup location index", &error))?;
+        set_private_file(temporary.path())?;
+        let bytes = serde_json::to_vec(&locations)
+            .map_err(|error| serialization_error("encode backup locations", &error))?;
+        temporary
+            .write_all(&bytes)
+            .and_then(|()| temporary.as_file().sync_all())
+            .map_err(|error| io_error("flush backup locations", &error))?;
+        temporary
+            .persist(root.join("locations.json"))
+            .map_err(|error| io_error("publish backup locations", &error))?;
+        sync_directory(&root)
+    }
+
+    fn backup_info(&self, path: &Path) -> Result<BackupInfo> {
+        refuse_symlink_components(path)?;
+        let path =
+            fs::canonicalize(path).map_err(|error| io_error("resolve backup location", &error))?;
+        if !path.is_dir() {
+            return Err(ContractError::new(
+                ErrorCode::InvalidInput,
+                "select a backup directory",
+            ));
+        }
+        let database = path.join("history.db");
+        refuse_live_alias(&database, &self.path)?;
+        require_closed_backup(&database)?;
+        let manifest = read_backup_manifest(&database)?;
+        let connection = open_closed_backup(&database)?;
+        validate_backup_connection(&connection, &manifest)?;
+        Ok(BackupInfo {
+            path,
+            created_at: manifest.created_at,
+            byte_length: manifest.byte_length,
+            session_count: backup_session_count(&connection)?,
+            scope: BACKUP_SCOPE.to_owned(),
+        })
     }
 
     /// Verifies digest before replacement, retains a coherent previous backup,
@@ -1267,7 +1708,7 @@ impl WriterStore {
     ///
     /// Returns verification, lock, copy, migration, integrity, replacement, or rollback errors.
     pub fn restore(&self, backup_path: impl AsRef<Path>) -> Result<RestoreReceipt> {
-        let result = self.restore_inner(backup_path.as_ref(), RestoreFault::None);
+        let result = self.restore_inner(backup_path.as_ref(), RestoreFault::None, None);
         if let Err(error) = &result {
             let category = match error.code {
                 ErrorCode::InvalidContract => "verification_failed",
@@ -1282,11 +1723,29 @@ impl WriterStore {
         result
     }
 
-    fn restore_inner(&self, backup_path: &Path, fault: RestoreFault) -> Result<RestoreReceipt> {
+    fn restore_inner(
+        &self,
+        backup_path: &Path,
+        fault: RestoreFault,
+        plan: Option<&BackupRestorePlan>,
+    ) -> Result<RestoreReceipt> {
         let _guard = self.write_guard()?;
+        refuse_live_alias(backup_path, &self.path)?;
+        require_regular_file(backup_path)?;
         let manifest = read_backup_manifest(backup_path)?;
+        if let Some(plan) = plan {
+            let live = open_read_connection(&self.path)?;
+            if manifest.sha256 != plan.backup_digest
+                || history_fingerprint(&live)? != plan.history_digest
+            {
+                return Err(ContractError::new(
+                    ErrorCode::InvalidInput,
+                    "Backup or current history changed after preview. Review the restore again; history was not replaced.",
+                ));
+            }
+        }
         verify_backup_digest(backup_path, &manifest)?;
-        let backup_connection = open_read_connection(backup_path)?;
+        let backup_connection = open_closed_backup(backup_path)?;
         if integrity_check_connection(&backup_connection)? != "ok" {
             return Err(ContractError::new(
                 ErrorCode::InvalidContract,
@@ -1310,75 +1769,61 @@ impl WriterStore {
         refuse_newer_schema(&backup_connection)?;
         drop(backup_connection);
 
-        let previous_path =
-            self.path
-                .with_extension(format!("pre-restore-{}-{}.db", unix_now()?, Uuid::new_v4()));
-        let previous_manifest = self.create_online_backup(&previous_path)?;
-        write_atomic_json(&backup_manifest_path(&previous_path), &previous_manifest)?;
-        let candidate = temporary_peer(&self.path, "restore")?;
-        sqlite_copy_database(backup_path, &candidate)?;
-        let mut candidate_connection = open_write_connection(&candidate)?;
-        migrate_forward(&mut candidate_connection)?;
-        repair_health_projection(&candidate_connection)?;
-        let candidate_rebuilt = ensure_derive_version(&mut candidate_connection)?;
-        validate_sqlite_runtime(&candidate_connection)?;
-        let candidate_checkpoint =
-            checkpoint_connection(&candidate_connection, CheckpointMode::Truncate)?;
-        if candidate_checkpoint.busy != 0 {
-            return Err(ContractError::new(
-                ErrorCode::Unhealthy,
-                "staged restore could not fold its WAL into the database",
-            ));
-        }
-        let candidate_integrity = integrity_check_connection(&candidate_connection)?;
-        if candidate_integrity != "ok" {
-            drop(candidate_connection);
-            let _ignored = fs::remove_file(&candidate);
-            return Err(ContractError::new(
-                ErrorCode::InvalidContract,
-                "staged restore failed integrity before replacement",
-            ));
-        }
-        drop(candidate_connection);
-        remove_wal_sidecars(&candidate)?;
+        let recovery_root = self.backup_root()?;
+        refuse_symlink_components(&recovery_root)?;
+        create_private_directory(&recovery_root)?;
+        let previous_directory =
+            recovery_root.join(format!("recovery-{}-{}", unix_now()?, Uuid::new_v4()));
+        self.publish_backup_directory(&previous_directory, false)?;
+        let previous_path = previous_directory.join("history.db");
+        let staging = tempfile::tempdir_in(self.path.parent().ok_or_else(|| {
+            ContractError::new(ErrorCode::InvalidInput, "live database has no parent")
+        })?)
+        .map_err(|error| io_error("stage restore candidate", &error))?;
+        set_private_directory(staging.path())?;
+        let candidate = staging.path().join("history.db");
+        // A backup is a closed database. Copy those exact bytes and verify the
+        // staged snapshot, so source changes after preview cannot cross this boundary.
+        fs::copy(backup_path, &candidate)
+            .map_err(|error| io_error("stage verified restore bytes", &error))?;
         set_private_file(&candidate)?;
+        verify_backup_digest(&candidate, &manifest)?;
+        let (candidate_rebuilt, _) = prepare_restore_candidate(&candidate)?;
 
-        let live_connection = open_write_connection(&self.path)?;
-        let checkpoint = checkpoint_connection(&live_connection, CheckpointMode::Truncate)?;
-        if checkpoint.busy != 0 {
-            return Err(ContractError::new(
-                ErrorCode::CapabilityUnavailable,
-                "restore requires all live database readers to close",
-            )
-            .at_field("checkpoint_busy", "0", checkpoint.busy.to_string()));
-        }
-        drop(live_connection);
-        remove_wal_sidecars(&self.path)?;
-        let displaced = temporary_peer(&self.path, "displaced")?;
-        fs::rename(&self.path, &displaced)
-            .map_err(|error| io_error("stage current database for restore", &error))?;
-        if let Err(error) = fs::rename(&candidate, &self.path) {
-            let _rollback = fs::rename(&displaced, &self.path);
-            return Err(io_error("replace database from staged restore", &error));
-        }
-        sync_parent(&self.path)?;
-
-        let post_result = if fault == RestoreFault::AfterReplacement {
-            Err(ContractError::new(
-                ErrorCode::Internal,
-                "injected post-replacement restore failure",
-            ))
-        } else {
-            self.verify_restored_database(candidate_rebuilt, &manifest.sha256)
-        };
-        let integrity_result = match post_result {
-            Ok(result) => {
-                let _ignored = fs::remove_file(&displaced);
-                result
+        // Keep the live inode and its WAL intact. SQLite's backup transaction
+        // coordinates existing and arriving readers; no connection can become
+        // silently attached to a displaced database after filesystem replacement.
+        let post_result = (|| {
+            sqlite_copy_database(&candidate, &self.path)?;
+            if fault == RestoreFault::PublicationSync {
+                return Err(ContractError::new(
+                    ErrorCode::Internal,
+                    "injected restore publication sync failure",
+                ));
             }
+            sync_parent(&self.path)?;
+            if fault == RestoreFault::AfterReplacement {
+                return Err(ContractError::new(
+                    ErrorCode::Internal,
+                    "injected post-replacement restore failure",
+                ));
+            }
+            let integrity = self.verify_restored_database(candidate_rebuilt, &manifest.sha256)?;
+            let count = backup_session_count(&open_read_connection(&self.path)?)?;
+            Ok((integrity, count))
+        })();
+        let (integrity_result, restored_session_count) = match post_result {
+            Ok(result) => result,
             Err(error) => {
-                self.rollback_failed_restore(&displaced, &previous_path)?;
-                return Err(error);
+                self.rollback_failed_restore(&previous_path)?;
+                return Err(ContractError::new(
+                    error.code,
+                    format!(
+                        "{}; previous history recovered. Retained recovery copy: {}",
+                        error.message,
+                        previous_path.display()
+                    ),
+                ));
             }
         };
 
@@ -1386,6 +1831,7 @@ impl WriterStore {
             digest: manifest.sha256,
             previous_backup: previous_path,
             integrity_result,
+            restored_session_count,
         })
     }
 
@@ -1455,19 +1901,8 @@ impl WriterStore {
         Ok(integrity)
     }
 
-    fn rollback_failed_restore(&self, displaced: &Path, previous: &Path) -> Result<()> {
-        let _ignored = fs::remove_file(&self.path);
-        remove_wal_sidecars(&self.path)?;
-        if let Err(rename_error) = fs::rename(displaced, &self.path) {
-            sqlite_copy_database(previous, &self.path).map_err(|fallback_error| {
-                ContractError::new(
-                    ErrorCode::Internal,
-                    format!(
-                        "restore failed and rollback could not restart cleanly: {rename_error}; {fallback_error}"
-                    ),
-                )
-            })?;
-        }
+    fn rollback_failed_restore(&self, previous: &Path) -> Result<()> {
+        sqlite_copy_database(previous, &self.path).map_err(|error| ContractError::new(ErrorCode::Internal, format!("Restore failed and automatic recovery failed: {error}. Prior history is retained at {}", previous.display())))?;
         sync_parent(&self.path)?;
         let recovered = open_write_connection(&self.path)?;
         if integrity_check_connection(&recovered)? != "ok" {
@@ -1480,19 +1915,27 @@ impl WriterStore {
     }
 
     fn create_online_backup(&self, destination: &Path) -> Result<BackupManifest> {
-        if destination.exists() {
-            fs::remove_file(destination)
-                .map_err(|error| io_error("remove stale backup destination", &error))?;
+        if fs::symlink_metadata(destination).is_ok() {
+            return Err(ContractError::new(
+                ErrorCode::InvalidInput,
+                "online backup destination already exists",
+            ));
         }
+        let reservation = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(destination)
+            .map_err(|error| io_error("reserve online backup destination", &error))?;
+        set_private_file(destination)?;
+        drop(reservation);
         let source = open_write_connection(&self.path)?;
         let mut target = open_write_connection(destination)?;
         {
             let backup = rusqlite::backup::Backup::new(&source, &mut target)
                 .map_err(|error| sqlite_error("initialize SQLite online backup", &error))?;
-            backup
-                .run_to_completion(128, Duration::from_millis(10), None)
-                .map_err(|error| sqlite_error("run SQLite online backup", &error))?;
+            run_backup_bounded(&backup)?;
         }
+        validate_sqlite_runtime(&target)?;
         let target_checkpoint = checkpoint_connection(&target, CheckpointMode::Truncate)?;
         if target_checkpoint.busy != 0 {
             return Err(ContractError::new(
@@ -1517,6 +1960,9 @@ impl WriterStore {
             .close()
             .map_err(|(_, error)| sqlite_error("close online backup source", &error))?;
         set_private_file(destination)?;
+        File::open(destination)
+            .and_then(|file| file.sync_all())
+            .map_err(|error| io_error("flush closed online backup", &error))?;
         let (sha256, byte_length) = digest_file(destination)?;
         Ok(BackupManifest {
             manifest_version: 1,
@@ -1559,6 +2005,18 @@ impl WriterStore {
         let placeholders = sql_placeholders(ids.len());
         transaction
             .execute(
+                &format!("INSERT OR REPLACE INTO history_import_tombstones(harness, native_session_key, deleted_at_epoch) SELECT harness, native_session_key, {} FROM sessions WHERE session_id IN ({placeholders})", unix_now()?),
+                params_from_iter(ids.iter()),
+            )
+            .map_err(|error| sqlite_error("remember deleted native sessions", &error))?;
+        transaction
+            .execute(
+                &format!("DELETE FROM history_import_sources WHERE (harness, native_session_key) IN (SELECT harness, native_session_key FROM sessions WHERE session_id IN ({placeholders}))"),
+                params_from_iter(ids.iter()),
+            )
+            .map_err(|error| sqlite_error("reset deleted session import cursors", &error))?;
+        transaction
+            .execute(
                 &format!("DELETE FROM message_fts WHERE session_id IN ({placeholders})"),
                 params_from_iter(ids.iter()),
             )
@@ -1583,13 +2041,8 @@ impl WriterStore {
                 params_from_iter(ids.iter()),
             )
             .map_err(|error| sqlite_error("delete session raw observations", &error))?;
-        let surviving_observations = load_raw_observations(&transaction)?;
         let surviving_summary_links = load_summary_links(&transaction)?;
-        rebuild_projections_tx(
-            &transaction,
-            &surviving_observations,
-            &surviving_summary_links,
-        )?;
+        rebuild_projections_tx(&transaction, &surviving_summary_links)?;
         transaction
             .commit()
             .map_err(|error| sqlite_error("commit session deletion", &error))?;
@@ -1732,7 +2185,7 @@ impl ReadStore {
         let rows = statement
             .query_map([], |row| {
                 let status: String = row.get(1)?;
-                Ok(HealthDimension {
+                let mut dimension = HealthDimension {
                     dimension: row.get(0)?,
                     status: HealthStatus::parse(&status),
                     last_success_at_epoch: row.get(2)?,
@@ -1741,7 +2194,20 @@ impl ReadStore {
                     detail: row.get(5)?,
                     first_affected_observation_id: row.get(6)?,
                     updated_at_epoch: row.get(7)?,
-                })
+                };
+                // Migration bootstrap metadata is not an observed operation time.
+                if dimension.dimension == "quarantine"
+                    && dimension.status == HealthStatus::Healthy
+                    && dimension.last_success_at_epoch == Some(0)
+                    && dimension.updated_at_epoch == 0
+                    && dimension.last_failure_at_epoch.is_none()
+                    && dimension.failure_category.is_none()
+                    && dimension.detail.is_none()
+                    && dimension.first_affected_observation_id.is_none()
+                {
+                    dimension.last_success_at_epoch = None;
+                }
+                Ok(dimension)
             })
             .map_err(|error| sqlite_error("query bounded health dimensions", &error))?;
         let mut dimensions = BTreeMap::new();
@@ -1793,9 +2259,42 @@ impl ReadStore {
     ///
     /// Returns invalid input for malformed filters or a store or decoding error.
     pub fn search(&self, query: &SearchQuery) -> Result<Vec<SearchResult>> {
+        Ok(self.search_page(query)?.sessions)
+    }
+
+    /// Reads page, count, and facets from one consistent read transaction.
+    ///
+    /// # Errors
+    /// Returns invalid input or a store or decoding error.
+    pub fn search_page(&self, query: &SearchQuery) -> Result<SearchPage> {
         validate_search_query(query)?;
-        let connection = open_read_connection(&self.path)?;
-        search_connection(&connection, query)
+        let mut connection = open_read_connection(&self.path)?;
+        let transaction = connection
+            .transaction()
+            .map_err(|error| sqlite_error("begin session search snapshot", &error))?;
+        let (clause, values) = search_clause(query);
+        let total: i64 = transaction
+            .query_row(
+                &format!("SELECT count(*) {clause}"),
+                params_from_iter(values),
+                |row| row.get(0),
+            )
+            .map_err(|error| sqlite_error("count matching sessions", &error))?;
+        let sessions = search_connection(&transaction, query)?;
+        let limit = effective_search_limit(query.limit);
+        let total = u64::try_from(total).map_err(|_| {
+            ContractError::new(ErrorCode::Internal, "negative matching session count")
+        })?;
+        let has_more = u64::from(query.offset) + (sessions.len() as u64) < total;
+        let facets = search_facets(&transaction)?;
+        Ok(SearchPage {
+            sessions,
+            total,
+            offset: query.offset,
+            limit,
+            has_more,
+            facets,
+        })
     }
 
     /// Looks up one exact session projection without relying on a bounded list scan.
@@ -1871,7 +2370,9 @@ impl ReadStore {
             raw_observations: count("raw_observations")?,
             sessions: count("sessions")?,
             messages: count("messages")?,
-            fts_rows: count("message_fts")?,
+            fts_rows: count("message_fts")?
+                + count("session_search")?
+                + count("canonical_message_search")?,
             summaries: count("summaries")?,
             current_quarantines: nonnegative_i64_to_u64(current_quarantines),
         })
@@ -1975,6 +2476,41 @@ impl ReadStore {
                 source: provenance,
             },
         }))
+    }
+
+    /// Returns a project directory only from the selected session's stored project.
+    /// No nearby session or current working directory is substituted.
+    ///
+    /// # Errors
+    /// Returns a store error when the exact lookup fails.
+    pub fn session_project_directory(&self, session_id: &SessionId) -> Result<Option<PathBuf>> {
+        let connection = open_read_connection(&self.path)?;
+        let path = connection.query_row(
+            "SELECT p.path FROM sessions s LEFT JOIN projects p ON p.project_id=s.project_id WHERE s.session_id=?1",
+            params![session_id.as_str()], |row| row.get::<_, Option<String>>(0),
+        ).optional().map_err(|error| sqlite_error("read exact session project directory", &error))?.flatten();
+        Ok(path.map(PathBuf::from))
+    }
+
+    /// Returns bounded known project paths for live inventory discovery.
+    ///
+    /// # Errors
+    /// Returns a store error if project metadata cannot be read.
+    pub fn inventory_project_roots(&self) -> Result<Vec<PathBuf>> {
+        let connection = open_read_connection(&self.path)?;
+        let mut statement = connection
+            .prepare(
+                "SELECT DISTINCT path FROM projects WHERE path IS NOT NULL ORDER BY path LIMIT 512",
+            )
+            .map_err(|e| sqlite_error("prepare inventory project roots", &e))?;
+        statement
+            .query_map([], |row| row.get::<_, String>(0))
+            .map_err(|e| sqlite_error("read inventory project roots", &e))?
+            .map(|row| {
+                row.map(PathBuf::from)
+                    .map_err(|e| sqlite_error("decode inventory project root", &e))
+            })
+            .collect()
     }
 
     /// Returns the newest installation snapshot and its attributable config items.
@@ -2139,6 +2675,7 @@ impl ReadStore {
 enum RestoreFault {
     None,
     AfterReplacement,
+    PublicationSync,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -2183,7 +2720,13 @@ pub(crate) fn health_persistence_marker_present(database_path: &Path) -> Result<
 // --- Connection, migration, and local-disk policy ---------------------------------
 
 fn migrations() -> Migrations<'static> {
-    Migrations::new(vec![M::up(MIGRATION_1), M::up(MIGRATION_2)])
+    Migrations::new(vec![
+        M::up(MIGRATION_1),
+        M::up(MIGRATION_2),
+        M::up(MIGRATION_3),
+        M::up(MIGRATION_4),
+        M::up(MIGRATION_5),
+    ])
 }
 
 fn migrate_forward(connection: &mut Connection) -> Result<()> {
@@ -2290,13 +2833,17 @@ fn connection_evidence(connection: &Connection) -> Result<ConnectionEvidence> {
         .query_row("SELECT sqlite_version()", [], |row| row.get(0))
         .map_err(|error| sqlite_error("read SQLite version", &error))?;
     let sqlite_version_number = sqlite_version_number(&sqlite_version)?;
-    let fts5_available = connection
-        .query_row(
-            "SELECT count(*) >= 0 FROM message_fts WHERE message_fts MATCH 'cutokyo'",
-            [],
-            |row| row.get::<_, bool>(0),
-        )
-        .is_ok();
+    let fts5_available = ["message_fts", "session_search", "canonical_message_search"]
+        .iter()
+        .all(|table| {
+            connection
+                .query_row(
+                    &format!("SELECT count(*) >= 0 FROM {table} WHERE {table} MATCH 'cutokyo'"),
+                    [],
+                    |row| row.get::<_, bool>(0),
+                )
+                .is_ok()
+        });
     Ok(ConnectionEvidence {
         journal_mode,
         foreign_keys: foreign_keys == 1,
@@ -2534,6 +3081,16 @@ fn ingest_observation_tx(
     entry_key: &str,
     observation: &RawObservation,
 ) -> Result<IngestOutcome> {
+    ingest_observation_cursor_tx(transaction, Some(entry_key), observation)
+}
+
+/// Shared ingest body. Spool drains advance their spool cursor; native-history import
+/// has no spool entry and advances its own source cursor instead.
+fn ingest_observation_cursor_tx(
+    transaction: &Transaction<'_>,
+    entry_key: Option<&str>,
+    observation: &RawObservation,
+) -> Result<IngestOutcome> {
     let session_id = projected_session_id(observation)?;
     let payload_json = serde_json::to_string(&observation.payload)
         .map_err(|error| serialization_error("serialize raw payload", &error))?;
@@ -2589,12 +3146,15 @@ fn ingest_observation_tx(
             ));
         }
     }
-    transaction
+    // Native-history import has no spool entry, so it advances its own cursor.
+    if let Some(entry_key) = entry_key {
+        transaction
         .execute(
             "INSERT INTO spool_cursors(entry_key, state, observation_id, category, advanced_at_epoch) VALUES (?1, 'ingested', ?2, NULL, ?3) ON CONFLICT(entry_key) DO UPDATE SET state='ingested', observation_id=excluded.observation_id, category=NULL, advanced_at_epoch=excluded.advanced_at_epoch",
             params![entry_key, observation.observation_id.as_str(), unix_now()?],
         )
         .map_err(|error| sqlite_error("advance ingested spool cursor", &error))?;
+    }
     Ok(IngestOutcome {
         inserted,
         cursor_advanced: true,
@@ -2619,6 +3179,16 @@ fn derive_observation_tx(
     observation: &RawObservation,
     session_id: &SessionId,
 ) -> Result<()> {
+    if observation
+        .payload
+        .get("project_session")
+        .and_then(Value::as_bool)
+        == Some(false)
+    {
+        // Non-session native events remain immutable raw evidence, without invented
+        // history, search text or native resume authority. Rebuild obeys the same rule.
+        return Ok(());
+    }
     let project_id = derive_session_tx(transaction, observation, session_id)?;
     derive_account_tx(transaction, observation)?;
     derive_turn_tx(transaction, observation, session_id)?;
@@ -2921,6 +3491,48 @@ fn derive_turn_tx(
     Ok(())
 }
 
+/// One native message observed by live capture and by history import is one message:
+/// reuse the identity already projected for this session and native message ID.
+fn known_native_message_id(
+    transaction: &Transaction<'_>,
+    session_id: &SessionId,
+    payload: &Value,
+) -> Result<Option<String>> {
+    let Some(native) = payload.get("native_message_id").and_then(Value::as_str) else {
+        return Ok(None);
+    };
+    transaction
+        .query_row(
+            "SELECT message_id FROM messages WHERE session_id=?1 AND native_message_id=?2 ORDER BY message_id LIMIT 1",
+            params![session_id.as_str(), native],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()
+        .map_err(|error| sqlite_error("look up native message identity", &error))
+}
+
+fn projected_message_id(
+    transaction: &Transaction<'_>,
+    observation: &RawObservation,
+    session_id: &SessionId,
+) -> Result<String> {
+    let known = known_native_message_id(transaction, session_id, &observation.payload)?;
+    let payload = &observation.payload;
+    Ok(known
+        .as_deref()
+        .or_else(|| payload.get("message_id").and_then(Value::as_str))
+        .or_else(|| payload.get("native_message_id").and_then(Value::as_str))
+        .map_or_else(
+            || {
+                format!(
+                    "message:sha256:{}",
+                    sha256_bytes(observation.observation_id.as_str().as_bytes())
+                )
+            },
+            str::to_owned,
+        ))
+}
+
 fn derive_message_tx(
     transaction: &Transaction<'_>,
     observation: &RawObservation,
@@ -2934,25 +3546,7 @@ fn derive_message_tx(
     if text.is_none() && !observation.kind.contains("message") {
         return Ok(());
     }
-    let message_id = observation
-        .payload
-        .get("message_id")
-        .and_then(Value::as_str)
-        .or_else(|| {
-            observation
-                .payload
-                .get("native_message_id")
-                .and_then(Value::as_str)
-        })
-        .map_or_else(
-            || {
-                format!(
-                    "message:sha256:{}",
-                    sha256_bytes(observation.observation_id.as_str().as_bytes())
-                )
-            },
-            str::to_owned,
-        );
+    let message_id = projected_message_id(transaction, observation, session_id)?;
     if cutokyo_domain::MessageId::parse(message_id.clone()).is_err() {
         return Ok(());
     }
@@ -3599,26 +4193,54 @@ fn ensure_derive_version(connection: &mut Connection) -> Result<bool> {
 }
 
 fn rebuild_projections(connection: &mut Connection) -> Result<()> {
-    let observations = load_raw_observations(connection)?;
     let summary_links = load_summary_links(connection)?;
     let transaction = connection
         .transaction_with_behavior(TransactionBehavior::Immediate)
         .map_err(|error| sqlite_error("begin derived projection rebuild", &error))?;
-    rebuild_projections_tx(&transaction, &observations, &summary_links)?;
+    rebuild_projections_tx(&transaction, &summary_links)?;
     transaction
         .commit()
         .map_err(|error| sqlite_error("commit derived projection rebuild", &error))?;
     Ok(())
 }
 
+/// History-import parsers before the shared token rule counted input differently per
+/// harness. Their evidence came from files that are still on disk, so it is dropped and
+/// imported again instead of being mixed with the corrected rule. Runs after the derived
+/// tables are empty, so the cascade is cheap; a no-op once nothing old remains.
+fn purge_superseded_history_import(transaction: &Transaction<'_>) -> Result<()> {
+    let purged = transaction
+        .execute(
+            "DELETE FROM raw_observations WHERE parser_version IN ('history-import-claude-v1', 'history-import-codex-v1', 'history-import-opencode-v1')",
+            [],
+        )
+        .map_err(|error| sqlite_error("purge superseded history import", &error))?;
+    if purged > 0 {
+        transaction
+            .execute("DELETE FROM history_import_sources", [])
+            .map_err(|error| sqlite_error("reset history import cursors", &error))?;
+    }
+    Ok(())
+}
+
 fn rebuild_projections_tx(
     transaction: &Transaction<'_>,
-    observations: &[RawObservation],
     summary_links: &[(String, String)],
 ) -> Result<()> {
+    // The per-row search triggers rewrite a session's whole document (or scan an
+    // unindexed column) on every message, which is quadratic over a large history.
+    // Suppress them for the replay, then rebuild both search tables once.
     transaction
-        .execute("DELETE FROM message_fts", [])
-        .map_err(|error| sqlite_error("clear FTS for rebuild", &error))?;
+        .execute(
+            "INSERT OR REPLACE INTO schema_meta(key, value) VALUES ('bulk_import_in_progress', '1'), ('bulk_rebuild_in_progress', '1')",
+            [],
+        )
+        .map_err(|error| sqlite_error("mark projection rebuild", &error))?;
+    for table in ["message_fts", "session_search", "canonical_message_search"] {
+        transaction
+            .execute(&format!("DELETE FROM {table}"), [])
+            .map_err(|error| sqlite_error("clear search index for rebuild", &error))?;
+    }
     for table in [
         "config_items",
         "installation_snapshots",
@@ -3639,10 +4261,29 @@ fn rebuild_projections_tx(
             .execute(&format!("DELETE FROM {table}"), [])
             .map_err(|error| sqlite_error("clear derived table for rebuild", &error))?;
     }
-    for observation in observations {
+    purge_superseded_history_import(transaction)?;
+    for_each_raw_observation(transaction, |observation| {
         let session_id = projected_session_id(observation)?;
-        derive_observation_tx(transaction, observation, &session_id)?;
-    }
+        derive_observation_tx(transaction, observation, &session_id)
+    })?;
+    transaction
+        .execute(
+            "DELETE FROM schema_meta WHERE key IN ('bulk_import_in_progress', 'bulk_rebuild_in_progress')",
+            [],
+        )
+        .map_err(|error| sqlite_error("clear projection rebuild marker", &error))?;
+    transaction
+        .execute(
+            "INSERT INTO session_search SELECT * FROM session_search_documents",
+            [],
+        )
+        .map_err(|error| sqlite_error("rebuild session search", &error))?;
+    transaction
+        .execute(
+            "INSERT INTO canonical_message_search SELECT session_id, message_id, text FROM messages",
+            [],
+        )
+        .map_err(|error| sqlite_error("rebuild canonical message search", &error))?;
     for (summary_id, session_id) in summary_links {
         transaction
             .execute(
@@ -3678,7 +4319,12 @@ fn load_summary_links(connection: &Connection) -> Result<Vec<(String, String)>> 
     Ok(links)
 }
 
-fn load_raw_observations(connection: &Connection) -> Result<Vec<RawObservation>> {
+/// Streams retained evidence in replay order, decoding one observation at a time so a
+/// rebuild never holds the whole (potentially gigabyte-sized) history in memory.
+fn for_each_raw_observation(
+    connection: &Connection,
+    mut visit: impl FnMut(&RawObservation) -> Result<()>,
+) -> Result<()> {
     let mut statement = connection
         .prepare(
             "SELECT observation_id, harness, observed_at, kind, payload_json, channel, captured_at, native_event_id, native_resume_id, native_session_key, native_sequence, parser_version, confidence, coverage_json FROM raw_observations ORDER BY captured_at_epoch, observation_id",
@@ -3704,10 +4350,9 @@ fn load_raw_observations(connection: &Connection) -> Result<Vec<RawObservation>>
             ))
         })
         .map_err(|error| sqlite_error("query raw replay", &error))?;
-    let mut observations = Vec::new();
     for row in rows {
         let row = row.map_err(|error| sqlite_error("decode raw replay", &error))?;
-        observations.push(RawObservation {
+        visit(&RawObservation {
             observation_id: ObservationId::parse(row.0)?,
             harness: parse_harness(&row.1)?,
             observed_at: Timestamp::parse(row.2)?,
@@ -3728,9 +4373,9 @@ fn load_raw_observations(connection: &Connection) -> Result<Vec<RawObservation>>
                 coverage: serde_json::from_str(&row.13)
                     .map_err(|error| serialization_error("parse retained coverage", &error))?,
             },
-        });
+        })?;
     }
-    Ok(observations)
+    Ok(())
 }
 
 // --- Search and provenance ---------------------------------------------------------
@@ -3772,23 +4417,48 @@ fn session_connection(
         branch: row.4,
         title: row.5,
         started_at: Timestamp::parse(row.6)?,
+        matches: Vec::new(),
         observation_ids: evidence,
         provenance: winning,
     }))
 }
 
-fn search_connection(connection: &Connection, query: &SearchQuery) -> Result<Vec<SearchResult>> {
-    let mut sql = String::from(
-        "SELECT s.session_id, s.harness, s.native_resume_id, s.project_id, p.name, s.branch, s.title, s.started_at, s.winning_observation_id FROM sessions s LEFT JOIN projects p ON p.project_id=s.project_id WHERE 1=1",
-    );
+fn search_clause(query: &SearchQuery) -> (String, Vec<SqlValue>) {
+    let searching = query
+        .text
+        .as_deref()
+        .is_some_and(|text| !search_terms(text).is_empty());
+    let mut sql = String::from("FROM sessions s LEFT JOIN projects p ON p.project_id=s.project_id");
+    if searching {
+        sql.push_str(" JOIN session_search ON session_search.session_id=s.session_id");
+    }
+    sql.push_str(" WHERE 1=1");
     let mut values = Vec::<SqlValue>::new();
     if let Some(session_id) = &query.session_id {
         sql.push_str(" AND s.session_id=?");
         values.push(SqlValue::Text(session_id.as_str().to_owned()));
     }
-    if let Some(text) = query.text.as_deref() {
-        sql.push_str(" AND EXISTS (SELECT 1 FROM message_fts WHERE session_id=s.session_id AND message_fts MATCH ?)");
-        values.push(SqlValue::Text(fts_literal(text)));
+    if let Some(text) = query.text.as_deref().filter(|text| !text.trim().is_empty()) {
+        if searching {
+            sql.push_str(" AND session_search MATCH ?");
+            values.push(SqlValue::Text(fts_query(text, query.mode)));
+            if query.mode == SearchMode::Phrase {
+                // Aggregated documents allow terms across messages, but a phrase
+                // must belong to one metadata field or one selected message.
+                sql.push_str(" AND (session_search.rowid IN (SELECT rowid FROM session_search WHERE session_search MATCH ?) OR EXISTS (SELECT 1 FROM canonical_message_search WHERE session_id=s.session_id AND canonical_message_search MATCH ?))");
+                values.push(SqlValue::Text(format!(
+                    "{{title project branch native_id}} : {}",
+                    fts_query(text, query.mode)
+                )));
+                values.push(SqlValue::Text(format!(
+                    "text : {}",
+                    fts_query(text, query.mode)
+                )));
+            }
+        } else {
+            // A punctuation-only query is a successful empty search, not all history.
+            sql.push_str(" AND 0=1");
+        }
     }
     if let Some(project) = query.project.as_deref() {
         sql.push_str(" AND (s.project_id=? OR p.name=? OR p.path=? OR EXISTS (SELECT 1 FROM message_fts WHERE session_id=s.session_id AND project=?))");
@@ -3827,10 +4497,29 @@ fn search_connection(connection: &Connection, query: &SearchQuery) -> Result<Vec
             values.push(SqlValue::Text(value.to_owned()));
         }
     }
-    sql.push_str(" ORDER BY s.started_at_epoch DESC, s.session_id LIMIT ?");
+    (sql, values)
+}
+
+fn search_connection(connection: &Connection, query: &SearchQuery) -> Result<Vec<SearchResult>> {
+    let (clause, mut values) = search_clause(query);
+    let mut sql = format!(
+        "SELECT s.session_id, s.harness, s.native_resume_id, s.project_id, p.name, s.branch, s.title, s.started_at, s.winning_observation_id {clause}"
+    );
+    if query.sort == SearchSort::Relevance
+        && query
+            .text
+            .as_deref()
+            .is_some_and(|text| !search_terms(text).is_empty())
+    {
+        sql.push_str(" ORDER BY bm25(session_search, 0, 8, 5, 3, 6, 1), s.started_at_epoch DESC, s.session_id");
+    } else {
+        sql.push_str(" ORDER BY s.started_at_epoch DESC, s.session_id");
+    }
+    sql.push_str(" LIMIT ? OFFSET ?");
     values.push(SqlValue::Integer(i64::from(effective_search_limit(
         query.limit,
     ))));
+    values.push(SqlValue::Integer(i64::from(query.offset)));
     let mut statement = connection
         .prepare(&sql)
         .map_err(|error| sqlite_error("prepare session search", &error))?;
@@ -3855,7 +4544,9 @@ fn search_connection(connection: &Connection, query: &SearchQuery) -> Result<Vec
         let session_id = SessionId::parse(row.0)?;
         let evidence = projection_evidence(connection, "session", session_id.as_str())?;
         let winning = load_observation_provenance(connection, &row.8)?;
+        let matches = search_matches(connection, &session_id, query)?;
         results.push(SearchResult {
+            matches,
             session_id,
             harness: parse_harness(&row.1)?,
             native_resume_id: row.2,
@@ -3869,6 +4560,124 @@ fn search_connection(connection: &Connection, query: &SearchQuery) -> Result<Vec
         });
     }
     Ok(results)
+}
+
+fn search_matches(
+    connection: &Connection,
+    session_id: &SessionId,
+    query: &SearchQuery,
+) -> Result<Vec<SearchMatch>> {
+    let terms = query.text.as_deref().map(search_terms).unwrap_or_default();
+    if terms.is_empty() {
+        return Ok(Vec::new());
+    }
+    let expression = if query.mode == SearchMode::Phrase {
+        fts_literal(&terms.join(" "))
+    } else {
+        terms
+            .iter()
+            .map(|term| fts_literal(term))
+            .collect::<Vec<_>>()
+            .join(" OR ")
+    };
+    let mut matches = Vec::new();
+    // Random plain-text markers locate the match before character bounding. They
+    // are removed here, never sent to clients or interpreted as markup.
+    let marker = Uuid::new_v4();
+    let start_marker = format!("\u{e000}{marker}start\u{e001}");
+    let end_marker = format!("\u{e000}{marker}end\u{e001}");
+    // Give sources containing the entire query priority over partial contributors.
+    // Both passes use FTS5, so preview choice has the same Unicode semantics as search.
+    for expression in [
+        fts_query(query.text.as_deref().unwrap_or_default(), query.mode),
+        expression,
+    ] {
+        for (column, source) in [
+            (1, "title"),
+            (2, "project"),
+            (3, "branch"),
+            (4, "native_id"),
+            (5, "transcript"),
+        ] {
+            if matches
+                .iter()
+                .any(|item: &SearchMatch| item.source == source)
+            {
+                continue;
+            }
+            let column_query = format!("{source} : ({expression})");
+            let text: Option<String> = if source == "transcript" && query.mode == SearchMode::Phrase {
+            connection.query_row(
+                "SELECT snippet(canonical_message_search, 2, ?3, ?4, '…', 32) FROM canonical_message_search WHERE session_id=?1 AND canonical_message_search MATCH ?2 ORDER BY bm25(canonical_message_search), message_id LIMIT 1",
+                params![session_id.as_str(), format!("text : {expression}"), start_marker, end_marker], |row| row.get(0)
+            ).optional()
+        } else {
+            connection.query_row(
+                "SELECT snippet(session_search, ?1, ?4, ?5, '…', 32) FROM session_search WHERE session_id=?2 AND session_search MATCH ?3",
+                params![column, session_id.as_str(), column_query, start_marker, end_marker], |row| row.get(0)
+            ).optional()
+        }.map_err(|error| sqlite_error("read search match context", &error))?;
+            if let Some(text) = text {
+                let match_at = text
+                    .find(&start_marker)
+                    .map_or(0, |position| text[..position].chars().count());
+                let plain = text.replace(&start_marker, "").replace(&end_marker, "");
+                let length = plain.chars().count();
+                let start = match_at.saturating_sub(70);
+                let body: String = plain.chars().skip(start).take(318).collect();
+                let bounded = format!(
+                    "{}{}{}",
+                    if start > 0 { "…" } else { "" },
+                    body,
+                    if start + 318 < length { "…" } else { "" }
+                );
+                matches.push(SearchMatch {
+                    source: source.to_owned(),
+                    text: bounded,
+                    terms: terms.clone(),
+                });
+            }
+            if matches.len() == 3 {
+                return Ok(matches);
+            }
+        }
+    }
+    Ok(matches)
+}
+
+fn search_facets(connection: &Connection) -> Result<SearchFacets> {
+    fn values(connection: &Connection, sql: &str) -> Result<Vec<String>> {
+        let mut statement = connection
+            .prepare(sql)
+            .map_err(|error| sqlite_error("prepare search facets", &error))?;
+        let rows = statement
+            .query_map([], |row| row.get::<_, String>(0))
+            .map_err(|error| sqlite_error("query search facets", &error))?;
+        rows.map(|row| row.map_err(|error| sqlite_error("decode search facet", &error)))
+            .collect()
+    }
+    Ok(SearchFacets {
+        projects: values(
+            connection,
+            "SELECT COALESCE(p.name, p.path, s.project_id) AS value FROM sessions s LEFT JOIN projects p ON p.project_id=s.project_id WHERE value IS NOT NULL AND value<>'' UNION SELECT project FROM message_fts WHERE project<>'' ORDER BY 1",
+        )?,
+        branches: values(
+            connection,
+            "SELECT branch FROM sessions WHERE branch IS NOT NULL AND branch<>'' UNION SELECT branch FROM message_fts WHERE branch<>'' ORDER BY 1",
+        )?,
+        tools: values(
+            connection,
+            "SELECT DISTINCT tool FROM message_fts WHERE tool<>'' ORDER BY tool",
+        )?,
+        skills: values(
+            connection,
+            "SELECT DISTINCT skill FROM message_fts WHERE skill<>'' ORDER BY skill",
+        )?,
+        agents: values(
+            connection,
+            "SELECT DISTINCT agent FROM message_fts WHERE agent<>'' ORDER BY agent",
+        )?,
+    })
 }
 
 fn session_messages(connection: &Connection, session_id: &SessionId) -> Result<Vec<Message>> {
@@ -4318,35 +5127,298 @@ fn integrity_check_connection(connection: &Connection) -> Result<String> {
         .map_err(|error| sqlite_error("run SQLite integrity check", &error))
 }
 
-fn sqlite_copy_database(source: &Path, destination: &Path) -> Result<()> {
-    if destination.exists() {
-        fs::remove_file(destination)
-            .map_err(|error| io_error("remove stale database copy", &error))?;
+fn publish_directory_noreplace(source: &Path, destination: &Path) -> Result<()> {
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    {
+        rustix::fs::renameat_with(
+            rustix::fs::CWD,
+            source,
+            rustix::fs::CWD,
+            destination,
+            rustix::fs::RenameFlags::NOREPLACE,
+        )
+        .map_err(|error| {
+            io_error(
+                "publish complete backup without replacing any destination",
+                &std::io::Error::from(error),
+            )
+        })
     }
-    let source = open_read_connection(source)?;
+    #[cfg(windows)]
+    {
+        // MoveFileExW, used by std, refuses an existing directory even with
+        // REPLACE_EXISTING. A directory move cannot replace an existing file.
+        fs::rename(source, destination).map_err(|error| {
+            io_error(
+                "publish complete backup without replacing any destination",
+                &error,
+            )
+        })
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
+    {
+        let _ = (source, destination);
+        Err(ContractError::new(
+            ErrorCode::CapabilityUnavailable,
+            "atomic no-replace backup directory publication is unavailable on this platform",
+        ))
+    }
+}
+
+fn run_backup_bounded(backup: &rusqlite::backup::Backup<'_, '_>) -> Result<()> {
+    use rusqlite::backup::StepResult;
+    let mut blocked_since = None;
+    loop {
+        match backup
+            .step(128)
+            .map_err(|error| sqlite_error("copy SQLite database", &error))?
+        {
+            StepResult::Done => return Ok(()),
+            StepResult::More => blocked_since = None,
+            StepResult::Busy | StepResult::Locked => {
+                let since = blocked_since.get_or_insert_with(std::time::Instant::now);
+                if since.elapsed() >= Duration::from_secs(5) {
+                    return Err(ContractError::new(
+                        ErrorCode::Unhealthy,
+                        "SQLite backup/restore remained busy for five seconds; close other database tools and retry",
+                    ));
+                }
+            }
+            _ => {
+                return Err(ContractError::new(
+                    ErrorCode::Internal,
+                    "unexpected SQLite backup step result",
+                ));
+            }
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+}
+
+fn sqlite_copy_database(source: &Path, destination: &Path) -> Result<()> {
+    let source = open_closed_backup(source)?;
     let mut destination_connection = open_write_connection(destination)?;
     {
         let backup = rusqlite::backup::Backup::new(&source, &mut destination_connection)
             .map_err(|error| sqlite_error("initialize SQLite database copy", &error))?;
-        backup
-            .run_to_completion(128, Duration::from_millis(10), None)
-            .map_err(|error| sqlite_error("copy SQLite database", &error))?;
+        run_backup_bounded(&backup)?;
     }
-    let checkpoint = checkpoint_connection(&destination_connection, CheckpointMode::Truncate)?;
-    if checkpoint.busy != 0 {
-        return Err(ContractError::new(
-            ErrorCode::Unhealthy,
-            "copied database target could not checkpoint its WAL",
-        ));
-    }
+    // The destination stays at the same inode and can have active WAL readers.
+    // Never unlink its sidecars or require a truncate checkpoint after committing.
     destination_connection
         .close()
-        .map_err(|(_, error)| sqlite_error("close copied database", &error))?;
-    set_private_file(destination)
+        .map_err(|(_, error)| sqlite_error("close restored database", &error))?;
+    set_private_file(destination)?;
+    for path in [
+        destination.to_path_buf(),
+        PathBuf::from(format!("{}-wal", destination.to_string_lossy())),
+    ] {
+        match File::open(path).and_then(|file| file.sync_all()) {
+            Ok(()) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(io_error("flush restored SQLite bytes", &error)),
+        }
+    }
+    Ok(())
+}
+
+fn publication_error(
+    action: &str,
+    error: &std::io::Error,
+    cleanup: &std::io::Result<()>,
+) -> ContractError {
+    ContractError::new(
+        ErrorCode::Internal,
+        format!("failed to {action}: {error}; incomplete backup cleanup: {cleanup:?}"),
+    )
+}
+
+fn refuse_symlink_components(path: &Path) -> Result<()> {
+    let mut prefix = PathBuf::new();
+    for component in path.components() {
+        prefix.push(component.as_os_str());
+        if let Ok(metadata) = fs::symlink_metadata(&prefix) {
+            if metadata.file_type().is_symlink() {
+                return Err(ContractError::new(
+                    ErrorCode::InvalidInput,
+                    "backup and restore paths must not traverse symlinks",
+                ));
+            }
+            #[cfg(unix)]
+            if metadata.is_dir() {
+                use std::os::unix::fs::PermissionsExt as _;
+                let mode = metadata.permissions().mode();
+                if mode & 0o022 != 0 && mode & 0o1000 == 0 {
+                    return Err(ContractError::new(
+                        ErrorCode::InvalidInput,
+                        "backup and restore refuse group/other-writable directory ancestors without the sticky bit",
+                    ));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn require_regular_file(path: &Path) -> Result<()> {
+    refuse_symlink_components(path)?;
+    let metadata =
+        fs::symlink_metadata(path).map_err(|error| io_error("inspect backup file", &error))?;
+    if !metadata.is_file() {
+        return Err(ContractError::new(
+            ErrorCode::InvalidInput,
+            "backup must contain regular database and manifest files",
+        ));
+    }
+    Ok(())
+}
+
+fn refuse_live_alias(path: &Path, live: &Path) -> Result<()> {
+    refuse_symlink_components(path)?;
+    if path == live
+        || fs::canonicalize(path)
+            .ok()
+            .zip(fs::canonicalize(live).ok())
+            .is_some_and(|(path, live)| path == live)
+    {
+        return Err(ContractError::new(
+            ErrorCode::InvalidInput,
+            "backup location must differ from the live database",
+        ));
+    }
+    #[cfg(unix)]
+    if let (Ok(candidate), Ok(live)) = (fs::metadata(path), fs::metadata(live)) {
+        use std::os::unix::fs::MetadataExt as _;
+        if candidate.dev() == live.dev() && candidate.ino() == live.ino() {
+            return Err(ContractError::new(
+                ErrorCode::InvalidInput,
+                "backup must not be a hard-link alias of the live database",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn prepare_restore_candidate(path: &Path) -> Result<(bool, u64)> {
+    let mut connection = open_write_connection(path)?;
+    migrate_forward(&mut connection)?;
+    repair_health_projection(&connection)?;
+    let rebuilt = ensure_derive_version(&mut connection)?;
+    validate_sqlite_runtime(&connection)?;
+    let checkpoint = checkpoint_connection(&connection, CheckpointMode::Truncate)?;
+    if checkpoint.busy != 0 || integrity_check_connection(&connection)? != "ok" {
+        return Err(ContractError::new(
+            ErrorCode::InvalidContract,
+            "staged restore failed checkpoint or integrity before replacement",
+        ));
+    }
+    let count = backup_session_count(&connection)?;
+    connection
+        .close()
+        .map_err(|(_, error)| sqlite_error("close prepared restore candidate", &error))?;
+    remove_wal_sidecars(path)?;
+    set_private_file(path)?;
+    Ok((rebuilt, count))
+}
+
+fn open_closed_backup(path: &Path) -> Result<Connection> {
+    require_closed_backup(path)?;
+    let absolute =
+        fs::canonicalize(path).map_err(|error| io_error("resolve closed backup", &error))?;
+    let mut uri = url::Url::from_file_path(absolute).map_err(|()| {
+        ContractError::new(
+            ErrorCode::InvalidInput,
+            "backup path cannot be represented as a local file URI",
+        )
+    })?;
+    uri.query_pairs_mut().append_pair("immutable", "1");
+    // SQLite's immutable mode ignores journals and never creates sidecars. It is
+    // only used for closed backup snapshots, never for live history readers.
+    let connection = Connection::open_with_flags(
+        uri.as_str(),
+        OpenFlags::SQLITE_OPEN_READ_ONLY
+            | OpenFlags::SQLITE_OPEN_FULL_MUTEX
+            | OpenFlags::SQLITE_OPEN_URI,
+    )
+    .map_err(|error| sqlite_error("open immutable closed backup", &error))?;
+    configure_connection(&connection, false)?;
+    Ok(connection)
+}
+
+fn validate_backup_connection(connection: &Connection, manifest: &BackupManifest) -> Result<()> {
+    if integrity_check_connection(connection)? != "ok" || manifest.integrity_result != "ok" {
+        return Err(ContractError::new(
+            ErrorCode::InvalidContract,
+            "backup integrity verification failed; history was not changed",
+        ));
+    }
+    let schema: u32 = connection
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .map_err(|error| sqlite_error("read backup schema", &error))?;
+    if schema != manifest.schema_version {
+        return Err(ContractError::new(
+            ErrorCode::InvalidContract,
+            "backup manifest schema does not match its database",
+        ));
+    }
+    refuse_newer_schema(connection)?;
+    if schema == DATABASE_SCHEMA_VERSION && !connection_evidence(connection)?.fts5_available {
+        return Err(ContractError::new(
+            ErrorCode::InvalidContract,
+            "backup is missing a required usable search index; history was not changed",
+        ));
+    }
+    Ok(())
+}
+
+fn backup_session_count(connection: &Connection) -> Result<u64> {
+    let count: i64 = connection
+        .query_row("SELECT count(*) FROM sessions", [], |row| row.get(0))
+        .map_err(|error| sqlite_error("count backup sessions", &error))?;
+    Ok(nonnegative_i64_to_u64(count))
+}
+
+fn history_fingerprint(connection: &Connection) -> Result<String> {
+    // Fingerprint user history, not mutable operational health. Read all tables in
+    // one snapshot; length-prefixed values avoid ambiguous concatenation.
+    let transaction = connection
+        .unchecked_transaction()
+        .map_err(|error| sqlite_error("preview current history", &error))?;
+    let mut hasher = Sha256::new();
+    for table in [
+        "raw_observations",
+        "summaries",
+        "summary_sessions",
+        "spool_cursors",
+    ] {
+        hasher.update(table.as_bytes());
+        let mut statement = transaction
+            .prepare(&format!("SELECT * FROM {table} ORDER BY rowid"))
+            .map_err(|error| sqlite_error("prepare history snapshot", &error))?;
+        let columns = statement.column_count();
+        let mut rows = statement
+            .query([])
+            .map_err(|error| sqlite_error("read history snapshot", &error))?;
+        while let Some(row) = rows
+            .next()
+            .map_err(|error| sqlite_error("read history snapshot row", &error))?
+        {
+            for index in 0..columns {
+                let value: SqlValue = row
+                    .get(index)
+                    .map_err(|error| sqlite_error("read history snapshot value", &error))?;
+                let value = format!("{value:?}");
+                hasher.update(value.len().to_le_bytes());
+                hasher.update(value.as_bytes());
+            }
+        }
+    }
+    Ok(lowercase_hex(&hasher.finalize()))
 }
 
 fn read_backup_manifest(backup_path: &Path) -> Result<BackupManifest> {
     let path = backup_manifest_path(backup_path);
+    require_regular_file(&path)?;
     let bytes = fs::read(path).map_err(|error| io_error("read backup manifest", &error))?;
     let manifest: BackupManifest = serde_json::from_slice(&bytes)
         .map_err(|error| serialization_error("parse backup manifest", &error))?;
@@ -4359,7 +5431,23 @@ fn read_backup_manifest(backup_path: &Path) -> Result<BackupManifest> {
     Ok(manifest)
 }
 
+fn require_closed_backup(path: &Path) -> Result<()> {
+    require_regular_file(path)?;
+    for suffix in ["-wal", "-shm", "-journal"] {
+        if fs::symlink_metadata(PathBuf::from(format!("{}{suffix}", path.to_string_lossy())))
+            .is_ok()
+        {
+            return Err(ContractError::new(
+                ErrorCode::InvalidContract,
+                "Backup has SQLite sidecar files. Close other applications using it; only the closed, manifested database can be restored. History was not changed.",
+            ));
+        }
+    }
+    Ok(())
+}
+
 fn verify_backup_digest(path: &Path, manifest: &BackupManifest) -> Result<()> {
+    require_closed_backup(path)?;
     let (actual_digest, actual_length) = digest_file(path)?;
     if actual_digest != manifest.sha256 || actual_length != manifest.byte_length {
         return Err(ContractError::new(
@@ -4415,7 +5503,9 @@ fn deletion_counts_tx(
             count_table(transaction, "raw_observations")?,
             count_table(transaction, "messages")?,
             count_table(transaction, "summaries")?,
-            count_table(transaction, "message_fts")?,
+            count_table(transaction, "message_fts")?
+                + count_table(transaction, "session_search")?
+                + count_table(transaction, "canonical_message_search")?,
         ),
         Some([]) => (0, 0, 0, 0, 0),
         Some(ids) => {
@@ -4448,7 +5538,7 @@ fn deletion_counts_tx(
                 count_with_ids(
                     transaction,
                     &format!(
-                        "SELECT count(*) FROM message_fts WHERE session_id IN ({placeholders})"
+                        "SELECT count(*) FROM (SELECT session_id FROM message_fts UNION ALL SELECT session_id FROM session_search UNION ALL SELECT session_id FROM canonical_message_search) WHERE session_id IN ({placeholders})"
                     ),
                     ids,
                 )?,
@@ -4562,6 +5652,33 @@ fn effective_search_limit(limit: u32) -> u32 {
 
 fn fts_literal(input: &str) -> String {
     format!("\"{}\"", input.replace('"', "\"\""))
+}
+
+fn search_terms(input: &str) -> Vec<String> {
+    // Preserve combining marks even when no precomposed character exists.
+    // SQLite's unicode61 tokenizer decides their diacritic/token semantics.
+    input
+        .nfc()
+        .collect::<String>()
+        .split(|character: char| {
+            !character.is_alphanumeric()
+                && !unicode_normalization::char::is_combining_mark(character)
+        })
+        .filter(|word| !word.is_empty())
+        .map(str::to_owned)
+        .collect()
+}
+
+fn fts_query(input: &str, mode: SearchMode) -> String {
+    let terms = search_terms(input);
+    match mode {
+        SearchMode::Terms => terms
+            .iter()
+            .map(|term| fts_literal(term))
+            .collect::<Vec<_>>()
+            .join(" AND "),
+        SearchMode::Phrase => fts_literal(&terms.join(" ")),
+    }
 }
 
 fn verify_retention_plan(plan: &RetentionPlan) -> Result<()> {
@@ -4901,6 +6018,22 @@ fn internal_error(action: &str, error: &impl std::fmt::Display) -> ContractError
     ContractError::new(ErrorCode::Internal, format!("failed to {action}: {error}"))
 }
 
+#[path = "store_history.rs"]
+mod history;
+pub use history::{
+    HistoryBatchOutcome, HistoryImportPolicy, HistorySourceState, HistorySourceStatus,
+    HistorySourceSummary, OpenCodeDatabase, OpenCodeMessageRow, OpenCodePartRow,
+    OpenCodeSessionRow,
+};
+
+#[cfg(test)]
+#[path = "store_backup_tests.rs"]
+mod backup_tests;
+
+#[cfg(test)]
+#[path = "store_search_tests.rs"]
+mod search_tests;
+
 #[cfg(test)]
 mod tests {
     use std::{fs, sync::Arc, thread};
@@ -4947,6 +6080,68 @@ mod tests {
             },
             payload,
         })
+    }
+
+    #[test]
+    fn raw_only_native_events_remain_evidence_without_sessions_fts_or_resume_after_rebuild()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let directory = tempfile::tempdir()?;
+        let path = directory.path().join("cutokyo.db");
+        let store = WriterStore::open(&path, owner("raw-only")?)?;
+        let raw = observation(
+            "obs:raw-only",
+            "opencode:global",
+            CaptureChannel::HookOrPlugin,
+            json!({"project_session":false, "event":{"type":"server.connected","properties":{}}, "text":"global event must not be searchable"}),
+            "2026-10-04T04:00:00Z",
+        )?;
+        assert!(store.ingest_observation("raw-only.jsonl", &raw)?.inserted);
+        let connection = open_read_connection(&path)?;
+        let preserved: String = connection.query_row(
+            "SELECT payload_json FROM raw_observations WHERE observation_id=?1",
+            [raw.observation_id.as_str()],
+            |row| row.get(0),
+        )?;
+        assert_eq!(serde_json::from_str::<Value>(&preserved)?, raw.payload);
+        for table in ["sessions", "messages", "message_fts"] {
+            let count: i64 =
+                connection.query_row(&format!("SELECT count(*) FROM {table}"), [], |row| {
+                    row.get(0)
+                })?;
+            assert_eq!(count, 0, "raw-only evidence must not create {table}");
+        }
+        assert!(
+            store
+                .session(&SessionId::parse("opencode:global")?)?
+                .is_none()
+        );
+        drop(connection);
+        drop(store);
+        // A previous derivation's fabricated session must disappear on version change.
+        let mut connection = open_write_connection(&path)?;
+        let transaction = connection.transaction()?;
+        derive_session_tx(&transaction, &raw, &SessionId::parse("opencode:global")?)?;
+        transaction.execute(
+            "UPDATE schema_meta SET value='2' WHERE key='derive_version'",
+            [],
+        )?;
+        transaction.commit()?;
+        drop(connection);
+        let rebuilt = WriterStore::open(&path, owner("raw-only-rebuild")?)?;
+        assert!(
+            rebuilt
+                .session(&SessionId::parse("opencode:global")?)?
+                .is_none()
+        );
+        let connection = open_read_connection(&path)?;
+        for (table, expected) in [("raw_observations", 1), ("sessions", 0), ("message_fts", 0)] {
+            let count: i64 =
+                connection.query_row(&format!("SELECT count(*) FROM {table}"), [], |row| {
+                    row.get(0)
+                })?;
+            assert_eq!(count, expected, "rebuild must retain raw evidence only");
+        }
+        Ok(())
     }
 
     #[test]
@@ -5213,7 +6408,7 @@ mod tests {
         store.backup(&repaired)?;
         assert!(
             store
-                .restore_inner(&repaired, RestoreFault::AfterReplacement)
+                .restore_inner(&repaired, RestoreFault::AfterReplacement, None)
                 .is_err()
         );
         assert_eq!(
@@ -5276,6 +6471,53 @@ mod tests {
             .join()
             .map_err(|_| std::io::Error::other("writer thread failed"))??;
         assert_eq!(store.search(&SearchQuery::default())?.len(), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn bootstrap_health_does_not_invent_a_success_date()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let directory = tempfile::tempdir()?;
+        let path = directory.path().join("cutokyo.db");
+        let store = WriterStore::open(&path, owner("bootstrap-health")?)?;
+        let snapshot = store.health_snapshot()?;
+        let initial = snapshot
+            .dimensions
+            .get("quarantine")
+            .ok_or_else(|| std::io::Error::other("quarantine health dimension is missing"))?;
+        assert_eq!(initial.status, HealthStatus::Healthy);
+        assert_eq!(initial.last_success_at_epoch, None);
+
+        let connection = Connection::open(&path)?;
+        let stored: i64 = connection.query_row(
+            "SELECT last_success_at_epoch FROM health_dimensions WHERE dimension='quarantine'",
+            [],
+            |row| row.get(0),
+        )?;
+        assert_eq!(stored, 0, "the additive-only migration remains unchanged");
+        connection.execute(
+            "UPDATE health_dimensions SET detail='an observed epoch-zero check' WHERE dimension='quarantine'",
+            [],
+        )?;
+        assert_eq!(
+            store
+                .health_snapshot()?
+                .dimensions
+                .get("quarantine")
+                .and_then(|dimension| dimension.last_success_at_epoch),
+            Some(0),
+            "an attributable epoch-zero operation is not bootstrap metadata"
+        );
+        store.record_quarantine("bootstrap.jsonl", "truncated", 1, None)?;
+        store.acknowledge_quarantine("bootstrap.jsonl")?;
+        assert!(
+            store
+                .health_snapshot()?
+                .dimensions
+                .get("quarantine")
+                .and_then(|dimension| dimension.last_success_at_epoch)
+                .is_some_and(|epoch| epoch > 0)
+        );
         Ok(())
     }
 
@@ -5493,6 +6735,7 @@ mod tests {
             store
                 .search(&SearchQuery {
                     text: Some("delete this needle".to_owned()),
+                    mode: SearchMode::Phrase,
                     ..SearchQuery::default()
                 })?
                 .len(),
@@ -5504,11 +6747,12 @@ mod tests {
         assert_eq!(receipt.sessions, 1);
         assert_eq!(receipt.raw_observations, 1);
         assert_eq!(receipt.messages, 1);
-        assert_eq!(receipt.fts_rows, 1);
+        assert_eq!(receipt.fts_rows, 3);
         assert!(
             store
                 .search(&SearchQuery {
                     text: Some("delete this needle".to_owned()),
+                    mode: SearchMode::Phrase,
                     ..SearchQuery::default()
                 })?
                 .is_empty()
@@ -5566,7 +6810,7 @@ mod tests {
         assert_eq!(deleted.sessions, 1);
         assert_eq!(deleted.raw_observations, 1);
         assert_eq!(deleted.messages, 1);
-        assert_eq!(deleted.fts_rows, 1);
+        assert_eq!(deleted.fts_rows, 3);
         assert!(store.search(&SearchQuery::default())?.is_empty());
         assert!(
             store

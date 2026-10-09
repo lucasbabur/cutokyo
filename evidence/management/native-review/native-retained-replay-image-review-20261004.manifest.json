@@ -1,0 +1,88 @@
+{
+  "archive": "evidence/management/native-review/native-retained-replay-image-review-20261004.tar.gz",
+  "sha256": "619a1ffc268327409c984d86e5d2476ffa3c61fc891f41331d2edebdf439a71b",
+  "members": [
+    {
+      "member": "artifacts/analysis-unavailable-1280x800.png",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/analysis-unavailable-1280x800.png",
+      "sha256": "e489aa6f5065cfb1e27e1480f3fcda6c219318964910c5496a8a48cf844ffeab"
+    },
+    {
+      "member": "artifacts/appearance-dark-1280x800.png",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/appearance-dark-1280x800.png",
+      "sha256": "b3ade8cb7ea091ef08214d06d67efadc1884b7330332682adc5e30a5c5b28d1a"
+    },
+    {
+      "member": "artifacts/diagnostic-created-1280x800.png",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/diagnostic-created-1280x800.png",
+      "sha256": "8acdfe1aa352ef299e28d96749a1ee6f51c7356f38513a51732b6566c40d8d68"
+    },
+    {
+      "member": "artifacts/diagnostic-preview-1280x800.png",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/diagnostic-preview-1280x800.png",
+      "sha256": "cc3f01ac09280d05ac12b017d356972beabf98ccf663d65190f5f06f5eb81ff9"
+    },
+    {
+      "member": "artifacts/execution-record.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/execution-record.json",
+      "sha256": "3ac281f8d3bd37bacd02b8c8bbb1505cb29e2ef2621f5b2dd40d79f5c4406c50"
+    },
+    {
+      "member": "artifacts/geometry-1280x800.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/geometry-1280x800.json",
+      "sha256": "cef5b94fe337a0a553810cc48e463f3fa302a28ae0b9648e3759853f7b130638"
+    },
+    {
+      "member": "artifacts/native-keyboard-trusted.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/native-keyboard-trusted.json",
+      "sha256": "f1f8c41948ae7c133f53c66144bfc1ff4adf6f1456f0786d0174f80e8e00c8b4"
+    },
+    {
+      "member": "artifacts/native-resume-terminal-before-save.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/native-resume-terminal-before-save.json",
+      "sha256": "1ff1fefec072501ff2fb5ca31f954cbd3f73be77516f0ab3da7ec06f0c647362"
+    },
+    {
+      "member": "artifacts/native-resume-terminal-cleanup-save.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/native-resume-terminal-cleanup-save.json",
+      "sha256": "ec63f059597c7c04a90bf3683c826636f795ead75442e051c279d5294d6b36bc"
+    },
+    {
+      "member": "artifacts/package-launch.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/package-launch.json",
+      "sha256": "c893f93e2964df958e43dc2df034d5e16c9f2ca65db24dd9eb477cbc0d5bb040"
+    },
+    {
+      "member": "artifacts/reviewed-test-context/native-desktop.spec.ts",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/reviewed-test-context/native-desktop.spec.ts",
+      "sha256": "b88436c71e44e4f2a52c4e06e87d90d1dcddafb93c4e7073e8f3930a1af72bad"
+    },
+    {
+      "member": "artifacts/reviewed-test-context/resume-teardown-replay.spec.ts",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/reviewed-test-context/resume-teardown-replay.spec.ts",
+      "sha256": "26bc5eee3ab458e8ac90851f791393c1e0893a3561cd84479bf62e03cf31cef5"
+    },
+    {
+      "member": "artifacts/reviewed-test-context/zz-health-capabilities.spec.ts",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/reviewed-test-context/zz-health-capabilities.spec.ts",
+      "sha256": "2eec4011b9d05a1046fba303e397194603092601ea0c8441cdd37d5723c919fa"
+    },
+    {
+      "member": "artifacts/search-detail-resume-1280x800.png",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/search-detail-resume-1280x800.png",
+      "sha256": "2a529bee9e8e4666dd0ca396903660345d5f8f07882e3c48005f7dfc97ec568f"
+    },
+    {
+      "member": "inspection-receipt.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/inspection-receipt.json",
+      "sha256": "9a1af6739e8c62d7b34ae1be20dc1e9eac1ab80d5e13d5b13be4131080ba8a35"
+    },
+    {
+      "member": "manifest.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/manifest.json",
+      "sha256": "f3b0bfb4cfbc3ee220f4595b5c09d0c606e11290de75af7e3ee2f72f41a0c2b0"
+    }
+  ],
+  "source_mutation": false,
+  "fresh_aggregate_acceptance": false
+}

@@ -1,19 +1,24 @@
 import {
-  Boxes,
   ChevronRight,
-  Network,
-  Puzzle,
+  Link2,
+  RefreshCw,
+  Search,
+  Settings2,
   ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
 
 import { useCommands, useCommandResource } from "../commands/context.js";
 import type {
+  Harness,
   InventoryKind,
   InventoryItem,
   PluginVerification,
 } from "../contracts.js";
 import { useAnnounce } from "../components/Announcer.js";
+import { HarnessFilter, HarnessLabel } from "../components/HarnessMark.js";
+import { InventoryManager } from "../components/InventoryManager.js";
+import { KIND_LABEL, KindIcon } from "../components/KindIcon.js";
 import {
   Button,
   DefinitionList,
@@ -23,27 +28,23 @@ import {
   LoadingState,
   Modal,
   PageHeader,
-  ProvenanceDetails,
-  RouteNotice,
   StatusPill,
+  SuccessMessage,
 } from "../components/Primitives.js";
+import { RouteNotice } from "../components/Notices.js";
 
-const TABS: readonly {
-  readonly id: "all" | InventoryKind;
+const SECTIONS: readonly {
+  readonly kind: InventoryKind;
   readonly label: string;
 }[] = [
-  { id: "all", label: "All" },
-  { id: "mcp", label: "MCP servers" },
-  { id: "plugin", label: "Plugins" },
-  { id: "hook", label: "Hooks" },
-  { id: "skill", label: "Skills" },
+  { kind: "skill", label: "Skills" },
+  { kind: "mcp", label: "MCP servers" },
+  { kind: "hook", label: "Hooks" },
+  { kind: "plugin", label: "Plugins" },
+  { kind: "instruction", label: "Instructions" },
 ];
 
-const HARNESS_NAMES = {
-  claude_code: "Claude Code",
-  codex: "Codex",
-  opencode: "OpenCode",
-} as const;
+const ROUTINE_STATES = new Set(["enabled", "installed", "configured"]);
 
 export function InventoryPage() {
   const commands = useCommands();
@@ -51,8 +52,11 @@ export function InventoryPage() {
     () => commands.getInventory(),
     "inventory",
   );
-  const [tab, setTab] = useState<"all" | InventoryKind>("all");
-  const [busyItem, setBusyItem] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [kind, setKind] = useState<"all" | InventoryKind>("all");
+  const [harness, setHarness] = useState<Harness | "all">("all");
+  const [selected, setSelected] = useState<InventoryItem | null>(null);
+  const [receipt, setReceipt] = useState<string | null>(null);
   const [verification, setVerification] = useState<
     PluginVerification | "loading" | null
   >(null);
@@ -73,24 +77,29 @@ export function InventoryPage() {
   }
   const data = resource.data;
   if (data === null) return null;
+  const terms = query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
+  const matching = data.items.filter((item) => {
+    const text = [
+      item.name,
+      item.description,
+      item.origin,
+      item.kind,
+      item.scope,
+    ]
+      .join(" ")
+      .toLocaleLowerCase();
+    return (
+      (harness === "all" || item.harnesses.includes(harness)) &&
+      terms.every((term) => text.includes(term))
+    );
+  });
   const visible =
-    tab === "all" ? data.items : data.items.filter((item) => item.kind === tab);
-
-  const toggleMcp = async (item: InventoryItem) => {
-    setBusyItem(item.id);
-    setError(null);
-    try {
-      const enabled = item.state !== "enabled";
-      await commands.setMcpEnabled(item.id, enabled);
-      announce(
-        `${item.name} ${enabled ? "enabled" : "disabled"} for ${item.harnesses.map((harness) => HARNESS_NAMES[harness]).join(", ")}.`,
-      );
-      resource.reload();
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason));
-    } finally {
-      setBusyItem(null);
-    }
+    kind === "all" ? matching : matching.filter((item) => item.kind === kind);
+  const complete = (message: string) => {
+    setSelected(null);
+    setReceipt(message);
+    announce(message);
+    resource.reload();
   };
 
   const openVerification = async (itemId: string) => {
@@ -107,152 +116,228 @@ export function InventoryPage() {
   return (
     <div className="page">
       <PageHeader
-        eyebrow="Scope · origin · effective state"
-        title="Agent inventory"
-        description="One attributable view of installed hooks, skills, plugins, and MCP servers. Cutokyo-owned entries stay distinct from user-owned configuration."
+        title="Agent tools"
         actions={
-          <StatusPill state={data.brokerState}>
-            Central broker {data.brokerState}
-          </StatusPill>
+          <Button
+            size="small"
+            disabled={resource.state === "loading"}
+            onClick={resource.reload}
+          >
+            <RefreshCw aria-hidden="true" />
+            {resource.state === "loading"
+              ? "Refreshing…"
+              : "Refresh installations"}
+          </Button>
         }
       />
       <RouteNotice meta={data.meta} />
+      {resource.state === "error" ? (
+        <ErrorState
+          title="Installations could not be refreshed"
+          error={resource.error}
+          onRetry={resource.reload}
+        />
+      ) : null}
+      {receipt === null ? null : <SuccessMessage>{receipt}</SuccessMessage>}
       {error === null ? null : (
         <p className="form-error" role="alert">
           {error}
         </p>
       )}
 
-      <section className="broker-summary" aria-labelledby="broker-heading">
-        <Network aria-hidden="true" />
-        <div>
-          <h2 id="broker-heading">Central MCP control</h2>
-          <p>
-            Approved upstream servers are namespaced and synchronized across
-            harnesses. A failed upstream is contained; Cutokyo search remains a
-            separate read-only MCP.
-          </p>
-        </div>
-        <StatusPill state={data.searchMcpEnabled ? "enabled" : "disabled"}>
-          Search MCP {data.searchMcpEnabled ? "enabled" : "disabled"}
-        </StatusPill>
-      </section>
-
-      <div className="tabs" role="tablist" aria-label="Inventory type">
-        {TABS.map((item) => (
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === item.id}
-            className={tab === item.id ? "tab is-active" : "tab"}
-            onClick={() => setTab(item.id)}
-            key={item.id}
-          >
-            {item.label}
-            <span>
-              {item.id === "all"
-                ? data.items.length
-                : data.items.filter((entry) => entry.kind === item.id).length}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {visible.length === 0 ? (
-        <EmptyState
-          compact
-          title={`No ${tab === "all" ? "inventory items" : `${tab} items`} discovered`}
-          description="Discovery completed for the current harness coverage. Unavailable config surfaces remain labelled in setup coverage rather than counted as empty."
-        />
-      ) : (
-        <div className="inventory-list">
-          {visible.map((item) => (
-            <article className="inventory-row" key={item.id}>
-              <div
-                className={`inventory-row__icon inventory-row__icon--${item.kind}`}
-                aria-hidden="true"
-              >
-                {item.kind === "mcp" ? (
-                  <Network />
-                ) : item.kind === "plugin" ? (
-                  <Puzzle />
-                ) : (
-                  <Boxes />
-                )}
-              </div>
-              <div className="inventory-row__body">
-                <div className="inventory-row__title">
-                  <strong>{item.name}</strong>
-                  <StatusPill state={item.state}>{item.state}</StatusPill>
-                  {item.managedByCutokyo ? (
-                    <span className="owned-label">
-                      <ShieldCheck aria-hidden="true" /> Cutokyo-owned
-                    </span>
-                  ) : null}
-                </div>
-                <p>{item.description}</p>
-                <div className="inventory-row__meta">
-                  <span>
-                    <b>Scope</b> {item.scope}
-                  </span>
-                  <span>
-                    <b>Origin</b> {item.origin}
-                  </span>
-                </div>
-                <div
-                  className="harness-chips"
-                  role="group"
-                  aria-label="Configured harnesses"
-                >
-                  {item.harnesses.map((harness) => (
-                    <span key={harness}>{HARNESS_NAMES[harness]}</span>
-                  ))}
-                </div>
-                <ProvenanceDetails
-                  provenance={item.provenance}
-                  label="Discovery provenance"
-                />
-              </div>
-              <div className="inventory-row__action">
-                {item.kind === "mcp" && item.id !== "mcp-cutokyo-search" ? (
-                  <label className="switch-control">
-                    <span>
-                      {item.state === "enabled" ? "Enabled" : "Disabled"} for
-                      all
-                    </span>
-                    <input
-                      type="checkbox"
-                      role="switch"
-                      checked={item.state === "enabled"}
-                      disabled={busyItem === item.id}
-                      onChange={() => void toggleMcp(item)}
-                      aria-label={`${item.state === "enabled" ? "Disable" : "Enable"} ${item.name} for all configured harnesses`}
-                    />
-                  </label>
-                ) : item.kind === "plugin" ? (
-                  <Button
-                    size="small"
-                    onClick={() => void openVerification(item.id)}
-                  >
-                    Verification <ChevronRight aria-hidden="true" />
-                  </Button>
-                ) : null}
-              </div>
-            </article>
+      <section className="toolbar" aria-label="Agent tool filters">
+        <label className="search-field">
+          <span className="sr-only">Search installed tools</span>
+          <Search aria-hidden="true" />
+          <input
+            type="search"
+            aria-label="Search installed tools"
+            value={query}
+            onChange={(event) => setQuery(event.currentTarget.value)}
+            placeholder="Find a skill, server, hook, or instruction…"
+          />
+        </label>
+        <div className="segmented" role="group" aria-label="Tool type">
+          {(
+            [
+              { id: "all", label: "All" },
+              ...SECTIONS.map((entry) => ({
+                id: entry.kind,
+                label: entry.label,
+              })),
+            ] as const
+          ).map((entry) => (
+            <button
+              type="button"
+              key={entry.id}
+              className="segmented__item"
+              aria-pressed={kind === entry.id}
+              onClick={() => setKind(entry.id)}
+            >
+              {entry.label}
+              <span className="count-badge">
+                {entry.id === "all"
+                  ? matching.length
+                  : matching.filter((item) => item.kind === entry.id).length}
+              </span>
+            </button>
           ))}
         </div>
+        <HarnessFilter value={harness} onChange={setHarness} />
+        {query !== "" || harness !== "all" || kind !== "all" ? (
+          <Button
+            variant="quiet"
+            onClick={() => {
+              setQuery("");
+              setHarness("all");
+              setKind("all");
+            }}
+          >
+            Clear filters
+          </Button>
+        ) : null}
+      </section>
+
+      <section id="inventory-results" aria-label="Installed agent tools">
+        <p className="sr-only" role="status">
+          {visible.length}{" "}
+          {visible.length === 1 ? "installation" : "installations"}
+        </p>
+        {visible.length === 0 ? (
+          <EmptyState
+            compact
+            title={
+              data.items.length === 0
+                ? "No agent tools found"
+                : "No installations match these filters"
+            }
+            description={
+              data.items.length === 0
+                ? "Install a skill or MCP server in your agent, then refresh."
+                : "Clear the filters to see everything."
+            }
+          />
+        ) : (
+          <div className="inventory-sections">
+            {SECTIONS.map((section) => {
+              const items = visible.filter(
+                (item) => item.kind === section.kind,
+              );
+              if (items.length === 0) return null;
+              const headingId = `inventory-section-${section.kind}`;
+              return (
+                <section key={section.kind} aria-labelledby={headingId}>
+                  <h2 className="section-heading" id={headingId}>
+                    {section.label}
+                    <span className="count-badge">{items.length}</span>
+                  </h2>
+                  <div className="inventory-list">
+                    {items.map((item) => (
+                      <article className="inventory-card" key={item.id}>
+                        <div
+                          className={`inventory-row__icon inventory-row__icon--${item.kind}`}
+                          role="img"
+                          aria-label={KIND_LABEL[item.kind]}
+                          title={KIND_LABEL[item.kind]}
+                        >
+                          <KindIcon kind={item.kind} />
+                        </div>
+                        <div className="inventory-card__body">
+                          <div className="inventory-row__title">
+                            <strong>{item.name}</strong>
+                            {ROUTINE_STATES.has(item.state) ? null : (
+                              <span
+                                className={`quiet-badge quiet-badge--${item.state}`}
+                              >
+                                {item.state}
+                              </span>
+                            )}
+                            {item.managedByCutokyo ? (
+                              <span className="owned-label">
+                                <ShieldCheck aria-hidden="true" />
+                                Cutokyo-owned
+                              </span>
+                            ) : null}
+                          </div>
+                          <p
+                            className="inventory-row__description"
+                            title={item.description}
+                          >
+                            {item.description}
+                          </p>
+                          <div className="inventory-card__footer">
+                            <div
+                              className="harness-chips harness-chips--start"
+                              role="group"
+                              aria-label="Configured harnesses"
+                            >
+                              {item.harnesses.map((entry) => (
+                                <HarnessLabel key={entry} harness={entry} />
+                              ))}
+                            </div>
+                            <span
+                              className="inventory-row__scope"
+                              title={item.origin}
+                            >
+                              {item.scope}
+                              {item.linkTarget == null ? null : (
+                                <>
+                                  {" · "}
+                                  <Link2 aria-hidden="true" /> linked
+                                </>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="inventory-row__action">
+                          {item.kind === "plugin" ? (
+                            <Button
+                              size="small"
+                              onClick={() => void openVerification(item.id)}
+                            >
+                              Verification <ChevronRight aria-hidden="true" />
+                            </Button>
+                          ) : null}
+                          <Button
+                            size="small"
+                            aria-label={`Manage ${item.name}`}
+                            onClick={() => {
+                              setError(null);
+                              setReceipt(null);
+                              setSelected(item);
+                            }}
+                          >
+                            <Settings2 aria-hidden="true" /> Manage
+                          </Button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {selected === null ? null : (
+        <InventoryManager
+          key={selected.id}
+          item={selected}
+          onClose={() => setSelected(null)}
+          onComplete={complete}
+        />
       )}
 
       {verification === null ? null : (
         <Modal
           title="Plugin verification"
-          description="Runtime protocol evidence and approved data capabilities."
           size="wide"
           onClose={() => setVerification(null)}
           footer={<Button onClick={() => setVerification(null)}>Done</Button>}
         >
           {verification === "loading" ? (
-            <LoadingState label="Reading verifier evidence" />
+            <LoadingState label="Loading" />
           ) : (
             <div className="verification-grid">
               <DefinitionList
@@ -307,7 +392,7 @@ export function InventoryPage() {
                 />
               </section>
               <section>
-                <h3>Fixture evidence</h3>
+                <h3>Checks</h3>
                 <ul className="check-list">
                   {verification.evidence.map((value) => (
                     <li key={value}>{value}</li>

@@ -1,0 +1,104 @@
+{
+  "scope": "Final6 bounded browser rendering review only; preserve previous findings",
+  "completed_utc": "2026-10-04T10:39:40.680564+00:00",
+  "manifest": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final6-browser-changed-image-review-20261004T103940Z/manifest.json",
+  "revision_note": "Execution record reportsHEAD8e7c6b0e2352c388b59aa4b593110445469a0c49 anddirtyworkingtree;noGitqueryorsourceimmutabilityclaimbyreviewer. Coordinatorreports source changes test-only;not source-reviewed in thisassignment. PNGSHA256 identifiesreviewedpixels.",
+  "environment": {
+    "kind": "Existing Playwright/Vite browserfixture evidence;no reviewerlaunch",
+    "actual_browser_log_result": "36 passed (42.6s)",
+    "execution_record_browser_command_exit_code": 0,
+    "execution_record_browser_command_duration_seconds": 43.14,
+    "actual_browser_log": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/final6-browser-e2e-20261004.log",
+    "static_execution_record": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/final6-frontend-static-executed-20261004.json",
+    "static_record_note": "Allsixrecordedcommands exit0;reviewer didnotrerun staticcommands."
+  },
+  "coverage": {
+    "current_png_hashes_compared": 88,
+    "changed_vs_final5": 3,
+    "unchanged_vs_final5": 85,
+    "individual_Read_inspections_this_followup": 3,
+    "all_changed_images_Read": true,
+    "dimensions_inventory": {
+      "1280x800": 29,
+      "1536x960": 28,
+      "900x700": 31
+    }
+  },
+  "steps": [
+    "Readfinal6executionrecordandactual36casebrowserlog",
+    "Compareexact88currentPNGsetwithall88SHAvaluesinretainedfinal5manifest",
+    "Verifyfinal5archiveSHAandall29members,includingarchived88imagebaseline",
+    "Readall3changedactualPNG",
+    "Archivechangedimagesandrawlogevidenceonlytonewpaths;recheckhashesanddimensions"
+  ],
+  "expected": "No newlyvisiblelayout,legibility,focusorconflict-disclosureregressionin changedbrowsercaptures",
+  "actual": {
+    "settings_conflict900x700": "Another-windowconflictbanner readable;Systemselected;lightchoiceexplicitlynotsaved;capture/searchcontrolsandproxyunavailablerowvisible. Fullproxyexplanationnotinsidecapture.",
+    "search_dark1280x800": "Strongvisiblequeryfocus;singular1session;matchingtitle/nativeIDs/transcript;readabletokensandpagination;noclippingseen.",
+    "search_dark900x700": "Datefilterwrapstosecondrow;queryfocusandcompactmatched-sourcepreviewsremainlegible;transcriptwraps;paginationvisible;noclippingseen.",
+    "unchanged_images": "85imagesSHA-identicaltofinal5;notindividuallyReadagainthisfollowup."
+  },
+  "verdict": "PASS bounded currentchanged-image rendering review;no newconcreterenderedregression. NotnativeorFleetaggregateacceptance.",
+  "finding_dispositions": "No previousfindingstatuschangedbythisreview;VQA09/VQA10priorbrowservisualclosuresremainunchanged;native5NQADELETE01/NQAKEYBOARD02failuresandlaterreplay-onlydiagnosesretained.",
+  "limits": [
+    "BrowserfixturescannotproveTaurinativebehavior",
+    "Thisfollowupperformed3individualReadinspections,not88",
+    "No independentkeyboard/screenreader/contrast/reducedmotion/runtimechecksadded",
+    "Nopaidcallornewinstalledharnessprobe",
+    "Nonewfreshnativeaggregateverdict"
+  ],
+  "images": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/settings-conflict-900x700.png",
+      "sha256": "e9019d258f0f4c45d98003282be27840d6180a21992a908f76764434e21bd31d",
+      "final5_sha256": "085b9529a4b9e4d663ad8d32906417a82c93d5dbdc99825f873179834ea8fa99",
+      "changed_vs_final5": true,
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "read_inspected_this_followup": true,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final6-browser-changed-image-review-20261004T103940Z/evidence/theme/screens/settings-conflict-900x700.png",
+      "inspection_method": "Individual actual source PNG displayed through functions.Read"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/search/search-matches-dark-1280x800.png",
+      "sha256": "50cdc9099942c3887e63fe0300165ede3b4cc0e21e629ad2fec409588d9fe73d",
+      "final5_sha256": "bd44766c816cdac8b3046be5c86c9759f315eebc7c873b8c98b3584ca6afa7ea",
+      "changed_vs_final5": true,
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected_this_followup": true,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final6-browser-changed-image-review-20261004T103940Z/evidence/management/search/search-matches-dark-1280x800.png",
+      "inspection_method": "Individual actual source PNG displayed through functions.Read"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/search/search-matches-dark-900x700.png",
+      "sha256": "71a9863f7ee399b04c5060a15007f815c7807f1699fd2a863a7ce690face8342",
+      "final5_sha256": "c81bb6725a4b7f6cc98ec6e36853a15a393d7e39fffe45c30636922d23a0db18",
+      "changed_vs_final5": true,
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "read_inspected_this_followup": true,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final6-browser-changed-image-review-20261004T103940Z/evidence/management/search/search-matches-dark-900x700.png",
+      "inspection_method": "Individual actual source PNG displayed through functions.Read"
+    }
+  ],
+  "hash_checks": {
+    "all88_current_source_hashes_and_dimensions_stable": true,
+    "all3_changed_pngs_individually_Read": true,
+    "all3_preserved_copies_match": true,
+    "exact88_output_set_verified": true,
+    "final5_archive_hash_and_all29_members_verified": true,
+    "archived_all88_baseline_manifest_byte_identical_to_retained_review": true,
+    "prior_findings_not_edited_by_reviewer": true,
+    "reviewer_app_provider_launches": 0,
+    "reviewer_source_tests_fixtures_configuration_Git_changes": 0
+  },
+  "reviewer_app_provider_launches": 0,
+  "reviewer_product_test_fixture_config_Git_edits": 0
+}

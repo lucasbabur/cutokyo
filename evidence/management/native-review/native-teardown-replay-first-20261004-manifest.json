@@ -1,0 +1,68 @@
+{
+  "archive": "evidence/management/native-review/native-teardown-replay-first-20261004.tar.gz",
+  "source_directory": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-teardown-replay-_0tsd9pe",
+  "sha256": "247836a608164ad629fb0deac6cc28badd6d7b76d79e302001a3f95e92f3e243",
+  "members": [
+    {
+      "path": "analysis-unavailable-1280x800.png",
+      "sha256": "e489aa6f5065cfb1e27e1480f3fcda6c219318964910c5496a8a48cf844ffeab"
+    },
+    {
+      "path": "appearance-dark-1280x800.png",
+      "sha256": "b3ade8cb7ea091ef08214d06d67efadc1884b7330332682adc5e30a5c5b28d1a"
+    },
+    {
+      "path": "diagnostic-created-1280x800.png",
+      "sha256": "143332a16b2961ccf6a918f75add1eb75a804485c746c81c6e5d9f95d9687cc1"
+    },
+    {
+      "path": "diagnostic-preview-1280x800.png",
+      "sha256": "ede48826e8d13fa66cfaab0e4165c05334d618c942e030603635a1f4b132af75"
+    },
+    {
+      "path": "execution-record.json",
+      "sha256": "5523ef74ecab182c7f947fcce7e12cff5739e8addafdc756c61ea6ec5fe7443c"
+    },
+    {
+      "path": "execution.log",
+      "sha256": "25e769d8c6ef72484d6cebdc91ca29cd823182d962b86db9c270f702be01bb19"
+    },
+    {
+      "path": "geometry-1280x800.json",
+      "sha256": "cef5b94fe337a0a553810cc48e463f3fa302a28ae0b9648e3759853f7b130638"
+    },
+    {
+      "path": "native-keyboard-trusted.json",
+      "sha256": "cf0baf4a585b1bd7bf3a21458877bf676f86982546af3f1d7b994de07c75e040"
+    },
+    {
+      "path": "native-resume-terminal-before-save.json",
+      "sha256": "97b8f607af7043f595c4bf7112277236eff9bd018d3ac104440a28051678362d"
+    },
+    {
+      "path": "native-resume-terminal-cleanup-save.json",
+      "sha256": "3b25a3a7218f68767fe796d905ebd156654dd5e1aa98eac335ec0f9c1ad5975f"
+    },
+    {
+      "path": "package-launch.json",
+      "sha256": "ee41a49c1f77386343219cfc013074c9233d6a8ce7910240588f09e9e1707e79"
+    },
+    {
+      "path": "resume-teardown-replay.spec-0-0.log",
+      "sha256": "b2b5e8ef816b89cf8d97ed9f2e3a18e11f1d8fd2292d03e59095164a0920114f"
+    },
+    {
+      "path": "search-detail-resume-1280x800.png",
+      "sha256": "31f5660bebbcb176d0b9474cb0b6b4794c825888bd3fd2415d442b97eba2c60c"
+    },
+    {
+      "path": "wdio-2026-10-04T10-40-00-985Z.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "wdio.log",
+      "sha256": "a257294cdadc8fab146115433ac991df74d0e747c3fe6fad9c9637b64074513e"
+    }
+  ],
+  "fresh_aggregate_acceptance": false
+}

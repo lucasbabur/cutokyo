@@ -1,0 +1,296 @@
+{
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "workingTree": "concurrent external changes",
+  "fixtureOnly": true,
+  "expected": {
+    "discard": "Escape dismisses discard confirmation and returns to editor without discarding",
+    "health": "Sidebar reflects acquired writer ownership after recovery",
+    "proxy": "Unavailable runtime is distinguished from inactive, with no doomed activation confirmation"
+  },
+  "actions": [
+    {
+      "time": "2026-10-04T05:29:48.975422+00:00",
+      "args": [
+        "open",
+        "http://127.0.0.1:4318/?jev_case=mcp-plugin-inventory#/inventory"
+      ],
+      "exitCode": 0,
+      "output": "[agent-browser] launched browser\n\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=mcp-plugin-inventory#/inventory\n"
+    },
+    {
+      "time": "2026-10-04T05:29:48.977669+00:00",
+      "args": [
+        "set",
+        "media",
+        "dark",
+        "reduced-motion"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:29:48.982616+00:00",
+      "args": [
+        "set",
+        "viewport",
+        "900",
+        "700"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:29:49.609203+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsLocal\" [ref=e1] clickable [onclick]\n  - link \"Skip to content\" [ref=e2]\n  - navigation \"Primary navigation\" [ref=e3]\n    - link \"Overview\" [ref=e6]\n    - link \"Sessions\" [ref=e7]\n    - link \"Analysis\" [ref=e8]\n    - link \"Agent tools\" [ref=e9]\n    - link \"Health\" [ref=e10]\n    - link \"Data\" [ref=e11]\n    - link \"Settings\" [ref=e12]\n  - heading \"Agent tools\" [level=1, ref=e13]\n  - button \"Refresh installations\" [ref=e14]\n  - region \"Agent tool filters\" [ref=e4]\n    - searchbox \"Search installed tools\" [ref=e23]\n    - combobox \"HARNESS\" [expanded=false, ref=e24]: All harnesses\n      - option \"All harnesses\" [selected, ref=e35]\n      - option \"Claude Code\" [ref=e36]\n      - option \"Codex\" [ref=e37]\n      - option \"OpenCode\" [ref=e38]\n  - tab \"All 8\" [selected, ref=e15]\n  - tab \"MCP servers 2\" [ref=e16]\n  - tab \"Plugins 2\" [ref=e17]\n  - tab \"Hooks 2\" [ref=e18]\n  - tab \"Skills 1\" [ref=e19]\n  - tab \"Instructions 1\" [ref=e20]\n  - button \"Manage docs-73A9\" [ref=e25]\n  - button \"Manage Cutokyo search MCP\" [ref=e26]\n  - button \"Manage fixture-processor-73A9\" [ref=e27]\n  - button \"Verification\" [ref=e28]\n  - button \"Manage release-notes-indexer\" [ref=e29]\n  - button \"Verification\" [ref=e30]\n  - button \"Manage Cutokyo SessionStart\" [ref=e31]\n  - button \"Manage AGENTS.md\" [ref=e32]\n  - button \"Manage PreToolUse project check\" [ref=e33]\n  - button \"Manage protocol-check\" [ref=e34]\n  - region \"Cutokyo search access\" [ref=e5]\n    - heading \"Cutokyo search access\" [level=2, ref=e21]\n    - link \"Manage search access in Settings\" [ref=e22]\n"
+    },
+    {
+      "time": "2026-10-04T05:29:49.675128+00:00",
+      "args": [
+        "click",
+        "@e34"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:29:50.087012+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsLocal\" [ref=e1] clickable [onclick]\n  - heading \"Manage protocol-check\" [level=2, ref=e40]\n  - button \"Close dialog\" [ref=e41]\n  - region \"Dialog content\" [ref=e39] focusable [tabindex]\n    - button \"Install in another harness\" [ref=e42]\n    - button \"Remove\" [ref=e43]\n    - textbox \"Source content\" [ref=e46]: ---\nname: protocol-check\ndescription: Verify protocol messages before release.\n---\n\n# Protocol check\n\nRun the protocol fixtures and report malformed output.\n\n  - button \"Done\" [ref=e44]\n  - button \"Save changes\" [disabled, ref=e45]\n"
+    },
+    {
+      "time": "2026-10-04T05:29:50.094441+00:00",
+      "args": [
+        "fill",
+        "@e46",
+        "# IMPORTANT UNSAVED REVIEW NOTE\n\nPlease retain this edit."
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:29:50.098346+00:00",
+      "args": [
+        "press",
+        "Escape"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:29:50.407070+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsLocal\" [ref=e1] clickable [onclick]\n  - heading \"Discard unsaved changes?\" [level=2, ref=e40]\n  - button \"Close dialog\" [ref=e41]\n  - region \"Dialog content\" [ref=e39] focusable [tabindex]\n  - button \"Keep editing\" [ref=e44]\n  - button \"Discard changes\" [ref=e45]\n"
+    },
+    {
+      "time": "2026-10-04T05:29:50.436612+00:00",
+      "args": [
+        "screenshot",
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/followup-unsaved-discard-confirmation-900x700.png"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/followup-unsaved-discard-confirmation-900x700.png\n"
+    },
+    {
+      "time": "2026-10-04T05:29:50.464971+00:00",
+      "args": [
+        "press",
+        "Escape"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:29:50.767914+00:00",
+      "args": [
+        "eval",
+        "JSON.stringify({dialogs:document.querySelectorAll(\"[role=dialog]\").length,focus:document.activeElement?.getAttribute(\"aria-label\")})"
+      ],
+      "exitCode": 0,
+      "output": "\"{\\\"dialogs\\\":0,\\\"focus\\\":\\\"Manage protocol-check\\\"}\"\n"
+    },
+    {
+      "time": "2026-10-04T05:29:50.788354+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsLocal\" [ref=e1] clickable [onclick]\n  - link \"Skip to content\" [ref=e2]\n  - navigation \"Primary navigation\" [ref=e3]\n    - link \"Overview\" [ref=e6]\n    - link \"Sessions\" [ref=e7]\n    - link \"Analysis\" [ref=e8]\n    - link \"Agent tools\" [ref=e9]\n    - link \"Health\" [ref=e10]\n    - link \"Data\" [ref=e11]\n    - link \"Settings\" [ref=e12]\n  - heading \"Agent tools\" [level=1, ref=e13]\n  - button \"Refresh installations\" [ref=e14]\n  - region \"Agent tool filters\" [ref=e4]\n    - searchbox \"Search installed tools\" [ref=e23]\n    - combobox \"HARNESS\" [expanded=false, ref=e24]: All harnesses\n      - option \"All harnesses\" [selected, ref=e35]\n      - option \"Claude Code\" [ref=e36]\n      - option \"Codex\" [ref=e37]\n      - option \"OpenCode\" [ref=e38]\n  - tab \"All 8\" [selected, ref=e15]\n  - tab \"MCP servers 2\" [ref=e16]\n  - tab \"Plugins 2\" [ref=e17]\n  - tab \"Hooks 2\" [ref=e18]\n  - tab \"Skills 1\" [ref=e19]\n  - tab \"Instructions 1\" [ref=e20]\n  - button \"Manage docs-73A9\" [ref=e25]\n  - button \"Manage Cutokyo search MCP\" [ref=e26]\n  - button \"Manage fixture-processor-73A9\" [ref=e27]\n  - button \"Verification\" [ref=e28]\n  - button \"Manage release-notes-indexer\" [ref=e29]\n  - button \"Verification\" [ref=e30]\n  - button \"Manage Cutokyo SessionStart\" [ref=e31]\n  - button \"Manage AGENTS.md\" [ref=e32]\n  - button \"Manage PreToolUse project check\" [ref=e33]\n  - button \"Manage protocol-check\" [ref=e34]\n  - region \"Cutokyo search access\" [ref=e5]\n    - heading \"Cutokyo search access\" [level=2, ref=e21]\n    - link \"Manage search access in Settings\" [ref=e22]\n"
+    },
+    {
+      "time": "2026-10-04T05:29:50.841162+00:00",
+      "args": [
+        "click",
+        "@e34"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:29:51.244345+00:00",
+      "args": [
+        "eval",
+        "JSON.stringify({content:document.querySelector(\"textarea\")?.value,unsavedPresent:document.querySelector(\"textarea\")?.value.includes(\"IMPORTANT UNSAVED REVIEW NOTE\")})"
+      ],
+      "exitCode": 0,
+      "output": "\"{\\\"content\\\":\\\"---\\\\nname: protocol-check\\\\ndescription: Verify protocol messages before release.\\\\n---\\\\n\\\\n# Protocol check\\\\n\\\\nRun the protocol fixtures and report malformed output.\\\\n\\\",\\\"unsavedPresent\\\":false}\"\n"
+    },
+    {
+      "time": "2026-10-04T05:29:51.268580+00:00",
+      "args": [
+        "screenshot",
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/followup-unsaved-lost-after-escape-900x700.png"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/followup-unsaved-lost-after-escape-900x700.png\n"
+    },
+    {
+      "time": "2026-10-04T05:29:51.296335+00:00",
+      "args": [
+        "press",
+        "Escape"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:29:51.443786+00:00",
+      "args": [
+        "open",
+        "http://127.0.0.1:4318/?jev_case=health-degraded#/health"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=health-degraded#/health\n"
+    },
+    {
+      "time": "2026-10-04T05:29:52.157802+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsRead-o\" [ref=e47] clickable [onclick]\n  - link \"Skip to content\" [ref=e48]\n  - navigation \"Primary navigation\" [ref=e49]\n    - link \"Overview\" [ref=e52]\n    - link \"Sessions\" [ref=e53]\n    - link \"Analysis\" [ref=e54]\n    - link \"Agent tools\" [ref=e55]\n    - link \"Health\" [ref=e56]\n    - link \"Data\" [ref=e57]\n    - link \"Settings\" [ref=e58]\n  - heading \"System health\" [level=1, ref=e59]\n  - button \"Run doctor\" [ref=e60]\n  - button \"Bundle preview\" [ref=e61]\n  - region \"Health summary\" [ref=e50]\n  - region \"Current and lifetime state\" [ref=e51]\n    - heading \"Current and lifetime state\" [level=2, ref=e62]\n    - button \"Open quarantine guidance\" [ref=e63]\n    - button \"Retry writer lock\" [ref=e64]\n"
+    },
+    {
+      "time": "2026-10-04T05:29:52.178206+00:00",
+      "args": [
+        "click",
+        "@e64"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:29:52.581204+00:00",
+      "args": [
+        "eval",
+        "JSON.stringify({sidebar:document.querySelector(\".sidebar__footer\")?.textContent,main:document.querySelector(\"main\")?.textContent.includes(\"desktop \u00b7 pid 7319\"),recovered:document.querySelector(\"main\")?.textContent.includes(\"writer lock recovered\")})"
+      ],
+      "exitCode": 0,
+      "output": "\"{\\\"sidebar\\\":\\\"Read-only view\u2713Local onlyv0.1.0-test\\\",\\\"main\\\":true,\\\"recovered\\\":true}\"\n"
+    },
+    {
+      "time": "2026-10-04T05:29:52.615461+00:00",
+      "args": [
+        "screenshot",
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/followup-health-recovered-stale-sidebar-900x700.png"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/followup-health-recovered-stale-sidebar-900x700.png\n"
+    },
+    {
+      "time": "2026-10-04T05:29:52.675045+00:00",
+      "args": [
+        "open",
+        "http://127.0.0.1:4318/?jev_case=native-capabilities-unavailable#/settings"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=native-capabilities-unavailable#/settings\n"
+    },
+    {
+      "time": "2026-10-04T05:29:53.389514+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsLocal\" [ref=e65] clickable [onclick]\n  - link \"Skip to content\" [ref=e66]\n  - navigation \"Primary navigation\" [ref=e67]\n    - link \"Overview\" [ref=e73]\n    - link \"Sessions\" [ref=e74]\n    - link \"Analysis\" [ref=e75]\n    - link \"Agent tools\" [ref=e76]\n    - link \"Health\" [ref=e77]\n    - link \"Data\" [ref=e78]\n    - link \"Settings\" [ref=e79]\n  - heading \"Settings\" [level=1, ref=e80]\n  - region \"Appearance\" [ref=e68]\n    - heading \"Appearance\" [level=2, ref=e81]\n    - button \"Light\" [ref=e92]\n    - button \"Dark\" [ref=e93]\n    - button \"System\" [ref=e94]\n  - region \"Capture and agent access\" [ref=e69]\n    - heading \"Capture and agent access\" [level=2, ref=e82]\n    - LabelText \"Enabled\" [ref=e83] clickable [cursor:pointer]\n      - switch \"Toggle read-only Cutokyo search MCP\" [checked=true, ref=e95]\n    - button \"Review before enabling\" [ref=e84]\n  - region \"Retention default\" [ref=e70]\n    - heading \"Retention default\" [level=2, ref=e85]\n    - combobox \"Default history retention\" [expanded=false, ref=e86]: Keep until deleted\n      - option \"Keep until deleted\" [selected, ref=e97]\n      - option \"30 days\" [ref=e98]\n      - option \"90 days\" [ref=e99]\n      - option \"1 year\" [ref=e100]\n  - region \"Updates and crash records\" [ref=e71]\n    - heading \"Updates and crash records\" [level=2, ref=e87]\n    - combobox \"Updater behavior\" [expanded=false, disabled, ref=e88]: Notify before downloading\n      - option \"Download signed updates automatically\" [disabled, ref=e101]\n      - option \"Notify before downloading\" [disabled, ref=e102]\n      - option \"Check manually\" [disabled, ref=e103]\n    - LabelText \"Disabled\" [ref=e89] clickable [cursor:pointer]\n      - switch \"Toggle bounded local crash records\" [checked=false, ref=e96]\n    - button \"Check now\" [disabled, ref=e90]\n  - region \"OS keychain only\" [ref=e72]\n    - heading \"OS keychain only\" [level=2, ref=e91]\n"
+    },
+    {
+      "time": "2026-10-04T05:29:53.414738+00:00",
+      "args": [
+        "click",
+        "@e84"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:29:53.822255+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsLocal\" [ref=e65] clickable [onclick]\n  - heading \"Enable local proxy capture?\" [level=2, ref=e105]\n  - button \"Close dialog\" [ref=e106]\n  - region \"Dialog content\" [ref=e104] focusable [tabindex]\n    - heading \"Content passing through the proxy\" [level=3, ref=e109]\n    - heading \"Never persisted by the proxy\" [level=3, ref=e110]\n  - button \"Not now\" [ref=e107]\n  - button \"I understand \u2014 enable proxy\" [ref=e108]\n"
+    },
+    {
+      "time": "2026-10-04T05:29:53.848843+00:00",
+      "args": [
+        "screenshot",
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/followup-unavailable-proxy-confirmation-900x700.png"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/followup-unavailable-proxy-confirmation-900x700.png\n"
+    },
+    {
+      "time": "2026-10-04T05:29:53.855300+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsLocal\" [ref=e65] clickable [onclick]\n  - heading \"Enable local proxy capture?\" [level=2, ref=e105]\n  - button \"Close dialog\" [ref=e106]\n  - region \"Dialog content\" [ref=e104] focusable [tabindex]\n    - heading \"Content passing through the proxy\" [level=3, ref=e109]\n    - heading \"Never persisted by the proxy\" [level=3, ref=e110]\n  - button \"Not now\" [ref=e107]\n  - button \"I understand \u2014 enable proxy\" [ref=e108]\n"
+    },
+    {
+      "time": "2026-10-04T05:29:53.874147+00:00",
+      "args": [
+        "click",
+        "@e108"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:29:54.276218+00:00",
+      "args": [
+        "eval",
+        "JSON.stringify({errors:[...document.querySelectorAll(\"[role=alert]\")].map(e=>e.textContent),dialogs:document.querySelectorAll(\"[role=dialog]\").length})"
+      ],
+      "exitCode": 0,
+      "output": "\"{\\\"errors\\\":[\\\"Proxy capture is unavailable: this desktop build has no provider-proxy listener. Native capture remains available.\\\"],\\\"dialogs\\\":0}\"\n"
+    },
+    {
+      "time": "2026-10-04T05:29:54.297199+00:00",
+      "args": [
+        "screenshot",
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/followup-unavailable-proxy-confirm-error-900x700.png"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/followup-unavailable-proxy-confirm-error-900x700.png\n"
+    }
+  ]
+}

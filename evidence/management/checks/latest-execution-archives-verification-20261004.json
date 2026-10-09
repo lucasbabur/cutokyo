@@ -1,0 +1,26 @@
+{
+  "verified": [
+    {
+      "manifest": "evidence/management/native-review/final10-browser-image-review-20261004.manifest.json",
+      "archive_sha256": "e82406249dd06ced5f83dbd35b267cc83adcc1ded9a7f4209b304257f798fcc3",
+      "member_count": 17
+    },
+    {
+      "manifest": "evidence/management/native-review/native8-failed-execution-and-quota-recovery-20261004.manifest.json",
+      "archive_sha256": "fb0c88f83389a9226b53bfeb9d95df3108d57dafab432f725782d378c9605c56",
+      "member_count": 41
+    },
+    {
+      "manifest": "evidence/management/native-review/native9-packaged-execution-20261004.manifest.json",
+      "archive_sha256": "49191996ad7751f92a50af8ce5eb58b002dc3d37c59df9eec9bc4b182a70d59f",
+      "member_count": 51
+    },
+    {
+      "manifest": "evidence/management/native-review/native9-negative-execution-20261004.manifest.json",
+      "archive_sha256": "52f659e89fc5f7f42a7d6f3dbe8643c7d10d5755bce274878b28f950a7117568",
+      "member_count": 10
+    }
+  ],
+  "scope": "Preservation integrity only, not an independent product or image verdict",
+  "clean_release_proof": false
+}

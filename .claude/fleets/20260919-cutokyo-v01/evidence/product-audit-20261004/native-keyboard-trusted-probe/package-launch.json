@@ -1,0 +1,43 @@
+{
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "package": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-smrhxu6w/Cutokyo_0.1.0_amd64.deb",
+  "package_sha256": "4b801e4346ac3291e8e9792270f26324e1d36184aef2a60a5b712555ee06047f",
+  "application": "/tmp/cutokyo-native-test-wdio-keyboard-wy1jv1dj/package/usr/bin/cutokyo-desktop",
+  "application_sha256": "05c44f853b7f7b6af0a2c086702e9e6d14c016f95af9b1cd4e5394817038e04a",
+  "receiver": "/tmp/cutokyo-native-test-wdio-keyboard-wy1jv1dj/bin/cutokyo",
+  "receiver_sha256": "07927390e941d23ef501a5d363b8d4d8614668a36a2a29639a22a9f64ed50d1d",
+  "fake_harness": "/tmp/cutokyo-native-test-wdio-keyboard-wy1jv1dj/bin/claude",
+  "fake_harness_sha256": "74b0648c3b0bd21ad2f61c354e364b016a3475cbb491f9f73d20c1d49eab5536",
+  "root": "/tmp/cutokyo-native-test-wdio-keyboard-wy1jv1dj",
+  "port": 34721,
+  "backend": "x11",
+  "fixture": "search-resume",
+  "launch_origin": "fresh extraction of retained Debian package",
+  "one_app_only": true,
+  "home": "/tmp/cutokyo-native-test-wdio-keyboard-wy1jv1dj/home",
+  "config_home": "/tmp/cutokyo-native-test-wdio-keyboard-wy1jv1dj/config",
+  "data_home": "/tmp/cutokyo-native-test-wdio-keyboard-wy1jv1dj/data",
+  "provider_environment_not_forwarded": true,
+  "pid": 2864911,
+  "owned_group": 2864911,
+  "window": {
+    "address": "0x5c07e2fee570",
+    "pid": 2864911,
+    "xwayland": true,
+    "mapped": true
+  },
+  "session": "a7926bcc-fbd2-47dd-965f-d034c15a6bfa",
+  "capabilities": {
+    "acceptInsecureCerts": false,
+    "browserName": "WebKitGTK",
+    "browserVersion": "605.1.15",
+    "pageLoadStrategy": "normal",
+    "platformName": "linux",
+    "setWindowRect": true,
+    "timeouts": {
+      "implicit": 0,
+      "pageLoad": 300000,
+      "script": 30000
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "scope": "New supplemental read/hash review of late preserved original native6 save audits; no new execution",
+  "historical_native6_execution": "Exit1/149.38s preserved. This supplement does not turn native6 aggregate green.",
+  "manifest": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-original-save-audits-20261004/manifest.json",
+  "verification": [
+    {
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-original-save-audits-20261004/resume-audit.txt",
+      "preserved_matches": true,
+      "resolved_source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/retained-roots/cutokyo-native-test-wdio-qn_d75i0/resume-audit.txt",
+      "resolved_source_exists": true,
+      "resolved_source_matches": true
+    },
+    {
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-original-save-audits-20261004/resume-audit.context.json",
+      "preserved_matches": true,
+      "resolved_source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/retained-roots/cutokyo-native-test-wdio-qn_d75i0/resume-audit.context.json",
+      "resolved_source_exists": true,
+      "resolved_source_matches": true
+    }
+  ],
+  "argv": "--resume\nclaude-native-73A9\n",
+  "context": {
+    "cwd": "/tmp/cutokyo-native-test-wdio-qn_d75i0/data/native-resume-project",
+    "stdinTty": true,
+    "stdoutTty": true
+  },
+  "interpretation": "Original exact claude-native-73A9 --resume plus original private cwd and stdin/stdout TTY true. Preserved bytes independently match resolved retained original root. Initial native6 inspection receipt not rewritten."
+}

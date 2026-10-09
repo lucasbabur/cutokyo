@@ -1,0 +1,140 @@
+{
+  "scope": "Separate actualnative9-package failedlaunch replay; notfullaggregate",
+  "runtime_verdict": "PASS_ONE_CASE_EXIT0_19_6_SECONDS",
+  "rendered_verdict": "PASS_ACTUAL_INLINE_ERROR_1280X800",
+  "whole_fleet_pass": false,
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "execution": {
+    "command": [
+      "pnpm",
+      "exec",
+      "wdio",
+      "run",
+      "./wdio.conf.ts",
+      "--spec",
+      "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest.spec.ts"
+    ],
+    "exit_code": 0,
+    "duration_seconds": 19.6,
+    "root": "/tmp/cutokyo-native-test-wdio-pyi05pdx",
+    "evidence": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-3kkudjx2",
+    "fresh_aggregate_acceptance": false,
+    "source_package": "e3e3747e2aaa71ae973637364aa299ac82ec2d576bb85c6b7342d0133dc30b8a",
+    "window_state": {
+      "pid": "607816",
+      "window": "0x5c07e311b6a0"
+    },
+    "owned_application_survived": false
+  },
+  "package_launch": {
+    "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+    "source_manifest": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/package-launch.json",
+    "package": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/Cutokyo_0.1.0_amd64.deb",
+    "retained_package": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/Cutokyo_0.1.0_amd64.deb",
+    "package_sha256": "e3e3747e2aaa71ae973637364aa299ac82ec2d576bb85c6b7342d0133dc30b8a",
+    "application": "/tmp/cutokyo-native-test-wdio-pyi05pdx/package/usr/bin/cutokyo-desktop",
+    "application_sha256": "8c6cf7f3d632f3c22df8463f7baf399abfb5ae3074e352f9e02c9db72b8418a9",
+    "receiver": "/tmp/cutokyo-native-test-wdio-pyi05pdx/bin/cutokyo",
+    "receiver_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+    "synthetic_harness": "/tmp/cutokyo-native-test-wdio-pyi05pdx/bin/claude",
+    "synthetic_harness_sha256": "74b0648c3b0bd21ad2f61c354e364b016a3475cbb491f9f73d20c1d49eab5536",
+    "root": "/tmp/cutokyo-native-test-wdio-pyi05pdx",
+    "port": 57081,
+    "launch_origin": "extracted-debian-bundle",
+    "test_only": true,
+    "frontend_origin": "embedded in verified extracted Debian application",
+    "purpose": "separate genuine failed-launch UI retest; not full aggregate acceptance",
+    "controlled_negative_environment": "WAYLAND_DISPLAY restored with no socket in private XDG_RUNTIME_DIR"
+  },
+  "independent_package_identity": {
+    "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/Cutokyo_0.1.0_amd64.deb",
+    "bytes": 24183362,
+    "sha256": "e3e3747e2aaa71ae973637364aa299ac82ec2d576bb85c6b7342d0133dc30b8a",
+    "streamed_application": {
+      "name": "usr/bin/cutokyo-desktop",
+      "bytes": 104008656,
+      "sha256": "8c6cf7f3d632f3c22df8463f7baf399abfb5ae3074e352f9e02c9db72b8418a9"
+    },
+    "matches_launch": true,
+    "extraction_or_launch": false
+  },
+  "geometry": {
+    "windowSize": {
+      "height": 800,
+      "width": 1280
+    },
+    "viewport": {
+      "height": 800,
+      "width": 1280
+    }
+  },
+  "assertions": {
+    "genuineLauncherFailure": "The terminal launcher exited unsuccessfully before acknowledging an interactive harness. Check its display access and configuration.",
+    "inlineDialogAlert": true,
+    "alertCount": 1,
+    "noSuccessReceipt": true,
+    "noHarnessAudit": true,
+    "retryFailedTruthfully": true,
+    "cancelAndCloseRestoreResumeFocus": true,
+    "newPreviewClearsError": true,
+    "exactNativeId": "claude-native-73A9",
+    "searchQueryRetained": true,
+    "separateNegativeJourneyNotFreshAggregate": true
+  },
+  "actual_worker": {
+    "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-3kkudjx2/resume-negative-retest.spec-0-0.log",
+    "first_error": 596,
+    "retry_error": 862,
+    "single_alert": [
+      665,
+      931
+    ],
+    "focus_Resume_after_cancel_and_close": [
+      989,
+      1221
+    ],
+    "retained_query": 1332,
+    "noSuccessReceipt": "ActualReadlines606-629and872-895: nosuchelement and emptyarray forsuccessstatus afterbothattempts.",
+    "noHarnessAudit": "Executingmaintainedfilesystemabsenceassertion/receipt; no reviewquery ofdestroyedroot."
+  },
+  "actual_reporter": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-3kkudjx2/execution.log",
+  "images": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-3kkudjx2/resume-inline-launch-failure-1280x800.png",
+      "relative": "resume-inline-launch-failure-1280x800.png",
+      "sha256": "52da4c21e767c093b35873f00d9e5cea9ab6d526532a54234861bdcdb05f6ae8",
+      "bytes": 119449,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/negative9-review-resume-negative-retest-3kkudjx2-20261004T123144Z/screens/resume-inline-launch-failure-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "viewport": [
+        1280,
+        800
+      ],
+      "expected": "Genuinefailure staysinline with exacttarget, retry/cancel andnofalse success.",
+      "actual": "Actualvermilion launchererror, exactclaude-native-73A9/privatecwd retained; Cancel/Resume visible."
+    }
+  ],
+  "individually_read_png_count": 1,
+  "verification": {
+    "artifact_count": 10,
+    "image_count": 1,
+    "mismatches": []
+  },
+  "limitations": [
+    "ControlledmissingprivateWaylandsocket, notprovideractivation orproviderfailureproof.",
+    "Onecase1280only, separatefromfreshaggregate."
+  ],
+  "reviewer_safety": {
+    "launches": 0,
+    "live_process_or_Git_queries": 0,
+    "product_test_fixture_threshold_config_trackedimage_changes": 0,
+    "historical_records_overwritten": 0,
+    "writes": "NewindependentJSON/transcripts only; earlier partialverification unchanged."
+  },
+  "manifest": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/negative9-review-resume-negative-retest-3kkudjx2-20261004T123144Z/manifest.json",
+  "raw": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/negative9-review-resume-negative-retest-3kkudjx2-20261004T123144Z"
+}

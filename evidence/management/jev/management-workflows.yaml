@@ -1,0 +1,222 @@
+# Supplemental management QA only. This is not the pinned legacy acceptance batch.
+# Run only after main explicitly confirms integrated readiness and the fixture server.
+# Product QA owns port 4173. Do not start or replace its server without main permission.
+# Every case uses an existing, isolated browser-only fixture. Mutations below affect
+# in-memory synthetic records only; never use native Tauri, real harnesses, providers,
+# an authenticated profile, or a non-fixture URL. Do not reload during a stateful case.
+# Jev judges text observations only. Independently read EVERY outcome screenshot,
+# including PASS and BLOCKED, for layout, contrast, focus, clipping, and consistency.
+url: http://127.0.0.1:4173
+concurrency: 4
+timeout: 1200
+max_steps: 20
+screenshots: steps
+cases:
+  - name: management-mcp-save-failure-preserves-draft
+    path: /?jev_case=mcp-plugin-inventory#/inventory
+    steps:
+      - do: Click the button named Manage docs-73A9.
+        expect: The Manage docs-73A9 dialog shows nonempty JSON in Source content, Claude Code, user scope, and the source Claude Code user MCP configuration. Save changes is disabled before editing.
+      - do: Replace the Source content field with "{invalid-management-json".
+        expect: Source content contains exactly the supplied invalid JSON; Save changes is enabled and an unsaved-changes notice appears. Install in another harness and Remove are disabled while the draft is dirty.
+      - do: Click Save changes in the Manage docs-73A9 dialog once.
+        expect: A validation error appears inside the same dialog, Source content still contains exactly {invalid-management-json, and no successful-save receipt appears.
+      - do: Click Cancel in the Manage docs-73A9 dialog.
+        expect: The Discard unsaved changes? dialog offers Keep editing and Discard changes; the invalid draft has not been silently saved or discarded.
+      - do: Click Keep editing in the Discard unsaved changes? dialog.
+        expect: Manage docs-73A9 returns with Source content still containing exactly {invalid-management-json.
+      - do: Replace the Source content field with the supplied Source content value.
+        values:
+          Source content: '{"command":"npx","args":["-y","@example/docs-mcp","--jev-management-save"],"env":{}}'
+        expect: Source content contains the supplied valid JSON with --jev-management-save, and Save changes is enabled.
+      - do: Click Save changes in the Manage docs-73A9 dialog once.
+        expect: The dialog closes and the receipt says Saved docs-73A9. A recovery copy was retained. The docs-73A9 installation remains listed.
+      - do: Click the button named Manage docs-73A9.
+        expect: Source content shows the saved JSON containing --jev-management-save; Save changes is disabled because the reopened document is clean.
+      - do: Click Done in the Manage docs-73A9 dialog.
+        expect: The dialog closes and Agent tools remains at /?jev_case=mcp-plugin-inventory#/inventory with docs-73A9 still listed.
+
+  - name: management-skill-copy-independent-edit-remove-cancel
+    path: /?jev_case=mcp-plugin-inventory#/inventory
+    steps:
+      - do: Click the button named Manage protocol-check in the OpenCode installation row.
+        expect: Manage protocol-check shows OpenCode, project scope, and nonempty markdown in Source content.
+      - do: Click Install in another harness in the Manage protocol-check dialog.
+        expect: Install protocol-check in another harness explains that this creates an independent copy, later edits do not sync, existing installations are never overwritten, and supporting files are copied with the skill.
+      - do: Select Claude Code in Destination harness.
+        expect: Will be installed at shows Project/.claude/skills/protocol-check/SKILL.md and Install in Claude Code is enabled. OpenCode is unavailable because this skill is already installed there.
+      - do: Click Install in Claude Code once.
+        expect: The dialog closes with Installed protocol-check in Claude Code. Two protocol-check installation rows are listed, one Claude Code and one OpenCode.
+      - do: Click the button named Manage protocol-check in the Claude Code installation row, not the OpenCode row.
+        expect: The dialog identifies Claude Code and Project/.claude/skills/protocol-check/SKILL.md; Source content contains the copied Protocol check markdown.
+      - do: Replace Source content with "# JEV independent Claude Code skill copy".
+        expect: Source content contains exactly the supplied copy-only text and Save changes is enabled.
+      - do: Click Save changes in the Manage protocol-check dialog once.
+        expect: The dialog closes with Saved protocol-check. A recovery copy was retained. Both Claude Code and OpenCode installations remain listed.
+      - do: Click the button named Manage protocol-check in the OpenCode installation row, not the Claude Code row.
+        expect: Source content still contains the original Protocol check markdown and Run the protocol fixtures and report malformed output. It does not contain JEV independent Claude Code skill copy.
+      - do: Click Done in the Manage protocol-check dialog.
+        expect: The dialog closes and both independent protocol-check installation rows remain.
+      - do: Click the button named Manage protocol-check in the Claude Code installation row, not the OpenCode row.
+        expect: >-
+          Source content contains exactly # JEV independent Claude Code skill copy,
+          confirming the saved copy is separate from the original.
+      - do: Click Remove in the Manage protocol-check dialog.
+        expect: Remove protocol-check? identifies Claude Code and the copy's source, explains other independent copies are unchanged, supporting files are removed, a recovery copy is retained, and session history is not deleted.
+      - do: Click Cancel in the Remove protocol-check? dialog.
+        expect: Manage protocol-check returns for Claude Code with the saved copy content intact; cancellation has not removed the installation.
+      - do: Click Remove in the Manage protocol-check dialog.
+        expect: Remove protocol-check? again identifies the Claude Code copy and offers Remove installation.
+      - do: Click Remove installation in the Remove protocol-check? dialog once.
+        expect: The dialog closes. Only the OpenCode protocol-check row remains; the Claude Code copy is absent. The receipt states other installations are unchanged.
+
+  - name: management-shared-instructions-impact-save-and-cancel
+    path: /?jev_case=mcp-plugin-inventory#/inventory
+    steps:
+      - do: Click the Instructions tab in Inventory type.
+        expect: The AGENTS.md installation is listed as Project/AGENTS.md with both Codex and OpenCode configured harnesses.
+      - do: Click the button named Manage AGENTS.md.
+        expect: Manage AGENTS.md identifies Harness as Codex, OpenCode, Scope as project, Source as Project/AGENTS.md, and Source content includes Run tests before sharing a change.
+      - do: Replace Source content with "# Shared project instructions — JEV management QA".
+        expect: Source content contains exactly the supplied text and Save changes is enabled; the source is still Project/AGENTS.md shared by Codex and OpenCode.
+      - do: Click Save changes in the Manage AGENTS.md dialog once.
+        expect: The dialog closes with Saved AGENTS.md. A recovery copy was retained. There is still one AGENTS.md installation shared by Codex and OpenCode, not two independent copies.
+      - do: Click the button named Manage AGENTS.md.
+        expect: >-
+          Source content contains exactly # Shared project instructions — JEV management QA;
+          Harness still names both Codex and OpenCode.
+      - do: Click Remove in the Manage AGENTS.md dialog.
+        expect: Remove AGENTS.md? names Codex, OpenCode and Project/AGENTS.md, and explicitly says this source will be removed for every harness using it while other independent copies are unchanged.
+      - do: Click Cancel in the Remove AGENTS.md? dialog.
+        expect: Manage AGENTS.md returns with the saved shared content intact; the shared source was not removed.
+      - do: Click Done in the Manage AGENTS.md dialog.
+        expect: The dialog closes and AGENTS.md remains listed with Codex and OpenCode.
+
+  - name: management-backup-create-preview-cancel-restore-history
+    path: /?jev_case=retention-delete#/data
+    steps:
+      - do: Click Create backup in the Backups section.
+        expect: Create a local backup explains included local history and excluded settings, harness configuration, and pending spool entries, and offers Cancel and Create backup before creating anything.
+      - do: Click Cancel in the Create a local backup dialog.
+        expect: The dialog closes; No backups yet remains visible. Delete one session still lists delete-me-73A9 and keep-me-73A9.
+      - do: Click Create backup in the Backups section.
+        expect: Create a local backup opens again with the private default backups-folder destination and Use another location (optional).
+      - do: Click Create backup in the Create a local backup dialog once, leaving the default destination unchanged.
+        expect: Backup created shows Your local backup is ready, Location /isolated-cutokyo/backups/backup-1, Created, Size, and Sessions 2. It truthfully says backups are private local files, not application-encrypted.
+      - do: Click Done in the Backup created dialog.
+        expect: Available backups lists /isolated-cutokyo/backups/backup-1 with 2 sessions and Restore…; both fixture sessions remain in Delete one session.
+      - do: Click Delete only this in the delete-me-73A9 row within Delete one session.
+        expect: Delete exactly one session? names only delete-me-73A9 and offers Confirm one-session deletion; neighboring sessions remain untouched and no physical secure-erasure promise appears.
+      - do: Click Confirm one-session deletion once in the Delete exactly one session? dialog.
+        expect: The dialog closes; delete-me-73A9 is absent from Delete one session, keep-me-73A9 remains, and the existing backup still contains 2 sessions.
+      - do: Click Restore… for /isolated-cutokyo/backups/backup-1 in Available backups.
+        expect: Restore this backup? identifies /isolated-cutokyo/backups/backup-1, shows 1 current sessions will be replaced by 2 backed-up sessions, and explains retention of a recovery copy. Restore selected backup is enabled after verification; no restore receipt appears yet.
+      - do: Click Cancel — keep current history in the Restore this backup? dialog.
+        expect: The dialog closes; only keep-me-73A9 remains in Delete one session. Cancelling has not restored delete-me-73A9 or created a recovery-copy entry.
+      - do: Click Restore… for /isolated-cutokyo/backups/backup-1 in Available backups.
+        expect: Restore this backup? again shows the selected backup and replacement of 1 current session by 2 backed-up sessions, with recovery-copy disclosure.
+      - do: Click Restore selected backup in the Restore this backup? dialog once.
+        expect: History restored says Restored 2 sessions, identifies Recovery copy under /isolated-cutokyo/backups/recovery-, and shows Integrity result ok; previous history has been kept.
+      - do: Click Done in the History restored dialog.
+        expect: Delete one session lists both delete-me-73A9 and keep-me-73A9 again. Available backups includes the original backup and a distinct recovery copy with 1 session.
+      - do: Click Sessions in Primary navigation.
+        expect: Sessions opens at /?jev_case=retention-delete#/sessions and lists both restored fixture sessions, without leaving the isolated fixture URL.
+
+  - name: management-backup-unavailable-preview-no-restore
+    path: /?jev_case=retention-delete#/data
+    steps:
+      - do: Expand Restore a backup from another location.
+        expect: The Backup directory field appears and Review backup is disabled while that field is empty.
+      - do: Fill Backup directory with "/isolated-cutokyo/backups/jev-missing-backup".
+        expect: The field contains the supplied synthetic fixture path and Review backup is enabled.
+      - do: Click Review backup once.
+        expect: Restore this backup? shows Backup directory is unavailable. Restore selected backup is disabled, no success or integrity receipt is fabricated, and current history has not been replaced.
+      - do: Click Cancel — keep current history in the Restore this backup? dialog.
+        expect: The dialog closes; delete-me-73A9 and keep-me-73A9 remain in Delete one session and No backups yet is still shown.
+
+  - name: management-native-capabilities-unavailable-truthful-actions
+    path: /?jev_case=native-capabilities-unavailable#/analysis
+    steps:
+      - do: Inspect the AI analysis page without clicking Analyze or any provider action.
+        expect: The page states This desktop build has no configured AI analysis provider. No content is sent. Session history and local search remain available. Every Analyze button is disabled; no egress preview, completed summary, or active-provider claim appears.
+      - do: Click Settings in Primary navigation.
+        expect: Settings opens at /?jev_case=native-capabilities-unavailable#/settings. Updater behavior and Check now are disabled. Signed updater metadata is not configured in this build. Install updates manually is visible; no successful update-check result is fabricated. Proxy capture is Inactive and the page explains this build has no provider-proxy listener.
+      - do: Click Sessions in Primary navigation.
+        expect: Sessions opens at /?jev_case=native-capabilities-unavailable#/sessions with local fixture history available despite unavailable provider and updater capabilities.
+
+  - name: management-skip-link-keeps-route-and-fixture-query
+    path: /?jev_case=visual-keyboard-consistency#/sessions
+    steps:
+      - do: Press Tab once from the loaded Sessions page, without using the pointer.
+        key: Tab
+        expect: Skip to content becomes visible as the first keyboard control; Sessions remains the active page at /?jev_case=visual-keyboard-consistency#/sessions.
+      - do: Press Enter once to activate Skip to content, without clicking or navigating elsewhere.
+        key: Enter
+        expect: >-
+          Sessions remains the active page and the URL stays
+          /?jev_case=visual-keyboard-consistency#/sessions, not #main-content or the dashboard.
+          The main content landmark still contains the Sessions page. Focus must move to
+          main content; if text evidence cannot establish focus, mark that part BLOCKED
+          rather than claiming proof from a screenshot.
+
+  - name: management-session-query-filters-back-preservation
+    path: /?jev_case=search-resume#/sessions
+    steps:
+      - do: Fill Search session content with "JEV exact resume needle 73A9".
+        expect: After the search settles, exactly one matching session Reconcile usage capture is listed, with Claude Code and coverage labels; Search session content retains the exact supplied query.
+      - do: Select Exact phrase in Match.
+        expect: Match shows Exact phrase, the query remains unchanged, and Reconcile usage capture remains the single matching result.
+      - do: Select Claude Code in Harness.
+        expect: Harness shows Claude Code, Match remains Exact phrase, and the exact query still returns only Reconcile usage capture.
+      - do: Click the link named Open Reconcile usage capture.
+        expect: Session detail for Reconcile usage capture opens at /?jev_case=search-resume#/sessions/session-claude-73A9 with native identity claude-jev-73A9 and Back to sessions. No resume or provider action has occurred.
+      - do: Click Back to sessions.
+        expect: Sessions returns at /?jev_case=search-resume#/sessions. Search session content is still JEV exact resume needle 73A9, Match is Exact phrase, Harness is Claude Code, and exactly one matching Reconcile usage capture session remains listed.
+      - do: Click Agent tools in Primary navigation.
+        expect: Agent tools opens at /?jev_case=search-resume#/inventory without losing the fixture query parameter.
+      - do: Click Sessions in Primary navigation.
+        expect: Sessions returns at /?jev_case=search-resume#/sessions with the exact search query, Exact phrase, and Claude Code still selected, and Reconcile usage capture still the single result.
+
+  - name: management-dark-editor-install-preview-consistency
+    path: /?jev_case=appearance-dark#/inventory
+    steps:
+      - do: Click the button named Manage protocol-check in the OpenCode installation row.
+        expect: Manage protocol-check shows nonempty Source content, OpenCode, project scope, and Save changes disabled before editing. The dialog contains Done, Install in another harness, and Remove for independent visual review of dark-theme editor and control consistency.
+      - do: Click Install in another harness in the Manage protocol-check dialog.
+        expect: Install protocol-check in another harness shows Destination harness, Will be installed at, independent-copy and supporting-files disclosures, Back, and Install in Claude Code for independent visual review; nothing is installed by opening this preview.
+      - do: Click Back in the Install protocol-check in another harness dialog.
+        expect: Manage protocol-check returns with the original Source content unchanged and no successful-install receipt.
+      - do: Click Done in the Manage protocol-check dialog.
+        expect: The dialog closes and only the original OpenCode protocol-check installation remains listed at /?jev_case=appearance-dark#/inventory.
+
+  - name: management-onboarding-browse-only-no-harness-selected
+    path: /?jev_case=onboarding-empty#/onboarding
+    steps:
+      - do: Inspect onboarding without selecting any harness or clicking a capture setup action.
+        expect: See your agent work without sending it away shows Preview and install native capture and Confirm local storage. Claude Code, Codex, and OpenCode harness checkboxes are all unchecked. Browse without installing and Finish with verified capture are disabled until local storage is acknowledged. The page says Browse-only does not install or remove capture. Proxy capture and AI analysis stay disabled.
+      - do: Check the checkbox whose label begins I understand the v0.x storage boundary, leaving every harness checkbox unchecked.
+        expect: The storage acknowledgement is checked; the page explains plaintext SQLite, owner-only permissions, lack of application encryption, and full-disk encryption. Browse without installing is enabled, Finish with verified capture remains disabled, and no harness is selected or configuration verified by this acknowledgement.
+      - do: Click Browse without installing once, without selecting a harness or confirming a capture preview.
+        expect: Overview opens at /?jev_case=onboarding-empty#/dashboard with No captured sessions yet, Local only, Proxy off, and AI egress on confirmation only. Browse-only completion did not require a selected or verified harness. No native-installation or live-capture success claim appears; this is browser-only completion evidence, not proof about native files.
+      - do: Click Sessions in Primary navigation.
+        expect: Sessions opens at /?jev_case=onboarding-empty#/sessions with History is empty—not zero and Review capture setup, rather than fabricated captured sessions or zero-valued usage analytics.
+
+  - name: management-native-capture-preview-cancel-browser-only
+    path: /?jev_case=onboarding-empty#/onboarding
+    steps:
+      - do: Check the Claude Code harness checkbox in Preview and install native capture, without acknowledging local storage yet.
+        expect: Claude Code is selected, Codex and OpenCode remain unselected, Configuration not verified is shown, and Finish with verified capture remains disabled. Selecting a harness has not installed or verified capture.
+      - do: Click Preview Claude Code install once, without clicking Confirm install for Claude Code.
+        expect: Capture setup preview shows Claude Code install preview, Installed version 2.1.278, Isolated browser fixture configuration. No native files are read or changed, and Install owned native capture integration. The disclosure says Browser simulation only. Native installation is not proven. Configuration verification does not establish live capture or transcript coverage. Confirm install for Claude Code is disabled until storage is acknowledged; Cancel preview is available.
+      - do: Click Cancel preview in Capture setup preview.
+        expect: Capture setup preview closes; the Claude Code selection remains checked and Configuration not verified remains shown. Finish with verified capture is disabled, no fixture-updated receipt appears, and cancelling is not presented as native installation or live-capture proof.
+      - do: Check the checkbox whose label begins I understand the v0.x storage boundary.
+        expect: Browse without installing is enabled, but Finish with verified capture remains disabled because the selected Claude Code integration was not applied or verified. No capture preview is active.
+      - do: Click Preview Codex install once, without clicking Confirm install for Codex.
+        expect: Capture setup preview shows Codex install preview, Installed version 0.153.4, the isolated browser-fixture target, and the browser-simulation/native-installation-not-proven disclosure. Confirm install for Codex is enabled after storage acknowledgement, but no installation receipt or configuration verification is claimed merely by opening the preview.
+      - do: Click Cancel preview in Capture setup preview.
+        expect: The Codex preview closes. Configuration not verified remains shown, Claude Code remains the only selected harness, and Finish with verified capture remains disabled. No fixture-updated receipt appears.
+      - do: Click Preview OpenCode install once, without clicking Confirm install for OpenCode.
+        expect: Capture setup preview shows OpenCode install preview, Installed version 1.18.28, the isolated browser-fixture target, and the browser-simulation/native-installation-not-proven disclosure. Confirm install for OpenCode is available after acknowledgement, but no installation or live-capture success is claimed.
+      - do: Click Cancel preview in Capture setup preview.
+        expect: The OpenCode preview closes at /?jev_case=onboarding-empty#/onboarding. Configuration not verified remains shown, Claude Code remains selected, Finish with verified capture remains disabled, and Browse without installing remains available. No apply-confirmation action occurred in this case; browser observations do not prove native filesystem state.

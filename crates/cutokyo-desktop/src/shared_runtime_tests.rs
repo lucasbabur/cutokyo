@@ -1,6 +1,10 @@
 //! Synthetic CLI-to-desktop regression; no fixture seeding or direct SQL.
 
-use std::{env, error::Error, process::Output};
+use std::{
+    env,
+    error::Error,
+    process::{Command, Output, Stdio},
+};
 
 use cutokyo_domain::{ObservationId, RawObservation, Summary, SummaryId};
 
@@ -438,7 +442,6 @@ fn shared_world(root: &Path) -> TestResult {
     assert!(paths.data_dir.starts_with(root));
     assert!(paths.config_file.starts_with(root));
     assert_eq!(paths.database_file, paths.data_dir.join("cutokyo.db"));
-    cli(&["config", "set", "outgoing_guard_enabled", "true"], None)?;
     cli(&["config", "set", "search_mcp_enabled", "false"], None)?;
     let mut observation = synthetic_native_observation()?;
     observation.payload["role"] = json!("user");
@@ -459,7 +462,7 @@ fn shared_world(root: &Path) -> TestResult {
         desktop.preview_resume("session:native-desktop-73A9")?["nativeResumeId"],
         "claude-native-73A9"
     );
-    assert_eq!(desktop.settings()?["outgoing_guard_enabled"], true);
+    assert!(desktop.settings()?.get("outgoing_guard_enabled").is_none());
     assert_eq!(desktop.inventory()?["searchMcpEnabled"], false);
     assert!(paths.database_file.is_file());
     assert!(!paths.data_dir.join("history.sqlite3").exists());
@@ -482,11 +485,12 @@ fn shared_world(root: &Path) -> TestResult {
         ..SettingsPatch::default()
     })?;
     let settings: Value = serde_json::from_slice(&cli(&["config", "list"], None)?.stdout)?;
-    assert_eq!(settings["data"]["outgoing_guard_enabled"], true);
+    assert!(settings["data"].get("outgoing_guard_enabled").is_none());
     assert_eq!(settings["data"]["search_mcp_enabled"], true);
     assert_eq!(settings["data"]["retention_days"], 42);
     desktop.complete_onboarding(CompleteOnboardingRequest {
         harnesses: Vec::new(),
+        mode: super::OnboardingMode::Browse,
         acknowledged_plaintext_storage: true,
         proxy_enabled: false,
         analysis_egress_enabled: false,

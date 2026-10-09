@@ -1,0 +1,129 @@
+{
+  "scope": "Independent retained fresh-native6-package negative launcher journey and image review",
+  "verdict": "PASS_BOUNDED_NEGATIVE_NATIVE_JOURNEY_AND_1280_RENDER",
+  "fresh_aggregate_acceptance": false,
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "revision_qualification": "Retained native6 Debian from dirty integrated source; not a clean release proof.",
+  "source_package": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/Cutokyo_0.1.0_amd64.deb",
+  "package_sha256": "de3e9a6d97825298612da554c8219cc67f461bf7ccb8da2a56e51bd385712316",
+  "application_sha256": "6afa020e2163e1250d931360bcd0eb3e3956c53492338b0077ef18a09c1b2095",
+  "application_identity_verification": "Matches native6 launch receipt and packaged member independently hashed during native6 review; retained Debian rehashed here.",
+  "execution": {
+    "command": [
+      "pnpm",
+      "exec",
+      "wdio",
+      "run",
+      "./wdio.conf.ts",
+      "--spec",
+      "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest.spec.ts"
+    ],
+    "exit_code": 0,
+    "duration_seconds": 18.83,
+    "root": "/tmp/cutokyo-native-test-wdio-qrnlz7mm",
+    "evidence": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-79ca6q6j",
+    "fresh_aggregate_acceptance": false,
+    "source_package": "de3e9a6d97825298612da554c8219cc67f461bf7ccb8da2a56e51bd385712316",
+    "window_state": {
+      "pid": "135832",
+      "window": "0x5c07e2de5520"
+    },
+    "owned_application_survived": false
+  },
+  "launch": {
+    "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+    "source_manifest": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/package-launch.json",
+    "package": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/Cutokyo_0.1.0_amd64.deb",
+    "retained_package": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/Cutokyo_0.1.0_amd64.deb",
+    "package_sha256": "de3e9a6d97825298612da554c8219cc67f461bf7ccb8da2a56e51bd385712316",
+    "application": "/tmp/cutokyo-native-test-wdio-qrnlz7mm/package/usr/bin/cutokyo-desktop",
+    "application_sha256": "6afa020e2163e1250d931360bcd0eb3e3956c53492338b0077ef18a09c1b2095",
+    "receiver": "/tmp/cutokyo-native-test-wdio-qrnlz7mm/bin/cutokyo",
+    "receiver_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+    "synthetic_harness": "/tmp/cutokyo-native-test-wdio-qrnlz7mm/bin/claude",
+    "synthetic_harness_sha256": "74b0648c3b0bd21ad2f61c354e364b016a3475cbb491f9f73d20c1d49eab5536",
+    "root": "/tmp/cutokyo-native-test-wdio-qrnlz7mm",
+    "port": 53665,
+    "launch_origin": "extracted-debian-bundle",
+    "test_only": true,
+    "frontend_origin": "embedded in verified extracted Debian application",
+    "purpose": "separate genuine failed-launch UI retest; not full aggregate acceptance",
+    "controlled_negative_environment": "WAYLAND_DISPLAY restored with no socket in private XDG_RUNTIME_DIR"
+  },
+  "geometry": {
+    "windowSize": {
+      "height": 800,
+      "width": 1280
+    },
+    "viewport": {
+      "height": 800,
+      "width": 1280
+    }
+  },
+  "image": {
+    "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-79ca6q6j/resume-inline-launch-failure-1280x800.png",
+    "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-negative-image-review-resume-negative-retest-79ca6q6j-20261004T112153Z/screens/resume-inline-launch-failure-1280x800.png",
+    "sha256": "fa5f0918d314546252b890988c7f0969c782df0beaa921f2bfb4b6942dd0ad25",
+    "actual_dimensions": [
+      1280,
+      800
+    ],
+    "read_inspected": true,
+    "steps": "Individually Read actual native failure PNG; inspect actual package/execution/geometry/assertion receipts, maintained temporary test and targeted worker results; decode IHDR/hash; preserve matching originals.",
+    "expected": "Failure inside confirmation, no misleading success, exact native identity retained, readable recovery controls and no modal/footer clipping.",
+    "actual": "Vermilion inline alert legible above exact claude-native-73A9; recorded project directory wraps; startup-not-session-activation caveat and Cancel/Resume visible. No new concrete rendered regression.",
+    "rendered_regression": null
+  },
+  "screenshots_total": 1,
+  "screenshots_individually_read": 1,
+  "assertions": {
+    "genuineLauncherFailure": "The terminal launcher exited unsuccessfully before acknowledging an interactive harness. Check its display access and configuration.",
+    "inlineDialogAlert": true,
+    "alertCount": 1,
+    "noSuccessReceipt": true,
+    "noHarnessAudit": true,
+    "retryFailedTruthfully": true,
+    "cancelAndCloseRestoreResumeFocus": true,
+    "newPreviewClearsError": true,
+    "exactNativeId": "claude-native-73A9",
+    "searchQueryRetained": true,
+    "separateNegativeJourneyNotFreshAggregate": true
+  },
+  "actual_worker_checks": {
+    "initial_error_line": 596,
+    "retry_same_error_line": 862,
+    "single_alert_lines": [
+      665,
+      931
+    ],
+    "restored_resume_focus_lines": [
+      989,
+      1221
+    ],
+    "retained_query_line": 1332,
+    "native_protocol_asserted_in_test": true,
+    "no_success_and_no_harness_audit_asserted": true
+  },
+  "findings": [],
+  "prior_findings": "Historical native6 NQA-PHASE-01 full aggregate failure and previous native attempt receipts untouched. Source-phase repair/scoped-world results owned by separate review, not independently closed or predicted here.",
+  "gaps": [
+    "One actual1280x800 image only; no900x700/1536x960 negative native screenshot.",
+    "Focus restoration is runtime DOM evidence, not whole-app keyboard-only or screen-reader proof.",
+    "Deliberate isolated missing Wayland socket proves truthful launcher failure, not installed-harness activation or successful provider use.",
+    "Separate one-case replay cannot make native6 aggregate green.",
+    "No verdict on running onboarding-world rerun or future fresh native7."
+  ],
+  "preservation": {
+    "manifest": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-negative-image-review-resume-negative-retest-79ca6q6j-20261004T112153Z/manifest.json",
+    "raw": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/negative-review-resume-negative-retest-79ca6q6j-20261004T112153Z",
+    "all10_attempt_artifacts_stable": true,
+    "all11_preserved_files_hash_match": true,
+    "historical_receipts_untouched": true
+  },
+  "reviewer_actions": {
+    "source_test_fixture_config_edits": 0,
+    "app_browser_provider_compositor_launches_or_dispatches": 0,
+    "git_operations": 0,
+    "new_outputs": "JSON receipts and artifact copies only; no markdown report."
+  }
+}

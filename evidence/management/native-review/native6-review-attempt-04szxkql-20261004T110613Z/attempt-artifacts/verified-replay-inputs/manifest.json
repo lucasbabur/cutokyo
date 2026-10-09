@@ -1,0 +1,16 @@
+{
+  "source_manifest": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/package-launch.json",
+  "matching_test_inputs": [
+    {
+      "source": "/tmp/cutokyo-native-test-wdio-qn_d75i0/bin/cutokyo",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/verified-replay-inputs/cutokyo",
+      "sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa"
+    },
+    {
+      "source": "/tmp/cutokyo-native-test-wdio-qn_d75i0/bin/claude",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/verified-replay-inputs/claude",
+      "sha256": "74b0648c3b0bd21ad2f61c354e364b016a3475cbb491f9f73d20c1d49eab5536"
+    }
+  ],
+  "purpose": "Preserve exact tested CLI and credential-free harness after successful native root teardown. No substitute desktop binary or source alteration."
+}

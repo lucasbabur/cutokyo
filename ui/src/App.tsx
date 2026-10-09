@@ -3,16 +3,15 @@ import { useEffect, useState } from "react";
 import { useCommands, useCommandResource } from "./commands/context.js";
 import { AppShell } from "./components/AppShell.js";
 import { ErrorState, LoadingState } from "./components/Primitives.js";
-import { AnalysisPage } from "./pages/AnalysisPage.js";
 import { DashboardPage } from "./pages/DashboardPage.js";
 import { DataControlsPage } from "./pages/DataControlsPage.js";
-import { GuardsPage } from "./pages/GuardsPage.js";
 import { HealthPage } from "./pages/HealthPage.js";
 import { InventoryPage } from "./pages/InventoryPage.js";
 import { OnboardingPage } from "./pages/OnboardingPage.js";
 import { SessionsPage } from "./pages/SessionsPage.js";
 import { SettingsPage } from "./pages/SettingsPage.js";
 import { navigate, useAppLocation } from "./router.js";
+import { BrandMark } from "./components/BrandMark.js";
 
 export function App() {
   const commands = useCommands();
@@ -22,6 +21,11 @@ export function App() {
   );
   const location = useAppLocation();
   const [setupCompletedLocally, setSetupCompletedLocally] = useState(false);
+  const [statusRefresh, setStatusRefresh] = useState(0);
+  const refreshStatus = () => {
+    bootstrap.reload();
+    setStatusRefresh((value) => value + 1);
+  };
 
   useEffect(() => {
     if (bootstrap.state !== "ready") return;
@@ -41,7 +45,9 @@ export function App() {
   if (bootstrap.state === "loading" && bootstrap.data === null) {
     return (
       <div className="boot-screen">
-        <div className="boot-screen__mark">C</div>
+        <div className="boot-screen__mark" aria-hidden="true">
+          <BrandMark />
+        </div>
         <LoadingState label="Opening the local Cutokyo core" />
       </div>
     );
@@ -66,9 +72,23 @@ export function App() {
     : data;
   const effectivePage = onboardingComplete ? location.page : "/onboarding";
   return (
-    <AppShell bootstrap={displayData} currentPath={effectivePage}>
+    <AppShell
+      bootstrap={displayData}
+      currentPath={effectivePage}
+      onRecheckStatus={refreshStatus}
+      recheckingStatus={bootstrap.state === "loading"}
+    >
+      {bootstrap.state === "error" ? (
+        <ErrorState
+          title="Local status could not refresh"
+          error={bootstrap.error}
+          onRetry={refreshStatus}
+        />
+      ) : null}
       {effectivePage === "/onboarding" ? (
         <OnboardingPage
+          mode={onboardingComplete ? "management" : "onboarding"}
+          statusRefresh={statusRefresh}
           onComplete={() => {
             setSetupCompletedLocally(true);
             bootstrap.reload();
@@ -81,16 +101,12 @@ export function App() {
         <SessionsPage sessionId={location.sessionId} />
       ) : effectivePage === "/inventory" ? (
         <InventoryPage />
-      ) : effectivePage === "/guards" ? (
-        <GuardsPage />
-      ) : effectivePage === "/analysis" ? (
-        <AnalysisPage />
       ) : effectivePage === "/health" ? (
-        <HealthPage />
+        <HealthPage onHealthChange={bootstrap.reload} />
       ) : effectivePage === "/data" ? (
         <DataControlsPage />
       ) : (
-        <SettingsPage />
+        <SettingsPage statusRefresh={statusRefresh} />
       )}
     </AppShell>
   );

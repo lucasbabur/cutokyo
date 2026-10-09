@@ -121,8 +121,8 @@ fn initial_version_surfaces_are_independent() {
     assert_eq!(snapshot.database_schema_version, DATABASE_SCHEMA_VERSION);
     assert_eq!(snapshot.derive_version, DERIVE_VERSION);
     assert_eq!(snapshot.spool_format_version, CURRENT_SPOOL_FORMAT);
-    assert_eq!(DATABASE_SCHEMA_VERSION, 2);
-    assert_eq!(DERIVE_VERSION, 1);
+    assert_eq!(DATABASE_SCHEMA_VERSION, 3);
+    assert_eq!(DERIVE_VERSION, 3);
     assert_eq!(CURRENT_SPOOL_FORMAT, 1);
     assert_eq!(OLDEST_SPOOL_FORMAT, 1);
 }

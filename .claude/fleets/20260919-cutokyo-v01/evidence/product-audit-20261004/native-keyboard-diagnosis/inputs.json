@@ -1,0 +1,9 @@
+{
+  "driver_source": "/home/lucas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-plugin-wdio-webdriver-1.4.0/src/platform/executor.rs",
+  "driver_scripts": {
+    "keydown": "(function() {\n                    var event = new KeyboardEvent('keydown', {\n                        key: 'Enter',\n                        code: 'Enter',\n                        keyCode: 13,\n                        which: 13,\n                        bubbles: true,\n                        cancelable: true\n                    });\n                    var activeEl = document.activeElement || document.body;\n                    activeEl.dispatchEvent(event);\n                    return true;\n                })()",
+    "keyup": "(function() {\n                    var event = new KeyboardEvent('keyup', {\n                        key: 'Enter',\n                        code: 'Enter',\n                        keyCode: 13,\n                        which: 13,\n                        bubbles: true,\n                        cancelable: true\n                    });\n                    var activeEl = document.activeElement || document.body;\n                    activeEl.dispatchEvent(event);\n                    return true;\n                })()"
+  },
+  "app_shell_source": "/home/lucas/Developer/personal/cutokyo-community/ui/src/components/AppShell.tsx",
+  "click_handler": "\n          event.preventDefault();\n          document.getElementById(\"main-content\")?.focus();\n        "
+}

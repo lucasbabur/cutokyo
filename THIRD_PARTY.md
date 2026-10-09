@@ -1,7 +1,7 @@
 # Third-party software and license record
 
 Cutokyo source is Apache-2.0. Third-party dependencies remain under their own licenses.
-This foundation ships no copied fonts, images, icons, or predecessor assets.
+This foundation ships no copied fonts, images, or icons from third parties. The one predecessor asset is the owner-authored Cutokyo brand mark, reused at the owner's direction (see `docs/provenance/decision-ledger.md` DL-026).
 
 ## Direct Rust dependencies
 
@@ -12,16 +12,19 @@ Exact active versions are in `Cargo.lock`.
 | --- | ---: | --- | --- |
 | serde | 1.0.229 | MIT OR Apache-2.0 | Serialization used by domain and contracts |
 | serde_json | 1.0.150 | MIT OR Apache-2.0 | JSON values and boundary serialization |
+| serde-saphyr | 1.3.0 | MIT OR Apache-2.0 | Bounded skill YAML-frontmatter validation; verified 2026-10-04, upstream release 2026-09-16, 8.86M crates.io downloads; maintained alternative to deprecated serde_yaml |
 | time | 0.3.55 | MIT OR Apache-2.0 | RFC 3339 parsing without I/O |
 | jsonschema | 0.56.0 | MIT | Draft 2020-12 fixture validation; remote resolution disabled |
 | jsonc-parser | 0.33.2 | MIT | CST edits that preserve unmanaged JSON and JSONC bytes |
-| keyhog-core | 0.5.86, git `058b28911fbe9db4b0957f13be003f5fb36eb1a4` | MIT OR Apache-2.0 | Secret finding types projected into Cutokyo's sanitized guard model |
+| keyhog-core | 0.5.86, git `058b28911fbe9db4b0957f13be003f5fb36eb1a4` | MIT OR Apache-2.0 | Scanner input chunks for bounded baseline redaction; raw matches remain internal, with no findings API |
 | keyhog-scanner | 0.5.86, git `058b28911fbe9db4b0957f13be003f5fb36eb1a4` | MIT OR Apache-2.0 | Maintained secret scanner with decode, entropy, ML, and multiline features |
 | keyring | 4.2.0 | MIT OR Apache-2.0 | OS credential-store access for analysis provider keys |
 | tempfile | 3.27.0 | MIT OR Apache-2.0 | Atomic runtime writes and isolated architecture mutation tests |
 | uuid | 1.26.1 | Apache-2.0 OR MIT | Collision-resistant temporary and spool filenames |
 | rusqlite | 0.40.2 | MIT | Bundled SQLite, FTS5, pragmas, and the online backup API |
+| rustix | 1.1.5 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | Safe no-replace directory publication on Linux/macOS; verified 2026-10-04, release 2026-09-16, 1.20B crates.io downloads; already used transitively by tempfile |
 | rusqlite_migration | 2.6.0 | Apache-2.0 | Forward-only SQLite migration runner |
+| unicode-normalization | 0.1.25 | MIT OR Apache-2.0 | Unicode NFC composition before literal search tokenization; verified 2026-10-04, upstream release 2025-10-30, maintained unicode-rs crate already used transitively |
 | fs4 | 1.1.0 | MIT OR Apache-2.0 | Cross-platform database-writer and spool-publication file locks |
 | rmcp | 3.4.0 | Apache-2.0 | Official Rust MCP SDK for Cutokyo's read server and upstream broker |
 | reqwest | 0.13.5 | MIT OR Apache-2.0 | Parsed HTTPS endpoints for MCP and analysis providers |
@@ -36,10 +39,13 @@ Exact active versions are in `Cargo.lock`.
 | zeroize | 1.8.2 | Apache-2.0 OR MIT | Provider credential memory cleanup |
 | clap | 4.6.1 | MIT OR Apache-2.0 | Native CLI parsing, help, and exact command contracts; version shared with KeyHog's exact maintained dependency |
 | directories | 6.0.0 | MIT OR Apache-2.0 | Platform-native per-user config and data paths |
+| termlauncher | 0.4.0 | MIT | Visible terminal command execution with separate arguments and working directory; upstream release 2026-09-08, crates.io 667 total downloads and 300 recent downloads checked 2026-10-04, <https://github.com/atomicptr/termlauncher> |
+| which | 8.0.6 | MIT | Established native executable resolution before setup and interactive resume |
+| shlex | 2.0.1 | MIT OR Apache-2.0 | Checked POSIX argument quoting for native hook command configuration |
 | toml | 0.9.7 | MIT OR Apache-2.0 | Strict versioned user configuration parsing |
 | tracing | 0.1.44 | MIT | Structured instrumentation and ingest spans; version shared with KeyHog's exact maintained dependency |
 | tracing-subscriber | 0.3.20 | MIT | Bounded JSONL subscriber output |
-| tar | 0.4.44 | MIT OR Apache-2.0 | Deterministic diagnostic archive construction |
+| tar | 0.4.46 | MIT OR Apache-2.0 | Deterministic diagnostic archive construction; updated 2026-10-04 to the maintained 2026-05-18 patch release fixing RUSTSEC-2026-0067 and RUSTSEC-2026-0068 |
 | flate2 | 1.1.9 | MIT OR Apache-2.0 | Gzip diagnostic archive compression; version shared with KeyHog's exact maintained dependency |
 | wait-timeout | 0.2.1 | MIT OR Apache-2.0 | Bounded release-artifact subprocess integration tests |
 | base64 | 0.22.1 | MIT OR Apache-2.0 | Strict decoding of Tauri's outer updater-signature encoding |
@@ -49,6 +55,15 @@ Exact active versions are in `Cargo.lock`.
 | tauri-build | 2.6.3 | Apache-2.0 OR MIT | Official Tauri build-context generator |
 | tauri-plugin-wdio | 1.4.0 | MIT OR Apache-2.0 | Test-feature-only WebdriverIO bridge and native window inspection commands |
 | tauri-plugin-wdio-webdriver | 1.4.0 | MIT | Test-feature-only embedded native WebDriver server; release builds reject the feature |
+
+The visible-terminal launcher was selected after comparing `termlauncher` 0.4.0,
+`open` 5.4.4, and `portable-pty` 0.9.0. `open` opens URLs and paths rather than
+arbitrary interactive native commands. `portable-pty` supplies a PTY but does not
+open a visible terminal window. `termlauncher` accepts separate arguments and a
+working directory, so Cutokyo uses it rather than maintaining terminal-specific
+launch commands. Its adoption is modest, as recorded above. Cutokyo adds a bounded
+TTY/startup acknowledgement because a successful launcher exit alone is not proof
+that the native harness started.
 
 ## Release-test npm fixture
 
@@ -121,6 +136,39 @@ GitHub Actions are pinned to full commit SHAs in workflow files. DCO text is Dev
 Certificate of Origin 1.1 from <https://developercertificate.org/>. The Code of Conduct
 is adapted from Contributor Covenant 2.1 under its published attribution terms. The
 Apache License text is the unmodified Apache-2.0 license.
+
+## Dependency maintenance verified 2026-10-04
+
+Compatible updates retain Tauri/runtime pins and baseline redaction. `yoke-derive`
+0.8.4 replaces the yanked 0.8.3 release. `tauri-utils` 2.10.1 replaces 2.9.3 and
+resolves `urlpattern` 0.6.0 with maintained ICU properties instead of the five
+unmaintained UNIC packages. Both releases were published 2026-09-30; all locked
+parents accept their declared versions. These are transitive updates, with the
+exact resolved graph and licenses recorded in `Cargo.lock` and enforced by
+`cargo deny check licenses bans`.
+
+The update also resolves upstream HTML/CSS, compression, file-type detection,
+and constructor dependencies. Native packaged tests must exercise that graph.
+`cargo deny check advisories` still fails on four unmaintained transitive crates:
+`bitmaps`, `im`, and `sized-chunks` through current KeyHog/Vyre, and
+`proc-macro-error` through Tauri's GTK 0.18 dependency. Current stable upstream
+releases offer no compatible fix. No advisory ignores, dependency forks, or
+removal of baseline redaction were added.
+
+## Harness marks (desktop UI)
+
+The desktop UI draws each supported harness's mark inline (`ui/src/components/HarnessMark.tsx`, single-path
+SVG, `currentColor`) so that harness names are recognisable in filters, chips and tables. The marks identify
+third-party products; their use is nominative and does not imply affiliation or endorsement. The marks remain
+trademarks of their owners, are not covered by Cutokyo's licence, and `TRADEMARK.md` applies.
+
+| Mark | Source | Source licence | Trademark note |
+| --- | --- | --- | --- |
+| Claude Code | `claudecode.svg` in npm `simple-icons` 16.34.0 (<https://github.com/simple-icons/simple-icons>) | CC0-1.0 (artwork); | Claude Code is a trademark of Anthropic, PBC |
+| OpenCode | `opencode.svg` in npm `simple-icons` 16.34.0; same geometry as the mark published in the MIT-licensed <https://github.com/anomalyco/opencode> repository | CC0-1.0 (artwork); | OpenCode is a project of its maintainers; mark used to identify the harness only |
+| Codex | `codex.svg` in npm `@lobehub/icons-static-svg` 1.95.1 (<https://github.com/lobehub/lobe-icons>) | MIT (package); | Codex and OpenAI are trademarks of OpenAI. `simple-icons` no longer ships an OpenAI mark, so this package is the maintained source |
+
+The packages were fetched with `npm pack` only to copy the path data; neither is a runtime dependency.
 
 ## Transitive inventory rule
 

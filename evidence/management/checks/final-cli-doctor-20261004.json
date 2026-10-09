@@ -1,0 +1,22 @@
+{
+  "command": [
+    "/home/lucas/Developer/personal/cutokyo-community/target/debug/cutokyo",
+    "--config-file",
+    "/tmp/cutokyo-final-cli-14xk3ore/config/config.toml",
+    "--data-dir",
+    "/tmp/cutokyo-final-cli-14xk3ore/data",
+    "doctor",
+    "--json"
+  ],
+  "exit_code": 69,
+  "stdout": "{\"schema_version\":\"1.0.0\",\"command\":\"doctor\",\"ok\":false,\"data\":{\"checks\":[{\"id\":\"config\",\"message\":\"user configuration is absent; built-in defaults are active\",\"remediation\":\"run `cutokyo setup` to create the private user file\",\"status\":\"warn\"},{\"id\":\"config_permissions\",\"message\":\"permission state is unavailable because the target does not exist\",\"remediation\":\"run `cutokyo setup` and re-run doctor\",\"status\":\"warn\"},{\"id\":\"database_permissions\",\"message\":\"permission state is unavailable because the target does not exist\",\"remediation\":\"run `cutokyo setup` and re-run doctor\",\"status\":\"warn\"},{\"id\":\"spool_permissions\",\"message\":\"permission state is unavailable because the target does not exist\",\"remediation\":\"run `cutokyo setup` and re-run doctor\",\"status\":\"warn\"},{\"id\":\"spool\",\"message\":\"spool directory is unavailable before setup\",\"remediation\":\"run `cutokyo setup`\",\"status\":\"warn\"},{\"id\":\"quarantine\",\"message\":\"quarantine status is unavailable before setup\",\"remediation\":\"run `cutokyo setup`\",\"status\":\"warn\"},{\"id\":\"health_persistence_file\",\"message\":\"no unreconciled health-persistence failure marker is present\",\"remediation\":null,\"status\":\"pass\"},{\"id\":\"sqlite_fts5\",\"message\":\"SQLite/FTS5 is unproven before database initialization\",\"remediation\":\"run `cutokyo drain` after setup\",\"status\":\"warn\"},{\"id\":\"database_integrity\",\"message\":\"database integrity is unavailable before initialization\",\"remediation\":\"run `cutokyo drain` after setup\",\"status\":\"warn\"},{\"id\":\"schema\",\"message\":\"database schema is unavailable before initialization\",\"remediation\":\"run `cutokyo drain` after setup\",\"status\":\"warn\"},{\"id\":\"persisted_health\",\"message\":\"persisted health is unavailable before initialization\",\"remediation\":\"run `cutokyo drain` after setup\",\"status\":\"warn\"},{\"id\":\"writer_lock\",\"message\":\"writer ownership is unavailable before initialization\",\"remediation\":\"run `cutokyo drain` after setup\",\"status\":\"warn\"},{\"id\":\"harness_claude_code\",\"message\":\"installed harness reports 2.1.289 (Claude Code)\",\"remediation\":null,\"status\":\"pass\"},{\"id\":\"harness_codex\",\"message\":\"installed harness reports codex-cli 0.160.0\",\"remediation\":null,\"status\":\"pass\"},{\"id\":\"harness_opencode\",\"message\":\"installed harness reports 1.18.28\",\"remediation\":null,\"status\":\"pass\"},{\"id\":\"plugins\",\"message\":\"no external plugin directory is configured\",\"remediation\":null,\"status\":\"pass\"}],\"health\":null,\"outcome\":\"capability_unavailable\",\"process_liveness\":true,\"product_readiness\":false,\"row_counts\":null,\"sqlite\":null},\"meta\":{\"app_version\":\"0.1.0\",\"pending_crash_record\":false}}\n",
+  "stderr": "",
+  "isolated_home": true,
+  "operations_exercised": [
+    "doctor",
+    "read-only installed harness version probes"
+  ],
+  "requested_but_unavailable": ["bundled SQLite/FTS5/pragmas/integrity check before database initialization"],
+  "annotation_correction": "Original wrapper overstated SQLite coverage. Raw command, exit 69, stdout, and stderr are unchanged.",
+  "provider_requests": false
+}

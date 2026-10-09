@@ -1,0 +1,798 @@
+{
+  "scope": "Independent artifact-only review of fresh exact native7 aggregate and all final native7 PNGs",
+  "completed_at_utc": "2026-10-04T11:46:02.059081+00:00",
+  "runtime_aggregate_verdict": "PASS_EXACT_COMMAND_16_CASES_FIVE_PHASES",
+  "rendered_verdict": "FAIL_TWO_OPEN_CAPTURE_SURFACE_FINDINGS",
+  "overall_product_or_fleet_pass": false,
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "environment": {
+    "platform": "Linux",
+    "native_engine": "WebKitGTK 605.1.15",
+    "origin": "actual extracted Debian Tauri application; embedded assets, not Vite/browser fixture",
+    "viewport": [
+      1280,
+      800
+    ],
+    "other_native_viewports_in_this_set": []
+  },
+  "execution": {
+    "command": [
+      "pnpm",
+      "--dir",
+      "ui",
+      "test:e2e:tauri"
+    ],
+    "command_exit_code": 0,
+    "duration_seconds": 242.43,
+    "proof_kind": "local-dirty-working-tree-not-clean-release-proof",
+    "dirty_working_tree": true,
+    "head": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+    "source_changed": [],
+    "git_changed": false,
+    "log": "evidence/management/checks/native-packaged-rerun7-20261004.log",
+    "clean_release_proof": false,
+    "waivers": []
+  },
+  "package_launch": {
+    "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+    "package": "/tmp/cutokyo-native-test-wdio-rlaiw0kw/target/debug/bundle/deb/Cutokyo_0.1.0_amd64.deb",
+    "package_sha256": "8a653612ae3b09388c3c5156226c501de27c6e52082fe7169a7486c632c8b70c",
+    "retained_package": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/Cutokyo_0.1.0_amd64.deb",
+    "application": "/tmp/cutokyo-native-test-wdio-rlaiw0kw/package/usr/bin/cutokyo-desktop",
+    "application_sha256": "518eaf26d0fe4477249381faaaa00959f1732fc7bc53d99a7070c55dd6156c01",
+    "receiver": "/tmp/cutokyo-native-test-wdio-rlaiw0kw/bin/cutokyo",
+    "receiver_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+    "synthetic_harness": "/tmp/cutokyo-native-test-wdio-rlaiw0kw/bin/claude",
+    "synthetic_harness_sha256": "74b0648c3b0bd21ad2f61c354e364b016a3475cbb491f9f73d20c1d49eab5536",
+    "asset_directory": "/tmp/cutokyo-native-test-wdio-rlaiw0kw/assets",
+    "root": "/tmp/cutokyo-native-test-wdio-rlaiw0kw",
+    "port": 54253,
+    "launch_origin": "extracted-debian-bundle",
+    "test_only": true
+  },
+  "identity_and_immutability_verification": {
+    "native7-review-attempt-1s72vqtj-20261004T113123Z": {
+      "artifacts": 50,
+      "images": 14,
+      "hash_mismatches": [],
+      "dimensions": {
+        "analysis-unavailable-1280x800.png": [
+          1280,
+          800
+        ],
+        "appearance-dark-1280x800.png": [
+          1280,
+          800
+        ],
+        "backup-created-1280x800.png": [
+          1280,
+          800
+        ],
+        "backup-restore-confirmation-1280x800.png": [
+          1280,
+          800
+        ],
+        "backup-restored-1280x800.png": [
+          1280,
+          800
+        ],
+        "completed-capture-removal-1280x800.png": [
+          1280,
+          800
+        ],
+        "diagnostic-created-1280x800.png": [
+          1280,
+          800
+        ],
+        "diagnostic-preview-1280x800.png": [
+          1280,
+          800
+        ],
+        "inventory-native-configured-1280x800.png": [
+          1280,
+          800
+        ],
+        "inventory-remove-confirmation-1280x800.png": [
+          1280,
+          800
+        ],
+        "native-hook-detail-resume-1280x800.png": [
+          1280,
+          800
+        ],
+        "onboarding-browse-1280x800.png": [
+          1280,
+          800
+        ],
+        "onboarding-native-verified-1280x800.png": [
+          1280,
+          800
+        ],
+        "search-detail-resume-1280x800.png": [
+          1280,
+          800
+        ]
+      }
+    },
+    "negative7-review-resume-negative-retest-xejbbw5c-20261004T113123Z": {
+      "artifacts": 10,
+      "images": 1,
+      "hash_mismatches": [],
+      "dimensions": {
+        "resume-inline-launch-failure-1280x800.png": [
+          1280,
+          800
+        ]
+      }
+    },
+    "source_proof": {
+      "before_sha256": "9fa0b0fe15924512b6af9513573ab46d975eb52d0dfcb2d1ed0281bad99667f5",
+      "after_sha256": "9fa0b0fe15924512b6af9513573ab46d975eb52d0dfcb2d1ed0281bad99667f5",
+      "byte_identical": true,
+      "head_before": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+      "head_after": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+      "index_before": "c752b9009048069f7f3c5e0cf0c7b5aea6d5d0221a812be2e8a74ee0e26e7b42",
+      "index_after": "c752b9009048069f7f3c5e0cf0c7b5aea6d5d0221a812be2e8a74ee0e26e7b42",
+      "file_count_before": 394,
+      "file_count_after": 394,
+      "changed_records": [],
+      "scope": "Compare recorded before/after receipts; no Git queries or live source fingerprint refresh."
+    },
+    "package": {
+      "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/Cutokyo_0.1.0_amd64.deb",
+      "sha256": "8a653612ae3b09388c3c5156226c501de27c6e52082fe7169a7486c632c8b70c",
+      "bytes": 24183516,
+      "streamed_member": {
+        "name": "usr/bin/cutokyo-desktop",
+        "bytes": 104008528,
+        "sha256": "518eaf26d0fe4477249381faaaa00959f1732fc7bc53d99a7070c55dd6156c01"
+      },
+      "matches_launch_manifest": true,
+      "no_extraction_or_launch": true
+    },
+    "replay_inputs": [
+      {
+        "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/verified-replay-inputs/cutokyo",
+        "actual_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+        "matches": true
+      },
+      {
+        "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/verified-replay-inputs/claude",
+        "actual_sha256": "74b0648c3b0bd21ad2f61c354e364b016a3475cbb491f9f73d20c1d49eab5536",
+        "matches": true
+      }
+    ],
+    "native6_late_audits": [
+      {
+        "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-original-save-audits-20261004/resume-audit.txt",
+        "preserved_matches": true,
+        "resolved_source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/retained-roots/cutokyo-native-test-wdio-qn_d75i0/resume-audit.txt",
+        "resolved_source_exists": true,
+        "resolved_source_matches": true
+      },
+      {
+        "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-original-save-audits-20261004/resume-audit.context.json",
+        "preserved_matches": true,
+        "resolved_source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/retained-roots/cutokyo-native-test-wdio-qn_d75i0/resume-audit.context.json",
+        "resolved_source_exists": true,
+        "resolved_source_matches": true
+      }
+    ]
+  },
+  "phases": [
+    {
+      "phase": "save",
+      "case_count": 9,
+      "reporter_lines": [
+        735,
+        774
+      ],
+      "cases": [
+        "creates, cancels safely, restores actual history, and retains verified prior history",
+        "reports tampering inside the restore modal without replacing native history",
+        "edits, copies all skill assets, then removes only the selected native bundle",
+        "rejects stale and malformed MCP edits, converts real config credentials, and protects capture hooks",
+        "searches, opens, exactly resumes, and deletes an isolated native fixture",
+        "saves appearance to native desktop state",
+        "keeps trusted keyboard skip navigation on the current native route",
+        "discloses unavailable analysis and signed updates before dead-end actions",
+        "cancels safely then exports exactly the previewed private diagnostic report"
+      ],
+      "actual": "PASS",
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun7-20261004.log"
+    },
+    {
+      "phase": "reopen",
+      "case_count": 3,
+      "reporter_lines": [
+        793,
+        818
+      ],
+      "cases": [
+        "rediscovers the private backup after a real application restart",
+        "rediscovers persisted native edits/copies without resurrecting deleted bundles",
+        "restores saved appearance after a native application restart"
+      ],
+      "actual": "PASS",
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun7-20261004.log"
+    },
+    {
+      "phase": "browse",
+      "case_count": 1,
+      "reporter_lines": [
+        836,
+        843
+      ],
+      "cases": [
+        "browses a real packaged application without installing native capture"
+      ],
+      "actual": "PASS",
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun7-20261004.log"
+    },
+    {
+      "phase": "capture-setup",
+      "case_count": 2,
+      "reporter_lines": [
+        861,
+        869
+      ],
+      "cases": [
+        "previews, cancels, installs, verifies, recovers and removes each real isolated native integration",
+        "manages completed-user capture through Settings without resetting saved intent or unmanaged native bytes"
+      ],
+      "actual": "PASS",
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun7-20261004.log"
+    },
+    {
+      "phase": "capture-history",
+      "case_count": 1,
+      "reporter_lines": [
+        896,
+        903
+      ],
+      "cases": [
+        "opens real native-hook and transcript evidence and resumes its exact private native context"
+      ],
+      "actual": "PASS",
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun7-20261004.log"
+    }
+  ],
+  "total_actual_cases": 16,
+  "all_final_png_count": 14,
+  "individually_read_png_count": 14,
+  "images": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/analysis-unavailable-1280x800.png",
+      "relative": "analysis-unavailable-1280x800.png",
+      "sha256": "e489aa6f5065cfb1e27e1480f3fcda6c219318964910c5496a8a48cf844ffeab",
+      "bytes": 90205,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native7-review-attempt-1s72vqtj-20261004T113123Z/screens/analysis-unavailable-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection": "Unavailable native provider analysis is disclosed; no AI confirm success claim."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/appearance-dark-1280x800.png",
+      "relative": "appearance-dark-1280x800.png",
+      "sha256": "b3ade8cb7ea091ef08214d06d67efadc1884b7330332682adc5e30a5c5b28d1a",
+      "bytes": 115301,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native7-review-attempt-1s72vqtj-20261004T113123Z/screens/appearance-dark-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection": "Dark Settings; native saved appearance/reopen supported by actual case and restart receipt."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/backup-created-1280x800.png",
+      "relative": "backup-created-1280x800.png",
+      "sha256": "32aa4c327ecc3b7a7b022105253546901248b2e6044345714f609a0c077c05c1",
+      "bytes": 126606,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native7-review-attempt-1s72vqtj-20261004T113123Z/screens/backup-created-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection": "Local private path wraps; one session and 348160 bytes; excluded scope labelled; Done visible."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/backup-restore-confirmation-1280x800.png",
+      "relative": "backup-restore-confirmation-1280x800.png",
+      "sha256": "531f6e740098425bac5572d910d70cef2130edbd39a3c0ba5f87961b02ff30a3",
+      "bytes": 144332,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native7-review-attempt-1s72vqtj-20261004T113123Z/screens/backup-restore-confirmation-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection": "One backed-up session; zero current sessions to replace; cancel and restore visible; singular copy correct."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/backup-restored-1280x800.png",
+      "relative": "backup-restored-1280x800.png",
+      "sha256": "ab185c527d0640f57e076f2ec15e3872f28b232628f683b87a1cefe24baa1701",
+      "bytes": 130200,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native7-review-attempt-1s72vqtj-20261004T113123Z/screens/backup-restored-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection": "Restored one session; integrity ok and recovery location visible; Done fits."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/completed-capture-removal-1280x800.png",
+      "relative": "completed-capture-removal-1280x800.png",
+      "sha256": "b71f7bea6aeb8ccd4c1b30e12767ddd2a325b816afa1bd2e862004aa34af04a8",
+      "bytes": 112064,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native7-review-attempt-1s72vqtj-20261004T113123Z/screens/completed-capture-removal-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection": "FAIL NQA-CAPTURE-LAYOUT-01: management card body collapses into narrow column; identical SHA to scoped worlds replay."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/diagnostic-created-1280x800.png",
+      "relative": "diagnostic-created-1280x800.png",
+      "sha256": "08f34b9530ad22c642f1936808e3178a064703a984e2f5fed035beac16a85c4a",
+      "bytes": 133113,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native7-review-attempt-1s72vqtj-20261004T113123Z/screens/diagnostic-created-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection": "Local export path and Not fully checked health; unknown dimensions labelled. Does not prove large-history or health persistence."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/diagnostic-preview-1280x800.png",
+      "relative": "diagnostic-preview-1280x800.png",
+      "sha256": "67328eb1d5aba38d973e4f823ba6879065b19d5ce8fac399fc307dc386da71ee",
+      "bytes": 109130,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native7-review-attempt-1s72vqtj-20261004T113123Z/screens/diagnostic-preview-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection": "Local-only diagnostic export preview; exclusions explicit; cancel and create visible; close focus ring clear."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/inventory-native-configured-1280x800.png",
+      "relative": "inventory-native-configured-1280x800.png",
+      "sha256": "4a6dba54888bb9d3daa0cbde55d32fc0e73735ca7b52ab40b69fb3dcd6746151",
+      "bytes": 95929,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native7-review-attempt-1s72vqtj-20261004T113123Z/screens/inventory-native-configured-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection": "Configured native hook with owned provenance; expressly does not claim runtime loading or broker health."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/inventory-remove-confirmation-1280x800.png",
+      "relative": "inventory-remove-confirmation-1280x800.png",
+      "sha256": "974ce3add9c635d47368d05356782ae43d9f9820aaa8d226d5c791ebcdcfbb76",
+      "bytes": 109257,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native7-review-attempt-1s72vqtj-20261004T113123Z/screens/inventory-remove-confirmation-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection": "Native source/harness scope; independent copies unchanged; recovery retained; history not deleted; actions fit."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/native-hook-detail-resume-1280x800.png",
+      "relative": "native-hook-detail-resume-1280x800.png",
+      "sha256": "451b60e0c6ee97ce2a2c2ff7a2477444c113cfd00dcbe3993cfb9cea51c3a0b2",
+      "bytes": 96908,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native7-review-attempt-1s72vqtj-20261004T113123Z/screens/native-hook-detail-resume-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection": "Actual post-launch status with exact UUID and cannot-verify-native-activation caveat; hook/transcript timeline visible; Resume focus ring."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/onboarding-browse-1280x800.png",
+      "relative": "onboarding-browse-1280x800.png",
+      "sha256": "95a5321ff9fa5d07a833500c05e6571e8c294051cc0ef8dfda0d50c4db99303c",
+      "bytes": 82479,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native7-review-attempt-1s72vqtj-20261004T113123Z/screens/onboarding-browse-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection": "Truthful unfiltered empty history and capture setup action; no invented zero usage totals."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/onboarding-native-verified-1280x800.png",
+      "relative": "onboarding-native-verified-1280x800.png",
+      "sha256": "978c10fb55248cdb5214d5bc9df1d4c8adf7a7a00c0c9e3be3972df37c7eacf6",
+      "bytes": 138767,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native7-review-attempt-1s72vqtj-20261004T113123Z/screens/onboarding-native-verified-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection": "NQA-CAPTURE-STATE-01: three DISABLED badges coexist with three Configuration verified labels and installed-and-verified global receipt. Earlier claim of Configuration not verified is incorrect and explicitly superseded."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/search-detail-resume-1280x800.png",
+      "relative": "search-detail-resume-1280x800.png",
+      "sha256": "9a31fa8783afb3896fe8d3e6bc8efe34bc3b3410079e159276ed09a5885d2b17",
+      "bytes": 114476,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native7-review-attempt-1s72vqtj-20261004T113123Z/screens/search-detail-resume-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection": "Pre-confirmation native preview: exact claude-native-73A9, full recorded private project directory, startup-not-activation caveat, visible actions. Not a post-launch PNG."
+    }
+  ],
+  "actual_resume_audits": {
+    "save": {
+      "argv": "--resume\nclaude-native-73A9\n",
+      "context": {
+        "cwd": "/tmp/cutokyo-native-test-wdio-rlaiw0kw/data/native-resume-project",
+        "stdinTty": true,
+        "stdoutTty": true
+      },
+      "evidence": [
+        "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/resume-audit.txt",
+        "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/resume-audit.context.json"
+      ]
+    },
+    "capture_history": {
+      "argv": "--resume\n12345678-1234-1234-1234-123456789abc\n",
+      "context": {
+        "cwd": "/tmp/cutokyo-native-test-wdio-nogc0bo8/project with spaces ' and $literal",
+        "stdinTty": true,
+        "stdoutTty": true
+      },
+      "evidence": [
+        "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/native-hook-resume-audit.txt",
+        "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/native-hook-resume-audit.context.json"
+      ]
+    }
+  },
+  "actual_capture_drain": {
+    "native_id": "12345678-1234-1234-1234-123456789abc",
+    "installed_hook_executed": true,
+    "database_unchanged_by_hook": true,
+    "published_entries": 2,
+    "drain": {
+      "schema_version": "1.0.0",
+      "command": "drain",
+      "ok": true,
+      "data": {
+        "attempted": 2,
+        "duplicates": 0,
+        "inserted": 2,
+        "quarantined": 0,
+        "status": {
+          "cap_reason": null,
+          "drain_lag_seconds": null,
+          "oldest_pending_unix": null,
+          "pending_bytes": 0,
+          "pending_entries": 0
+        }
+      },
+      "meta": {
+        "app_version": "0.1.0",
+        "pending_crash_record": false
+      }
+    }
+  },
+  "worlds": [
+    {
+      "journey": "browse",
+      "root": "/tmp/cutokyo-native-test-wdio-89ewhibz",
+      "application": "/tmp/cutokyo-native-test-wdio-89ewhibz/package/usr/bin/cutokyo-desktop",
+      "application_sha256": "518eaf26d0fe4477249381faaaa00959f1732fc7bc53d99a7070c55dd6156c01",
+      "package_sha256": "8a653612ae3b09388c3c5156226c501de27c6e52082fe7169a7486c632c8b70c",
+      "receiver_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+      "fixture_seeding": false
+    },
+    {
+      "journey": "capture-setup",
+      "root": "/tmp/cutokyo-native-test-wdio-nogc0bo8",
+      "application": "/tmp/cutokyo-native-test-wdio-nogc0bo8/package/usr/bin/cutokyo-desktop",
+      "application_sha256": "518eaf26d0fe4477249381faaaa00959f1732fc7bc53d99a7070c55dd6156c01",
+      "package_sha256": "8a653612ae3b09388c3c5156226c501de27c6e52082fe7169a7486c632c8b70c",
+      "receiver_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+      "fixture_seeding": false
+    }
+  ],
+  "desktop_state": {
+    "browse": {
+      "onboarding_complete": true,
+      "selected_harnesses": [],
+      "updater_choice": "notify",
+      "crash_reports_enabled": false,
+      "appearance": "system"
+    },
+    "capture_setup": {
+      "onboarding_complete": true,
+      "selected_harnesses": [
+        "claude_code",
+        "codex",
+        "opencode"
+      ],
+      "updater_choice": "notify",
+      "crash_reports_enabled": false,
+      "appearance": "system"
+    }
+  },
+  "backup_restore_receipt": {
+    "location": "/tmp/cutokyo-native-test-wdio-rlaiw0kw/data/backups/backup-1791113144-051f54f5-2132-4cd6-a124-de99df585f43",
+    "recoveryPath": "/tmp/cutokyo-native-test-wdio-rlaiw0kw/data/backups/recovery-1791113145-a615f245-878a-4b89-bc63-f0591f3b6b57",
+    "manifest": {
+      "manifest_version": 1,
+      "sha256": "7e22d7dd0805836d83f6abc3f9f7fbcae96b17e61779a536fea0bd4dddd4b200",
+      "byte_length": 348160,
+      "created_at": "2026-10-04T11:25:45.011726861Z",
+      "schema_version": 3,
+      "sqlite_version": "3.53.2",
+      "integrity_result": "ok"
+    }
+  },
+  "restart": {
+    "save_pid": 234758,
+    "reopen_pid": 237016
+  },
+  "keyboard": {
+    "receipt": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/native-keyboard-trusted.json",
+    "verdict": "PASS",
+    "trusted_Tab_Return": true,
+    "same_app_pid_and_address": true,
+    "BODY_to_skip_link_to_MAIN": true,
+    "route_unchanged": true,
+    "reviewer_dispatched_input": false
+  },
+  "cleanup": {
+    "save": {
+      "verdict": "PASS",
+      "before": {
+        "ready": true,
+        "app": {
+          "pid": 234758,
+          "parent": 234723,
+          "group": 234082,
+          "start": 4242195,
+          "exe": "/tmp/cutokyo-native-test-wdio-rlaiw0kw/package/usr/bin/cutokyo-desktop",
+          "argv": [
+            "/tmp/cutokyo-native-test-wdio-rlaiw0kw/package/usr/bin/cutokyo-desktop"
+          ]
+        },
+        "terminal": {
+          "pid": 236352,
+          "parent": 234758,
+          "group": 234082,
+          "start": 4243651,
+          "exe": "/usr/bin/kitty",
+          "argv": [
+            "/usr/bin/kitty",
+            "--title=Cutokyo native session resume",
+            "--working-directory",
+            "/tmp/cutokyo-native-test-wdio-rlaiw0kw/data/native-resume-project",
+            "--hold",
+            "--",
+            "/tmp/cutokyo-native-test-wdio-rlaiw0kw/bin/cutokyo",
+            "--data-dir",
+            "/tmp/cutokyo-native-test-wdio-rlaiw0kw/data",
+            "resume-terminal",
+            "--request",
+            "/tmp/cutokyo-native-test-wdio-rlaiw0kw/data/resume-launch-zxoTYq/request.json"
+          ]
+        },
+        "window": {
+          "pid": 236352,
+          "address": "0x5c07e309aa00",
+          "mapped": true,
+          "xwayland": true
+        },
+        "descendants": [
+          {
+            "pid": 236435,
+            "parent": 236352,
+            "group": 234082,
+            "start": 4243714,
+            "exe": "/usr/bin/kitten",
+            "argv": [
+              "/usr/bin/kitten",
+              "__atexit__"
+            ]
+          },
+          {
+            "pid": 236442,
+            "parent": 236352,
+            "group": 236442,
+            "start": 4243715,
+            "exe": "/usr/bin/bash",
+            "argv": [
+              "/bin/bash",
+              "--posix"
+            ]
+          }
+        ]
+      },
+      "signal": "SIGTERM via pidfd",
+      "terminalExited": true,
+      "descendantsExited": true,
+      "windowRemoved": true,
+      "applicationPreserved": true,
+      "keyboardDispatches": [],
+      "focusChangedByHelper": false
+    },
+    "capture_history": {
+      "verdict": "PASS",
+      "before": {
+        "ready": true,
+        "app": {
+          "pid": 247919,
+          "parent": 247884,
+          "group": 247786,
+          "start": 4255252,
+          "exe": "/tmp/cutokyo-native-test-wdio-nogc0bo8/package/usr/bin/cutokyo-desktop",
+          "argv": [
+            "/tmp/cutokyo-native-test-wdio-nogc0bo8/package/usr/bin/cutokyo-desktop"
+          ]
+        },
+        "terminal": {
+          "pid": 249178,
+          "parent": 247919,
+          "group": 247786,
+          "start": 4256298,
+          "exe": "/usr/bin/kitty",
+          "argv": [
+            "/usr/bin/kitty",
+            "--title=Cutokyo native session resume",
+            "--working-directory",
+            "/tmp/cutokyo-native-test-wdio-nogc0bo8/project with spaces ' and $literal",
+            "--hold",
+            "--",
+            "/tmp/cutokyo-native-test-wdio-nogc0bo8/bin/cutokyo",
+            "--data-dir",
+            "/tmp/cutokyo-native-test-wdio-nogc0bo8/data",
+            "resume-terminal",
+            "--request",
+            "/tmp/cutokyo-native-test-wdio-nogc0bo8/data/resume-launch-FMo1jp/request.json"
+          ]
+        },
+        "window": {
+          "pid": 249178,
+          "address": "0x5c07e30c90b0",
+          "mapped": true,
+          "xwayland": true
+        },
+        "descendants": [
+          {
+            "pid": 249193,
+            "parent": 249178,
+            "group": 247786,
+            "start": 4256358,
+            "exe": "/usr/bin/kitten",
+            "argv": [
+              "/usr/bin/kitten",
+              "__atexit__"
+            ]
+          },
+          {
+            "pid": 249200,
+            "parent": 249178,
+            "group": 249200,
+            "start": 4256359,
+            "exe": "/usr/bin/bash",
+            "argv": [
+              "/bin/bash",
+              "--posix"
+            ]
+          }
+        ]
+      },
+      "signal": "SIGTERM via pidfd",
+      "terminalExited": true,
+      "descendantsExited": true,
+      "windowRemoved": true,
+      "applicationPreserved": true,
+      "keyboardDispatches": [],
+      "focusChangedByHelper": false
+    }
+  },
+  "nonfatal_log_observations": [
+    {
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun7-20261004.log",
+      "lines": [
+        877,
+        889
+      ],
+      "actual": "First terminal inspection raises Held terminal cleanup refused a non-private process environment. waitUntil inspection later succeeds, identity proof and pidfd cleanup receipts PASS, case passes.",
+      "scope": "Guard refusal retained; no input or cleanup authorized against that refused candidate. Exact transient child/environment cause not independently established."
+    },
+    {
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/wdio.log",
+      "lines": [
+        1,
+        16
+      ],
+      "actual": "After session deletion tauri-service warns Failed to clear mock store: A sessionId is required for this command. Actual aggregate exit remains 0.",
+      "scope": "Runner teardown warning, not suppressed and not product behavioral failure established."
+    }
+  ],
+  "finding_dispositions": [
+    {
+      "key": "NQA-PHASE-01",
+      "owner": "integration",
+      "severity": "Medium",
+      "fresh_native7_status": "CLOSED_IN_FRESH_NATIVE7_ACTUAL_AGGREGATE",
+      "historical_native6_status": "FAILURE_PRESERVED",
+      "basis": "Actual browse + setup + history phases executed without the native6 save/reopen-only import abort; all16 reported passing and exact top-level0. Native6 log/receipt remains unchanged."
+    },
+    {
+      "key": "NQA-CAPTURE-LAYOUT-01",
+      "owner": "desktop",
+      "severity": "Medium",
+      "status": "OPEN",
+      "reproduction": "At 1280x800 complete onboarding, Settings > Manage capture, remove Claude Code and reopen install preview. Inspect completed management harness cards.",
+      "expected": "Body text uses available card width with readable compact wrapping.",
+      "actual": "Card body occupies the leftover checkbox grid track and words stack into a narrow column although the card is wide.",
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/completed-capture-removal-1280x800.png",
+      "sha256": "b71f7bea6aeb8ccd4c1b30e12767ddd2a325b816afa1bd2e862004aa34af04a8",
+      "source_context": [
+        "/home/lucas/Developer/personal/cutokyo-community/ui/src/pages/OnboardingPage.tsx",
+        "/home/lucas/Developer/personal/cutokyo-community/ui/src/styles.css"
+      ],
+      "root_cause_scope": "Previously read management branch omits checkbox; shared grid retains 20px first track. No reviewer implementation."
+    },
+    {
+      "key": "NQA-CAPTURE-STATE-01",
+      "owner": "desktop",
+      "severity": "Medium",
+      "status": "OPEN_RENDERED_STATUS_SCOPE_AMBIGUITY_BACKEND_FAILURE_UNVERIFIED",
+      "reproduction": "At 1280x800 install/recover/remove/reinstall all three disposable integrations, select all, inspect pre-Finish setup screenshot.",
+      "expected": "Badges distinguish installed configuration, selected intent and current live capture; installed-and-verified receipt does not visually conflict with an unexplained Disabled status.",
+      "actual": "Claude Code, Codex and OpenCode cards all show DISABLED, while all three adjacent labels say Configuration verified. Live capture unknown. Global receipt says Native capture configuration installed and verified.",
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/onboarding-native-verified-1280x800.png",
+      "sha256": "978c10fb55248cdb5214d5bc9df1d4c8adf7a7a00c0c9e3be3972df37c7eacf6",
+      "correction": "Earlier scoped-world description saying Configuration not verified was inaccurate. Actual pixels say Configuration verified for all three. This new receipt explicitly supersedes that descriptive clause without rewriting historical evidence.",
+      "root_cause_scope": "No persistent configuration failure established; potentially different configuration/live capture/selected intent scopes or transient capture. Finding limited to unexplained mixed rendered status."
+    }
+  ],
+  "gaps": [
+    "Dirty source proof is not clean release proof; HEAD alone is not integrated dirty-source identity.",
+    "Only 1280x800 native PNGs in this aggregate. Browser review at three sizes is separate.",
+    "Native exact resume execution here uses credential-free synthetic Claude executable. No installed Claude/Codex/OpenCode provider activation or paid call proved.",
+    "All-three isolated native setup coverage is not all-three installed-provider native resume coverage. Earlier installed harness read-only/dry-run probes were not refreshed by this artifact-only assignment.",
+    "No independent native source/config byte snapshots retained for setup beyond successful maintained assertions; earlier workers overwritten by later phases, reporter log retained.",
+    "Do not infer health persistence, large-history current/lifetime quarantine, all CLI adverse worlds, full analysis provider flow, proxy consent, retention or delete-all from these16cases. Prior broader review outcomes/gaps unchanged."
+  ],
+  "preservation": {
+    "manifest": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native7-review-attempt-1s72vqtj-20261004T113123Z/manifest.json",
+    "raw": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native7-review-attempt-1s72vqtj-20261004T113123Z",
+    "initial_manifest_read_flags": "Remain false as initial preservation record; this completed inspection receipt records true only after individual actual Read inspection.",
+    "all_50_artifact_hashes_stable": true
+  },
+  "reviewer_safety": {
+    "app_browser_provider_compositor_launches": 0,
+    "live_process_queries": 0,
+    "git_queries": 0,
+    "product_test_fixture_configuration_threshold_edits": 0,
+    "historical_receipt_edits": 0,
+    "writes": "Only new JSON evidence in designated review directories."
+  }
+}

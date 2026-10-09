@@ -94,7 +94,7 @@ fn verify(inputs: &Inputs) -> Result<(), Box<dyn Error>> {
         .verify_stream(&signature)
         .map_err(|error| format!("updater signature algorithm is not accepted: {error}"))?;
     let mut payload = fs::File::open(&inputs.payload)?;
-    let mut block = [0_u8; 64 * 1024];
+    let mut block = vec![0_u8; 64 * 1024];
     loop {
         let count = payload.read(&mut block)?;
         if count == 0 {

@@ -1,0 +1,26 @@
+{
+  "command": "cargo test --locked --workspace",
+  "exitCode": 101,
+  "rawLog": "/tmp/claude-1000/-home-lucas-Developer-personal-cutokyo-community/bef15e81-1dde-4a4a-b63b-a981d304023c/tasks/bi8xrl2t2.output",
+  "suiteResults": [
+    "test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.99s",
+    "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 39.43s",
+    "test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 33.45s",
+    "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.80s",
+    "test result: ok. 244 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.28s",
+    "test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 18.61s",
+    "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+    "test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+    "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+    "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+    "test result: FAILED. 18 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.65s"
+  ],
+  "artifactFailures": [
+    "npm_wrapper_install",
+    "release_artifact_manifest",
+    "release_contract_mutations"
+  ],
+  "artifactFailureReason": "artifact proof requires committed source",
+  "status": "failed",
+  "waivers": []
+}

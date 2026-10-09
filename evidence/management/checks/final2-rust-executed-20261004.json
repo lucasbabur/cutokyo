@@ -1,0 +1,77 @@
+{
+  "results": [
+    {
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.45,
+      "log": "evidence/management/checks/final2-format-20261004.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 2.14,
+      "log": "evidence/management/checks/final2-clippy-20261004.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--workspace"
+      ],
+      "exit_code": 101,
+      "duration_seconds": 140.28,
+      "log": "evidence/management/checks/final2-workspace-20261004.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "cutokyo-integration-tests",
+        "--test",
+        "pipeline",
+        "--test",
+        "upgrade",
+        "--test",
+        "architecture"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 24.31,
+      "log": "evidence/management/checks/final2-unreached-tools-20261004.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "fake-harness",
+        "-p",
+        "cutokyo-updater-signature-verifier"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.32,
+      "log": "evidence/management/checks/final2-fake-crypto-20261004.log"
+    }
+  ],
+  "head": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "dirty_working_tree": true,
+  "waivers": []
+}

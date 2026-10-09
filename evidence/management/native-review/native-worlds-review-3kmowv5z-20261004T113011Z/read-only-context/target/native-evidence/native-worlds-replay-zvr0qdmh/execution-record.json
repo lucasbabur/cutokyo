@@ -1,0 +1,10 @@
+{
+  "source_manifest": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/package-launch.json",
+  "package_sha256": "de3e9a6d97825298612da554c8219cc67f461bf7ccb8da2a56e51bd385712316",
+  "evidence": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-zvr0qdmh",
+  "purpose": "Execute unchanged maintained browse/capture setup/capture history worlds with repaired phase orchestration. Not fresh aggregate acceptance.",
+  "fresh_aggregate_acceptance": false,
+  "error": "Command '['pnpm', 'test:e2e:tauri:runner']' returned non-zero exit status 1.",
+  "exit_code": 1,
+  "duration_seconds": 83.42
+}

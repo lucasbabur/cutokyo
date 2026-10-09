@@ -1,0 +1,22 @@
+{
+  "command": [
+    "pnpm",
+    "exec",
+    "wdio",
+    "run",
+    "./wdio.conf.ts",
+    "--spec",
+    "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-postdelete-diagnostic.spec.ts"
+  ],
+  "exit_code": 1,
+  "duration_seconds": 34.77,
+  "root": "/tmp/cutokyo-native-test-wdio-sfr8r8ri",
+  "evidence": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-postdelete-diagnostic-5t5dhyxs",
+  "fresh_aggregate_acceptance": false,
+  "source_package": "58d8d44446644662721bdfb06d85fcba4a9bd80853d21d4a06e26d5ce0bc0258",
+  "window_state": {
+    "pid": "3976674",
+    "window": "0x5c07e3042640"
+  },
+  "owned_application_survived": false
+}

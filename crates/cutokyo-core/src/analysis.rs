@@ -18,7 +18,7 @@ use sha2::{Digest as _, Sha256};
 use tokio_util::sync::CancellationToken;
 use zeroize::Zeroize as _;
 
-use crate::guards::{GuardChannel, GuardCoverageState, GuardError, SanitizedFinding, SecretGuard};
+use crate::redaction::{RedactionBoundary, RedactionCoverage, RedactionError, Redactor};
 
 /// Maximum serialized provider-bound body.
 pub const MAX_ANALYSIS_BODY_BYTES: usize = 1024 * 1024;
@@ -132,10 +132,8 @@ pub struct AnalysisPreview {
     pub idempotency_key: String,
     /// Sanitized request that would leave the machine.
     pub outbound: AnalysisOutboundRequest,
-    /// Safe findings that caused replacement.
-    pub findings: Vec<SanitizedFinding>,
     /// Inspection coverage.
-    pub coverage: GuardCoverageState,
+    pub coverage: RedactionCoverage,
     /// Summary evidence/coverage copied unchanged after confirmation.
     pub attribution: Attribution,
 }
@@ -339,7 +337,7 @@ impl CredentialSource for KeychainThenEnvironment {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AnalysisProviderOutput {
     /// Provider-generated summary text. It may still contain secrets and must not
-    /// be logged or persisted before guard processing.
+    /// be logged or persisted before baseline redaction.
     pub text: String,
 }
 
@@ -389,8 +387,6 @@ pub struct AnalysisReceipt {
     pub attempts: u8,
     /// Non-secret credential source.
     pub credential_origin: CredentialOrigin,
-    /// Redaction findings in provider output before persistence.
-    pub output_findings: Vec<SanitizedFinding>,
 }
 
 /// AI analysis orchestrator.
@@ -399,7 +395,7 @@ pub struct AnalysisService<P, C, S> {
     provider: P,
     credentials: C,
     summaries: S,
-    guard: SecretGuard,
+    guard: Redactor,
 }
 
 impl<P, C, S> AnalysisService<P, C, S>
@@ -418,7 +414,7 @@ where
             provider,
             credentials,
             summaries,
-            guard: SecretGuard::new()?,
+            guard: Redactor::new()?,
         })
     }
 
@@ -427,12 +423,12 @@ where
     ///
     /// # Errors
     ///
-    /// Returns validation or fail-closed guard errors.
+    /// Returns validation or baseline redaction errors.
     pub fn preview(&self, plan: &AnalysisPlan) -> Result<AnalysisPreview, AnalysisError> {
         plan.validate()?;
         let guarded = self
             .guard
-            .redact_json(GuardChannel::AiEgress, &plan.content)?;
+            .redact_json(RedactionBoundary::AiEgress, &plan.content)?;
         let body = AnalysisOutboundBody {
             model: plan.model.clone(),
             prompt_version: plan.prompt_version.clone(),
@@ -479,7 +475,6 @@ where
             preview_digest,
             idempotency_key,
             outbound,
-            findings: guarded.findings,
             coverage: guarded.coverage,
             attribution: plan.attribution.clone(),
         })
@@ -492,7 +487,7 @@ where
     ///
     /// # Errors
     ///
-    /// Returns confirmation, cancellation, credential, provider, guard, or sink
+    /// Returns confirmation, cancellation, credential, provider, redaction, or sink
     /// failures with secret-safe field context.
     pub async fn execute(
         &self,
@@ -566,7 +561,7 @@ where
         }
         let guarded_output = self
             .guard
-            .redact_text(GuardChannel::Projection, &output.text)?;
+            .redact_text(RedactionBoundary::Projection, &output.text)?;
         let summary_id = SummaryId::parse(format!("summary:{}", preview.idempotency_key))
             .map_err(AnalysisError::domain)?;
         let created_at = Timestamp::from_unix_timestamp(current_unix_timestamp()?)
@@ -593,7 +588,6 @@ where
             summary,
             attempts,
             credential_origin: credential.origin(),
-            output_findings: guarded_output.findings,
         })
     }
 }
@@ -616,8 +610,8 @@ pub enum AnalysisErrorCode {
     CredentialUnavailable,
     /// Provider did not succeed after bounded attempts.
     ProviderFailed,
-    /// Secret guard blocked or failed closed.
-    GuardBlocked,
+    /// Required baseline redaction failed before analysis.
+    RedactionFailed,
     /// Summary validation/persistence failed.
     PersistenceFailed,
 }
@@ -697,10 +691,10 @@ impl Display for AnalysisError {
 
 impl std::error::Error for AnalysisError {}
 
-impl From<GuardError> for AnalysisError {
-    fn from(error: GuardError) -> Self {
+impl From<RedactionError> for AnalysisError {
+    fn from(error: RedactionError) -> Self {
         Self::new(
-            AnalysisErrorCode::GuardBlocked,
+            AnalysisErrorCode::RedactionFailed,
             error.field,
             error.expected,
             error.actual,

@@ -19,12 +19,13 @@ the fact without double counting lower tiers.
 Automatic native fallthrough stops before proxy. Proxy use requires a durable explicit
 consent record, loopback binding, a persistent visible active status, and disclosure
 of captured content. It never persists credentials. Instrumentation fails open so the
-coding harness continues; only an explicitly enabled outgoing secret guard fails
-closed on a channel it cannot inspect.
+coding harness continues. Provider requests pass unchanged; baseline redaction is
+limited to retained metadata and separately consented analysis.
 
 ## Consequences
 
 A native outage cannot silently turn Cutokyo into a MITM. Some facts, especially
 context breakdown, remain unavailable until the user consents. UI and diagnostics
-must distinguish capture, on-disk redaction, telemetry redaction, and provider-bound
-blocking rather than compressing them into a vague protected state.
+must distinguish capture, local diagnostics redaction, and consented analysis
+rather than compressing them into a vague protected state. The outgoing guardrails
+feature was removed by the product-scope change recorded in ADR 0010.

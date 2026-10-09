@@ -1,0 +1,13 @@
+{
+  "archive": "evidence/management/native-review/final2-browser-affected-review-20261004.tar.gz",
+  "sha256": "6e0a66bb7ca4c32c393c671990498aadb42dffcc7b917ef0d8156cbe2966a22f",
+  "bytes": 1396028,
+  "members": 15,
+  "reviewer": "a47a3d8b974b536a6",
+  "individual_images_read": 12,
+  "changed_images_read": 9,
+  "all_renewed_image_hashes_compared": 88,
+  "VQA09": "closed at browser evidence level",
+  "VQA10": "closed at screenshot appearance level only",
+  "native_acceptance_inferred": false
+}

@@ -1,0 +1,35 @@
+{
+  "reviewer": "ad8f7bc88350024b7",
+  "verdict": "accepted bounded corrections without acceptance weakening",
+  "runner_sha256": "3e6fedfbd41646f7b1d9d62c1e5841b38207e7945956c56214433fae0a0fb16b",
+  "runner_tests_sha256": "bd1dfeebda5fbd3fc8a77ea11178462fff720adbbd8a130cf574c86254858451",
+  "native_spec_sha256": "2768b349ed0e6aa67a0f1c1b24afa095afeaa7919670a762f024c0447bfda311",
+  "previous_approved_native_spec_sha256": "d5ef2e4e09b2367745c68ce26c2aa6d3068d013cad4fac7fa7ba97f38bab72c9",
+  "runner_findings": [
+    "Only the existing nonempty DISPLAY branch drops WAYLAND_DISPLAY while selecting GTK X11",
+    "Real DISPLAY, private HOME and all private XDG directories remain unchanged",
+    "WAYLAND_SOCKET is still excluded by the allowlist",
+    "Validated separate compositor CLI, host runtime, and signature remain unchanged",
+    "Pure-Wayland environments preserve their existing branch",
+    "Installed Kitty auto-selection source confirms X11 selection with both Wayland variables absent"
+  ],
+  "independent_execution": {
+    "scope": "Two isolated pure runtime-environment regressions only",
+    "passed": 2,
+    "failed": 0,
+    "duration_seconds": 0.002,
+    "app_or_provider_launch": false,
+    "full_16_test_runner_or_nested_34_test_keyboard_suite_executed_by_reviewer": false
+  },
+  "preview_findings": [
+    "Dialog-scoped exact code waits correspond to actual resolved nativeResumeId rather than the loading skeleton or sidebar",
+    "Removing only the four added lines in each journey restores the prior approved spec byte-for-byte",
+    "All original regex, native identity, argv, cwd, TTY, startup, activation-unknown, and deletion assertions remain",
+    "Enabled ordinary confirmation clicks and scoped fresh success receipts remain unchanged",
+    "No added sleep, force click, skipped case, or expanded timeout"
+  ],
+  "diagnostic_boundary": "First retained-package diagnostic failed before confirmation while preview was resolving; it did not prove a native resume attempt",
+  "fresh_native_aggregate_still_required": true,
+  "failure_modal_product_issue_closed_by_this_review": false,
+  "waivers": []
+}

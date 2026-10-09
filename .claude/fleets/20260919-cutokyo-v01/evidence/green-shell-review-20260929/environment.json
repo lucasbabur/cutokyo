@@ -1,0 +1,52 @@
+{
+  "repository": "/home/lucas/Developer/personal/cutokyo-green-theme",
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "branch": "feat/refero-green-theme-20260929",
+  "revision_kind": "HEAD plus uncommitted shared working tree, not a committed integrated revision",
+  "os": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+  "architecture": "x86_64",
+  "utc": "2026-09-30T02:44:36.099251+00:00",
+  "isolated_root": "/tmp/cutokyo-green-shell-review-03sakdlm",
+  "viewport_matrix": [
+    [
+      900,
+      700
+    ],
+    [
+      1280,
+      800
+    ],
+    [
+      1536,
+      960
+    ]
+  ],
+  "steps": "read-only review; unchanged tests; fixture-only browser journeys; packaged native runner if available",
+  "expected": "removed chrome absent; local decorative logo loaded; main-content begins at top; no overflow or clipped focus; saved appearance honored",
+  "actual": "pending",
+  "node --version": {
+    "exit_code": 0,
+    "stdout": "v22.22.3\n",
+    "stderr": ""
+  },
+  "npm --version": {
+    "exit_code": 0,
+    "stdout": "10.9.8\n",
+    "stderr": ""
+  },
+  "pnpm --version": {
+    "exit_code": 0,
+    "stdout": "11.25.0\n",
+    "stderr": ""
+  },
+  "rustc --version": {
+    "exit_code": 0,
+    "stdout": "rustc 1.98.1 (48a229cea 2026-09-01)\n",
+    "stderr": ""
+  },
+  "cargo --version": {
+    "exit_code": 0,
+    "stdout": "cargo 1.98.1 (797e8a9bc 2026-08-05)\n",
+    "stderr": ""
+  }
+}

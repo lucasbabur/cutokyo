@@ -3,11 +3,12 @@ import type { SettingsPatch } from "./generated/settings.js";
 export type Harness = "claude_code" | "codex" | "opencode";
 type CoverageState =
   "complete" | "partial" | "disabled" | "unavailable" | "unknown_version";
-export type Confidence =
+type Confidence =
   "observed" | "estimated" | "user_declared" | "conflicting" | "unknown";
 type RouteFreshness = "complete" | "partial" | "degraded";
-type ItemState = "enabled" | "disabled" | "degraded" | "unknown";
-export type InventoryKind = "mcp" | "skill" | "hook" | "plugin";
+type ItemState =
+  "enabled" | "disabled" | "degraded" | "unknown" | "configured" | "installed";
+export type InventoryKind = "mcp" | "skill" | "hook" | "plugin" | "instruction";
 export type HealthState = "healthy" | "degraded" | "unknown";
 
 export interface Coverage {
@@ -63,7 +64,32 @@ export interface OnboardingResponse {
   readonly harnesses: readonly HarnessCoverage[];
 }
 
+export type CaptureSetupOperation = "install" | "recover" | "uninstall";
+
+export interface CaptureSetupPreview {
+  readonly previewToken: string;
+  readonly harness: Harness;
+  readonly operation: CaptureSetupOperation;
+  readonly version: string;
+  readonly targets: readonly string[];
+  readonly actions: readonly string[];
+  readonly issues: readonly string[];
+  readonly verified: boolean;
+  readonly recoveryPending: boolean;
+  readonly disclosure: string;
+}
+
+export interface CaptureSetupReceipt {
+  readonly harness: Harness;
+  readonly operation: CaptureSetupOperation;
+  readonly changed: boolean;
+  readonly verified: boolean;
+  readonly issues: readonly string[];
+  readonly message: string;
+}
+
 export interface CompleteOnboardingRequest {
+  readonly mode: "install" | "browse";
   readonly harnesses: readonly Harness[];
   readonly acknowledgedPlaintextStorage: boolean;
   readonly proxyEnabled: false;
@@ -106,6 +132,7 @@ export interface SessionRecord {
   readonly nativeResumeId: string | null;
   readonly title: string | null;
   readonly summary: string | null;
+  readonly matches: readonly SessionMatch[];
   readonly project: string | null;
   readonly branch: string | null;
   readonly startedAt: string;
@@ -168,8 +195,21 @@ export interface DashboardResponse {
   readonly captureLive: boolean;
 }
 
+export interface SessionMatch {
+  readonly source: "title" | "project" | "branch" | "native_id" | "transcript";
+  /** Bounded plain text, never HTML. */
+  readonly text: string;
+  readonly terms: readonly string[];
+}
+
 export interface SessionFilters {
   readonly text: string;
+  readonly queryMode: "terms" | "phrase";
+  readonly sort: "relevance" | "newest";
+  readonly offset: number;
+  readonly limit: number;
+  /** Local calendar midnight for Today, supplied by the command client. */
+  readonly todayStart: string | null;
   readonly harness: Harness | "all";
   readonly project: string;
   readonly branch: string;
@@ -183,6 +223,9 @@ export interface SessionSearchResponse {
   readonly meta: RouteMeta;
   readonly sessions: readonly SessionRecord[];
   readonly total: number;
+  readonly offset: number;
+  readonly limit: number;
+  readonly hasMore: boolean;
   readonly availableProjects: readonly string[];
   readonly availableBranches: readonly string[];
   readonly availableTools: readonly string[];
@@ -196,14 +239,18 @@ export interface ResumePreview {
   readonly harnessName: string;
   readonly nativeResumeId: string;
   readonly commandDescription: string;
+  readonly projectDirectory: string | null;
+  readonly projectContextKnown: boolean;
   readonly canResume: boolean;
   readonly unavailableReason: string | null;
 }
 
 export interface ActionReceipt {
+  /** Whether the requested action completed; warning severity does not decide this. */
   readonly ok: boolean;
   readonly message: string;
-  readonly status: "success" | "cancelled" | "unavailable";
+  /** Acknowledged native resume warns that session activation remains unconfirmed. */
+  readonly status: "success" | "warning" | "cancelled" | "unavailable";
 }
 
 export interface DeletionPreview {
@@ -241,6 +288,8 @@ export interface InventoryItem {
   readonly state: ItemState;
   readonly managedByCutokyo: boolean;
   readonly description: string;
+  /** Canonical directory behind a symlinked skill; null for ordinary sources. */
+  readonly linkTarget?: string | null;
   readonly provenance: Provenance;
 }
 
@@ -249,6 +298,28 @@ export interface InventoryResponse {
   readonly items: readonly InventoryItem[];
   readonly brokerState: HealthState;
   readonly searchMcpEnabled: boolean;
+}
+
+export interface InventoryDocument {
+  readonly itemId: string;
+  readonly content: string;
+  readonly format: "markdown" | "json" | "toml" | "text";
+  readonly revision: string;
+  readonly editable: boolean;
+  readonly removable: boolean;
+  readonly unavailableReason: string | null;
+  readonly installTargets: readonly {
+    readonly harness: Harness;
+    readonly available: boolean;
+    readonly reason: string | null;
+    readonly destination: string;
+    /** Source fields with no equivalent here; names only, never values. */
+    readonly droppedFields?: readonly string[];
+    /** Field mappings and cautions applied by the conversion. */
+    readonly conversions?: readonly string[];
+  }[];
+  /** Scope, sharing, link and bundle disclosures kept out of the row description. */
+  readonly notes?: readonly string[];
 }
 
 export interface PluginVerification {
@@ -266,22 +337,11 @@ export interface PluginVerification {
   readonly sandboxDisclosure: string;
 }
 
-interface GuardChannel {
-  readonly id: string;
-  readonly name: string;
-  readonly category: "on_disk" | "telemetry" | "bundle" | "provider_bound";
-  readonly state: "inspected" | "blocked" | "disabled" | "unavailable";
-  readonly findings: number | null;
-  readonly description: string;
-  readonly limitation: string | null;
-}
-
-export interface GuardsResponse {
+export interface ProxyStatus {
   readonly meta: RouteMeta;
-  readonly outgoingGuardEnabled: boolean;
   readonly proxyEnabled: boolean;
-  readonly proxyStatus: "inactive" | "active" | "failed";
-  readonly channels: readonly GuardChannel[];
+  readonly proxyStatus: "inactive" | "active" | "unavailable";
+  readonly detail: string;
   readonly contextBreakdownAvailable: boolean;
 }
 
@@ -291,40 +351,7 @@ export interface ProxyPreview {
   readonly inspectedContent: readonly string[];
   readonly neverPersisted: readonly string[];
   readonly fallbackBehavior: string;
-  readonly guardBehavior: string;
-}
-
-export interface AnalysisCandidate {
-  readonly sessionId: string;
-  readonly title: string;
-  readonly harness: Harness;
-  readonly coverage: Coverage;
-}
-
-export interface AnalysisPreview {
-  readonly previewToken: string;
-  readonly requestId: string;
-  readonly sourceSessionIds: readonly string[];
-  readonly sourceSessionTitles: readonly string[];
-  readonly provider: string;
-  readonly model: string;
-  readonly promptVersion: string;
-  readonly payloadScope: readonly string[];
-  readonly redactions: readonly string[];
-  readonly estimatedInputTokens: number | null;
-  readonly estimatedPriceMicros: number | null;
-  readonly priceLabel: string;
-}
-
-export interface AnalysisResult {
-  readonly summaryId: string;
-  readonly text: string;
-  readonly provider: string;
-  readonly model: string;
-  readonly promptVersion: string;
-  readonly sourceSessionIds: readonly string[];
-  readonly idempotencyKey: string;
-  readonly createdAt: string;
+  readonly redactionBehavior: string;
 }
 
 interface HealthDimension {
@@ -370,13 +397,40 @@ export interface BundlePreview {
   readonly estimatedBytes: number;
 }
 
+export interface BackupInfo {
+  readonly path: string;
+  readonly createdAt: string;
+  readonly byteLength: number;
+  readonly sessionCount: number;
+  readonly scope: string;
+}
+
+export interface BackupRestorePreview {
+  readonly previewToken: string;
+  readonly backup: BackupInfo;
+  readonly currentSessionCount: number;
+}
+
+export interface BackupRestoreReceipt {
+  readonly recoveryPath: string;
+  readonly restoredSessionCount: number;
+  readonly integrityResult: string;
+}
+
 export interface DesktopSettings {
   readonly proxy_enabled: boolean;
-  readonly outgoing_guard_enabled: boolean;
   readonly search_mcp_enabled: boolean;
   readonly retention_days: number | null;
   readonly updater_choice: "automatic" | "notify" | "manual";
   readonly crash_reports_enabled: boolean;
+  readonly appearance: "system" | "light" | "dark";
+}
+
+export interface DesktopCapabilities {
+  readonly updates: {
+    readonly available: boolean;
+    readonly reason: string | null;
+  };
 }
 
 export interface UpdateStatus {
@@ -392,8 +446,6 @@ export type RoutePath =
   | "/dashboard"
   | "/sessions"
   | "/inventory"
-  | "/guards"
-  | "/analysis"
   | "/health"
   | "/data"
   | "/settings";
@@ -407,8 +459,14 @@ export function applySettingsPatch<T extends Readonly<Record<string, unknown>>>(
 }
 
 export interface CommandClient {
+  getCapabilities(): Promise<DesktopCapabilities>;
   getBootstrap(): Promise<BootstrapResponse>;
   getOnboarding(): Promise<OnboardingResponse>;
+  previewCaptureSetup(
+    harness: Harness,
+    operation: CaptureSetupOperation,
+  ): Promise<CaptureSetupPreview>;
+  applyCaptureSetup(previewToken: string): Promise<CaptureSetupReceipt>;
   completeOnboarding(
     request: CompleteOnboardingRequest,
   ): Promise<ActionReceipt>;
@@ -425,20 +483,30 @@ export interface CommandClient {
   previewRetention(days: number): Promise<RetentionPreview>;
   applyRetention(previewToken: string): Promise<DeletionReceipt>;
   deleteAll(confirmation: string): Promise<DeletionReceipt>;
+  createBackup(destination?: string): Promise<BackupInfo>;
+  listBackups(): Promise<readonly BackupInfo[]>;
+  previewBackupRestore(path: string): Promise<BackupRestorePreview>;
+  restoreBackup(previewToken: string): Promise<BackupRestoreReceipt>;
   getInventory(): Promise<InventoryResponse>;
-  setMcpEnabled(itemId: string, enabled: boolean): Promise<InventoryResponse>;
+  getInventoryDocument(itemId: string): Promise<InventoryDocument>;
+  saveInventoryDocument(
+    itemId: string,
+    revision: string,
+    content: string,
+  ): Promise<ActionReceipt>;
+  removeInventoryItem(itemId: string, revision: string): Promise<ActionReceipt>;
+  installInventoryItem(
+    itemId: string,
+    revision: string,
+    harness: Harness,
+  ): Promise<ActionReceipt>;
   getPluginVerification(itemId: string): Promise<PluginVerification>;
-  getGuards(): Promise<GuardsResponse>;
+  getProxyStatus(): Promise<ProxyStatus>;
   previewProxy(): Promise<ProxyPreview>;
   setProxyEnabled(
     enabled: boolean,
     consentToken: string | null,
-  ): Promise<GuardsResponse>;
-  setOutgoingGuardEnabled(enabled: boolean): Promise<GuardsResponse>;
-  getAnalysisCandidates(): Promise<readonly AnalysisCandidate[]>;
-  previewAnalysis(sessionIds: readonly string[]): Promise<AnalysisPreview>;
-  runAnalysis(previewToken: string): Promise<AnalysisResult>;
-  cancelAnalysis(requestId: string): Promise<ActionReceipt>;
+  ): Promise<ProxyStatus>;
   getHealth(): Promise<HealthResponse>;
   retryHealth(dimensionId: string): Promise<HealthResponse>;
   runDoctor(): Promise<DoctorReport>;
@@ -448,7 +516,12 @@ export interface CommandClient {
   patchSettings(patch: SettingsPatch): Promise<DesktopSettings>;
   patchDesktopPreferences(
     patch: Readonly<
-      Partial<Pick<DesktopSettings, "updater_choice" | "crash_reports_enabled">>
+      Partial<
+        Pick<
+          DesktopSettings,
+          "updater_choice" | "crash_reports_enabled" | "appearance"
+        >
+      >
     >,
   ): Promise<DesktopSettings>;
   checkForUpdates(): Promise<UpdateStatus>;

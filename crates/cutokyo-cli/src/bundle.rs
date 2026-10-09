@@ -181,7 +181,6 @@ pub(crate) fn create(
             "local_only": true,
             "telemetry": "disabled_by_default",
             "bundle_redaction": "content_columns_excluded",
-            "provider_bound_inspection": if config.settings.outgoing_guard_enabled { "enabled" } else { "disabled" },
             "proxy_capture": if config.settings.proxy_enabled { "consented_enabled" } else { "disabled" },
             "unavailable_channels_are_unknown": true
         }),

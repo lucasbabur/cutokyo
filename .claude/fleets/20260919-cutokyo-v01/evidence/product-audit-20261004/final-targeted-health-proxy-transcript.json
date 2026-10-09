@@ -1,0 +1,100 @@
+{
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "workingTree": "concurrent external edits",
+  "fixtureOnly": true,
+  "viewport": [
+    900,
+    700
+  ],
+  "expected": {
+    "VQA-04": "Recovered writer lock updates global sidebar while unrelated quarantine remains degraded",
+    "VQA-05": "Unavailable badge, disabled activation, available read-only data-handling review; cancel produces no activation error"
+  },
+  "actions": [
+    {
+      "time": "2026-10-04T05:53:04.352820+00:00",
+      "args": [
+        "open",
+        "http://127.0.0.1:4173/?jev_case=health-degraded#/health"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Cutokyo\n  http://127.0.0.1:4173/?jev_case=health-degraded#/health\n"
+    },
+    {
+      "time": "2026-10-04T05:53:04.355094+00:00",
+      "args": [
+        "set",
+        "media",
+        "dark",
+        "reduced-motion"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:53:04.769478+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsRead-o\" [ref=e143] clickable [onclick]\n  - link \"Skip to content\" [ref=e144]\n  - navigation \"Primary navigation\" [ref=e145]\n    - link \"Overview\" [ref=e148]\n    - link \"Sessions\" [ref=e149]\n    - link \"Analysis\" [ref=e150]\n    - link \"Agent tools\" [ref=e151]\n    - link \"Health\" [ref=e152]\n    - link \"Data\" [ref=e153]\n    - link \"Settings\" [ref=e154]\n  - heading \"System health\" [level=1, ref=e155]\n  - button \"Run doctor\" [ref=e156]\n  - button \"Bundle preview\" [ref=e157]\n  - region \"Health summary\" [ref=e146]\n  - region \"Current and lifetime state\" [ref=e147]\n    - heading \"Current and lifetime state\" [level=2, ref=e158]\n    - button \"Open quarantine guidance\" [ref=e159]\n    - button \"Retry writer lock\" [ref=e160]\n"
+    },
+    {
+      "time": "2026-10-04T05:53:04.787157+00:00",
+      "args": [
+        "click",
+        "@e160"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:53:05.439928+00:00",
+      "args": [
+        "eval",
+        "JSON.stringify({sidebar:document.querySelector(\".sidebar__footer\")?.textContent,dimensions:[...document.querySelectorAll(\".health-dimension\")].map(x=>({name:x.querySelector(\"strong\")?.textContent,state:x.querySelector(\".status-pill\")?.textContent})),summary:document.querySelector(\".health-summary\")?.textContent,recovery:[...document.querySelectorAll(\"[role=status]\")].map(x=>x.textContent)})"
+      ],
+      "exitCode": 0,
+      "output": "\"{\\\"sidebar\\\":\\\"Local writer\u2713Local onlyv0.1.0-test\\\",\\\"dimensions\\\":[{\\\"name\\\":\\\"health persistence\\\",\\\"state\\\":\\\"\u2713healthy\\\"},{\\\"name\\\":\\\"quarantine\\\",\\\"state\\\":\\\"!degraded\\\"},{\\\"name\\\":\\\"spool cap\\\",\\\"state\\\":\\\"\u2713healthy\\\"},{\\\"name\\\":\\\"spool drain\\\",\\\"state\\\":\\\"\u2713healthy\\\"},{\\\"name\\\":\\\"writer lock\\\",\\\"state\\\":\\\"\u2713healthy\\\"},{\\\"name\\\":\\\"schema\\\",\\\"state\\\":\\\"\u2713healthy\\\"},{\\\"name\\\":\\\"derive\\\",\\\"state\\\":\\\"\u2713healthy\\\"},{\\\"name\\\":\\\"integrity\\\",\\\"state\\\":\\\"\u2713healthy\\\"},{\\\"name\\\":\\\"rebuild\\\",\\\"state\\\":\\\"\u2713healthy\\\"},{\\\"name\\\":\\\"backup\\\",\\\"state\\\":\\\"\u2713healthy\\\"},{\\\"name\\\":\\\"restore\\\",\\\"state\\\":\\\"\u2713healthy\\\"}],\\\"summary\\\":\\\"!1 degradedAttention is neededSnapshot generation is independent of history size.Quarantine1 current \u00b7 7 lifetimeSpool backlog3 files \u00b7 8.0 KiBWriter ownerdesktop \u00b7 pid 7319\\\",\\\"recovery\\\":[\\\"writer lock recovered. 1 unrelated dimension remains degraded.\\\",\\\"First currently affected observationspool:malformed-73A9\\\",\\\"writer lock recovered. 1 unrelated dimension remains degraded.\\\"]}\"\n"
+    },
+    {
+      "time": "2026-10-04T05:53:05.442250+00:00",
+      "args": [
+        "eval",
+        "[...document.querySelectorAll(\"*\")].filter(x=>x.scrollTop>0).forEach(x=>x.scrollTo(0,0));window.scrollTo(0,0)"
+      ],
+      "exitCode": 0,
+      "output": "{\n  \"interrupted\": false\n}\n"
+    },
+    {
+      "time": "2026-10-04T05:53:05.474539+00:00",
+      "args": [
+        "screenshot",
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final-targeted-health-reconciled-900x700.png"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final-targeted-health-reconciled-900x700.png\n"
+    },
+    {
+      "time": "2026-10-04T05:53:05.559882+00:00",
+      "args": [
+        "open",
+        "http://127.0.0.1:4173/?jev_case=native-capabilities-unavailable#/settings"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Cutokyo\n  http://127.0.0.1:4173/?jev_case=native-capabilities-unavailable#/settings\n"
+    },
+    {
+      "time": "2026-10-04T05:53:05.562212+00:00",
+      "args": [
+        "set",
+        "media",
+        "dark",
+        "reduced-motion"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    }
+  ]
+}

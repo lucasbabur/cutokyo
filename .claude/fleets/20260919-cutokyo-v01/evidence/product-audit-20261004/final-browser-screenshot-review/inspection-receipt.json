@@ -1,0 +1,895 @@
+{
+  "scope": "Coordinator-assigned final browser screenshot inspection only. No application launch, source edit, browser rerun, or native acceptance claim.",
+  "completed_utc": "2026-10-04T08:39:24.332741+00:00",
+  "revision": {
+    "observed_head_at_capture_preservation": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+    "identity_note": "Dirty integrated checkout; preserved exact screenshot SHA256 identity",
+    "immutable_evidence_identity": "Per-image SHA256 in manifest; observed HEAD alone does not identify dirty integrated source"
+  },
+  "environment": {
+    "review_os": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+    "python": "3.14.4",
+    "capture_runtime": "Main-owned Playwright/Vite browser fixture run; not Tauri",
+    "run_log": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/final-browser-e2e-20261004.log",
+    "run_log_result": "36 passed (41.9s)"
+  },
+  "manifest": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final-browser-screenshot-review/manifest.json",
+  "coverage": {
+    "individual_png_reads": 88,
+    "expected_png_outputs": 88,
+    "directory_counts": {
+      "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens": 21,
+      "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens": 18,
+      "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens": 24,
+      "/home/lucas/Developer/personal/cutokyo-community/evidence/management/search": 8,
+      "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens": 17
+    },
+    "actual_dimension_counts": {
+      "1280x720": 1,
+      "1280x800": 28,
+      "1536x960": 28,
+      "900x700": 31
+    },
+    "source_hashes_match_preserved": 88,
+    "app_launches_by_reviewer": 0
+  },
+  "steps": [
+    "Inspect screenshot-producing specs and actual current-run log",
+    "Preserve all 88 current PNGs and record source paths, dimensions and SHA256",
+    "Individually display each current source PNG with Read, across both themes and required viewport variants",
+    "Inspect remaining six backup-restored PNGs and recheck three dim resume artifacts",
+    "Validate exact 88-output set, dimensions and original/preserved SHA256 equality",
+    "Update reviewer-owned JSON evidence only"
+  ],
+  "expected": "Stable legible graphite/warm-paper/vermilion layouts; clear identity, uncertainty, mutation scope and actions; artifacts truthfully identify captured viewport; browser evidence never substitutes for native behavior.",
+  "actual": "All 88 images individually inspected. No concrete new rendered product regression established. Modal footers fit including 900x700; management distinctions, independent-copy/removal scope, exact native target, search retained constraints and source highlights, backup scope/recovery/result, Unknown/estimated/partial/absent labels remain readable. One filename/dimension evidence mismatch is definite. Three resume primary actions look dim; actual enabled state and reason unverified.",
+  "verdict": {
+    "inspection_completion": "COMPLETE",
+    "rendered_product_regression": "NONE_ESTABLISHED",
+    "evidence_fidelity": "FAIL_LOW_SEVERITY_VIEWPORT_LABEL_MISMATCH",
+    "native_or_full_product_acceptance": "NOT_ESTABLISHED_BY_THIS_REVIEW"
+  },
+  "findings": [
+    {
+      "key": "VQA-09",
+      "owner": "integration",
+      "severity": "Low",
+      "category": "Evidence identity",
+      "status": "OPEN",
+      "reproduction": "Inspect the forced-colors capture from final-browser-e2e-20261004.log and decode its PNG IHDR dimensions; compare with filename. The forced-colors spec captures without setting a 1280x800 viewport.",
+      "expected": "A file labelled 1280x800 should be an actual 1280x800 capture, or be named for its actual dimensions.",
+      "actual": "dashboard-forced-colors-1280x800.png is 1280x720. Chart stripes, solid mark and raw values remain visibly distinguishable; no product forced-color failure is claimed.",
+      "evidence": [
+        "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/dashboard-forced-colors-1280x800.png"
+      ],
+      "related_source": "/home/lucas/Developer/personal/cutokyo-community/ui/tests/e2e/desktop.spec.ts",
+      "preserved_evidence": [
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final-browser-screenshot-review/evidence/theme/screens/dashboard-forced-colors-1280x800.png"
+      ]
+    }
+  ],
+  "unverified_observations": [
+    {
+      "key": "VQA-10",
+      "owner": "integration",
+      "severity": "Low",
+      "category": "Capture-state fidelity observation",
+      "status": "UNVERIFIED_NOT_A_PRODUCT_FAILURE",
+      "reproduction": "Compare the three listed resume-dialog screenshots with the current same-state 900x700 captures.",
+      "expected": "Equivalent confirmation-state evidence should consistently communicate whether its primary action is ready or unavailable.",
+      "actual": "Primary action looks disabled/dim in light1536x960 and dark1280x800/dark1536x960, unlike 900x700. Screenshot pixels do not prove disabled semantics, a transition, a contrast violation, or native resume failure.",
+      "evidence": [
+        "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/session-resume-1536x960.png",
+        "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/resume-dialog-dark-1280x800.png",
+        "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/resume-dialog-dark-1536x960.png"
+      ],
+      "preserved_evidence": [
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final-browser-screenshot-review/evidence/final/screens/session-resume-1536x960.png",
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final-browser-screenshot-review/evidence/theme/screens/resume-dialog-dark-1280x800.png",
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final-browser-screenshot-review/evidence/theme/screens/resume-dialog-dark-1536x960.png"
+      ],
+      "blocked_gap": "No live DOM or native execution was requested or performed in this screenshot-only assignment."
+    }
+  ],
+  "limitations": [
+    "Fixture screenshots establish rendered browser states only",
+    "No fresh native screenshots inspected here; main owns native aggregate and native image review",
+    "No independent rerun of current browser accessibility or keyboard journeys; actual run log inspected",
+    "Loading/reduced-motion behavior and offscreen scroll interaction cannot be proven from these still images",
+    "No source, tests, fixtures, thresholds, configuration, permission settings or operator harness files changed"
+  ],
+  "hash_checks": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/analysis-consent-1280x800.png",
+      "sha256": "4fe5c3e77e6bf6787efd8fa19f4d2c1fce4acbb1352f5033554eca484754878b",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/analysis-consent-1536x960.png",
+      "sha256": "16e3966eff7b43a63e82792a71721fae53d4d5fa572fceb677ba5ff1b4d868c5",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/analysis-consent-900x700.png",
+      "sha256": "cd769d4e151ecefe76fd3974d81555d80a4a03deb38bca4a4852417ae697eaf8",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/dashboard-1280x800.png",
+      "sha256": "668aedc66dd4ee5840fa0f003f799e84ec6311b8c73bc2af493bdfb8f036e28c",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/dashboard-1536x960.png",
+      "sha256": "35461e73a8da5db1936eb25372530f82df11ae2fe1cadad7695b814128b95f31",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/dashboard-900x700.png",
+      "sha256": "1ee9b152ee97694021a6d783cb73ecbe2dd3377b9aa74e931207b8e3a9be48d2",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/empty-history-1280x800.png",
+      "sha256": "8218679e40aea84261d3db95c42414339e7d34daee5abd4bc65241912becd469",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/empty-history-1536x960.png",
+      "sha256": "71bd24a0db645f8070bf2a133d04655d08efc3b97c840a0a20bafe40493e2fb1",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/empty-history-900x700.png",
+      "sha256": "773f7c156bbfb5c9085b985dae64a4751b10a7fcda0ac0e2e1d8534ae475dc68",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/health-degraded-1280x800.png",
+      "sha256": "da0603d863d0dafd3ccbba0ab97053db994db2d95e339774ec712461ca26e5ac",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/health-degraded-1536x960.png",
+      "sha256": "63a5f6f4bc9bbd0a3680b4ebd1ebab774a6f4b9a9ab735bfeb5985919ad91ccf",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/health-degraded-900x700.png",
+      "sha256": "62d3c0889d4eea3c25caba12a14c22affd0636e4ad672062b41e3b97e850d086",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/inventory-mcp-1280x800.png",
+      "sha256": "5d60ef20d5c6578f801be0b003bbf3f8eb2b30164bd0508f788a5d421ee4f798",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/inventory-mcp-1536x960.png",
+      "sha256": "afb4826cd89e98a4f516c914878a989879bdda9640e01253b3363e5d11de76af",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/inventory-mcp-900x700.png",
+      "sha256": "3e2b84e29d767a4840112e03598d9ccae4b41bf4c6e8b1f9c5169e33a4ac83c0",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/onboarding-1280x800.png",
+      "sha256": "1e36c0648e900a9180098d6481bd03f4debd0fb6244e80cc52e445447f6e87e5",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/onboarding-1536x960.png",
+      "sha256": "bc7526d32dda1186f204d08c6aebb74795ea1c162829454f8b16503d7b6b7fbe",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/onboarding-900x700.png",
+      "sha256": "2e173db1521e5aafeeecca455db59a31e85db87cc4f594cd81daeb8a67895e27",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/session-resume-1280x800.png",
+      "sha256": "ca615babe55c883021125cd043677ee873f33cdc7c8c7b859a19ff5f81353de3",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/session-resume-1536x960.png",
+      "sha256": "1fb8182cabd6c7d14eb80aef1c42c5d987a6e6db29cd9e925515a1802805a9b1",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/session-resume-900x700.png",
+      "sha256": "506fc582411419d14b0e7c85f98a363cc6548db3aea41d85151606d1de385cf7",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/dashboard-dark-1280x800.png",
+      "sha256": "c343831c9d8d2a6ffa5bcef52f800df6196604df8d5ef75efe2e69118cbf258e",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/dashboard-dark-1536x960.png",
+      "sha256": "e57abf4f65af9d780faddf62ce9bd1d0085552e6982b547c5e0c8210fdefd737",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/dashboard-dark-900x700.png",
+      "sha256": "86e611a8851483782626763a68a8258c6f8a49becba2405e879ee65f6d01d65c",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/dashboard-forced-colors-1280x800.png",
+      "sha256": "60a4f45a4f1a5c7c6c8d5dc156404f32c67cc92f2bb6eeb958418baf4f54653c",
+      "actual_dimensions": [
+        1280,
+        720
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/empty-history-dark-1280x800.png",
+      "sha256": "1e1ac3d7ecffa83f577bf5248b34d14bc2b0cf82ea9d7044c3388eae823b294e",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/empty-history-dark-1536x960.png",
+      "sha256": "b2d08a7e289d2456a4936b3556e0d3076a8456a2971ea6751ac5abb508ee83c2",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/empty-history-dark-900x700.png",
+      "sha256": "872fe51a481289d1b706b0c12d3fff6877065bbf2dd132a408aef8bc19903a40",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/health-degraded-dark-1280x800.png",
+      "sha256": "8a8e48f4ae5b4f9928dcd2dc640a3b11f967dff9874fca8c7cdd2ab86df32f58",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/health-degraded-dark-1536x960.png",
+      "sha256": "dbfea9b4d0e2885804def95e5eafa40e471a81343ffa52488bb759849c63fc98",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/health-degraded-dark-900x700.png",
+      "sha256": "5dd3800693e3c5506446f86a3fb7e04883b795fd3ceff6da9d6c250ce670848c",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/resume-dialog-dark-1280x800.png",
+      "sha256": "a1bb41e848f338b2af2becea1646e3798ec6bc2e6ab64465fefeeb34d84ddca7",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/resume-dialog-dark-1536x960.png",
+      "sha256": "e19bc4828b049933fac588bea2a3fd631d5e261e55e137e07b1cf5e17b7d49d3",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/resume-dialog-dark-900x700.png",
+      "sha256": "f88b0d2558c3ed2e20bc5dfda7be2ee51d3b68e9a3980e9e469c0e814f0520b0",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/settings-conflict-900x700.png",
+      "sha256": "511582420c7e8a3db50a0fd70debf796bcfafcdb0855bc620990a7a70e5e138d",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/settings-dark-1280x800.png",
+      "sha256": "24086b94799fdde0d30a8c4c5c3451d6f21945d307e1cda04872b3be3878ea31",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/settings-dark-1536x960.png",
+      "sha256": "ffa3389e97646dfaf2690197183ea15081e09d1c65ab208416ab0c8affae1947",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/settings-dark-900x700.png",
+      "sha256": "c20e80135485a707690f54d0bd115bd79dca5bbc9e906f445001e52ce394253a",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/install-preview-dark-1280x800.png",
+      "sha256": "8119b11e4f3a7bc65a247f262c8e857e721ab1fa918f3bf87637dc2e02eadda4",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/install-preview-dark-1536x960.png",
+      "sha256": "5bc5af0e83c75c006c4492098507832765ef5e2a9a9571a7820b838482dbd89e",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/install-preview-dark-900x700.png",
+      "sha256": "85d9773d90a9f277657be596f624cf42b07d1215a136cbc5c3f7469002364701",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/install-preview-light-1280x800.png",
+      "sha256": "3f694cae4ac74a64d47caf79608a71e5a34ce9d187140ad9f98e49b4af0cc906",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/install-preview-light-1536x960.png",
+      "sha256": "0279ff146a71fe9c16b43470c2c89b3765468ea251b8a0972aca2e5a10a27101",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/install-preview-light-900x700.png",
+      "sha256": "7596b7ada552ab2aae8ff4b3574f94097994f690cd01edc05ea10e48fce73ef8",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/installations-dark-1280x800.png",
+      "sha256": "f8ea125be0972fc60209abd6aba71b490cf72421f52e3e8947ff3730b32f01b4",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/installations-dark-1536x960.png",
+      "sha256": "e7f0f05d77b238fb2995ce4e47f38c60bf9c67709defbfb2663fd55a91ed0b11",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/installations-dark-900x700.png",
+      "sha256": "48c61d9ff344c6296fcc2ecd7982a9ceece055a731586d9437d6118f20a62d22",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/installations-light-1280x800.png",
+      "sha256": "5d60ef20d5c6578f801be0b003bbf3f8eb2b30164bd0508f788a5d421ee4f798",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/installations-light-1536x960.png",
+      "sha256": "afb4826cd89e98a4f516c914878a989879bdda9640e01253b3363e5d11de76af",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/installations-light-900x700.png",
+      "sha256": "3e2b84e29d767a4840112e03598d9ccae4b41bf4c6e8b1f9c5169e33a4ac83c0",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/remove-preview-dark-1280x800.png",
+      "sha256": "bc4248879566f22915c866a7d3b0a66ac0073460162e678a519d9e5048065818",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/remove-preview-dark-1536x960.png",
+      "sha256": "9a9b1d58d4f26e3ea6da243dd3a1492ac57b888be0a668c683e508724a9e62ed",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/remove-preview-dark-900x700.png",
+      "sha256": "08169bd79e7b504b147294f94fee40417a086dc6a147e2d38e46e3fc82c9b789",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/remove-preview-light-1280x800.png",
+      "sha256": "676a21bc6248c62c96d070769820a44931c83ae6c1aabe913cde800832cdf99e",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/remove-preview-light-1536x960.png",
+      "sha256": "cfc477a8b90c5c971cede9f57c16af17ff9043c35b742f1ef2e5ef9fb59daa3d",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/remove-preview-light-900x700.png",
+      "sha256": "9a860a6543d9ea1d10fe6181300b273fd01102302a0ec3c68ffc85979b4bd8e8",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/skill-editor-dark-1280x800.png",
+      "sha256": "5cc6cea7d2ccf04e69e6fb959ebc872b7dab571acc44d1cc074d76d8bbd85f81",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/skill-editor-dark-1536x960.png",
+      "sha256": "b3a52dab3db90b064ee8a01c3b8e6067df4d4fabe88504c6de252907a5c099ee",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/skill-editor-dark-900x700.png",
+      "sha256": "3bba030eee6575cfff27332e3d1a28e24c36b13fda144e842a250d1148526540",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/skill-editor-light-1280x800.png",
+      "sha256": "ce4cfce017028ac000d55731f2665726dc96f46cdc64e17df580462220b3141e",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/skill-editor-light-1536x960.png",
+      "sha256": "af1d8e0220411d9c91c8c47c6e70aa86ab75d336f9a49c29fe57980b15cb8e88",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/skill-editor-light-900x700.png",
+      "sha256": "1ef164aa492da21ffce07ae12b03df0a64dd68eede73105239b4d07de49ab78c",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/search/search-active-filters-dark-900x700.png",
+      "sha256": "49c7dd362ba49cda354014bb8e5c6389ef6a8661ccd9ebd9b85a8beb92444700",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/search/search-active-filters-light-900x700.png",
+      "sha256": "d854bd8d128d8b22465917cbfcb65dff05332b8c665bcdcf0303cb6284f77fef",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/search/search-matches-dark-1280x800.png",
+      "sha256": "50cdc9099942c3887e63fe0300165ede3b4cc0e21e629ad2fec409588d9fe73d",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/search/search-matches-dark-1536x960.png",
+      "sha256": "6c330cb07b3b648d285e5b700126ff0798a48fdd8e04c2d68034f102914f11bb",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/search/search-matches-dark-900x700.png",
+      "sha256": "c81bb6725a4b7f6cc98ec6e36853a15a393d7e39fffe45c30636922d23a0db18",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/search/search-matches-light-1280x800.png",
+      "sha256": "6e0b6b222b43e06f7c8de9b62cdd770acb7806fdfae1839c5edaab53927b4ed5",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/search/search-matches-light-1536x960.png",
+      "sha256": "2f6e6ab44e23ff2dfafe8ee31524dcb95c882562a333ea3f96d9266c201d0fa8",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/search/search-matches-light-900x700.png",
+      "sha256": "17b3231cd51fa6862608857757ee80524a21589cf07dea00b4553e60a8b81a97",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-created-dark-1280x800.png",
+      "sha256": "e8ee6ca2a25ce77a1052993941e436d51b750eaac5acd9f71f8d735e72eca334",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-created-dark-1536x960.png",
+      "sha256": "469eaf5a935b6504374aea6b136682f2395ac179b1025c7b94901697ecbfd25e",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-created-dark-900x700.png",
+      "sha256": "714a5539b94e3fb3d002d178f6bfa2c61065238b4a3bda7679e274a0d9f72c3e",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-created-light-1280x800.png",
+      "sha256": "35e03870ec78dca6e4931216f46669ba34aaa1b1f39961e414fa505f0ca96a6e",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-created-light-1536x960.png",
+      "sha256": "87cbe9e217f259c1748faeefa64d15ffae2c63744063fe6b6d256aa7e0445010",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-created-light-900x700.png",
+      "sha256": "234acee420ecda0cfe8aaf1ad1b16e860b9a20fbb09f3ca879c84d64a58f2795",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-restore-confirmation-dark-1280x800.png",
+      "sha256": "22c191a3155c040caea49669852246eedb3ed40df2ec240f47c8fb475ac1514b",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-restore-confirmation-dark-1536x960.png",
+      "sha256": "98389f7e56d66873f1ec534c98b6f05d3e0253d6a935a5daa718c3a3bfede45e",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-restore-confirmation-dark-900x700.png",
+      "sha256": "2a41135a953adb30b1dbac1b17bf5350cd854063d9f12661c0a3169c8ea592da",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-restore-confirmation-light-1280x800.png",
+      "sha256": "bcf58d16296628fe6b291588165a15ea5044bbf145ced9a787f460e45252856c",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-restore-confirmation-light-1536x960.png",
+      "sha256": "cb47af50e8f61babfb97cbf6679c863b418bb3d395c966b934091cc618ca3d10",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-restore-confirmation-light-900x700.png",
+      "sha256": "2419c5884fd5c345fca389be675b1b81c7f7216640f449cfb7bb69d6f50062ee",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-restored-dark-1280x800.png",
+      "sha256": "28454a08cc59835fa43cfdad2c04b6edaa49ba01bfc870a9fefbd0559db2af18",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-restored-dark-1536x960.png",
+      "sha256": "662abf773af53dfe3b90aead976600c26aa04445eb8c46629f1157692fe003a1",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-restored-dark-900x700.png",
+      "sha256": "1b4dcee04c0390fbdbd352e4529595c7da1b2f4bb134719f2a6f63a8337dd25c",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-restored-light-1280x800.png",
+      "sha256": "0f8992130c763c76cfcf8d0b641f60aa2fc91a88ed3fd47a78f1a8569c112981",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-restored-light-1536x960.png",
+      "sha256": "d28c2b0c225a1033ca89be8fc6860bda685a2810d8e1680a91ea8fa44a7f66eb",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "source_matches_preserved": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/backup/screens/backup-restored-light-900x700.png",
+      "sha256": "b87fb606afcc37f6d10c9491bc965470fc8b1e773d8777ebec1c207bb224d644",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "source_matches_preserved": true
+    }
+  ]
+}

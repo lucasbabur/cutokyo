@@ -1,10 +1,4 @@
-import {
-  ArrowRight,
-  CircleDashed,
-  EyeOff,
-  Scale,
-  ShieldAlert,
-} from "lucide-react";
+import { ArrowRight, CircleDashed, ShieldAlert } from "lucide-react";
 import { useMemo } from "react";
 
 import { useCommands, useCommandResource } from "../commands/context.js";
@@ -20,22 +14,13 @@ import {
 } from "../domain/reconcile.js";
 import { routeHref } from "../router.js";
 import {
-  ConfidenceBadge,
   EmptyState,
   ErrorState,
   LoadingState,
   PageHeader,
-  ProvenanceDetails,
-  RouteNotice,
-  StatusPill,
-  formatDateTime,
 } from "../components/Primitives.js";
-
-const HARNESS_NAMES = {
-  claude_code: "Claude Code",
-  codex: "Codex",
-  opencode: "OpenCode",
-} as const;
+import { HARNESS_NAMES, HarnessLabel } from "../components/HarnessMark.js";
+import { RouteNotice } from "../components/Notices.js";
 
 export function DashboardPage() {
   const commands = useCommands();
@@ -45,7 +30,7 @@ export function DashboardPage() {
   );
 
   if (resource.state === "loading" && resource.data === null) {
-    return <LoadingState label="Reconciling attributable usage" />;
+    return <LoadingState label="Loading usage" />;
   }
   if (resource.state === "error" && resource.data === null) {
     return (
@@ -92,9 +77,7 @@ function DashboardContent({
   return (
     <div className={`page ${refreshing ? "is-refreshing" : ""}`}>
       <PageHeader
-        eyebrow="Attributable local evidence"
         title="Overview"
-        description="A reconciled view of sessions and usage. Every total keeps its source, coverage, and uncertainty attached."
         actions={
           <a
             className="button button--secondary button--regular"
@@ -108,20 +91,20 @@ function DashboardContent({
 
       {data.sessions.length === 0 ? (
         <EmptyState
-          title="No captured sessions yet"
-          description="Finish native capture setup, then use Claude Code, Codex, or OpenCode. Cutokyo will drain the local spool the next time the desktop or CLI opens. No zero-valued analytics are invented while history is absent."
+          title="No sessions yet"
+          description="Usage appears after your first session."
           action={
             <a
               className="button button--primary button--regular"
-              href={routeHref("/sessions")}
+              href={routeHref("/onboarding")}
             >
-              Open capture guidance
+              Set up capture
             </a>
           }
         />
       ) : (
         <>
-          <section className="stat-grid" aria-label="Reconciled totals">
+          <section className="stat-grid" aria-label="Totals">
             <article className="stat-card">
               <div className="stat-card__topline">
                 <span>Sessions in view</span>
@@ -134,71 +117,32 @@ function DashboardContent({
                 )}
               </div>
               <strong className="stat-card__value">{usage.sessions}</strong>
-              <p>
-                Across{" "}
-                {harnessUsage.filter((row) => row.sessionCount > 0).length}{" "}
-                harnesses
-              </p>
             </article>
             <article className="stat-card">
               <div className="stat-card__topline">
                 <span>Input tokens</span>
-                <StatusPill
-                  state={
-                    usage.inputTokens.unknownRecords === 0
-                      ? "observed"
-                      : "partial"
-                  }
-                >
-                  {usage.inputTokens.unknownRecords === 0
-                    ? "Observed"
-                    : "Partial"}
-                </StatusPill>
               </div>
               <strong className="stat-card__value">
                 {formatCompact(usage.inputTokens.value)}
               </strong>
-              <p>{formatInteger(usage.inputTokens.value)} raw total</p>
             </article>
             <article className="stat-card">
               <div className="stat-card__topline">
                 <span>Output tokens</span>
-                <StatusPill
-                  state={
-                    usage.outputTokens.unknownRecords === 0
-                      ? "observed"
-                      : "partial"
-                  }
-                >
-                  {usage.outputTokens.unknownRecords === 0
-                    ? "Observed"
-                    : "Partial"}
-                </StatusPill>
               </div>
               <strong className="stat-card__value">
                 {formatCompact(usage.outputTokens.value)}
               </strong>
-              <p>{formatInteger(usage.outputTokens.value)} raw total</p>
             </article>
             <article className="stat-card">
               <div className="stat-card__topline">
                 <span>Cost in view</span>
-                <StatusPill
-                  state={
-                    estimatedCost.label === "estimated"
-                      ? "estimated"
-                      : "unknown"
-                  }
-                >
-                  {estimatedCost.label.replaceAll("_", " ")}
-                </StatusPill>
               </div>
               <strong className="stat-card__value">
                 {formatMicros(estimatedCost.micros)}
               </strong>
               <p>
-                {estimatedCost.unpricedRecords} of {usage.records.length} usage
-                records unpriced
+                {estimatedCost.label === "estimated" ? "Estimated" : "Unknown"}
               </p>
             </article>
           </section>
@@ -210,12 +154,8 @@ function DashboardContent({
             >
               <div className="panel__header">
                 <div>
-                  <p className="eyebrow">Magnitude by harness</p>
                   <h2 id="usage-heading">Token usage</h2>
                 </div>
-                <span className="panel__timestamp">
-                  Through {formatDateTime(data.meta.generatedAt)}
-                </span>
               </div>
               <div
                 className="chart-legend"
@@ -228,7 +168,7 @@ function DashboardContent({
                       className={`legend-mark legend-mark--${row.harness}`}
                       aria-hidden="true"
                     />
-                    {HARNESS_NAMES[row.harness]}
+                    <HarnessLabel harness={row.harness} />
                   </span>
                 ))}
               </div>
@@ -262,8 +202,10 @@ function DashboardContent({
                   are omitted, not drawn as zero.
                 </p>
               ) : null}
-              <table className="data-table data-table--compact">
-                <caption>Raw values used by the token usage chart</caption>
+              <table
+                className="data-table data-table--compact"
+                aria-label="Raw values used by the token usage chart"
+              >
                 <thead>
                   <tr>
                     <th scope="col">Harness</th>
@@ -289,7 +231,7 @@ function DashboardContent({
                           className={`legend-mark legend-mark--${row.harness}`}
                           aria-hidden="true"
                         />
-                        {HARNESS_NAMES[row.harness]}
+                        <HarnessLabel harness={row.harness} />
                       </th>
                       <td className="numeric">{row.sessionCount}</td>
                       <td className="numeric">
@@ -306,7 +248,7 @@ function DashboardContent({
                 </tbody>
                 <tfoot>
                   <tr>
-                    <th scope="row">Reconciled total</th>
+                    <th scope="row">Total</th>
                     <td className="numeric">{usage.sessions}</td>
                     <td className="numeric">
                       {formatInteger(usage.inputTokens.value)}
@@ -322,95 +264,62 @@ function DashboardContent({
               </table>
             </section>
 
-            <section className="panel" aria-labelledby="context-heading">
-              <div className="panel__header">
-                <div>
-                  <p className="eyebrow">Request composition</p>
-                  <h2 id="context-heading">Context breakdown</h2>
+            {data.quotas.length === 0 ? null : (
+              <section className="panel" aria-labelledby="quota-heading">
+                <div className="panel__header">
+                  <div>
+                    <h2 id="quota-heading">Quota windows</h2>
+                  </div>
                 </div>
-              </div>
-              {data.contextBreakdown === null ? (
-                <div className="absent-fact">
-                  <EyeOff aria-hidden="true" />
-                  <strong>Absent, not zero</strong>
-                  <p>
-                    Native sources do not expose request-level context
-                    composition. Proxy capture is off, so no breakdown is
-                    inferred.
-                  </p>
-                  <a href={routeHref("/guards")}>Review proxy boundary</a>
-                </div>
-              ) : (
-                <p>
-                  Context details are available from consented proxy evidence.
-                </p>
-              )}
-            </section>
-
-            <section className="panel" aria-labelledby="quota-heading">
-              <div className="panel__header">
-                <div>
-                  <p className="eyebrow">Stated limits</p>
-                  <h2 id="quota-heading">Quota windows</h2>
-                </div>
-              </div>
-              <div className="quota-list">
-                {data.quotas.map((quota) => {
-                  const percent = quotaPercent(quota);
-                  return (
-                    <article className="quota-item" key={quota.name}>
-                      <div className="quota-item__title">
-                        <strong>{quota.name}</strong>
-                        <ConfidenceBadge confidence={quota.confidence} />
-                      </div>
-                      {percent === null ? (
-                        <div className="unknown-meter">
-                          <CircleDashed aria-hidden="true" />
-                          <span>Remaining amount unknown</span>
+                <div className="quota-list">
+                  {data.quotas.map((quota) => {
+                    const percent = quotaPercent(quota);
+                    return (
+                      <article className="quota-item" key={quota.name}>
+                        <div className="quota-item__title">
+                          <strong>{quota.name}</strong>
                         </div>
-                      ) : (
-                        <div>
-                          <div
-                            className="meter"
-                            role="meter"
-                            aria-label={`${quota.name} remaining`}
-                            aria-valuemin={0}
-                            aria-valuemax={quota.limit ?? undefined}
-                            aria-valuenow={quota.remaining ?? undefined}
-                            aria-valuetext={`${quota.remaining} of ${quota.limit} remaining, estimated`}
-                          >
-                            <span style={{ width: `${percent}%` }} />
+                        {percent === null ? (
+                          <div className="unknown-meter">
+                            <CircleDashed aria-hidden="true" />
+                            <span>Unknown</span>
                           </div>
-                          <p>
-                            <strong>{quota.remaining}</strong> of {quota.limit}{" "}
-                            remaining
-                          </p>
-                        </div>
-                      )}
-                      <small>{quota.label}</small>
-                      <ProvenanceDetails provenance={quota.provenance} />
-                    </article>
-                  );
-                })}
-              </div>
-            </section>
+                        ) : (
+                          <div>
+                            <div
+                              className="meter"
+                              role="meter"
+                              aria-label={`${quota.name} remaining`}
+                              aria-valuemin={0}
+                              aria-valuemax={quota.limit ?? undefined}
+                              aria-valuenow={quota.remaining ?? undefined}
+                              aria-valuetext={`${quota.remaining} of ${quota.limit} remaining, estimated`}
+                            >
+                              <span style={{ width: `${percent}%` }} />
+                            </div>
+                            <p>
+                              <strong>{quota.remaining}</strong> of{" "}
+                              {quota.limit} remaining
+                            </p>
+                          </div>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
 
-            <section
-              className="panel panel--span-2"
-              aria-labelledby="reconcile-heading"
-            >
-              <div className="panel__header">
-                <div>
-                  <p className="eyebrow">Precedence ledger</p>
-                  <h2 id="reconcile-heading">Why these totals reconcile</h2>
+            {data.conflicts.length === 0 ? null : (
+              <section
+                className="panel panel--span-2"
+                aria-labelledby="reconcile-heading"
+              >
+                <div className="panel__header">
+                  <div>
+                    <h2 id="reconcile-heading">Overlapping sources</h2>
+                  </div>
                 </div>
-                <Scale aria-hidden="true" />
-              </div>
-              {data.conflicts.length === 0 ? (
-                <div className="inline-empty">
-                  No overlapping sources in this view.
-                </div>
-              ) : (
                 <div className="conflict-list">
                   {data.conflicts.map((conflict) => (
                     <article key={conflict.fact}>
@@ -432,8 +341,8 @@ function DashboardContent({
                     </article>
                   ))}
                 </div>
-              )}
-            </section>
+              </section>
+            )}
           </div>
         </>
       )}

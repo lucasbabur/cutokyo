@@ -1,0 +1,188 @@
+{
+  "kind": "Reviewer evidence-parser failure, not product/native command failure",
+  "raw_failure": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/reviewer-helper-failure-20261004.log",
+  "raw_failure_text": "Exit code 1\nTraceback (most recent call last):\n  File \"<stdin>\", line 44, in <module>\nAssertionError\n",
+  "failed_parser": "if '\u2713 ' in line: cases.append(...); assert len(cases)==16",
+  "actual_matches": [
+    {
+      "line": 5,
+      "text": "\u2713 1900 modules transformed."
+    },
+    {
+      "line": 12,
+      "text": "\u2713 built in 116ms"
+    },
+    {
+      "line": 421,
+      "text": "\u2713 1903 modules transformed."
+    },
+    {
+      "line": 431,
+      "text": "\u2713 built in 123ms"
+    },
+    {
+      "line": 737,
+      "text": "[WebKitGTK 605.1.15 linux #0-0]    \u2713 creates, cancels safely, restores actual history, and retains verified prior history"
+    },
+    {
+      "line": 738,
+      "text": "[WebKitGTK 605.1.15 linux #0-0]    \u2713 reports tampering inside the restore modal without replacing native history"
+    },
+    {
+      "line": 747,
+      "text": "[WebKitGTK 605.1.15 linux #0-1]    \u2713 edits, copies all skill assets, then removes only the selected native bundle"
+    },
+    {
+      "line": 748,
+      "text": "[WebKitGTK 605.1.15 linux #0-1]    \u2713 rejects stale and malformed MCP edits, converts real config credentials, and protects capture hooks"
+    },
+    {
+      "line": 757,
+      "text": "[WebKitGTK 605.1.15 linux #0-2]    \u2713 searches, opens, exactly resumes, and deletes an isolated native fixture"
+    },
+    {
+      "line": 758,
+      "text": "[WebKitGTK 605.1.15 linux #0-2]    \u2713 saves appearance to native desktop state"
+    },
+    {
+      "line": 767,
+      "text": "[WebKitGTK 605.1.15 linux #0-3]    \u2713 keeps trusted keyboard skip navigation on the current native route"
+    },
+    {
+      "line": 768,
+      "text": "[WebKitGTK 605.1.15 linux #0-3]    \u2713 discloses unavailable analysis and signed updates before dead-end actions"
+    },
+    {
+      "line": 769,
+      "text": "[WebKitGTK 605.1.15 linux #0-3]    \u2713 cancels safely then exports exactly the previewed private diagnostic report"
+    },
+    {
+      "line": 795,
+      "text": "[WebKitGTK 605.1.15 linux #0-0]    \u2713 rediscovers the private backup after a real application restart"
+    },
+    {
+      "line": 804,
+      "text": "[WebKitGTK 605.1.15 linux #0-1]    \u2713 rediscovers persisted native edits/copies without resurrecting deleted bundles"
+    },
+    {
+      "line": 813,
+      "text": "[WebKitGTK 605.1.15 linux #0-2]    \u2713 restores saved appearance after a native application restart"
+    },
+    {
+      "line": 838,
+      "text": "[WebKitGTK 605.1.15 linux #0-0]    \u2713 browses a real packaged application without installing native capture"
+    },
+    {
+      "line": 863,
+      "text": "[WebKitGTK 605.1.15 linux #0-0]    \u2713 previews, cancels, installs, verifies, recovers and removes each real isolated native integration"
+    },
+    {
+      "line": 864,
+      "text": "[WebKitGTK 605.1.15 linux #0-0]    \u2713 manages completed-user capture through Settings without resetting saved intent or unmanaged native bytes"
+    },
+    {
+      "line": 886,
+      "text": "[WebKitGTK 605.1.15 linux #0-0]    \u2713 opens real native-hook and transcript evidence and resumes its exact private native context"
+    }
+  ],
+  "cause": "Generic checkmark parser included four Vite build messages, yielding20 instead of required16 native cases.",
+  "corrected_native_reporter_matches": [
+    {
+      "line": 737,
+      "text": "[WebKitGTK 605.1.15 linux #0-0]    \u2713 creates, cancels safely, restores actual history, and retains verified prior history"
+    },
+    {
+      "line": 738,
+      "text": "[WebKitGTK 605.1.15 linux #0-0]    \u2713 reports tampering inside the restore modal without replacing native history"
+    },
+    {
+      "line": 747,
+      "text": "[WebKitGTK 605.1.15 linux #0-1]    \u2713 edits, copies all skill assets, then removes only the selected native bundle"
+    },
+    {
+      "line": 748,
+      "text": "[WebKitGTK 605.1.15 linux #0-1]    \u2713 rejects stale and malformed MCP edits, converts real config credentials, and protects capture hooks"
+    },
+    {
+      "line": 757,
+      "text": "[WebKitGTK 605.1.15 linux #0-2]    \u2713 searches, opens, exactly resumes, and deletes an isolated native fixture"
+    },
+    {
+      "line": 758,
+      "text": "[WebKitGTK 605.1.15 linux #0-2]    \u2713 saves appearance to native desktop state"
+    },
+    {
+      "line": 767,
+      "text": "[WebKitGTK 605.1.15 linux #0-3]    \u2713 keeps trusted keyboard skip navigation on the current native route"
+    },
+    {
+      "line": 768,
+      "text": "[WebKitGTK 605.1.15 linux #0-3]    \u2713 discloses unavailable analysis and signed updates before dead-end actions"
+    },
+    {
+      "line": 769,
+      "text": "[WebKitGTK 605.1.15 linux #0-3]    \u2713 cancels safely then exports exactly the previewed private diagnostic report"
+    },
+    {
+      "line": 795,
+      "text": "[WebKitGTK 605.1.15 linux #0-0]    \u2713 rediscovers the private backup after a real application restart"
+    },
+    {
+      "line": 804,
+      "text": "[WebKitGTK 605.1.15 linux #0-1]    \u2713 rediscovers persisted native edits/copies without resurrecting deleted bundles"
+    },
+    {
+      "line": 813,
+      "text": "[WebKitGTK 605.1.15 linux #0-2]    \u2713 restores saved appearance after a native application restart"
+    },
+    {
+      "line": 838,
+      "text": "[WebKitGTK 605.1.15 linux #0-0]    \u2713 browses a real packaged application without installing native capture"
+    },
+    {
+      "line": 863,
+      "text": "[WebKitGTK 605.1.15 linux #0-0]    \u2713 previews, cancels, installs, verifies, recovers and removes each real isolated native integration"
+    },
+    {
+      "line": 864,
+      "text": "[WebKitGTK 605.1.15 linux #0-0]    \u2713 manages completed-user capture through Settings without resetting saved intent or unmanaged native bytes"
+    },
+    {
+      "line": 886,
+      "text": "[WebKitGTK 605.1.15 linux #0-0]    \u2713 opens real native-hook and transcript evidence and resumes its exact private native context"
+    }
+  ],
+  "excluded_build_messages": [
+    {
+      "line": 5,
+      "text": "\u2713 1900 modules transformed."
+    },
+    {
+      "line": 12,
+      "text": "\u2713 built in 116ms"
+    },
+    {
+      "line": 421,
+      "text": "\u2713 1903 modules transformed."
+    },
+    {
+      "line": 431,
+      "text": "\u2713 built in 123ms"
+    }
+  ],
+  "unchanged_required_assertions": {
+    "native_cases": 16,
+    "phase_counts": [
+      9,
+      3,
+      1,
+      2,
+      1
+    ]
+  },
+  "partial_verification_retained_unchanged": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/verification-results.json",
+  "partial_verification_exists": true,
+  "transcript_lookup": "Supplemental search of predecessor transcript found0 matchingcurrenttoolcalls; no outcome inferred from thatlookup.",
+  "historical_product_evidence_edited": false,
+  "product_tests_fixtures_thresholds_acceptance_commands_changed": false
+}

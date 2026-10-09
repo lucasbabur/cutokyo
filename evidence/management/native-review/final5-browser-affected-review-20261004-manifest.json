@@ -1,0 +1,126 @@
+{
+  "archive": "evidence/management/native-review/final5-browser-affected-review-20261004.tar.gz",
+  "source_directory": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final5-browser-affected-screenshot-review-20261004T100107Z",
+  "sha256": "2bda6e24c8c1cd4a4c13659d8ef3c5b5eb9b0bd807e53af57a0ee818f7868ebe",
+  "byte_length": 3385383,
+  "members": [
+    {
+      "path": "evidence/final/screens/session-resume-1280x800.png",
+      "sha256": "ca615babe55c883021125cd043677ee873f33cdc7c8c7b859a19ff5f81353de3"
+    },
+    {
+      "path": "evidence/final/screens/session-resume-1536x960.png",
+      "sha256": "93495644c31902962752fc3b46e47d8578dae7730e9c3b52a5091bf680cb46e9"
+    },
+    {
+      "path": "evidence/final/screens/session-resume-900x700.png",
+      "sha256": "506fc582411419d14b0e7c85f98a363cc6548db3aea41d85151606d1de385cf7"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-created-dark-1280x800.png",
+      "sha256": "e8ee6ca2a25ce77a1052993941e436d51b750eaac5acd9f71f8d735e72eca334"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-created-dark-1536x960.png",
+      "sha256": "469eaf5a935b6504374aea6b136682f2395ac179b1025c7b94901697ecbfd25e"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-created-dark-900x700.png",
+      "sha256": "5064276698cc381dbc359d4bdd0e9040ec46a3fc7436aaf74861f9f4d796d080"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-created-light-1280x800.png",
+      "sha256": "35e03870ec78dca6e4931216f46669ba34aaa1b1f39961e414fa505f0ca96a6e"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-created-light-1536x960.png",
+      "sha256": "87cbe9e217f259c1748faeefa64d15ffae2c63744063fe6b6d256aa7e0445010"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-created-light-900x700.png",
+      "sha256": "1428345c8a62bae390f233fb874a28b018cb1e87635c54e9ff6d916a8da6755c"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-restore-confirmation-dark-1280x800.png",
+      "sha256": "8cf7612088fca3a8c0dc78b73559448650ba7452ae3a79d05d85b04e4d74773d"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-restore-confirmation-dark-1536x960.png",
+      "sha256": "a7cb7aec5812689f796f012a78f885dcbf0e1e5ac4b47db14392a4f9f6b6fbd8"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-restore-confirmation-dark-900x700.png",
+      "sha256": "f03b13288c7eea08d1b82c71fce3d75c918505789c41142eab9d85857124d7d6"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-restore-confirmation-light-1280x800.png",
+      "sha256": "9ca834e57285d2655cbaa0fec6ec0e8890a1d20cd1b1163036e980c82207f070"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-restore-confirmation-light-1536x960.png",
+      "sha256": "dfc671e099af7a5d37affd92f42da0dff459018f349402a89907a7d2cc146bdb"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-restore-confirmation-light-900x700.png",
+      "sha256": "8c3bae027a3c70f5d8bd30a829af1425a687e7f2f3adacbdb99e98830221adc6"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-restored-dark-1280x800.png",
+      "sha256": "28454a08cc59835fa43cfdad2c04b6edaa49ba01bfc870a9fefbd0559db2af18"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-restored-dark-1536x960.png",
+      "sha256": "662abf773af53dfe3b90aead976600c26aa04445eb8c46629f1157692fe003a1"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-restored-dark-900x700.png",
+      "sha256": "1b4dcee04c0390fbdbd352e4529595c7da1b2f4bb134719f2a6f63a8337dd25c"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-restored-light-1280x800.png",
+      "sha256": "0f8992130c763c76cfcf8d0b641f60aa2fc91a88ed3fd47a78f1a8569c112981"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-restored-light-1536x960.png",
+      "sha256": "d28c2b0c225a1033ca89be8fc6860bda685a2810d8e1680a91ea8fa44a7f66eb"
+    },
+    {
+      "path": "evidence/management/backup/screens/backup-restored-light-900x700.png",
+      "sha256": "b87fb606afcc37f6d10c9491bc965470fc8b1e773d8777ebec1c207bb224d644"
+    },
+    {
+      "path": "evidence/management/search/search-matches-dark-1280x800.png",
+      "sha256": "bd44766c816cdac8b3046be5c86c9759f315eebc7c873b8c98b3584ca6afa7ea"
+    },
+    {
+      "path": "evidence/theme/screens/dashboard-forced-colors-1280x800.png",
+      "sha256": "8bdccfc1d91acc67d8c9e1236de13fce592cfc0a6a8c5bca3e40f0f83589a7ce"
+    },
+    {
+      "path": "evidence/theme/screens/resume-dialog-dark-1280x800.png",
+      "sha256": "c2b7c709722c2ec04dcc941e7b2b7591be89c441dee4731397e23af7a7928152"
+    },
+    {
+      "path": "evidence/theme/screens/resume-dialog-dark-1536x960.png",
+      "sha256": "96ac951f3ff97181a0dfe714708b8c671d636d9667d0d3b8537ad2f886ec176f"
+    },
+    {
+      "path": "evidence/theme/screens/resume-dialog-dark-900x700.png",
+      "sha256": "f88b0d2558c3ed2e20bc5dfda7be2ee51d3b68e9a3980e9e469c0e814f0520b0"
+    },
+    {
+      "path": "evidence/theme/screens/settings-conflict-900x700.png",
+      "sha256": "085b9529a4b9e4d663ad8d32906417a82c93d5dbdc99825f873179834ea8fa99"
+    },
+    {
+      "path": "inspection-receipt.json",
+      "sha256": "cdbe81accd226600da04e1990fbf6e14b78bb52e0cc038bdfb457f8132b5dc3c"
+    },
+    {
+      "path": "manifest.json",
+      "sha256": "e8b54744bd38a53629f7e218a7e2cb20557970c61e2d65ef326faa9c65d475ca"
+    }
+  ],
+  "reviewer": "a47a3d8b974b536a6",
+  "native_full_aggregate_passed": false
+}

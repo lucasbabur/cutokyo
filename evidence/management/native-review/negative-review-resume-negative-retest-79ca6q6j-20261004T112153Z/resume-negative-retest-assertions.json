@@ -1,0 +1,13 @@
+{
+  "genuineLauncherFailure": "The terminal launcher exited unsuccessfully before acknowledging an interactive harness. Check its display access and configuration.",
+  "inlineDialogAlert": true,
+  "alertCount": 1,
+  "noSuccessReceipt": true,
+  "noHarnessAudit": true,
+  "retryFailedTruthfully": true,
+  "cancelAndCloseRestoreResumeFocus": true,
+  "newPreviewClearsError": true,
+  "exactNativeId": "claude-native-73A9",
+  "searchQueryRetained": true,
+  "separateNegativeJourneyNotFreshAggregate": true
+}

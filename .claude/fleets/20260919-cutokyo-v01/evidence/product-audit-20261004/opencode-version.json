@@ -1,0 +1,10 @@
+{
+  "command": [
+    "/home/lucas/.bun/bin/opencode",
+    "--version"
+  ],
+  "exitCode": 0,
+  "output": "1.18.28\n",
+  "isolatedHome": "/tmp/cutokyo-product-audit-20261004/home",
+  "utc": "2026-10-04T04:44:16.848623+00:00"
+}

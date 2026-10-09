@@ -18,9 +18,8 @@ pub use server::{
     OpenCodeServerTransport, OpenCodeServerVersion, ServerFetch,
 };
 pub use setup::{
-    OPENCODE_PLUGIN_FILE_NAME, OPENCODE_PLUGIN_SOURCE, OpenCodePluginApi, OpenCodeSetup,
-    SetupAction, SetupFault, SetupMode, SetupPlan, SetupReport, SetupSubsystemStatus,
-    opencode_v2_plugin_source,
+    OPENCODE_PLUGIN_FILE_NAME, OpenCodePluginApi, OpenCodeSetup, SetupAction, SetupFault,
+    SetupMode, SetupPlan, SetupReport, SetupSubsystemStatus,
 };
 
 use std::{
@@ -401,7 +400,11 @@ pub fn capture_plugin_event(
             captured_at,
             native: NativeIdentity {
                 event_id: native_event_id,
-                resume_id,
+                resume_id: if shape == OpenCodeEventShape::Unknown {
+                    None
+                } else {
+                    resume_id
+                },
                 session_key,
                 sequence: event_sequence(event),
             },
@@ -652,8 +655,23 @@ fn project_session(event: &Value, observation: &RawObservation) -> Result<Option
 
 fn session_id_from_event(event: &Value) -> Option<&str> {
     event
-        .pointer("/properties/sessionID")
+        .pointer("/properties/part/sessionID")
         .and_then(Value::as_str)
+        .or_else(|| {
+            event
+                .pointer("/data/part/sessionID")
+                .and_then(Value::as_str)
+        })
+        .or_else(|| {
+            event
+                .pointer("/syncEvent/data/part/sessionID")
+                .and_then(Value::as_str)
+        })
+        .or_else(|| {
+            event
+                .pointer("/properties/sessionID")
+                .and_then(Value::as_str)
+        })
         .or_else(|| event.pointer("/properties/info/id").and_then(Value::as_str))
         .or_else(|| event.pointer("/data/sessionID").and_then(Value::as_str))
         .or_else(|| event.pointer("/data/info/id").and_then(Value::as_str))

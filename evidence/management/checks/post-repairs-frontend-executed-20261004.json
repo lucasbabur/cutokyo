@@ -1,0 +1,39 @@
+{
+  "results": [
+    {
+      "command": [
+        "pnpm",
+        "--dir",
+        "ui",
+        "check"
+      ],
+      "exit_code": 1,
+      "duration_seconds": 10.35,
+      "log": "evidence/management/checks/post-repairs-frontend-check-20261004.log"
+    },
+    {
+      "command": [
+        "pnpm",
+        "--dir",
+        "ui",
+        "build"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.84,
+      "log": "evidence/management/checks/post-repairs-production-build-20261004.log"
+    },
+    {
+      "command": [
+        "pnpm",
+        "--dir",
+        "ui",
+        "test:e2e:web"
+      ],
+      "exit_code": 1,
+      "duration_seconds": 43.92,
+      "log": "evidence/management/checks/post-copy-repairs-web-20261004.log"
+    }
+  ],
+  "dirty_working_tree": true,
+  "waivers": []
+}

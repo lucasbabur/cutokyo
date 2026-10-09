@@ -19,201 +19,8 @@ const SETUP_STATE_FILE_NAME: &str = "opencode-setup.v1.json";
 const SETUP_LOCK_FILE_NAME: &str = ".opencode-setup.lock";
 const OWNERSHIP_MARKER_PREFIX: &str = "// cutokyo-owned: opencode-plugin-v";
 
-/// `OpenCode` plugin capture shim. Its event callback performs no `await`: it writes a
-/// complete spool line to a create-new temporary file, flushes it, and renames it
-/// before returning. Capture errors are contained so instrumentation cannot stop the
-/// harness.
-pub const OPENCODE_PLUGIN_SOURCE: &str = r#"// cutokyo-owned: opencode-plugin-v1
-import {
-  closeSync,
-  existsSync,
-  fsyncSync,
-  mkdirSync,
-  openSync,
-  readdirSync,
-  renameSync,
-  statSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs"
-import { createHash, randomUUID } from "node:crypto"
-import { homedir } from "node:os"
-import { dirname, join } from "node:path"
-
-const MAX_ENTRY_BYTES = 8 * 1024 * 1024
-const MAX_SPOOL_BYTES = 500 * 1024 * 1024
-
-function spoolRoot(): string {
-  if (process.env.CUTOKYO_SPOOL_DIR) return process.env.CUTOKYO_SPOOL_DIR
-  if (process.platform === "win32") {
-    return join(process.env.LOCALAPPDATA || join(homedir(), "AppData", "Local"), "Cutokyo", "spool")
-  }
-  if (process.platform === "darwin") {
-    return join(homedir(), "Library", "Application Support", "Cutokyo", "spool")
-  }
-  return join(process.env.XDG_STATE_HOME || join(homedir(), ".local", "state"), "cutokyo", "spool")
-}
-
-function ordered(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(ordered)
-  if (value && typeof value === "object") {
-    return Object.fromEntries(Object.entries(value as Record<string, unknown>)
-      .sort(([left], [right]) => Buffer.compare(Buffer.from(left), Buffer.from(right)))
-      .map(([key, item]) => [key, ordered(item)]))
-  }
-  return value
-}
-
-function hash(value: string): string {
-  return createHash("sha256").update(value).digest("hex")
-}
-
-function eventSession(event: Record<string, any>): string | undefined {
-  return event?.properties?.sessionID || event?.properties?.info?.id
-    || event?.data?.sessionID || event?.data?.info?.id
-    || event?.syncEvent?.data?.sessionID || event?.syncEvent?.data?.info?.id
-}
-
-function writeStatus(root: string, category: string): void {
-  try {
-    const status = JSON.stringify({ capture_enabled: false, category, observed_at: new Date().toISOString() }) + "\n"
-    writeFileSync(join(root, ".capture-status.json"), status, { mode: 0o600 })
-  } catch {
-    // Capture diagnostics must never break OpenCode.
-  }
-}
-
-function retainedBytes(root: string): number {
-  let total = 0
-  for (const name of readdirSync(root)) {
-    if (!name.endsWith(".jsonl")) continue
-    total += statSync(join(root, name)).size
-    if (total >= MAX_SPOOL_BYTES) break
-  }
-  return total
-}
-
-function capture(event: Record<string, any>, serverUrl: string | undefined, pluginApi: "v1" | "v2"): void {
-  const root = spoolRoot()
-  const temporary = join(root, ".tmp")
-  mkdirSync(temporary, { recursive: true, mode: 0o700 })
-  if (retainedBytes(root) >= MAX_SPOOL_BYTES) {
-    writeStatus(root, "bytes")
-    return
-  }
-
-  const nativeEventId = typeof event?.id === "string" && event.id.length > 0 && event.id.length <= 256
-    ? event.id
-    : undefined
-  const nativeType = typeof event?.type === "string" && event.type.length > 0 && event.type.length <= 96
-    ? event.type
-    : undefined
-  const objectField = (value: unknown): boolean => value !== null
-    && typeof value === "object" && !Array.isArray(value)
-  const legacy = nativeType !== undefined && objectField(event.properties)
-  const v2 = nativeType !== undefined && nativeEventId !== undefined && objectField(event.data)
-  const v2Sync = event?.type === "sync" && nativeEventId !== undefined
-    && typeof event?.syncEvent?.type === "string" && objectField(event?.syncEvent?.data)
-  const shape = v2Sync ? "v2_sync" : v2 ? "v2"
-    : legacy ? nativeEventId ? "v1_with_id" : "v1" : "unknown"
-  const fingerprint = hash(JSON.stringify(ordered(event)))
-  const session = eventSession(event)
-  const portableSession = typeof session === "string" && /^[A-Za-z0-9_.:/@-]{1,256}$/.test(session)
-  const sessionKey = portableSession ? session : session
-    ? `opencode:invalid:${fingerprint.slice(0, 16)}`
-    : "opencode:global"
-  const observationId = nativeEventId
-    ? `obs:opencode:event:${hash(nativeEventId)}`
-    : `obs:opencode:sha256:${fingerprint}`
-  const observedAt = new Date().toISOString()
-  const gaps: string[] = []
-  if (shape === "v1") gaps.push("native event ID absent; canonical payload fingerprint used")
-  if (shape === "unknown") gaps.push("unknown plugin event generation preserved without projection")
-  if (session && !portableSession) gaps.push("native session ID is not a portable resume target")
-  const coverageState = shape === "unknown" ? "unknown_version"
-    : shape === "v1" || (session && !portableSession) ? "partial"
-    : "complete"
-  const effectiveType = event?.type === "sync" && typeof event?.syncEvent?.type === "string"
-    ? event.syncEvent.type : nativeType
-  const line = {
-    format_version: 1,
-    observation_id: observationId,
-    harness: "opencode",
-    session_key: sessionKey,
-    observed_at: observedAt,
-    kind: effectiveType ? `opencode.${effectiveType}` : "opencode.event",
-    payload: { event, server_url: serverUrl, plugin_api: pluginApi, event_api: shape },
-    provenance: {
-      channel: "hook_or_plugin",
-      captured_at: observedAt,
-      native_identity: {
-        event_id: nativeEventId ?? null,
-        resume_id: portableSession ? session : null,
-        session_key: sessionKey,
-        sequence: Number.isSafeInteger(event?.durable?.seq) && event.durable.seq >= 0
-          ? event.durable.seq
-          : Number.isSafeInteger(event?.syncEvent?.seq) && event.syncEvent.seq >= 0
-            ? event.syncEvent.seq
-            : Number.isSafeInteger(event?.sequence) && event.sequence >= 0 ? event.sequence : null,
-      },
-      parser_version: shape === "v2" ? "opencode-plugin-v2.2"
-        : shape === "v2_sync" ? "opencode-plugin-v2-sync.1"
-        : shape === "v1_with_id" ? "opencode-plugin-v1-id.1"
-        : shape === "v1" ? "opencode-plugin-v1.2"
-        : "opencode-plugin-unknown.1",
-      confidence: shape === "unknown" ? "unknown" : "observed",
-      coverage: {
-        state: coverageState,
-        scope: shape === "v2" ? "OpenCode V2 data event"
-          : shape === "v2_sync" ? "OpenCode V2 sync compatibility event"
-          : shape === "v1_with_id" ? "OpenCode observed ID-bearing legacy plugin event"
-          : shape === "v1" ? "OpenCode V1 plugin event"
-          : "OpenCode unknown plugin event",
-        gaps,
-      },
-    },
-  }
-  const bytes = Buffer.from(JSON.stringify(line) + "\n")
-  if (bytes.length > MAX_ENTRY_BYTES) {
-    writeStatus(root, "entry_bytes")
-    return
-  }
-  const nonce = randomUUID()
-  const pending = join(temporary, `${nonce}.tmp`)
-  const finalPath = join(root, `${Date.now()}-${nonce}.jsonl`)
-  let descriptor: number | undefined
-  try {
-    descriptor = openSync(pending, "wx", 0o600)
-    writeFileSync(descriptor, bytes)
-    fsyncSync(descriptor)
-    closeSync(descriptor)
-    descriptor = undefined
-    renameSync(pending, finalPath)
-    try {
-      const directory = openSync(dirname(finalPath), "r")
-      fsyncSync(directory)
-      closeSync(directory)
-    } catch {
-      // Some platforms do not permit syncing directory handles; the file was synced.
-    }
-  } catch (error) {
-    if (descriptor !== undefined) try { closeSync(descriptor) } catch {}
-    if (existsSync(pending)) try { unlinkSync(pending) } catch {}
-    writeStatus(root, "publication_failed")
-  }
-}
-
-export const Cutokyo = async ({ serverUrl }: { serverUrl?: URL }) => ({
-  event: ({ event }: { event: Record<string, any> }) => {
-    try {
-      capture(event, serverUrl?.toString(), "v1")
-    } catch {
-      try { writeStatus(spoolRoot(), "capture_failed") } catch {}
-    }
-  },
-})
-"#;
-
+// Native callback delegates one bounded event to the selected CLI. Rust performs
+// private atomic publication. Failures are contained so OpenCode can continue.
 const V1_PLUGIN_EXPORT: &str = r#"export const Cutokyo = async ({ serverUrl }: { serverUrl?: URL }) => ({
   event: ({ event }: { event: Record<string, any> }) => {
     try {
@@ -250,29 +57,6 @@ const V2_PLUGIN_EXPORT: &str = r#"export default Plugin.define({
   },
 })
 "#;
-
-/// Returns the documented V2 `Plugin.define`/`ctx.event.subscribe()` capture shim.
-/// Its event write remains synchronous; only waiting for the live stream is async, and
-/// the returned cleanup aborts that subscription on unload.
-#[must_use]
-pub fn opencode_v2_plugin_source() -> &'static str {
-    use std::sync::OnceLock;
-
-    static SOURCE: OnceLock<String> = OnceLock::new();
-    SOURCE
-        .get_or_init(|| {
-            let capture = OPENCODE_PLUGIN_SOURCE
-                .strip_suffix(V1_PLUGIN_EXPORT)
-                .unwrap_or(OPENCODE_PLUGIN_SOURCE);
-            let capture = capture.replacen(
-                "// cutokyo-owned: opencode-plugin-v1\n",
-                "// cutokyo-owned: opencode-plugin-v2\nimport { Plugin } from \"@opencode/plugin\"\n",
-                1,
-            );
-            format!("{capture}{V2_PLUGIN_EXPORT}")
-        })
-        .as_str()
-}
 
 /// Native plugin lifecycle generation selected by setup.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -408,6 +192,11 @@ struct SetupState {
     phase: SetupPhase,
     plugin_api: OpenCodePluginApi,
     plugin_digest: String,
+    /// Additive durable-state field. Absent records retain their original source.
+    #[serde(default)]
+    spool_root: Option<String>,
+    #[serde(default)]
+    receiver: Option<String>,
     plugin_was_absent: bool,
     plugin_mode: Option<u32>,
     previous_plugin_api: Option<OpenCodePluginApi>,
@@ -422,39 +211,90 @@ pub struct OpenCodeSetup {
     plugin_root: PathBuf,
     state_root: PathBuf,
     plugin_api: OpenCodePluginApi,
+    spool_root: Option<String>,
+    receiver: Option<String>,
 }
 
 impl OpenCodeSetup {
     /// Creates a setup service from explicit `OpenCode` config and Cutokyo state roots.
     #[must_use]
-    pub fn new(open_code_config_root: impl Into<PathBuf>, state_root: impl Into<PathBuf>) -> Self {
-        Self::for_plugin_api(open_code_config_root, state_root, OpenCodePluginApi::V1)
+    pub fn new(
+        open_code_config_root: impl Into<PathBuf>,
+        state_root: impl Into<PathBuf>,
+        spool_root: impl Into<PathBuf>,
+        receiver: impl Into<PathBuf>,
+    ) -> Self {
+        Self::for_plugin_api(
+            open_code_config_root,
+            state_root,
+            OpenCodePluginApi::V1,
+            spool_root,
+            receiver,
+        )
     }
 
-    /// Creates setup for an explicitly detected native plugin lifecycle generation.
-    /// Wire payloads are still negotiated per event; this selects only how `OpenCode`
-    /// loads and unloads the capture callback.
+    /// Selects a native lifecycle with a mandatory destination and CLI receiver.
     #[must_use]
     pub fn for_plugin_api(
         open_code_config_root: impl Into<PathBuf>,
         state_root: impl Into<PathBuf>,
         plugin_api: OpenCodePluginApi,
+        spool_root: impl Into<PathBuf>,
+        receiver: impl Into<PathBuf>,
     ) -> Self {
         Self {
             plugin_root: open_code_config_root.into().join("plugins"),
             state_root: state_root.into(),
             plugin_api,
+            spool_root: spool_root.into().to_str().map(str::to_owned),
+            receiver: receiver.into().to_str().map(str::to_owned),
         }
     }
 
-    fn plugin_source(&self) -> &'static str {
-        plugin_source_for_api(self.plugin_api)
+    /// Returns the exact managed source. It has one publication path, through Rust.
+    #[must_use]
+    pub fn plugin_source(&self) -> std::borrow::Cow<'static, str> {
+        configured_plugin_source(
+            self.plugin_api,
+            self.spool_root.as_deref(),
+            self.receiver.as_deref(),
+        )
+    }
+
+    fn validate_capture_paths(&self) -> Result<()> {
+        for path in [self.spool_root.as_deref(), self.receiver.as_deref()] {
+            if !path.is_some_and(|path| Path::new(path).is_absolute()) {
+                return Err(ContractError::new(
+                    ErrorCode::InvalidInput,
+                    "OpenCode setup requires absolute UTF-8 spool and CLI receiver paths",
+                ));
+            }
+        }
+        Ok(())
     }
 
     /// Returns the dedicated managed plugin target.
     #[must_use]
     pub fn plugin_path(&self) -> PathBuf {
         self.plugin_root.join(OPENCODE_PLUGIN_FILE_NAME)
+    }
+
+    /// Verifies durable ownership and installed plugin bytes without mutation.
+    ///
+    /// # Errors
+    /// Refuses corrupt state, unsafe targets, and changed plugin content.
+    pub fn verify(&self) -> Result<bool> {
+        self.validate_capture_paths()?;
+        let Some(state) = self.read_state()? else {
+            return Ok(false);
+        };
+        if state.phase != SetupPhase::Applied {
+            return Ok(false);
+        }
+        verify_state_managed_plugin(&snapshot_target(&self.plugin_path())?, &state)?;
+        Ok(state.plugin_api == self.plugin_api
+            && state.spool_root == self.spool_root
+            && state.receiver == self.receiver)
     }
 
     /// Computes a snapshot-checked plan without mutation.
@@ -464,6 +304,7 @@ impl OpenCodeSetup {
     /// Refuses symlinks, non-regular targets, unmanaged collisions, corrupt state, and
     /// unsafe interrupted states.
     pub fn plan(&self, mode: SetupMode) -> Result<SetupPlan> {
+        self.validate_capture_paths()?;
         let plugin_snapshot = snapshot_target(&self.plugin_path())?;
         let state_snapshot = snapshot_target(&self.state_path())?;
         let state = self.read_state()?;
@@ -567,7 +408,7 @@ impl OpenCodeSetup {
         match mode {
             SetupMode::Apply => match state {
                 None => {
-                    ensure_installable_collision(plugin, self.plugin_source())?;
+                    ensure_installable_collision(plugin, &self.plugin_source())?;
                     let mut actions = vec![SetupAction::PersistInstallIntent];
                     if !self.plugin_root.exists() {
                         actions.push(SetupAction::CreatePluginDirectory);
@@ -576,7 +417,7 @@ impl OpenCodeSetup {
                     Ok(actions)
                 }
                 Some(state) if state.phase == SetupPhase::Restored => {
-                    ensure_installable_collision(plugin, self.plugin_source())?;
+                    ensure_installable_collision(plugin, &self.plugin_source())?;
                     let mut actions = vec![SetupAction::PersistInstallIntent];
                     if !self.plugin_root.exists() {
                         actions.push(SetupAction::CreatePluginDirectory);
@@ -682,11 +523,11 @@ impl OpenCodeSetup {
                 (Some(state.plugin_api), Some(state.plugin_digest.clone()))
             }
             Some(state) if state.phase == SetupPhase::Restored => {
-                ensure_installable_collision(&existing, self.plugin_source())?;
+                ensure_installable_collision(&existing, &self.plugin_source())?;
                 (None, None)
             }
             None => {
-                ensure_installable_collision(&existing, self.plugin_source())?;
+                ensure_installable_collision(&existing, &self.plugin_source())?;
                 (None, None)
             }
             Some(_) => return Err(recovery_required()),
@@ -695,7 +536,9 @@ impl OpenCodeSetup {
             format_version: 1,
             phase: SetupPhase::Installing,
             plugin_api: self.plugin_api,
-            plugin_digest: plugin_digest(self.plugin_source()),
+            plugin_digest: plugin_digest(&self.plugin_source()),
+            spool_root: self.spool_root.clone(),
+            receiver: self.receiver.clone(),
             plugin_was_absent: existing.is_missing(),
             plugin_mode: existing.mode(),
             previous_plugin_api,
@@ -916,7 +759,12 @@ impl OpenCodeSetup {
         let state: SetupState = serde_json::from_slice(&bytes)
             .map_err(|_| corrupt_state("malformed or unknown fields"))?;
         if state.format_version != 1
-            || state.plugin_digest != plugin_digest(plugin_source_for_api(state.plugin_api))
+            || state.plugin_digest
+                != plugin_digest(&configured_plugin_source(
+                    state.plugin_api,
+                    state.spool_root.as_deref(),
+                    state.receiver.as_deref(),
+                ))
         {
             return Err(corrupt_state("unsupported version, API, or plugin digest"));
         }
@@ -928,8 +776,21 @@ impl OpenCodeSetup {
             (Some(api), Some(digest))
                 if state.phase == SetupPhase::Installing
                     && api != state.plugin_api
-                    && digest == plugin_digest(plugin_source_for_api(api)) => {}
+                    && digest
+                        == plugin_digest(&configured_plugin_source(
+                            api,
+                            state.spool_root.as_deref(),
+                            state.receiver.as_deref(),
+                        )) => {}
             _ => return Err(corrupt_state("inconsistent lifecycle migration intent")),
+        }
+        if (state.spool_root != self.spool_root || state.receiver != self.receiver)
+            && state.phase != SetupPhase::Restored
+        {
+            return Err(ContractError::new(
+                ErrorCode::Unhealthy,
+                "OpenCode capture destination changed. Use the original data directory to recover or uninstall before changing it.",
+            ));
         }
         Ok(Some(state))
     }
@@ -1075,11 +936,64 @@ fn ensure_installable_collision(plugin: &TargetSnapshot, expected_source: &str) 
     }
 }
 
-fn plugin_source_for_api(api: OpenCodePluginApi) -> &'static str {
-    match api {
-        OpenCodePluginApi::V1 => OPENCODE_PLUGIN_SOURCE,
-        OpenCodePluginApi::V2 => opencode_v2_plugin_source(),
-    }
+fn configured_plugin_source(
+    api: OpenCodePluginApi,
+    spool_root: Option<&str>,
+    receiver: Option<&str>,
+) -> std::borrow::Cow<'static, str> {
+    // Invalid paths are refused by plan/verify; no filesystem publisher fallback.
+    std::borrow::Cow::Owned(receiver_plugin_source(
+        api,
+        spool_root.unwrap_or_default(),
+        receiver.unwrap_or_default(),
+    ))
+}
+
+fn receiver_plugin_source(api: OpenCodePluginApi, root: &str, receiver: &str) -> String {
+    let receiver = serde_json::Value::String(receiver.to_owned()).to_string();
+    let root_json = serde_json::Value::String(root.to_owned()).to_string();
+    let data = Path::new(root).parent().unwrap_or_else(|| Path::new(root));
+    let args = serde_json::json!([
+        "--data-dir",
+        data,
+        "native-hook",
+        "--harness",
+        "opencode",
+        "--version",
+        super::OBSERVED_OPENCODE_VERSION
+    ]);
+    let import = if api == OpenCodePluginApi::V2 {
+        "import { Plugin } from \"@opencode/plugin\"\n"
+    } else {
+        ""
+    };
+    let export = if api == OpenCodePluginApi::V2 {
+        V2_PLUGIN_EXPORT
+    } else {
+        V1_PLUGIN_EXPORT
+    };
+    format!(
+        r#"// cutokyo-owned: opencode-plugin-{api_name}
+import {{ spawnSync }} from "node:child_process"
+{import}
+function spoolRoot(): string {{ return {root_json}; }}
+function writeStatus(_root: string, _category: string): void {{
+  console.error("Cutokyo native capture unavailable; OpenCode may continue.")
+}}
+function capture(event: Record<string, any>, serverUrl: string | undefined, pluginApi: "v1" | "v2"): void {{
+  const input = JSON.stringify({{ event, server_url: serverUrl, plugin_api: pluginApi }})
+  if (Buffer.byteLength(input, "utf8") > 8 * 1024 * 1024) {{ writeStatus(spoolRoot(), "entry_bytes"); return }}
+  // argv/stdin, not shell interpolation. Rust owns private atomic spool publication.
+  const result = spawnSync({receiver}, {args}, {{ input, timeout: 3000, stdio: ["pipe", "ignore", "inherit"] }})
+  if (result.error || result.status !== 0) writeStatus(spoolRoot(), "receiver_unavailable")
+}}
+{export}"#,
+        api_name = if api == OpenCodePluginApi::V2 {
+            "v2"
+        } else {
+            "v1"
+        }
+    )
 }
 
 fn verify_managed_snapshot(
@@ -1109,7 +1023,11 @@ fn verify_state_managed_plugin(plugin: &TargetSnapshot, state: &SetupState) -> R
     verify_managed_snapshot(
         plugin,
         &state.plugin_digest,
-        plugin_source_for_api(state.plugin_api),
+        &configured_plugin_source(
+            state.plugin_api,
+            state.spool_root.as_deref(),
+            state.receiver.as_deref(),
+        ),
     )
 }
 
@@ -1129,7 +1047,12 @@ fn verify_installing_plugin(
     if let (Some(api), Some(digest)) = (
         state.previous_plugin_api,
         state.previous_plugin_digest.as_deref(),
-    ) && verify_managed_snapshot(plugin, digest, plugin_source_for_api(api)).is_ok()
+    ) && verify_managed_snapshot(
+        plugin,
+        digest,
+        &configured_plugin_source(api, state.spool_root.as_deref(), state.receiver.as_deref()),
+    )
+    .is_ok()
     {
         return Ok(InstallingPlugin::Previous);
     }
@@ -1299,14 +1222,15 @@ mod tests {
     use tempfile::TempDir;
 
     use super::{
-        OPENCODE_PLUGIN_SOURCE, OpenCodePluginApi, OpenCodeSetup, SetupAction, SetupFault,
-        SetupMode, SetupSubsystemStatus, opencode_v2_plugin_source,
+        OpenCodePluginApi, OpenCodeSetup, SetupAction, SetupFault, SetupMode, SetupSubsystemStatus,
     };
 
     fn setup(root: &TempDir) -> OpenCodeSetup {
         OpenCodeSetup::new(
             root.path().join("config/opencode"),
             root.path().join("state/cutokyo"),
+            root.path().join("spool"),
+            root.path().join("cutokyo"),
         )
     }
 
@@ -1324,7 +1248,7 @@ mod tests {
         assert!(applied.changed);
         assert_eq!(
             fs::read_to_string(setup.plugin_path())?,
-            OPENCODE_PLUGIN_SOURCE
+            setup.plugin_source()
         );
         let repeated = setup.run(SetupMode::Apply, SetupFault::None)?;
         assert!(!repeated.changed);
@@ -1348,10 +1272,12 @@ mod tests {
             root.path().join("config/opencode"),
             root.path().join("state/cutokyo"),
             OpenCodePluginApi::V2,
+            root.path().join("spool"),
+            root.path().join("cutokyo"),
         );
         setup.run(SetupMode::Apply, SetupFault::None)?;
         let source = fs::read_to_string(setup.plugin_path())?;
-        assert_eq!(source, opencode_v2_plugin_source());
+        assert_eq!(source, setup.plugin_source());
         assert!(source.contains("Plugin.define({"));
         assert!(source.contains("ctx.event.subscribe({ signal: controller.signal })"));
         assert!(source.contains("return () => controller.abort()"));
@@ -1367,8 +1293,20 @@ mod tests {
         let root = TempDir::new()?;
         let config = root.path().join("config/opencode");
         let state = root.path().join("state/cutokyo");
-        let v1 = OpenCodeSetup::for_plugin_api(&config, &state, OpenCodePluginApi::V1);
-        let v2 = OpenCodeSetup::for_plugin_api(&config, &state, OpenCodePluginApi::V2);
+        let v1 = OpenCodeSetup::for_plugin_api(
+            &config,
+            &state,
+            OpenCodePluginApi::V1,
+            root.path().join("spool"),
+            root.path().join("cutokyo"),
+        );
+        let v2 = OpenCodeSetup::for_plugin_api(
+            &config,
+            &state,
+            OpenCodePluginApi::V2,
+            root.path().join("spool"),
+            root.path().join("cutokyo"),
+        );
 
         v1.run(SetupMode::Apply, SetupFault::None)?;
         let dry = v2.run(SetupMode::DryRun, SetupFault::None)?;
@@ -1380,10 +1318,7 @@ mod tests {
             before_publication.map(|error| error.code),
             Some(ErrorCode::Cancelled)
         );
-        assert_eq!(
-            fs::read_to_string(v1.plugin_path())?,
-            OPENCODE_PLUGIN_SOURCE
-        );
+        assert_eq!(fs::read_to_string(v1.plugin_path())?, v1.plugin_source());
         v2.run(SetupMode::Recover, SetupFault::None)?;
         assert!(!v1.run(SetupMode::Apply, SetupFault::None)?.changed);
 
@@ -1392,10 +1327,7 @@ mod tests {
             after_publication.map(|error| error.code),
             Some(ErrorCode::Cancelled)
         );
-        assert_eq!(
-            fs::read_to_string(v2.plugin_path())?,
-            opencode_v2_plugin_source()
-        );
+        assert_eq!(fs::read_to_string(v2.plugin_path())?, v2.plugin_source());
         v2.run(SetupMode::Recover, SetupFault::None)?;
         assert!(!v2.run(SetupMode::Apply, SetupFault::None)?.changed);
 
@@ -1608,7 +1540,7 @@ mod tests {
         if let Some(parent) = setup.plugin_path().parent() {
             fs::create_dir_all(parent)?;
         }
-        fs::write(setup.plugin_path(), OPENCODE_PLUGIN_SOURCE)?;
+        fs::write(setup.plugin_path(), setup.plugin_source().as_bytes())?;
         fs::set_permissions(setup.plugin_path(), fs::Permissions::from_mode(0o640))?;
         setup.run(SetupMode::Apply, SetupFault::None)?;
         let mode = fs::metadata(setup.plugin_path())?.permissions().mode() & 0o777;

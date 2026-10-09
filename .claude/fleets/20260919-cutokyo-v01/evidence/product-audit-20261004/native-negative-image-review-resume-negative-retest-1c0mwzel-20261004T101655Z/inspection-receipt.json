@@ -1,0 +1,83 @@
+{
+  "scope": "Separate same-package genuine failed-launch image/receipt review; not aggregategreen",
+  "completed_utc": "2026-10-04T10:16:55.628922+00:00",
+  "manifest": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-negative-image-review-resume-negative-retest-1c0mwzel-20261004T101655Z/manifest.json",
+  "package_sha256": "58d8d44446644662721bdfb06d85fcba4a9bd80853d21d4a06e26d5ce0bc0258",
+  "packaged_application_sha256_independently_verified": "163cc7e67716d27d0c8958eb371b0ad6e0c830d5936908332d45b40a46dc992c",
+  "environment": {
+    "runtime": "LinuxWebKitGTK605.1.15,Tauri embeddedverifiedDebianapp",
+    "isolated_root": "/tmp/cutokyo-native-test-wdio-ybr99_o0",
+    "controlled_negative": "WAYLAND_DISPLAYhasnosocketinprivateXDG_RUNTIME_DIR",
+    "viewport": [
+      1280,
+      800
+    ]
+  },
+  "coverage": {
+    "all_pngs": 1,
+    "individual_Read_inspections": 1
+  },
+  "actual_run": {
+    "exit_code": 0,
+    "duration_seconds": 18.75,
+    "passing_cases": 1,
+    "fresh_aggregate_acceptance": false
+  },
+  "steps": [
+    "ReadtheactualfailurePNG,geometry,package,executionandassertionreceipts,andexecutedtest",
+    "VerifyonePNGinventoryandtwostableartifacthashchecks",
+    "IndependentlyhashretainedDebianandexecutablebytes",
+    "Archiveonlyafterallreadsandstabilitychecks"
+  ],
+  "expected": "Genuinefailedterminalstartupshowsoneinlinealertwithnofalseacknowledgement;retry/cancel/closeworktruthfully;exactidentityandsearchquery retained",
+  "actual_rendered": "Readablevermilioninlinealertinsideconfirmation: The terminal launcher exited unsuccessfully before acknowledging an interactive harness. Check its display access and configuration. Exactclaude-native-73A9,recordedprojectdirectory,activationcaveatandCancel/Resumefooter visible.No clipping at1280x800.",
+  "actual_executed_assertions": {
+    "genuineLauncherFailure": "The terminal launcher exited unsuccessfully before acknowledging an interactive harness. Check its display access and configuration.",
+    "inlineDialogAlert": true,
+    "alertCount": 1,
+    "noSuccessReceipt": true,
+    "noHarnessAudit": true,
+    "retryFailedTruthfully": true,
+    "cancelAndCloseRestoreResumeFocus": true,
+    "newPreviewClearsError": true,
+    "exactNativeId": "claude-native-73A9",
+    "searchQueryRetained": true,
+    "separateNegativeJourneyNotFreshAggregate": true
+  },
+  "verdict": "PASS bounded separatelyexecutednegativejourneyandrenderedinlinefailurestate at1280x800;notFleet/fullaggregatePASS",
+  "closure": "Browserfollow-upinline-launch-errorvisualgap isresolvedbyseparateactualnative1280x800captureonly;doesnotprove900x700or1536x960norbackup-tampererrorrendering",
+  "images": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-1c0mwzel/resume-inline-launch-failure-1280x800.png",
+      "sha256": "e6e8e2b779be5b415b67084834406f692b4bbe036a6b4ec2d7b0f21bc18bd45c",
+      "bytes": 118670,
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-negative-image-review-resume-negative-retest-1c0mwzel-20261004T101655Z/artifacts/resume-inline-launch-failure-1280x800.png",
+      "read_inspected": true,
+      "inspection_method": "Individual actual source PNG displayed with functions.Read"
+    }
+  ],
+  "hash_checks": {
+    "completed_utc": "2026-10-04T10:16:55.628922+00:00",
+    "native5_all_artifact_source_and_preserved_hashes_stable": true,
+    "native5_all10_png_actual_dimensions1280x800": true,
+    "retained_debian_sha256_matches_both_launch_receipts": true,
+    "packaged_executable_sha256_independently_matches_both_launch_receipts": true,
+    "negative_all10_artifacts_hashes_stable_before_archive": true,
+    "negative_archived_copies_match": true,
+    "native5_before_after_source_records_identical": true,
+    "Git_not_queried_by_reviewer": true
+  },
+  "limitations": [
+    "Native5aggregate remainsfailed",
+    "Keyboardfocus assertions areclickcancel/close returntoResume,nottrustedkeyboard-onlynavigationproof",
+    "SyntheticClaudeCodeharness;noinstalledharness/provideractivationproof",
+    "Notafreshfullaggregateorrestartpersistenceproof",
+    "Negativealreadytorn-down ownedapp accordingtoexecutionrecord;reviewerlaunchesnothing"
+  ],
+  "reviewer_launches": 0,
+  "reviewer_source_or_Git_changes": 0
+}

@@ -1,0 +1,28 @@
+{
+  "native_id": "12345678-1234-1234-1234-123456789abc",
+  "installed_hook_executed": true,
+  "database_unchanged_by_hook": true,
+  "published_entries": 2,
+  "drain": {
+    "schema_version": "1.0.0",
+    "command": "drain",
+    "ok": true,
+    "data": {
+      "attempted": 2,
+      "duplicates": 0,
+      "inserted": 2,
+      "quarantined": 0,
+      "status": {
+        "cap_reason": null,
+        "drain_lag_seconds": null,
+        "oldest_pending_unix": null,
+        "pending_bytes": 0,
+        "pending_entries": 0
+      }
+    },
+    "meta": {
+      "app_version": "0.1.0",
+      "pending_crash_record": false
+    }
+  }
+}

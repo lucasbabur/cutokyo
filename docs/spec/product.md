@@ -13,7 +13,7 @@ Status: approved pre-1.0 community contract, 2026-09-19.
 7. [Search, resume, and deletion](#search-resume-and-deletion)
 8. [Configuration mutation](#configuration-mutation)
 9. [Plugins and MCP](#plugins-and-mcp)
-10. [Guards, proxy, and analysis](#guards-proxy-and-analysis)
+10. [Redaction, proxy, and analysis](#redaction-proxy-and-analysis)
 11. [Product surfaces](#product-surfaces)
 12. [Quality, distribution, and versions](#quality-distribution-and-versions)
 
@@ -22,7 +22,7 @@ Status: approved pre-1.0 community contract, 2026-09-19.
 Cutokyo is a local-only, local-first community application for Claude Code,
 Codex, and OpenCode. It preserves attributable session history, searches across
 harnesses, resumes exact native sessions, explains usage and coverage, inventories
-agent infrastructure, and provides reversible controls around plugins, MCP, guards,
+agent infrastructure, and provides reversible controls around plugins, MCP,
 proxy capture, and user-requested analysis.
 
 All specified v0.x features are Apache-2.0 community features. There is no account,
@@ -139,7 +139,13 @@ encryption. It does not claim application-level encryption.
 Search supports content, project, branch, harness, date, tool, skill, and agent
 filters. Results expose source and uncertainty. Resume always launches the recorded
 native target for the selected session. In particular, native session-tree identity
-must not be substituted for a distinct resume identity.
+must not be substituted for a distinct resume identity. The visible terminal uses
+the exact recorded project directory when known. Unknown context is disclosed;
+Cutokyo never invents a nearby or current project. Startup succeeds only after a
+helper acknowledges a real TTY and a surviving native process. Native session
+activation is still unconfirmed. Missing terminal, display, executable, or recorded
+directory is an actionable failure. Codex hooks alone do not establish the verified
+App Server thread ID required for exact resume.
 
 History defaults to keep-until-deleted. Retention changes are previewed before apply.
 One-session deletion and confirmed delete-all remove linked raw evidence,
@@ -153,8 +159,16 @@ without promising secure erasure.
 ## Configuration mutation
 
 Read-only frontend architecture means no direct database writes, not no actions.
-Setup, resume, configuration, plugin runs, MCP toggles, and analysis are app use
+Setup, resume, configuration, plugin runs, MCP toggles, and CLI analysis are app use
 cases.
+
+Onboarding explicitly offers browsing without installing. Capture requires a
+per-harness preview and confirmation, followed by configuration verification.
+Selecting a harness alone is not installation. Completion re-verifies every selected
+integration. Installed configuration is not proof of live capture or transcript
+coverage. Recover follows the recorded installation or cleanup direction, never
+turning missing state into an installation. Automatic setup only supports tested
+native versions and refuses unavailable executables or unsafe targets.
 
 Before the first external mutation, setup persists recovery intent. It backs up a
 regular configuration file once, records and rechecks its snapshot, preserves
@@ -168,7 +182,7 @@ edits, and independent subsystem cleanup failures remain explicit recovery cases
 
 Secrets live in the OS keychain, never settings TOML or logs. One JSON Schema owns
 settings fields. Frontend writes are omission-preserving patches, reject unknown
-fields, and cannot reset unrelated privacy or guard controls.
+fields, and cannot reset unrelated privacy controls.
 
 ## Plugins and MCP
 
@@ -189,23 +203,27 @@ routes explicitly configured stdio and streamable-HTTP upstreams, namespaces too
 contains one upstream failure, synchronizes enabled state across harnesses, and
 restores only owned config on uninstall.
 
-## Guards, proxy, and analysis
+## Redaction, proxy, and analysis
 
-Secret detection is projected to sanitized finding types before logging. Synthetic
-tests cover headers, URLs, nested JSON, tool output, multiline and split chunks, plus
-benign high-entropy controls. Diagnostic bundles contain no prompts, transcripts,
-raw secrets, or full project paths.
+Baseline redaction keeps scanner matches internal and exposes no secret findings
+or configurable outgoing blocking feature. Synthetic tests cover retained headers,
+URLs, nested JSON, tool output, multiline and split chunks, plus benign high-entropy
+controls. Diagnostic bundles contain no prompts, transcripts, raw secrets, or full
+project paths. Do not infer universal scanning from native capture coverage.
 
-Instrumentation failure degrades open so the coding harness continues. A separately
-enabled outgoing secret guard blocks a channel it cannot safely inspect rather than
-claiming protection. Coverage says inspected, disabled, or unavailable; unavailable
-never appears as zero findings.
+Instrumentation failure degrades open so the coding harness continues. Provider
+proxy requests are forwarded unchanged; redaction applies to locally retained trace
+metadata, not provider traffic. Guard settings, routes, APIs, and CLI flags are removed.
+Strict settings/config readers reject the obsolete field rather than preserving a
+hidden compatibility path.
 
 Proxy capture binds locally, never persists credentials, requires explicit consent,
 remains visibly active, and is used only for facts unavailable from native sources.
-Without proxy coverage, context breakdown is unavailable rather than a row of zeros.
+Its controls live in Settings. A missing listener is reported as unavailable, never
+as active capture. Without proxy coverage, context breakdown is unavailable rather
+than a row of zeros.
 
-AI analysis begins with a preview naming the sessions and content scope, redaction,
+CLI-only AI analysis begins with a preview naming the sessions and content scope, redaction,
 provider, and model. The user can confirm, cancel, and retry. A confirmed request is
 redacted before egress and stores provider, model, prompt version, source session IDs,
 time, coverage, and idempotency key with its summary. Cancel sends no request; retry
@@ -221,7 +239,7 @@ failure.
 
 The Tauri desktop application will cover onboarding and coverage, dashboards,
 history/detail/resume/delete, retention/delete-all, inventory and MCP control, plugin
-and guard health, proxy and analysis consent, quotas/prices/unknowns, spool and writer
+health, proxy consent, quotas/prices/unknowns, spool and writer
 health, doctor/bundle, settings, and updater choice. Native Tauri evidence is required;
 browser mode cannot prove a native window.
 

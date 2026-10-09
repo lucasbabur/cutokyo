@@ -1,0 +1,108 @@
+{
+  "archive": "evidence/management/native-review/native-worlds-passed-20261004.tar.gz",
+  "sha256": "6498438e51e46a905a341ec7d26a95068eb3dc2cd6a5ee8b55ac7488d3a1936e",
+  "members": [
+    {
+      "member": "browse-desktop-state.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/browse-desktop-state.json",
+      "sha256": "2c80390005ad0d52409016e86de679a1450b3648825c3be63682f7c6036dcb49"
+    },
+    {
+      "member": "capture-setup-desktop-state.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/capture-setup-desktop-state.json",
+      "sha256": "81d173d640cca1ae84e67f73f6c1986f0b2fd048b93247b9694626245add3320"
+    },
+    {
+      "member": "completed-capture-removal-1280x800.png",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/completed-capture-removal-1280x800.png",
+      "sha256": "b71f7bea6aeb8ccd4c1b30e12767ddd2a325b816afa1bd2e862004aa34af04a8"
+    },
+    {
+      "member": "execution-record.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/execution-record.json",
+      "sha256": "0ec71c5ea6ebcafc5c15c3f4393f100f8d4594befadf46f66210faf583c578c3"
+    },
+    {
+      "member": "native-desktop.spec-0-0.log",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/native-desktop.spec-0-0.log",
+      "sha256": "5198fc994f61279642bf4b4a6eb4f669c35db5bd63c73ae46edd1f02e57c6e31"
+    },
+    {
+      "member": "native-hook-capture-drain.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/native-hook-capture-drain.json",
+      "sha256": "20a73c3b106dc3f647e02aa8dc161e302948cf1043983db6906252f248f6732a"
+    },
+    {
+      "member": "native-hook-detail-resume-1280x800.png",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/native-hook-detail-resume-1280x800.png",
+      "sha256": "d19782e016d24f98093fdd959377e1b5e26c23104f1b17f68a7b51f42ca45781"
+    },
+    {
+      "member": "native-hook-resume-audit.context.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/native-hook-resume-audit.context.json",
+      "sha256": "b1c1a79ead3046df4aef096c7de882f4dde363b02fe13e9eb435975671e648f0"
+    },
+    {
+      "member": "native-hook-resume-audit.txt",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/native-hook-resume-audit.txt",
+      "sha256": "0c301c15eb57d0e58ddc9ca62f71d7d977bca145b12fe88beff062d611e09b2b"
+    },
+    {
+      "member": "native-resume-terminal-before-capture-history.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/native-resume-terminal-before-capture-history.json",
+      "sha256": "cbfcb7685f53bb3f2797c0e435b8c804d048fe7ce6a2f2e679fa7e25b8279196"
+    },
+    {
+      "member": "native-resume-terminal-cleanup-capture-history.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/native-resume-terminal-cleanup-capture-history.json",
+      "sha256": "9f99c1761d6629f9ac32543ea4f74f1f0002a7838594b9eb4e4ac4eb1e1df1ab"
+    },
+    {
+      "member": "onboarding-browse-1280x800.png",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/onboarding-browse-1280x800.png",
+      "sha256": "95a5321ff9fa5d07a833500c05e6571e8c294051cc0ef8dfda0d50c4db99303c"
+    },
+    {
+      "member": "onboarding-native-verified-1280x800.png",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/onboarding-native-verified-1280x800.png",
+      "sha256": "978c10fb55248cdb5214d5bc9df1d4c8adf7a7a00c0c9e3be3972df37c7eacf6"
+    },
+    {
+      "member": "onboarding-package-worlds.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/onboarding-package-worlds.json",
+      "sha256": "d0d2b0e82c74fb9d9c5b3e7c45e74b2fe11b8a1b0ef09f1f5a7bd44005e8fe92"
+    },
+    {
+      "member": "package-launch.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/package-launch.json",
+      "sha256": "199507f6281c53fbcc3f813dc33245cf9566812af6ebc15b26c0edc6333b78d9"
+    },
+    {
+      "member": "wdio-2026-10-04T11-19-13-838Z.log",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/wdio-2026-10-04T11-19-13-838Z.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "member": "wdio-2026-10-04T11-19-30-889Z.log",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/wdio-2026-10-04T11-19-30-889Z.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "member": "wdio-2026-10-04T11-20-47-336Z.log",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/wdio-2026-10-04T11-20-47-336Z.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "member": "wdio.log",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/wdio.log",
+      "sha256": "bad2a97bc5a11924b9e78467afd212979f2f607efeaa1dd1f20e6428768361af"
+    },
+    {
+      "member": "outer-execution.output",
+      "source": "/tmp/claude-1000/-home-lucas-Developer-personal-cutokyo-community/bef15e81-1dde-4a4a-b63b-a981d304023c/tasks/blvrnrtzl.output",
+      "sha256": "95cbb1607eb5f1920720a04f4071e01818e976620c59e9684b01a92fa5b0fdd8"
+    }
+  ],
+  "fresh_aggregate_acceptance": false,
+  "source_mutation": false
+}

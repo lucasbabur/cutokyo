@@ -1,0 +1,59 @@
+{
+  "artifacts": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-1c0mwzel/execution-record.json",
+      "sha256": "b2cecc519f528597937dbb758198d207024c63b22e0f7e18d6b12aaf6e6af8d2",
+      "bytes": 678
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-1c0mwzel/execution.log",
+      "sha256": "cc7ddc0e6f0e82a0b4dc4f2b543b2166d3f871c1db4cb91ff3443efd9f1ef7a9",
+      "bytes": 1181
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-1c0mwzel/negative-geometry-1280x800.json",
+      "sha256": "cef5b94fe337a0a553810cc48e463f3fa302a28ae0b9648e3759853f7b130638",
+      "bytes": 81
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-1c0mwzel/package-launch.json",
+      "sha256": "c33f5cb9150c68c0da049d8e2f01c8ae0ff50bbdc75f63c55d1cb5b567ba58dc",
+      "bytes": 1467
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-1c0mwzel/resume-inline-failure-dom.html",
+      "sha256": "2badba168dad67018cf0b25a8f04516e073f73dd34246a662743626b3037c948",
+      "bytes": 13210
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-1c0mwzel/resume-inline-launch-failure-1280x800.png",
+      "sha256": "e6e8e2b779be5b415b67084834406f692b4bbe036a6b4ec2d7b0f21bc18bd45c",
+      "bytes": 118670,
+      "actual_dimensions": [
+        1280,
+        800
+      ]
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-1c0mwzel/resume-negative-retest-assertions.json",
+      "sha256": "0975b7c22191809ec89382bb1241dde28cd076bb22e8683bfbbf7854d2064041",
+      "bytes": 502
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-1c0mwzel/resume-negative-retest.spec-0-0.log",
+      "sha256": "6c0afc6a8340c459092932508711b47d54bc1582d5ffceeed7fd35fa68522d3f",
+      "bytes": 101073
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-1c0mwzel/wdio-2026-10-04T10-06-55-650Z.log",
+      "sha256": "5d8aeefed23f4d2c30850e8f996c4d278bebbdecc7f2d5aba07ff3de58755c6a",
+      "bytes": 470
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-1c0mwzel/wdio.log",
+      "sha256": "3f3cd0146e3fb8a2abd81598f33c1779590249e482c80cdb5a6531ec2a599e7b",
+      "bytes": 2498
+    }
+  ],
+  "note": "Initial byte inventory after individual Read; archive deferred until second stable hash check"
+}

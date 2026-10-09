@@ -1,0 +1,11 @@
+{
+  "original_path": "/tmp/cutokyo-native-test-wdio-qn_d75i0",
+  "retained_path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/retained-roots/cutokyo-native-test-wdio-qn_d75i0",
+  "entries_verified": 8638,
+  "regular_file_bytes": 4740811560,
+  "snapshot_sha256": "0e122f578a4f24f9f73c3580ab902ba3761989a49ffa41212b1529e6c40998c6",
+  "source_and_destination_matched": true,
+  "all_exact_root_marked_actors_absent": true,
+  "original_path_retained_as_symlink": true,
+  "duration_seconds": 11.79
+}

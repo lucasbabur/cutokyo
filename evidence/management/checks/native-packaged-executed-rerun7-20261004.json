@@ -1,0 +1,18 @@
+{
+  "command": [
+    "pnpm",
+    "--dir",
+    "ui",
+    "test:e2e:tauri"
+  ],
+  "command_exit_code": 0,
+  "duration_seconds": 242.43,
+  "proof_kind": "local-dirty-working-tree-not-clean-release-proof",
+  "dirty_working_tree": true,
+  "head": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "source_changed": [],
+  "git_changed": false,
+  "log": "evidence/management/checks/native-packaged-rerun7-20261004.log",
+  "clean_release_proof": false,
+  "waivers": []
+}

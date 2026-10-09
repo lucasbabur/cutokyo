@@ -1,0 +1,90 @@
+{
+  "archive": "evidence/management/native-review/native-rerun5-image-review-20261004.tar.gz",
+  "source_directory": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-ux4kmj6p-20261004T101115Z",
+  "sha256": "736b8ef3bcb722f388175b03c96c24b6b6ef368b6a9800d56d0112511adcedd2",
+  "byte_length": 1204310,
+  "members": [
+    {
+      "path": "artifacts/analysis-unavailable-1280x800.png",
+      "sha256": "e489aa6f5065cfb1e27e1480f3fcda6c219318964910c5496a8a48cf844ffeab"
+    },
+    {
+      "path": "artifacts/appearance-dark-1280x800.png",
+      "sha256": "6c17bcba736d6f3d0b7aae8df322413f46bbf28f63f1e74ff072c3cf02ba4a6e"
+    },
+    {
+      "path": "artifacts/backup-created-1280x800.png",
+      "sha256": "94197b7f60e59800f84b6e768b19a4bb5dd8a907f3caa3ed1178367230165316"
+    },
+    {
+      "path": "artifacts/backup-restore-confirmation-1280x800.png",
+      "sha256": "fe06ba88ac275eb0a40dabe14bdfd623d6829f1cfd7f3eddba8f1f519f21381d"
+    },
+    {
+      "path": "artifacts/backup-restore-receipt.json",
+      "sha256": "dc085151972bac353a605984d24cb4d292b7e98aaf83c734f8d64b37ab7e0193"
+    },
+    {
+      "path": "artifacts/backup-restored-1280x800.png",
+      "sha256": "2705510e7bcc931981441f413d842e27f3b57f8aed7f6447f6cbfbb205a6dd64"
+    },
+    {
+      "path": "artifacts/checks/native-local-source-after-rerun5-20261004.json",
+      "sha256": "28b82f7995fc659ef728200a451bcc0b65d43ccaf74c392306e6c02bc7b8eb47"
+    },
+    {
+      "path": "artifacts/checks/native-local-source-before-rerun5-20261004.json",
+      "sha256": "28b82f7995fc659ef728200a451bcc0b65d43ccaf74c392306e6c02bc7b8eb47"
+    },
+    {
+      "path": "artifacts/checks/native-packaged-executed-rerun5-20261004.json",
+      "sha256": "bc400d5354a9031184dfa46e95346cb16de90643a5a58e65cf6f7caf9869e02c"
+    },
+    {
+      "path": "artifacts/diagnostic-created-1280x800.png",
+      "sha256": "ff50f917bbad68431d42c5a0041ada9ff5d22e12e8a2eeeaf2f2fdccad84bd82"
+    },
+    {
+      "path": "artifacts/diagnostic-preview-1280x800.png",
+      "sha256": "05feb951c20dc4cbce6d9d62da34fe848fe46f6afa7cf94dca5cf0fdd9094d1f"
+    },
+    {
+      "path": "artifacts/geometry-1280x800.json",
+      "sha256": "cef5b94fe337a0a553810cc48e463f3fa302a28ae0b9648e3759853f7b130638"
+    },
+    {
+      "path": "artifacts/inventory-native-configured-1280x800.png",
+      "sha256": "9fe49bd8318c08a74c648f90b0a986bf61627020ba3b47b9881d24db7596d278"
+    },
+    {
+      "path": "artifacts/inventory-remove-confirmation-1280x800.png",
+      "sha256": "4b93b0a993725d86453796638dadf17b9d20c9a7042afc7f64be69b6b8561c4e"
+    },
+    {
+      "path": "artifacts/native-keyboard-trusted.json",
+      "sha256": "68f9dd802e2cb53ba89c2199851793248488bfe0d6059dd7614e1c34ded1c0dc"
+    },
+    {
+      "path": "artifacts/package-launch.json",
+      "sha256": "c609dcb8ace2af47483bbcfbef61322af26fb871d572b05f23308edd099df951"
+    },
+    {
+      "path": "artifacts/reviewed-test/native-desktop.spec.ts",
+      "sha256": "2768b349ed0e6aa67a0f1c1b24afa095afeaa7919670a762f024c0447bfda311"
+    },
+    {
+      "path": "artifacts/search-detail-resume-1280x800.png",
+      "sha256": "5bcb077fd70d2038027dac20d588e2178b5c6c74c5b9a5c0fa018e68a7dd82af"
+    },
+    {
+      "path": "inspection-receipt.json",
+      "sha256": "c7057dad3761036cf91824247aee9aac8607e2484d5c2651876dc06a6e9184a4"
+    },
+    {
+      "path": "manifest.json",
+      "sha256": "f4afa24e366b0087a751d6062d226539f9737077c039018929f042a192b2c17b"
+    }
+  ],
+  "reviewer": "a47a3d8b974b536a6",
+  "native_full_aggregate_passed": false
+}

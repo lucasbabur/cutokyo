@@ -1,0 +1,20 @@
+{
+  "recorded_at": "2026-10-04T06:42:53.011996+00:00",
+  "finding": {
+    "key": "VQA-07",
+    "owner": "desktop",
+    "severity": "Low",
+    "status": "closed at supplied screenshot/visual level"
+  },
+  "observed_revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49; dirty concurrent checkout, no immutable native acceptance claim",
+  "environment": "Offline review of supplied browser fixture screenshots; 900x700 in dark and light themes",
+  "steps": "Preserved only the two freshly overwritten active-filter captures with hashes; independently opened both using Read. Did not start a server, rerun tests, or change product files.",
+  "expected": "Collapsed More filters identifies all five active constraints with legible labels and values; long project path wraps within card without clipping or collision.",
+  "actual": "Both themes visibly meet the targeted expectation. Dark labels and values now readable, unlike previous retained dim artifact. Project wraps across three lines within card; Branch feature/observability, Tool Read, Skill search-review, Agent archive-agent all legible on following row. Light image remains readable. No observed summary clipping or collisions.",
+  "evidence": [
+    "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/active-filter-capture-retest/search-active-filters-dark-900x700.png",
+    "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/active-filter-capture-retest/search-active-filters-light-900x700.png"
+  ],
+  "artifact_comparison": "Dark SHA256 changed; light SHA256 unchanged from previous passing visual artifact. Previous dim dark evidence retained in backup-filter-clarity-retest.",
+  "limitations": "No root cause inferred. This is visual evidence closure only, not a measured WCAG contrast audit, filtering correctness proof, live accessibility test, or native Tauri acceptance. VQA-08 remains closed; its 18 screenshots were not reread."
+}

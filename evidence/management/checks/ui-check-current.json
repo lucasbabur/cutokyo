@@ -1,0 +1,13 @@
+{
+  "command": [
+    "pnpm",
+    "--dir",
+    "ui",
+    "check"
+  ],
+  "exitCode": 1,
+  "startedAt": 1791092241.7364576,
+  "finishedAt": 1791092244.4311526,
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "dirty": true
+}

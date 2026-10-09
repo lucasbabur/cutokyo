@@ -1,0 +1,66 @@
+{
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "dirty_working_tree": true,
+  "results": [
+    {
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 101,
+      "duration_seconds": 12.53,
+      "log": "evidence/management/checks/strict-clippy-20261004.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--workspace"
+      ],
+      "exit_code": 101,
+      "duration_seconds": 143.85,
+      "log": "evidence/management/checks/workspace-final-20261004.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "cutokyo-integration-tests",
+        "--test",
+        "pipeline",
+        "--test",
+        "upgrade",
+        "--test",
+        "architecture"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 37.82,
+      "log": "evidence/management/checks/unreached-final-20261004.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "fake-harness",
+        "-p",
+        "updater-signature-verifier"
+      ],
+      "exit_code": 101,
+      "duration_seconds": 0.2,
+      "log": "evidence/management/checks/test-tools-final-20261004.log"
+    }
+  ],
+  "waivers": []
+}

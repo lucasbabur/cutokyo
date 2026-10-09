@@ -1,0 +1,15 @@
+{
+  "command": [
+    "/home/lucas/Developer/personal/cutokyo-community/target/debug/cutokyo",
+    "--config-file",
+    "/tmp/cutokyo-product-audit-20261004/config/settings.toml",
+    "--data-dir",
+    "/tmp/cutokyo-product-audit-20261004/data/cli",
+    "--json",
+    "version"
+  ],
+  "exitCode": 0,
+  "output": "{\"schema_version\":\"1.0.0\",\"command\":\"version\",\"ok\":true,\"data\":{\"app_version\":\"0.1.0\",\"contract\":{\"app_version\":\"0.1.0\",\"database_schema_version\":2,\"derive_version\":1,\"plugin_protocol_major\":1,\"proxy_requires_explicit_consent\":true,\"single_writer\":true,\"spool_format_version\":1,\"spool_max_age_days\":30,\"spool_max_bytes\":524288000},\"structured_cli_schema\":\"1.0.0\"},\"meta\":{\"app_version\":\"0.1.0\",\"pending_crash_record\":false}}\n",
+  "isolatedHome": "/tmp/cutokyo-product-audit-20261004/home",
+  "utc": "2026-10-04T04:44:07.810424+00:00"
+}

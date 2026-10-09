@@ -277,6 +277,14 @@ impl Spool {
             root: root.as_ref().to_path_buf(),
             limits,
         };
+        // Validate every managed directory before creating or chmodding any of them.
+        for directory in [
+            &spool.root,
+            &spool.temp_directory(),
+            &spool.quarantine_directory(),
+        ] {
+            validate_directory_ancestors(directory)?;
+        }
         create_private_directory(&spool.root)?;
         create_private_directory(&spool.temp_directory())?;
         create_private_directory(&spool.quarantine_directory())?;
@@ -834,8 +842,42 @@ fn capacity_error(reason: SpoolCapReason) -> ContractError {
     )
 }
 
+fn validate_directory_ancestors(path: &Path) -> Result<()> {
+    for ancestor in path.ancestors().filter(|path| !path.as_os_str().is_empty()) {
+        match fs::symlink_metadata(ancestor) {
+            Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_dir() => {
+                return Err(ContractError::new(
+                    ErrorCode::InvalidInput,
+                    "Spool directories must not traverse symlink or non-directory ancestors",
+                ));
+            }
+            Ok(_) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => {
+                return Err(internal_error(
+                    "inspect private directory ancestors",
+                    &error,
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
 fn create_private_directory(path: &Path) -> Result<()> {
+    validate_directory_ancestors(path)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt as _;
+        fs::DirBuilder::new()
+            .recursive(true)
+            .mode(0o700)
+            .create(path)
+            .map_err(|error| internal_error("create private directory", &error))?;
+    }
+    #[cfg(not(unix))]
     fs::create_dir_all(path).map_err(|error| internal_error("create private directory", &error))?;
+    validate_directory_ancestors(path)?;
     set_private_directory(path)
 }
 
@@ -953,6 +995,55 @@ mod tests {
             },
             payload,
         })
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn spool_refuses_symlink_roots_ancestors_and_private_children_without_touching_targets()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use std::os::unix::fs::{PermissionsExt as _, symlink};
+        for component in ["ancestor", "root", ".tmp", "quarantine"] {
+            let directory = tempfile::tempdir()?;
+            let unrelated = directory.path().join("unrelated");
+            fs::create_dir(&unrelated)?;
+            fs::set_permissions(&unrelated, fs::Permissions::from_mode(0o750))?;
+            fs::write(unrelated.join("untouched"), "unrelated bytes")?;
+            let root = directory.path().join("spool");
+            let target = match component {
+                "ancestor" => {
+                    let link = directory.path().join("linked");
+                    symlink(&unrelated, &link)?;
+                    link.join("spool")
+                }
+                "root" => {
+                    symlink(&unrelated, &root)?;
+                    root
+                }
+                child => {
+                    fs::create_dir(&root)?;
+                    symlink(&unrelated, root.join(child))?;
+                    root
+                }
+            };
+            assert!(
+                Spool::open(target).is_err(),
+                "unsafe {component} must refuse before capture"
+            );
+            assert_eq!(
+                fs::metadata(&unrelated)?.permissions().mode() & 0o777,
+                0o750
+            );
+            assert_eq!(
+                fs::read_to_string(unrelated.join("untouched"))?,
+                "unrelated bytes"
+            );
+            assert_eq!(
+                fs::read_dir(&unrelated)?.count(),
+                1,
+                "no spool files or children may reach unrelated target"
+            );
+        }
+        Ok(())
     }
 
     #[test]

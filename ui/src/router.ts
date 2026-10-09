@@ -12,8 +12,6 @@ const VALID_ROUTES = new Set<RoutePath>([
   "/dashboard",
   "/sessions",
   "/inventory",
-  "/guards",
-  "/analysis",
   "/health",
   "/data",
   "/settings",

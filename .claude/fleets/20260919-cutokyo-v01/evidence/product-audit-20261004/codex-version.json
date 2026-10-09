@@ -1,0 +1,10 @@
+{
+  "command": [
+    "/home/lucas/.local/bin/codex",
+    "--version"
+  ],
+  "exitCode": 0,
+  "output": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp/cutokyo-product-audit-20261004/home/.codex\"))\ncodex-cli 0.160.0\n",
+  "isolatedHome": "/tmp/cutokyo-product-audit-20261004/home",
+  "utc": "2026-10-04T04:44:16.512237+00:00"
+}

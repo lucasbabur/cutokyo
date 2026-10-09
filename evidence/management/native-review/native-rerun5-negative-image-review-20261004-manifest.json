@@ -1,0 +1,46 @@
+{
+  "archive": "evidence/management/native-review/native-rerun5-negative-image-review-20261004.tar.gz",
+  "source_directory": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-negative-image-review-resume-negative-retest-1c0mwzel-20261004T101655Z",
+  "sha256": "17b84ae0027747628d96b28e6ffd32eb491d8a7cbfce94e0f795d29e18f5feed",
+  "byte_length": 125154,
+  "members": [
+    {
+      "path": "artifacts/execution-record.json",
+      "sha256": "b2cecc519f528597937dbb758198d207024c63b22e0f7e18d6b12aaf6e6af8d2"
+    },
+    {
+      "path": "artifacts/negative-geometry-1280x800.json",
+      "sha256": "cef5b94fe337a0a553810cc48e463f3fa302a28ae0b9648e3759853f7b130638"
+    },
+    {
+      "path": "artifacts/package-launch.json",
+      "sha256": "c33f5cb9150c68c0da049d8e2f01c8ae0ff50bbdc75f63c55d1cb5b567ba58dc"
+    },
+    {
+      "path": "artifacts/resume-inline-failure-dom.html",
+      "sha256": "2badba168dad67018cf0b25a8f04516e073f73dd34246a662743626b3037c948"
+    },
+    {
+      "path": "artifacts/resume-inline-launch-failure-1280x800.png",
+      "sha256": "e6e8e2b779be5b415b67084834406f692b4bbe036a6b4ec2d7b0f21bc18bd45c"
+    },
+    {
+      "path": "artifacts/resume-negative-retest-assertions.json",
+      "sha256": "0975b7c22191809ec89382bb1241dde28cd076bb22e8683bfbbf7854d2064041"
+    },
+    {
+      "path": "artifacts/reviewed-test/resume-negative-retest.spec.ts",
+      "sha256": "4540884558dbfcff71584ed8c03ac18b09a7655fc7b0e8c7bafb4fefea3bcd1a"
+    },
+    {
+      "path": "inspection-receipt.json",
+      "sha256": "74e2f4b72105225f7002420e1fa474b18faf94239a3dc268b6006e0ca927b332"
+    },
+    {
+      "path": "manifest.json",
+      "sha256": "320ee37aa2a8dcfdfcc5d078cc6c07551de977eacfeb51306c2e0391841b552a"
+    }
+  ],
+  "reviewer": "a47a3d8b974b536a6",
+  "native_full_aggregate_passed": false
+}

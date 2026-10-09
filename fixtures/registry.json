@@ -48,7 +48,10 @@
         "fixtures/settings/v1/good/one-field-patch.json",
         "fixtures/settings/v1/good/clear-retention.json"
       ],
-      "bad": ["fixtures/settings/v1/bad/unknown-field.json"]
+      "bad": [
+        "fixtures/settings/v1/bad/unknown-field.json",
+        "fixtures/settings/v1/bad/removed-outgoing-guard.json"
+      ]
     },
     {
       "name": "cli-output-v1",

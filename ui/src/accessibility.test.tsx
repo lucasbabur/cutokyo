@@ -7,10 +7,8 @@ import { CommandProvider } from "./commands/context.js";
 import { AnnouncementProvider } from "./components/Announcer.js";
 import type { CommandClient } from "./contracts.js";
 import { createBrowserFixtureClient } from "./fixtures/browserAdapter.js";
-import { AnalysisPage } from "./pages/AnalysisPage.js";
 import { DashboardPage } from "./pages/DashboardPage.js";
 import { DataControlsPage } from "./pages/DataControlsPage.js";
-import { GuardsPage } from "./pages/GuardsPage.js";
 import { HealthPage } from "./pages/HealthPage.js";
 import { InventoryPage } from "./pages/InventoryPage.js";
 import { OnboardingPage } from "./pages/OnboardingPage.js";
@@ -33,9 +31,9 @@ const routes: readonly {
 }[] = [
   {
     name: "onboarding",
-    heading: "See your agent work without sending it away",
+    heading: "Set up Cutokyo",
     scenario: "onboarding-empty",
-    node: <OnboardingPage onComplete={() => undefined} />,
+    node: <OnboardingPage mode="onboarding" onComplete={() => undefined} />,
   },
   {
     name: "dashboard",
@@ -51,25 +49,13 @@ const routes: readonly {
   },
   {
     name: "inventory",
-    heading: "Agent inventory",
+    heading: "Agent tools",
     scenario: "mcp-plugin-inventory",
     node: <InventoryPage />,
   },
   {
-    name: "guards",
-    heading: "Guards & capture",
-    scenario: "guards-proxy",
-    node: <GuardsPage />,
-  },
-  {
-    name: "analysis",
-    heading: "AI analysis",
-    scenario: "analysis-cancel",
-    node: <AnalysisPage />,
-  },
-  {
     name: "degraded health",
-    heading: "System health",
+    heading: "Health",
     scenario: "health-degraded",
     node: <HealthPage />,
   },

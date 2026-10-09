@@ -1,0 +1,17 @@
+{
+  "purpose": "Late byte-exact preservation of original native6 save audits from the verified retained failed root. Not a new execution or aggregate pass.",
+  "records": [
+    {
+      "source": "/tmp/cutokyo-native-test-wdio-qn_d75i0/resume-audit.txt",
+      "resolved_source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/retained-roots/cutokyo-native-test-wdio-qn_d75i0/resume-audit.txt",
+      "preserved": "resume-audit.txt",
+      "sha256": "30837ceb63060e7bdbc24fe21bca88d966f586da1ebc19c7ef9ab1261c64f1dc"
+    },
+    {
+      "source": "/tmp/cutokyo-native-test-wdio-qn_d75i0/resume-audit.context.json",
+      "resolved_source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/retained-roots/cutokyo-native-test-wdio-qn_d75i0/resume-audit.context.json",
+      "preserved": "resume-audit.context.json",
+      "sha256": "1f6a10d1b9050ed5dbf93628668a4da2fb4a08f13062998247d274367d775b3e"
+    }
+  ]
+}

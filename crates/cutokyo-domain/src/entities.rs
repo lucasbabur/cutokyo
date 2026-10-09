@@ -597,7 +597,9 @@ pub struct Usage {
     pub native_usage_key: String,
     /// Model name when observed.
     pub model: Option<String>,
-    /// Input tokens; absence is unknown, not zero.
+    /// Total input tokens, including any cache-read and cache-write tokens, which are
+    /// reported again below as its breakdown and must never be added to it. Absence is
+    /// unknown, not zero.
     pub input_tokens: Option<u64>,
     /// Output tokens; absence is unknown, not zero.
     pub output_tokens: Option<u64>,

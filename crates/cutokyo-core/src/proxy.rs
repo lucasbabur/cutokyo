@@ -8,7 +8,7 @@ use std::{collections::BTreeMap, fmt::Display, net::SocketAddr};
 
 use serde::{Deserialize, Serialize};
 
-use crate::guards::{GuardChannel, GuardCoverageState, GuardError, SanitizedFinding, SecretGuard};
+use crate::redaction::{RedactionBoundary, RedactionError, Redactor};
 
 /// Default loopback listener selected when no binding is supplied.
 pub const DEFAULT_PROXY_BIND: &str = "127.0.0.1:0";
@@ -68,10 +68,6 @@ pub struct ProxyConfig {
     pub bind: String,
     /// Non-loopback binding requires a distinct visible opt-in.
     pub allow_non_loopback: bool,
-    /// Whether to inspect/redact provider-bound non-credential content.
-    pub outgoing_guard_enabled: bool,
-    /// Whether the request body encoding is inspectable UTF-8.
-    pub body_inspectable: bool,
 }
 
 impl Default for ProxyConfig {
@@ -79,8 +75,6 @@ impl Default for ProxyConfig {
         Self {
             bind: DEFAULT_PROXY_BIND.to_owned(),
             allow_non_loopback: false,
-            outgoing_guard_enabled: false,
-            body_inspectable: true,
         }
     }
 }
@@ -293,10 +287,6 @@ pub struct ProxyTrace {
     pub response_body_bytes: usize,
     /// Response status.
     pub status: u16,
-    /// Secret-safe findings from URL, headers, and body.
-    pub findings: Vec<SanitizedFinding>,
-    /// Whether provider-bound content was inspected or the optional guard was disabled.
-    pub outgoing_coverage: GuardCoverageState,
     /// Active-proxy-only facts.
     pub facts: ProxyFacts,
 }
@@ -363,8 +353,8 @@ pub enum ProxyErrorCode {
     NonLoopbackDenied,
     /// Request/configuration validation failed.
     InvalidInput,
-    /// Enabled outgoing guard blocked or could not inspect content.
-    GuardBlocked,
+    /// Retained metadata could not be safely redacted.
+    RedactionUnavailable,
     /// Provider transport failed while proxy routing was active.
     ProviderUnavailable,
     /// Visible lifecycle state could not be loaded or persisted.
@@ -432,10 +422,10 @@ impl Display for ProxyError {
 
 impl std::error::Error for ProxyError {}
 
-impl From<GuardError> for ProxyError {
-    fn from(error: GuardError) -> Self {
+impl From<RedactionError> for ProxyError {
+    fn from(error: RedactionError) -> Self {
         Self::new(
-            ProxyErrorCode::GuardBlocked,
+            ProxyErrorCode::RedactionUnavailable,
             error.field,
             error.expected,
             error.actual,
@@ -448,8 +438,7 @@ impl From<GuardError> for ProxyError {
 #[derive(Debug)]
 pub struct ProviderProxy<T, S, P = NoopProxyStateStore> {
     state: ProxyState,
-    config: ProxyConfig,
-    guard: SecretGuard,
+    redactor: Option<Redactor>,
     transport: T,
     trace_sink: S,
     state_store: P,
@@ -465,7 +454,8 @@ where
     ///
     /// # Errors
     ///
-    /// Returns an availability error if the shared scanner cannot initialize.
+    /// Returns a lifecycle-state error. Redaction unavailability disables trace
+    /// retention rather than blocking provider traffic.
     pub fn disabled(transport: T, trace_sink: S) -> Result<Self, ProxyError> {
         Self::with_state_store(transport, trace_sink, NoopProxyStateStore)
     }
@@ -483,7 +473,7 @@ where
     ///
     /// # Errors
     ///
-    /// Returns a scanner or state-persistence availability error.
+    /// Returns a state-persistence availability error.
     pub fn with_state_store(
         transport: T,
         trace_sink: S,
@@ -502,8 +492,7 @@ where
             .map_err(|_| proxy_state_error("save"))?;
         Ok(Self {
             state,
-            config: ProxyConfig::default(),
-            guard: SecretGuard::new()?,
+            redactor: Redactor::new().ok(),
             transport,
             trace_sink,
             state_store,
@@ -525,7 +514,7 @@ where
     /// binding, mismatched listener evidence, and state persistence failure.
     pub fn activate(
         &mut self,
-        config: ProxyConfig,
+        config: &ProxyConfig,
         consent: &ProxyConsent,
         listener: &ProxyListenerReceipt,
     ) -> Result<(), ProxyError> {
@@ -535,7 +524,6 @@ where
         self.transition(ProxyState::Starting {
             bind: requested.to_string(),
         })?;
-        self.config = config;
         self.transition(ProxyState::Active {
             bind: bound.to_string(),
             consent_id: consent.consent_id.clone(),
@@ -565,14 +553,12 @@ where
     /// Selects direct/proxied routing and forwards only when active.
     ///
     /// Instrumentation and active transport failures fail open for harness
-    /// availability. A transport failure returns a direct-route request. When the
-    /// outgoing guard is enabled, that fallback request is the inspected/redacted
-    /// request, so fallback never bypasses an explicitly enabled guard. Credential
-    /// headers are forwarded byte-for-byte, never persisted, and omitted from traces.
+    /// availability. Provider payloads, URLs, and credentials pass unchanged;
+    /// baseline redaction applies only to locally retained trace metadata.
     ///
     /// # Errors
     ///
-    /// Returns request validation or enabled-guard failures before provider egress.
+    /// Returns request syntax and size validation errors before provider egress.
     pub fn route(&mut self, request: ProviderRequest) -> Result<ProxyRoute, ProxyError> {
         validate_request(&request)?;
         if !self.state.is_active() {
@@ -582,11 +568,10 @@ where
             });
         }
 
-        let (forwarded, trace_input, findings, coverage) = self.prepare_request(&request)?;
-        let Ok(response) = self.transport.send(&forwarded) else {
+        let Ok(response) = self.transport.send(&request) else {
             self.fail_open("provider_transport_unavailable");
             return Ok(ProxyRoute::Direct {
-                request: forwarded,
+                request,
                 facts: ProxyFacts::unavailable(),
             });
         };
@@ -597,32 +582,37 @@ where
                 facts: ProxyFacts::unavailable(),
             });
         }
-        let Ok((facts, mut response_findings)) = observed_facts(&self.guard, &response.headers)
-        else {
+        let Some(redactor) = &self.redactor else {
             return Ok(ProxyRoute::Proxied {
                 response,
                 facts: ProxyFacts::unavailable(),
             });
         };
-        let mut trace_findings = findings;
-        trace_findings.append(&mut response_findings);
+        let Ok(facts) = observed_facts(redactor, &response.headers) else {
+            return Ok(ProxyRoute::Proxied {
+                response,
+                facts: ProxyFacts::unavailable(),
+            });
+        };
+        let Ok(trace_url) = redactor.redact_text(RedactionBoundary::ProxyTrace, &request.url)
+        else {
+            return Ok(ProxyRoute::Proxied { response, facts });
+        };
         let mut header_names = Vec::with_capacity(request.headers.len());
         for name in request.headers.keys() {
-            let Ok(guarded_name) = self.guard.redact_text(GuardChannel::ProxyTrace, name) else {
+            let Ok(redacted_name) = redactor.redact_text(RedactionBoundary::ProxyTrace, name)
+            else {
                 return Ok(ProxyRoute::Proxied { response, facts });
             };
-            trace_findings.extend(guarded_name.findings);
-            header_names.push(guarded_name.value.to_ascii_lowercase());
+            header_names.push(redacted_name.value.to_ascii_lowercase());
         }
         let trace = ProxyTrace {
             method: request.method,
-            redacted_url: trace_input,
+            redacted_url: trace_url.value,
             header_names,
             request_body_bytes: request.body.len(),
             response_body_bytes: response.body.len(),
             status: response.status,
-            findings: trace_findings,
-            outgoing_coverage: coverage,
             facts: facts.clone(),
         };
         let _ = self.trace_sink.record(&trace);
@@ -641,68 +631,6 @@ where
         let state = failed_state(safe_reason);
         let _ = self.state_store.save(&state);
         self.state = state;
-    }
-
-    fn prepare_request(
-        &self,
-        request: &ProviderRequest,
-    ) -> Result<
-        (
-            ProviderRequest,
-            String,
-            Vec<SanitizedFinding>,
-            GuardCoverageState,
-        ),
-        ProxyError,
-    > {
-        let guarded_url = self.guard.inspect_outgoing(
-            GuardChannel::Url,
-            &request.url,
-            self.config.outgoing_guard_enabled,
-            true,
-        )?;
-        let guarded_body = self.guard.inspect_outgoing(
-            GuardChannel::AiEgress,
-            &request.body,
-            self.config.outgoing_guard_enabled,
-            self.config.body_inspectable,
-        )?;
-        let mut forwarded_headers = BTreeMap::new();
-        let mut findings = guarded_url.findings;
-        findings.extend(guarded_body.findings);
-        for (name, value) in &request.headers {
-            if is_provider_credential_header(name) {
-                // Provider credentials are transport configuration, not captured
-                // content. They pass unchanged and no value enters the trace.
-                forwarded_headers.insert(name.clone(), value.clone());
-            } else {
-                let guarded = self.guard.inspect_outgoing(
-                    GuardChannel::HttpHeader,
-                    value,
-                    self.config.outgoing_guard_enabled,
-                    true,
-                )?;
-                findings.extend(guarded.findings);
-                forwarded_headers.insert(name.clone(), guarded.value);
-            }
-        }
-        let guarded_trace_url = self
-            .guard
-            .redact_text(GuardChannel::ProxyTrace, &request.url)?;
-        findings.extend(guarded_trace_url.findings);
-        let trace_url = guarded_trace_url.value;
-        let forwarded = ProviderRequest {
-            method: request.method.clone(),
-            url: guarded_url.value,
-            headers: forwarded_headers,
-            body: guarded_body.value,
-        };
-        let coverage = if self.config.outgoing_guard_enabled {
-            GuardCoverageState::Inspected
-        } else {
-            GuardCoverageState::Disabled
-        };
-        Ok((forwarded, trace_url, findings, coverage))
     }
 }
 
@@ -765,22 +693,14 @@ fn validate_request(request: &ProviderRequest) -> Result<(), ProxyError> {
     Ok(())
 }
 
-fn is_provider_credential_header(name: &str) -> bool {
-    name.eq_ignore_ascii_case("authorization")
-        || name.eq_ignore_ascii_case("proxy-authorization")
-        || name.eq_ignore_ascii_case("x-api-key")
-}
-
 fn observed_facts(
-    guard: &SecretGuard,
+    redactor: &Redactor,
     headers: &BTreeMap<String, String>,
-) -> Result<(ProxyFacts, Vec<SanitizedFinding>), ProxyError> {
-    let mut findings = Vec::new();
+) -> Result<ProxyFacts, ProxyError> {
     let context = if let Some(value) =
         case_insensitive_header(headers, "x-context-breakdown").filter(|value| value.len() <= 1024)
     {
-        let guarded = guard.redact_text(GuardChannel::ProxyTrace, value)?;
-        findings.extend(guarded.findings);
+        let guarded = redactor.redact_text(RedactionBoundary::ProxyTrace, value)?;
         Some(guarded.value)
     } else {
         None
@@ -788,28 +708,24 @@ fn observed_facts(
     let mut rates = BTreeMap::new();
     for (name, value) in headers {
         if name.to_ascii_lowercase().starts_with("x-ratelimit-") && value.len() <= 256 {
-            let guarded = guard.redact_text(GuardChannel::ProxyTrace, value)?;
-            findings.extend(guarded.findings);
+            let guarded = redactor.redact_text(RedactionBoundary::ProxyTrace, value)?;
             rates.insert(name.to_ascii_lowercase(), guarded.value);
         }
     }
-    Ok((
-        ProxyFacts {
-            context_breakdown: if context.is_some() {
-                ProxyFactAvailability::Observed
-            } else {
-                ProxyFactAvailability::Unavailable
-            },
-            context_breakdown_value: context,
-            rate_limit: if rates.is_empty() {
-                ProxyFactAvailability::Unavailable
-            } else {
-                ProxyFactAvailability::Observed
-            },
-            rate_limit_values: rates,
+    Ok(ProxyFacts {
+        context_breakdown: if context.is_some() {
+            ProxyFactAvailability::Observed
+        } else {
+            ProxyFactAvailability::Unavailable
         },
-        findings,
-    ))
+        context_breakdown_value: context,
+        rate_limit: if rates.is_empty() {
+            ProxyFactAvailability::Unavailable
+        } else {
+            ProxyFactAvailability::Observed
+        },
+        rate_limit_values: rates,
+    })
 }
 
 fn case_insensitive_header<'a>(

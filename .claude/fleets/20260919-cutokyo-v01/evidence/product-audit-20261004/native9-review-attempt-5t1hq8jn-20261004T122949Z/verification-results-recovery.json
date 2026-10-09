@@ -1,0 +1,209 @@
+{
+  "native9-review-attempt-5t1hq8jn-20261004T122949Z": {
+    "artifact_count": 50,
+    "image_count": 14,
+    "mismatches": []
+  },
+  "negative9-review-resume-negative-retest-3kkudjx2-20261004T123144Z": {
+    "artifact_count": 10,
+    "image_count": 1,
+    "mismatches": []
+  },
+  "source": {
+    "before": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-local-source-before-rerun9-20261004.json",
+    "after": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-local-source-after-rerun9-20261004.json",
+    "before_sha256": "40ee0c91c1bf6c25c0f72ef12bc1d7c43de08147a50f0645a857e2bae6fe318d",
+    "after_sha256": "40ee0c91c1bf6c25c0f72ef12bc1d7c43de08147a50f0645a857e2bae6fe318d",
+    "byte_identical": true,
+    "records": 394,
+    "head": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+    "index_sha256": "c752b9009048069f7f3c5e0cf0c7b5aea6d5d0221a812be2e8a74ee0e26e7b42",
+    "changes": [],
+    "binding": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native9-capture-repair-source-binding-20261004.json",
+    "binding_sha256": "7029d9d74c765827c831a16ee320a7cccb6c5a5939e3b347fa9a3aa2de2c5dd3",
+    "six_repair_files": [
+      {
+        "path": "/home/lucas/Developer/personal/cutokyo-community/ui/src/pages/OnboardingPage.tsx",
+        "sha256": "c7267878445cdd1a368d64ea75431a398413207244e0ada81ed91b5eee27824e",
+        "matches_before_after_and_current": true
+      },
+      {
+        "path": "/home/lucas/Developer/personal/cutokyo-community/ui/src/styles.css",
+        "sha256": "4f7a233a0a24299758b4a24a9dbfa88149f67bf7c1e551fcab101f1241c8ffe8",
+        "matches_before_after_and_current": true
+      },
+      {
+        "path": "/home/lucas/Developer/personal/cutokyo-community/ui/src/App.test.tsx",
+        "sha256": "81e8ea87b162de4c8305cd13c58597a31c8ecf455d2c4aaeca8cb4765c641a9c",
+        "matches_before_after_and_current": true
+      },
+      {
+        "path": "/home/lucas/Developer/personal/cutokyo-community/ui/src/pages/pages.test.tsx",
+        "sha256": "78e4384a926a4be939750609ce54f714ef690e2e68f07bd1893d0d8b9a2eb523",
+        "matches_before_after_and_current": true
+      },
+      {
+        "path": "/home/lucas/Developer/personal/cutokyo-community/ui/src/designTokens.test.ts",
+        "sha256": "6e6709474cc20528036d810a845bf7216480e029c29df08589add7c543d774e4",
+        "matches_before_after_and_current": true
+      },
+      {
+        "path": "/home/lucas/Developer/personal/cutokyo-community/ui/tests/e2e/management-visual.spec.ts",
+        "sha256": "3dd23bb9be72e66cfbc80b8ece600e5822226fc7625eb2e1deb3b0ae3db01311",
+        "matches_before_after_and_current": true
+      }
+    ],
+    "suffix_correction": "Actual ui/src/designTokens.test.ts; earlier .tsx lookup error retained in supplementalbinding.",
+    "scope": "Recorded completed-run interval, not cleanreleaseproof or postrunREADME immutability. No Gitquery."
+  },
+  "package": {
+    "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/Cutokyo_0.1.0_amd64.deb",
+    "bytes": 24183362,
+    "sha256": "e3e3747e2aaa71ae973637364aa299ac82ec2d576bb85c6b7342d0133dc30b8a",
+    "streamed_application": {
+      "name": "usr/bin/cutokyo-desktop",
+      "bytes": 104008656,
+      "sha256": "8c6cf7f3d632f3c22df8463f7baf399abfb5ae3074e352f9e02c9db72b8418a9"
+    },
+    "matches_launch": true,
+    "extraction_or_launch": false
+  },
+  "matching_replay_inputs": {
+    "launch_manifest": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/package-launch.json",
+    "package_sha256": "e3e3747e2aaa71ae973637364aa299ac82ec2d576bb85c6b7342d0133dc30b8a",
+    "inputs": [
+      {
+        "source": "/tmp/cutokyo-native-test-wdio-wjrqekkw/bin/cutokyo",
+        "preserved": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/verified-replay-inputs/cutokyo",
+        "sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa"
+      },
+      {
+        "source": "/tmp/cutokyo-native-test-wdio-wjrqekkw/bin/claude",
+        "preserved": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/verified-replay-inputs/claude",
+        "sha256": "74b0648c3b0bd21ad2f61c354e364b016a3475cbb491f9f73d20c1d49eab5536"
+      }
+    ],
+    "purpose": "Retain matching compiled inputs before successful isolated-root teardown. No desktop substitution."
+  },
+  "phase_counts": {
+    "save": 9,
+    "reopen": 3,
+    "browse": 1,
+    "capture-setup": 2,
+    "capture-history": 1
+  },
+  "cases": [
+    {
+      "phase": "save",
+      "name": "creates, cancels safely, restores actual history, and retains verified prior history",
+      "actual": "PASS",
+      "reporter_line": 737,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "save",
+      "name": "reports tampering inside the restore modal without replacing native history",
+      "actual": "PASS",
+      "reporter_line": 738,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "save",
+      "name": "edits, copies all skill assets, then removes only the selected native bundle",
+      "actual": "PASS",
+      "reporter_line": 747,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "save",
+      "name": "rejects stale and malformed MCP edits, converts real config credentials, and protects capture hooks",
+      "actual": "PASS",
+      "reporter_line": 748,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "save",
+      "name": "searches, opens, exactly resumes, and deletes an isolated native fixture",
+      "actual": "PASS",
+      "reporter_line": 757,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "save",
+      "name": "saves appearance to native desktop state",
+      "actual": "PASS",
+      "reporter_line": 758,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "save",
+      "name": "keeps trusted keyboard skip navigation on the current native route",
+      "actual": "PASS",
+      "reporter_line": 767,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "save",
+      "name": "discloses unavailable analysis and signed updates before dead-end actions",
+      "actual": "PASS",
+      "reporter_line": 768,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "save",
+      "name": "cancels safely then exports exactly the previewed private diagnostic report",
+      "actual": "PASS",
+      "reporter_line": 769,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "reopen",
+      "name": "rediscovers the private backup after a real application restart",
+      "actual": "PASS",
+      "reporter_line": 795,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "reopen",
+      "name": "rediscovers persisted native edits/copies without resurrecting deleted bundles",
+      "actual": "PASS",
+      "reporter_line": 804,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "reopen",
+      "name": "restores saved appearance after a native application restart",
+      "actual": "PASS",
+      "reporter_line": 813,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "browse",
+      "name": "browses a real packaged application without installing native capture",
+      "actual": "PASS",
+      "reporter_line": 838,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "capture-setup",
+      "name": "previews, cancels, installs, verifies, recovers and removes each real isolated native integration",
+      "actual": "PASS",
+      "reporter_line": 863,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "capture-setup",
+      "name": "manages completed-user capture through Settings without resetting saved intent or unmanaged native bytes",
+      "actual": "PASS",
+      "reporter_line": 864,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "capture-history",
+      "name": "opens real native-hook and transcript evidence and resumes its exact private native context",
+      "actual": "PASS",
+      "reporter_line": 886,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    }
+  ]
+}

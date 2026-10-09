@@ -1,0 +1,200 @@
+{
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49 + concurrently modified working tree",
+  "viewport": [
+    1280,
+    800
+  ],
+  "managementExpected": "Open native-configuration editor and preview a non-overwriting independent copy; cancel does not mutate installation",
+  "searchExpected": "Back to sessions retains search text 73A9",
+  "actual": "See actions and screenshots; no native configuration edited",
+  "actions": [
+    {
+      "time": "2026-10-04T05:04:30.747313+00:00",
+      "args": [
+        "open",
+        "http://127.0.0.1:4318/?jev_case=mcp-plugin-inventory#/inventory"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=mcp-plugin-inventory#/inventory\n"
+    },
+    {
+      "time": "2026-10-04T05:04:30.749373+00:00",
+      "args": [
+        "set",
+        "viewport",
+        "1280",
+        "800"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:04:31.465422+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisInventoryHealthDataSettingsLocal wr\" [ref=e198] clickable [onclick]\n  - link \"Skip to content\" [ref=e199]\n  - navigation \"Primary navigation\" [ref=e200]\n    - link \"Overview\" [ref=e203]\n    - link \"Sessions\" [ref=e204]\n    - link \"Analysis\" [ref=e205]\n    - link \"Inventory\" [ref=e206]\n    - link \"Health\" [ref=e207]\n    - link \"Data\" [ref=e208]\n    - link \"Settings\" [ref=e209]\n  - heading \"Agent tools\" [level=1, ref=e210]\n  - button \"Refresh installations\" [ref=e211]\n  - region \"Cutokyo search access\" [ref=e201]\n    - heading \"Cutokyo search access\" [level=2, ref=e212]\n    - link \"Manage search access in Settings\" [ref=e213]\n  - region \"Agent tool filters\" [ref=e202]\n    - searchbox \"Search installed tools\" [ref=e220]\n    - combobox \"HARNESS\" [expanded=false, ref=e221]: All harnesses\n      - option \"All harnesses\" [selected, ref=e232]\n      - option \"Claude Code\" [ref=e233]\n      - option \"Codex\" [ref=e234]\n      - option \"OpenCode\" [ref=e235]\n  - tab \"All 8\" [selected, ref=e214]\n  - tab \"MCP servers 2\" [ref=e215]\n  - tab \"Plugins 2\" [ref=e216]\n  - tab \"Hooks 2\" [ref=e217]\n  - tab \"Skills 1\" [ref=e218]\n  - tab \"Instructions 1\" [ref=e219]\n  - button \"Manage docs-73A9\" [ref=e222]\n  - button \"Manage Cutokyo search MCP\" [ref=e223]\n  - button \"Manage fixture-processor-73A9\" [ref=e224]\n  - button \"Verification\" [ref=e225]\n  - button \"Manage release-notes-indexer\" [ref=e226]\n  - button \"Verification\" [ref=e227]\n  - button \"Manage Cutokyo SessionStart\" [ref=e228]\n  - button \"Manage AGENTS.md\" [ref=e229]\n  - button \"Manage PreToolUse project check\" [ref=e230]\n  - button \"Manage protocol-check\" [ref=e231]\n"
+    },
+    {
+      "time": "2026-10-04T05:04:31.518660+00:00",
+      "args": [
+        "click",
+        "@e222"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:04:32.029041+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisInventoryHealthDataSettingsLocal wr\" [ref=e198] clickable [onclick]\n  - heading \"Manage docs-73A9\" [level=2, ref=e237]\n  - button \"Close dialog\" [ref=e238]\n  - region \"Dialog content\" [ref=e236] focusable [tabindex]\n    - button \"Install in another harness\" [ref=e239]\n    - button \"Remove\" [ref=e240]\n    - textbox \"Source content\" [ref=e243]: {\n  \"command\": \"npx\",\n  \"args\": [\n    \"-y\",\n    \"@example/docs-mcp\"\n  ],\n  \"env\": {}\n}\n  - button \"Done\" [ref=e241]\n  - button \"Save changes\" [disabled, ref=e242]\n"
+    },
+    {
+      "time": "2026-10-04T05:04:32.037776+00:00",
+      "args": [
+        "click",
+        "@e239"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:04:32.545597+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisInventoryHealthDataSettingsLocal wr\" [ref=e198] clickable [onclick]\n  - heading \"Install docs-73A9 in another harness\" [level=2, ref=e237]\n  - button \"Close dialog\" [ref=e238]\n  - region \"Dialog content\" [ref=e236] focusable [tabindex]\n    - combobox \"DESTINATION HARNESS\" [expanded=false, ref=e244]: Codex\n      - option \"Choose a harness\" [ref=e245]\n      - option \"Claude Code \u00b7 unavailable\" [disabled, ref=e246]\n      - option \"Codex\" [selected, ref=e247]\n      - option \"OpenCode\" [ref=e248]\n  - button \"Back\" [ref=e241]\n  - button \"Install in Codex\" [ref=e242]\n"
+    },
+    {
+      "time": "2026-10-04T05:04:32.584333+00:00",
+      "args": [
+        "screenshot",
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/agent-tools-install-preview-direct-1280x800.png"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/agent-tools-install-preview-direct-1280x800.png\n"
+    },
+    {
+      "time": "2026-10-04T05:04:32.591903+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisInventoryHealthDataSettingsLocal wr\" [ref=e198] clickable [onclick]\n  - heading \"Install docs-73A9 in another harness\" [level=2, ref=e237]\n  - button \"Close dialog\" [ref=e238]\n  - region \"Dialog content\" [ref=e236] focusable [tabindex]\n    - combobox \"DESTINATION HARNESS\" [expanded=false, ref=e244]: Codex\n      - option \"Choose a harness\" [ref=e245]\n      - option \"Claude Code \u00b7 unavailable\" [disabled, ref=e246]\n      - option \"Codex\" [selected, ref=e247]\n      - option \"OpenCode\" [ref=e248]\n  - button \"Back\" [ref=e241]\n  - button \"Install in Codex\" [ref=e242]\n"
+    },
+    {
+      "time": "2026-10-04T05:04:32.600803+00:00",
+      "args": [
+        "click",
+        "@e241"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:04:33.131494+00:00",
+      "args": [
+        "press",
+        "Escape"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:04:33.133745+00:00",
+      "args": [
+        "eval",
+        "JSON.stringify({dialogs:document.querySelectorAll(\"[role=dialog]\").length,focus:document.activeElement?.getAttribute(\"aria-label\")})"
+      ],
+      "exitCode": 0,
+      "output": "\"{\\\"dialogs\\\":0,\\\"focus\\\":\\\"Manage docs-73A9\\\"}\"\n"
+    },
+    {
+      "time": "2026-10-04T05:04:33.228252+00:00",
+      "args": [
+        "open",
+        "http://127.0.0.1:4318/?jev_case=search-resume#/sessions"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=search-resume#/sessions\n"
+    },
+    {
+      "time": "2026-10-04T05:04:33.949031+00:00",
+      "args": [
+        "find",
+        "role",
+        "searchbox",
+        "fill",
+        "73A9",
+        "--name",
+        "Search session content",
+        "--exact"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:04:34.457421+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisInventoryHealthDataSettingsLocal wr\" [ref=e250] clickable [onclick]\n  - link \"Skip to content\" [ref=e251]\n  - navigation \"Primary navigation\" [ref=e252]\n    - link \"Overview\" [ref=e254]\n    - link \"Sessions\" [ref=e255]\n    - link \"Analysis\" [ref=e256]\n    - link \"Inventory\" [ref=e257]\n    - link \"Health\" [ref=e258]\n    - link \"Data\" [ref=e259]\n    - link \"Settings\" [ref=e260]\n  - heading \"Sessions\" [level=1, ref=e261]\n  - button \"Clear filters\" [ref=e262]\n  - region \"Session search filters\" [ref=e253]\n    - searchbox \"Search session content\" [ref=e267]: 73A9\n    - combobox \"HARNESS\" [expanded=false, ref=e268]: All harnesses\n      - option \"All harnesses\" [selected, ref=e270]\n      - option \"Claude Code\" [ref=e271]\n      - option \"Codex\" [ref=e272]\n      - option \"OpenCode\" [ref=e273]\n    - combobox \"DATE\" [expanded=false, ref=e269]: Any time\n      - option \"Any time\" [selected, ref=e274]\n      - option \"Today\" [ref=e275]\n      - option \"Last 7 days\" [ref=e276]\n      - option \"Last 30 days\" [ref=e277]\n      - option \"Last 90 days\" [ref=e278]\n  - link \"Reconcile usage capture\" [ref=e263]\n  - link \"Open Reconcile usage capture\" [ref=e264]\n  - link \"analysis-73A9\" [ref=e265]\n  - link \"Open analysis-73A9\" [ref=e266]\n"
+    },
+    {
+      "time": "2026-10-04T05:04:34.464783+00:00",
+      "args": [
+        "click",
+        "@e263"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:04:34.975711+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisInventoryHealthDataSettingsLocal wr\" [ref=e250] clickable [onclick]\n  - link \"Skip to content\" [ref=e251]\n  - navigation \"Primary navigation\" [ref=e252]\n    - link \"Overview\" [ref=e254]\n    - link \"Sessions\" [ref=e255]\n    - link \"Analysis\" [ref=e256]\n    - link \"Inventory\" [ref=e257]\n    - link \"Health\" [ref=e258]\n    - link \"Data\" [ref=e259]\n    - link \"Settings\" [ref=e260]\n  - link \"Back to sessions\" [ref=e279]\n  - heading \"Reconcile usage capture\" [level=1, ref=e281]\n  - button \"Resume\" [ref=e282]\n  - button \"Delete session\" [ref=e283]\n  - region \"Timeline\" [ref=e280]\n    - heading \"Timeline\" [level=2, ref=e284]\n    - heading \"Inspect reconciliation mismatch\" [level=3, ref=e286]\n    - heading \"Read \u00b7 usage projection\" [level=3, ref=e287]\n    - heading \"Reconciliation complete\" [level=3, ref=e288]\n  - heading \"Native target\" [level=2, ref=e285]\n"
+    },
+    {
+      "time": "2026-10-04T05:04:34.981808+00:00",
+      "args": [
+        "click",
+        "@e279"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:04:35.484335+00:00",
+      "args": [
+        "eval",
+        "JSON.stringify({route:location.hash,filter:document.querySelector(\"input[type=search]\")?.value})"
+      ],
+      "exitCode": 0,
+      "output": "\"{\\\"route\\\":\\\"#/sessions\\\",\\\"filter\\\":\\\"\\\"}\"\n"
+    },
+    {
+      "time": "2026-10-04T05:04:35.518961+00:00",
+      "args": [
+        "screenshot",
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/search-back-link-reset-current-1280x800.png"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/search-back-link-reset-current-1280x800.png\n"
+    }
+  ]
+}

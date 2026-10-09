@@ -1,0 +1,61 @@
+{
+  "archive": "evidence/management/native-review/native-rerun5-postdelete-diagnostic-20261004.tar.gz",
+  "source_directory": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-postdelete-diagnostic-5t5dhyxs",
+  "sha256": "c02d917429fe83fee2740b94584f6fc91b0855e8bc00881a2f3418216e5a181d",
+  "byte_length": 328831,
+  "members": [
+    {
+      "path": "appearance-dark-1280x800.png",
+      "sha256": "6c17bcba736d6f3d0b7aae8df322413f46bbf28f63f1e74ff072c3cf02ba4a6e"
+    },
+    {
+      "path": "execution-record.json",
+      "sha256": "b8b258be8f5460cae4de55ee3c4b9cd7494034167c8617a097b411c3ca0148a7"
+    },
+    {
+      "path": "execution.log",
+      "sha256": "9cb16ee4c61ce96a3b20a342943934c8449e82c8564b29bbc6fafbf4520ceb6f"
+    },
+    {
+      "path": "geometry-1280x800.json",
+      "sha256": "cef5b94fe337a0a553810cc48e463f3fa302a28ae0b9648e3759853f7b130638"
+    },
+    {
+      "path": "package-launch.json",
+      "sha256": "02f5513417eee2921be8e4030339df894f129dd3db2f239d2a128284430a8899"
+    },
+    {
+      "path": "postdelete-failure-dom.html",
+      "sha256": "1d85bb8e6f2d5546492b20f02016bc057f3e287ade073ad756b03bdc85afce9c"
+    },
+    {
+      "path": "postdelete-failure-state.json",
+      "sha256": "932046adbb611698c7c9ab6b48ff978193142a657a54223b783c1c234bcedb33"
+    },
+    {
+      "path": "postdelete-failure.png",
+      "sha256": "ac6d9e8dd0793ae6b05e5f1b1fda2a81fb4ef6ec5350543a8c9ba64621ba407e"
+    },
+    {
+      "path": "postdelete-owned-terminal-snapshot.json",
+      "sha256": "100f14916820869f5fc78f2ea9749264bdd2434f4f8c9f6ace0c6d49c0915f96"
+    },
+    {
+      "path": "resume-postdelete-diagnostic.spec-0-0.log",
+      "sha256": "5ddadbbecb06fbe75ec9043a9ebe955b5d76a6027fbf5013161e91a6800d8dd5"
+    },
+    {
+      "path": "search-detail-resume-1280x800.png",
+      "sha256": "4d1a6f28508b0f19c84a21a536351be31a0fb1341015dc6a91d3c1fd3a94551f"
+    },
+    {
+      "path": "wdio-2026-10-04T10-10-55-994Z.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "wdio.log",
+      "sha256": "4e76bc56167f567de55a6b366e8e0f6a3fcf87641eb941b102ebc9c24b08cbb6"
+    }
+  ],
+  "fresh_aggregate_acceptance": false
+}

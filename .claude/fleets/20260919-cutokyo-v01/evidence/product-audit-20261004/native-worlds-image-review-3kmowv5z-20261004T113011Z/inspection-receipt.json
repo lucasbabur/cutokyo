@@ -1,0 +1,284 @@
+{
+  "scope": "Independent all-image and actual-receipt review of retained native6 package worlds replay",
+  "runtime_replay_verdict": "PASS_SCOPED_REPLAY_EXECUTION_AND_CAPTURE_RESUME_RECEIPTS",
+  "rendered_verdict": "FAIL_TWO_CAPTURE_SURFACE_FINDINGS",
+  "fresh_aggregate_acceptance": false,
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "dirty_source_qualification": "Retained native6 Debian from integrated dirty source; newer maintained test actor; no fresh build aggregate or clean release proof.",
+  "execution": {
+    "source_manifest": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/package-launch.json",
+    "package_sha256": "de3e9a6d97825298612da554c8219cc67f461bf7ccb8da2a56e51bd385712316",
+    "evidence": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z",
+    "purpose": "Execute unchanged maintained browse/capture setup/capture history worlds with repaired phase orchestration. Not fresh aggregate acceptance.",
+    "fresh_aggregate_acceptance": false,
+    "exit_code": 0,
+    "duration_seconds": 114.1
+  },
+  "package_identity": {
+    "retained_package": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-04szxkql/Cutokyo_0.1.0_amd64.deb",
+    "sha256": "de3e9a6d97825298612da554c8219cc67f461bf7ccb8da2a56e51bd385712316",
+    "application_sha256": "6afa020e2163e1250d931360bcd0eb3e3956c53492338b0077ef18a09c1b2095",
+    "package_rehashed": true,
+    "application_hash": "Matches member independently streamed during prior native6 review."
+  },
+  "worlds": [
+    {
+      "journey": "browse",
+      "root": "/tmp/cutokyo-native-test-wdio-ugsf3ylk",
+      "application": "/tmp/cutokyo-native-test-wdio-ugsf3ylk/package/usr/bin/cutokyo-desktop",
+      "application_sha256": "6afa020e2163e1250d931360bcd0eb3e3956c53492338b0077ef18a09c1b2095",
+      "package_sha256": "de3e9a6d97825298612da554c8219cc67f461bf7ccb8da2a56e51bd385712316",
+      "receiver_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+      "fixture_seeding": false
+    },
+    {
+      "journey": "capture-setup",
+      "root": "/tmp/cutokyo-native-test-wdio-d5o4pqoq",
+      "application": "/tmp/cutokyo-native-test-wdio-d5o4pqoq/package/usr/bin/cutokyo-desktop",
+      "application_sha256": "6afa020e2163e1250d931360bcd0eb3e3956c53492338b0077ef18a09c1b2095",
+      "package_sha256": "de3e9a6d97825298612da554c8219cc67f461bf7ccb8da2a56e51bd385712316",
+      "receiver_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+      "fixture_seeding": false
+    }
+  ],
+  "maintained_scope": {
+    "browse_cases": 1,
+    "capture_setup_cases": 2,
+    "capture_history_cases": 1,
+    "total": 4,
+    "outcome_basis": "Scoped execution record exit0/114.1s, current maintained assertion context and successful loop receipt/state/drain/raw audit preservation. No separate full aggregate stdout transcript retained in this directory.",
+    "setup_assertions": "Preview/cancel nonmutation; each Claude/Codex/OpenCode install/recover/remove restores unmanaged bytes; complete with allselected; genuine SearchMCPfalse Settings save before config snapshot; remove/reinstall preserves saved config and desktop-state bytes.",
+    "limitations": "Earlier browse/setup worker logs overwritten by capture-history; no independent saved config/native-byte snapshot retained beyond successful asserted case. These are disposable isolated native integrations, not operator installed configs."
+  },
+  "actual_hook_receipt": {
+    "native_id": "12345678-1234-1234-1234-123456789abc",
+    "installed_hook_executed": true,
+    "database_unchanged_by_hook": true,
+    "published_entries": 2,
+    "drain": {
+      "schema_version": "1.0.0",
+      "command": "drain",
+      "ok": true,
+      "data": {
+        "attempted": 2,
+        "duplicates": 0,
+        "inserted": 2,
+        "quarantined": 0,
+        "status": {
+          "cap_reason": null,
+          "drain_lag_seconds": null,
+          "oldest_pending_unix": null,
+          "pending_bytes": 0,
+          "pending_entries": 0
+        }
+      },
+      "meta": {
+        "app_version": "0.1.0",
+        "pending_crash_record": false
+      }
+    }
+  },
+  "actual_resume_audit": "--resume\n12345678-1234-1234-1234-123456789abc\n",
+  "actual_resume_context": {
+    "cwd": "/tmp/cutokyo-native-test-wdio-d5o4pqoq/project with spaces ' and $literal",
+    "stdinTty": true,
+    "stdoutTty": true
+  },
+  "terminal_cleanup": {
+    "verdict": "PASS",
+    "before": {
+      "ready": true,
+      "app": {
+        "pid": 195125,
+        "parent": 195090,
+        "group": 194971,
+        "start": 4213359,
+        "exe": "/tmp/cutokyo-native-test-wdio-d5o4pqoq/package/usr/bin/cutokyo-desktop",
+        "argv": [
+          "/tmp/cutokyo-native-test-wdio-d5o4pqoq/package/usr/bin/cutokyo-desktop"
+        ]
+      },
+      "terminal": {
+        "pid": 196532,
+        "parent": 195125,
+        "group": 194971,
+        "start": 4214420,
+        "exe": "/usr/bin/kitty",
+        "argv": [
+          "/usr/bin/kitty",
+          "--title=Cutokyo native session resume",
+          "--working-directory",
+          "/tmp/cutokyo-native-test-wdio-d5o4pqoq/project with spaces ' and $literal",
+          "--hold",
+          "--",
+          "/tmp/cutokyo-native-test-wdio-d5o4pqoq/bin/cutokyo",
+          "--data-dir",
+          "/tmp/cutokyo-native-test-wdio-d5o4pqoq/data",
+          "resume-terminal",
+          "--request",
+          "/tmp/cutokyo-native-test-wdio-d5o4pqoq/data/resume-launch-kdfgPI/request.json"
+        ]
+      },
+      "window": {
+        "pid": 196532,
+        "address": "0x5c07e3088560",
+        "mapped": true,
+        "xwayland": true
+      },
+      "descendants": [
+        {
+          "pid": 196590,
+          "parent": 196532,
+          "group": 194971,
+          "start": 4214481,
+          "exe": "/usr/bin/kitten",
+          "argv": [
+            "/usr/bin/kitten",
+            "__atexit__"
+          ]
+        },
+        {
+          "pid": 196597,
+          "parent": 196532,
+          "group": 196597,
+          "start": 4214482,
+          "exe": "/usr/bin/bash",
+          "argv": [
+            "/bin/bash",
+            "--posix"
+          ]
+        }
+      ]
+    },
+    "signal": "SIGTERM via pidfd",
+    "terminalExited": true,
+    "descendantsExited": true,
+    "windowRemoved": true,
+    "applicationPreserved": true,
+    "keyboardDispatches": [],
+    "focusChangedByHelper": false
+  },
+  "desktop_completed_state": {
+    "onboarding_complete": true,
+    "selected_harnesses": [
+      "claude_code",
+      "codex",
+      "opencode"
+    ],
+    "updater_choice": "notify",
+    "crash_reports_enabled": false,
+    "appearance": "system"
+  },
+  "screenshots_total": 4,
+  "screenshots_individually_read": 4,
+  "images": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/completed-capture-removal-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-worlds-image-review-3kmowv5z-20261004T113011Z/screens/completed-capture-removal-1280x800.png",
+      "sha256": "b71f7bea6aeb8ccd4c1b30e12767ddd2a325b816afa1bd2e862004aa34af04a8",
+      "bytes": 112064,
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individual Read actual original PNG; independently decode IHDR/hash and preserve exact copy.",
+      "expected": "Readable capture cards and truthful self-consistent per-harness state, exact identity/consent, visible relevant controls.",
+      "actual": "FAIL visual: management card content falls into narrow first grid column, wrapping Claude Code and source description into a tall word stack despite wide card. This is page scroll, not clipped modal. Newly opened inline install preview is below viewport; no screenshot proof of its footer."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/native-hook-detail-resume-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-worlds-image-review-3kmowv5z-20261004T113011Z/screens/native-hook-detail-resume-1280x800.png",
+      "sha256": "d19782e016d24f98093fdd959377e1b5e26c23104f1b17f68a7b51f42ca45781",
+      "bytes": 96835,
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individual Read actual original PNG; independently decode IHDR/hash and preserve exact copy.",
+      "expected": "Readable capture cards and truthful self-consistent per-harness state, exact identity/consent, visible relevant controls.",
+      "actual": "PASS rendered post-launch startup receipt: exact UUID shown; cannot verify native activation caveat, hook/transcript messages, unknown branch and raw identity panel readable; long ID wraps; Resume focus ring clear."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/onboarding-browse-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-worlds-image-review-3kmowv5z-20261004T113011Z/screens/onboarding-browse-1280x800.png",
+      "sha256": "95a5321ff9fa5d07a833500c05e6571e8c294051cc0ef8dfda0d50c4db99303c",
+      "bytes": 82479,
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individual Read actual original PNG; independently decode IHDR/hash and preserve exact copy.",
+      "expected": "Readable capture cards and truthful self-consistent per-harness state, exact identity/consent, visible relevant controls.",
+      "actual": "PASS rendered empty unseeded history with explicit no-fabricated-zero explanation and Review capture setup recovery; filters fit."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/native-worlds-replay-3kmowv5z/onboarding-native-verified-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-worlds-image-review-3kmowv5z-20261004T113011Z/screens/onboarding-native-verified-1280x800.png",
+      "sha256": "978c10fb55248cdb5214d5bc9df1d4c8adf7a7a00c0c9e3be3972df37c7eacf6",
+      "bytes": 138767,
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "steps": "Individual Read actual original PNG; independently decode IHDR/hash and preserve exact copy.",
+      "expected": "Readable capture cards and truthful self-consistent per-harness state, exact identity/consent, visible relevant controls.",
+      "actual": "FAIL evidence/state consistency: global Native capture configuration installed and verified message appears while checked harness cards show DISABLED and Configuration not verified. No screenshot closure for per-harness verified state; persistent runtime cause not established."
+    }
+  ],
+  "findings": [
+    {
+      "key": "NQA-CAPTURE-LAYOUT-01",
+      "owner": "desktop",
+      "severity": "Medium",
+      "status": "OPEN_RENDERED_COMPLETED_MANAGEMENT_LAYOUT",
+      "reproduction": "Complete native onboarding, Settings \u2192 Manage native capture; preview/confirm Claude removal and open install preview at1280x800.",
+      "expected": "Completed-user harness text uses available card width, with normal readable source description and compact actionable rows.",
+      "actual": "Checkbox is omitted in management mode but grid retains20px first track; harness body occupies narrow first column, source text stacks over seven lines and inflates cards.",
+      "evidence": [
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-worlds-image-review-3kmowv5z-20261004T113011Z/screens/completed-capture-removal-1280x800.png",
+        "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/read-only-context/ui/src/pages/OnboardingPage.tsx lines212-220",
+        "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/read-only-context/ui/src/styles.css lines1024-1027"
+      ]
+    },
+    {
+      "key": "NQA-CAPTURE-STATE-01",
+      "owner": "desktop",
+      "severity": "Medium",
+      "status": "OPEN_RENDERED_STATE_CONTRADICTION_ROOT_CAUSE_UNVERIFIED",
+      "reproduction": "Install/recover/remove/reinstall all three disposable native integrations, select them, inspect captured pre-Finish verified screen.",
+      "expected": "Evidence of verified setup shows self-consistent per-harness verification labels, configuration badges and global result.",
+      "actual": "Actual PNG shows global installed-and-verified text but all checked harness cards retain DISABLED and Configuration not verified. Maintained test asserts verified text somewhere in main; image does not corroborate this state. Could be transient/stale capture; persistence and backend failure are not established.",
+      "evidence": [
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-worlds-image-review-3kmowv5z-20261004T113011Z/screens/onboarding-native-verified-1280x800.png",
+        "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z/read-only-context/ui/tests/tauri/native-desktop.spec.ts lines418-428"
+      ]
+    }
+  ],
+  "positive_native_render_closure": "Actual native-hook-detail-resume PNG now shows post-launch startup receipt and activation caveat; raw exact argv/cwd/TTY preserved. Not installed-provider session activation.",
+  "historical_failures": "Original native6 full command remains FAIL. Previous native-worlds-replay-zvr0qdmh executionreceipt remains exit1/83.42s; coordinator-reported missing-config cause not independently recovered from retained worker log. No historical artifact rewritten.",
+  "gaps": [
+    "All4 PNG1280x800 only; no900/1536 native images.",
+    "Operator-installed Claude/Codex/OpenCode read-only probes not refreshed; actual hook from disposable configuration, synthetic resume harness; no paid call.",
+    "Only Claude installed hook/spool/drain and exact resume exercised in capture-history; Codex/OpenCode setup/remove tested but not actual provider capture/resume here.",
+    "Current versus lifetime quarantine under large history, omitted settings beyond asserted SearchMCPcase and health persistence not newly established here.",
+    "Rendered verified-state contradiction unresolved; no persistent backend failure inferred.",
+    "Fresh native7 pending; no prediction."
+  ],
+  "preservation": {
+    "manifest": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-worlds-image-review-3kmowv5z-20261004T113011Z/manifest.json",
+    "raw": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native-worlds-review-3kmowv5z-20261004T113011Z",
+    "all19_original_artifacts_stable": true,
+    "all25_preserved_files_hash_match": true,
+    "original_and_historical_artifacts_untouched": true
+  },
+  "reviewer_actions": {
+    "app_browser_provider_compositor_launches_queries_dispatches": 0,
+    "source_test_fixture_config_tracked_output_edits": 0,
+    "git_operations": 0,
+    "outputs": "NEW evidence only; no markdown report."
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "command": [
+    "pnpm",
+    "exec",
+    "wdio",
+    "run",
+    "./wdio.conf.ts",
+    "--spec",
+    "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest.spec.ts"
+  ],
+  "exit_code": 0,
+  "duration_seconds": 18.75,
+  "root": "/tmp/cutokyo-native-test-wdio-ybr99_o0",
+  "evidence": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-1c0mwzel",
+  "fresh_aggregate_acceptance": false,
+  "source_package": "58d8d44446644662721bdfb06d85fcba4a9bd80853d21d4a06e26d5ce0bc0258",
+  "window_state": {
+    "pid": "3954882",
+    "window": "0x5c07e3023df0"
+  },
+  "owned_application_survived": false
+}

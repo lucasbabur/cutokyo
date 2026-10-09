@@ -1,0 +1,15 @@
+{
+  "command": [
+    "/home/lucas/Developer/personal/cutokyo-community/target/debug/cutokyo",
+    "--config-file",
+    "/tmp/cutokyo-product-audit-20261004/config/settings.toml",
+    "--data-dir",
+    "/tmp/cutokyo-product-audit-20261004/data/cli",
+    "--json",
+    "sessions",
+    "list"
+  ],
+  "exitCode": 0,
+  "output": "{\"schema_version\":\"1.0.0\",\"command\":\"sessions.list\",\"ok\":true,\"data\":[],\"meta\":{\"app_version\":\"0.1.0\",\"pending_crash_record\":false}}\n",
+  "existingArtifactOnly": true
+}

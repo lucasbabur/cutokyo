@@ -1,0 +1,87 @@
+{
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "dirty_working_tree": true,
+  "results": [
+    {
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.37,
+      "log": "evidence/management/checks/post-repairs-format-20261004.log"
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.03,
+      "log": "evidence/management/checks/post-repairs-diff-20261004.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 5.45,
+      "log": "evidence/management/checks/post-repairs-clippy-20261004.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--workspace"
+      ],
+      "exit_code": 101,
+      "duration_seconds": 148.04,
+      "log": "evidence/management/checks/post-repairs-workspace-20261004.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "cutokyo-integration-tests",
+        "--test",
+        "pipeline",
+        "--test",
+        "upgrade",
+        "--test",
+        "architecture"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 29.32,
+      "log": "evidence/management/checks/post-repairs-unreached-20261004.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "fake-harness",
+        "-p",
+        "cutokyo-updater-signature-verifier"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 16.51,
+      "log": "evidence/management/checks/post-repairs-tools-20261004.log"
+    }
+  ],
+  "waivers": []
+}

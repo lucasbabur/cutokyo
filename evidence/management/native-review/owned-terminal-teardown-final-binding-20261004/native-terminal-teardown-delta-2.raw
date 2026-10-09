@@ -1,0 +1,3 @@
+Current spec sha256: b88436c71e44e4f2a52c4e06e87d90d1dcddafb93c4e7073e8f3930a1af72bad
+Reverting ONLY the two settlement predicates restores reviewed spec exactly: cc3ac3648b2d34f7489cf4632c80de2ec65cb558f8f3149269df429873bbe16f
+Teardown helper/imports/call sites, exact native/deletion assertions, and original deadlines unchanged.

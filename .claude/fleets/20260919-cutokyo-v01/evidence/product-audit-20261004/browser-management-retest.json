@@ -1,0 +1,117 @@
+[
+  {
+    "time": "2026-10-04T05:00:33.521992+00:00",
+    "args": [
+      "open",
+      "http://127.0.0.1:4318/?jev_case=mcp-plugin-inventory#/inventory"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=mcp-plugin-inventory#/inventory\n"
+  },
+  {
+    "time": "2026-10-04T05:00:33.625441+00:00",
+    "args": [
+      "wait",
+      "--text",
+      "Agent tools"
+    ],
+    "exitCode": 0,
+    "output": "Agent tools\n"
+  },
+  {
+    "time": "2026-10-04T05:00:33.637669+00:00",
+    "args": [
+      "set",
+      "viewport",
+      "1280",
+      "800"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "time": "2026-10-04T05:00:33.829334+00:00",
+    "args": [
+      "screenshot",
+      "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/agent-tools-current-1280x800.png"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/agent-tools-current-1280x800.png\n"
+  },
+  {
+    "time": "2026-10-04T05:00:33.831987+00:00",
+    "args": [
+      "eval",
+      "JSON.stringify({viewport:[innerWidth,innerHeight],route:location.hash,overflow:document.documentElement.scrollWidth>innerWidth})"
+    ],
+    "exitCode": 0,
+    "output": "\"{\\\"viewport\\\":[1280,800],\\\"route\\\":\\\"#/inventory\\\",\\\"overflow\\\":false}\"\n"
+  },
+  {
+    "time": "2026-10-04T05:00:33.835897+00:00",
+    "args": [
+      "set",
+      "viewport",
+      "1536",
+      "960"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "time": "2026-10-04T05:00:34.037045+00:00",
+    "args": [
+      "screenshot",
+      "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/agent-tools-current-1536x960.png"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/agent-tools-current-1536x960.png\n"
+  },
+  {
+    "time": "2026-10-04T05:00:34.038975+00:00",
+    "args": [
+      "eval",
+      "JSON.stringify({viewport:[innerWidth,innerHeight],route:location.hash,overflow:document.documentElement.scrollWidth>innerWidth})"
+    ],
+    "exitCode": 0,
+    "output": "\"{\\\"viewport\\\":[1536,960],\\\"route\\\":\\\"#/inventory\\\",\\\"overflow\\\":false}\"\n"
+  },
+  {
+    "time": "2026-10-04T05:00:34.051341+00:00",
+    "args": [
+      "set",
+      "viewport",
+      "900",
+      "700"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "time": "2026-10-04T05:00:34.238521+00:00",
+    "args": [
+      "screenshot",
+      "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/agent-tools-current-900x700.png"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/agent-tools-current-900x700.png\n"
+  },
+  {
+    "time": "2026-10-04T05:00:34.240707+00:00",
+    "args": [
+      "eval",
+      "JSON.stringify({viewport:[innerWidth,innerHeight],route:location.hash,overflow:document.documentElement.scrollWidth>innerWidth})"
+    ],
+    "exitCode": 0,
+    "output": "\"{\\\"viewport\\\":[900,700],\\\"route\\\":\\\"#/inventory\\\",\\\"overflow\\\":false}\"\n"
+  },
+  {
+    "time": "2026-10-04T05:00:34.264861+00:00",
+    "args": [
+      "snapshot",
+      "-i"
+    ],
+    "exitCode": 0,
+    "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisInventoryHealthDataSettingsLocal wr\" [ref=e1] clickable [onclick]\n  - link \"Skip to content\" [ref=e2]\n  - navigation \"Primary navigation\" [ref=e3]\n    - link \"Overview\" [ref=e6]\n    - link \"Sessions\" [ref=e7]\n    - link \"Analysis\" [ref=e8]\n    - link \"Inventory\" [ref=e9]\n    - link \"Health\" [ref=e10]\n    - link \"Data\" [ref=e11]\n    - link \"Settings\" [ref=e12]\n  - heading \"Agent tools\" [level=1, ref=e13]\n  - button \"Refresh installations\" [ref=e14]\n  - region \"Cutokyo search access\" [ref=e4]\n    - heading \"Cutokyo search access\" [level=2, ref=e15]\n    - link \"Manage search access in Settings\" [ref=e16]\n  - region \"Agent tool filters\" [ref=e5]\n    - searchbox \"Search installed tools\" [ref=e23]\n    - combobox \"HARNESS\" [expanded=false, ref=e24]: All harnesses\n      - option \"All harnesses\" [selected, ref=e35]\n      - option \"Claude Code\" [ref=e36]\n      - option \"Codex\" [ref=e37]\n      - option \"OpenCode\" [ref=e38]\n  - tab \"All 8\" [selected, ref=e17]\n  - tab \"MCP servers 2\" [ref=e18]\n  - tab \"Plugins 2\" [ref=e19]\n  - tab \"Hooks 2\" [ref=e20]\n  - tab \"Skills 1\" [ref=e21]\n  - tab \"Instructions 1\" [ref=e22]\n  - button \"Manage docs-73A9\" [ref=e25]\n  - button \"Manage Cutokyo search MCP\" [ref=e26]\n  - button \"Manage fixture-processor-73A9\" [ref=e27]\n  - button \"Verification\" [ref=e28]\n  - button \"Manage release-notes-indexer\" [ref=e29]\n  - button \"Verification\" [ref=e30]\n  - button \"Manage Cutokyo SessionStart\" [ref=e31]\n  - button \"Manage AGENTS.md\" [ref=e32]\n  - button \"Manage PreToolUse project check\" [ref=e33]\n  - button \"Manage protocol-check\" [ref=e34]\n"
+  }
+]

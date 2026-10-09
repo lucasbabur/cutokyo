@@ -57,7 +57,6 @@ const REQUIRED_JEV_CASES = [
   'search-detail-resume',
   'retention-delete-confirmation',
   'guard-proxy-coverage-language',
-  'analysis-preview-cancel',
   'degraded-health-recovery',
   'mcp-plugin-inventory',
   'visual-keyboard-consistency',

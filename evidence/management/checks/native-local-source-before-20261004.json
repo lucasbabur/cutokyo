@@ -1,0 +1,3898 @@
+{
+  "head": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "index_sha256": "c752b9009048069f7f3c5e0cf0c7b5aea6d5d0221a812be2e8a74ee0e26e7b42",
+  "files": {
+    ".claude/agents/cutokyo-architect.md": {
+      "sha256": "5957c47aba70b54faea50d963948b7c898024a3d5db65b59dc61f060a5491d09",
+      "fingerprint": [
+        33188,
+        5315,
+        1789864730071781481,
+        1789864730072781496,
+        12629633
+      ]
+    },
+    ".claude/agents/cutokyo-cli-ops-builder.md": {
+      "sha256": "ca89c45ea96a78a8c9e1d1ba8f21a595b3634bf2ded2f50a47c0cd31c0abd630",
+      "fingerprint": [
+        33188,
+        3311,
+        1789856429834399411,
+        1789856429836399441,
+        12629631
+      ]
+    },
+    ".claude/agents/cutokyo-core-builder.md": {
+      "sha256": "3edbec6f3fc22c5c278c5d4da4aa732ff019d5c3d628495a43abc47b65f3a04d",
+      "fingerprint": [
+        33188,
+        4298,
+        1789856392483829568,
+        1789856392484829584,
+        12629627
+      ]
+    },
+    ".claude/agents/cutokyo-desktop-builder.md": {
+      "sha256": "1da8c218dc1319df88feb772bea4712782fb90814c5b0d551292b34640b16a22",
+      "fingerprint": [
+        33188,
+        3709,
+        1789858935714351004,
+        1789858935715351019,
+        12629626
+      ]
+    },
+    ".claude/agents/cutokyo-extension-builder.md": {
+      "sha256": "d0ff2aaaa1904c1fb1d3e40a45bed91c76c049d713a6d020f5eb9539f250d91f",
+      "fingerprint": [
+        33188,
+        3730,
+        1789856413853155592,
+        1789856413854155607,
+        12629628
+      ]
+    },
+    ".claude/agents/cutokyo-gatekeeper.md": {
+      "sha256": "01bda611725e4465564b532ef98c7bc024ac5a7f6ffe385d1434334103a2e054",
+      "fingerprint": [
+        33188,
+        2480,
+        1789855580610443147,
+        1789855580611443162,
+        12629635
+      ]
+    },
+    ".claude/agents/cutokyo-harness-builder.md": {
+      "sha256": "40314b6915137647d87259b92fe28f7da99966f4a385c48267c55ec6808cf1f5",
+      "fingerprint": [
+        33188,
+        3684,
+        1789856405357025970,
+        1789856405359026000,
+        12629636
+      ]
+    },
+    ".claude/agents/cutokyo-jev-checker.md": {
+      "sha256": "ee7a49f6795622c2cc4ebe64ac86e78cb6a01e598d6df1cca368a4ad5a50df3b",
+      "fingerprint": [
+        33188,
+        2891,
+        1789858928060235825,
+        1789858928062235855,
+        12629642
+      ]
+    },
+    ".claude/agents/cutokyo-product-qa.md": {
+      "sha256": "f899e133ecd10cf31789c43eb59fdca9be8feb205bbf6fb871b21e3bb641a95c",
+      "fingerprint": [
+        33188,
+        3564,
+        1789856969294668612,
+        1789856969295668626,
+        12629622
+      ]
+    },
+    ".claude/agents/cutokyo-technical-reviewer.md": {
+      "sha256": "a80a4c00fe4ad5aadc9a8432272624a67c63637f712ff4a14158f5d9fc035df3",
+      "fingerprint": [
+        33188,
+        3926,
+        1789858758324681655,
+        1789858758326681685,
+        12629639
+      ]
+    },
+    ".claude/fleets/20260919-cutokyo-v01/CONTEXT.md": {
+      "sha256": "7fb407429ab157cd7625b3290f281a6ee253c70fcc25eb7b1da82808929e3b5a",
+      "fingerprint": [
+        33188,
+        29244,
+        1789864710359486762,
+        1789864710360486777,
+        12629629
+      ]
+    },
+    ".claude/fleets/20260919-cutokyo-v01/index.html": {
+      "sha256": "2addfd59f498b63b8f694aa9931b523e626179180b4ec2514a399617859e49ab",
+      "fingerprint": [
+        33188,
+        195461,
+        1789859013834957846,
+        1789859013834957846,
+        12629643
+      ]
+    },
+    ".claude/fleets/20260919-cutokyo-v01/jev-cases.yaml": {
+      "sha256": "f9840d96c4ec18b8991b21ebc40f0754d3f54c3900a55ad1a55c083416ee4eed",
+      "fingerprint": [
+        33188,
+        3823,
+        1789858886620612244,
+        1789858886621612259,
+        12629601
+      ]
+    },
+    ".claude/fleets/20260919-cutokyo-v01/review.json": {
+      "sha256": "3a991641eec0f06c4c0a0ee1b6e70420856dfa990f398ac4cb59126266c515e3",
+      "fingerprint": [
+        33188,
+        68974,
+        1789864729801777444,
+        1789864729803777474,
+        12629632
+      ]
+    },
+    ".claude/skills/cutokyo-contract/SKILL.md": {
+      "sha256": "c19e476fbb7e767926ab9006e20493b1a2c5bf9ef4f56396a0ddc8c04e7a1f76",
+      "fingerprint": [
+        33188,
+        7975,
+        1789856759023442464,
+        1789856759025442494,
+        12629621
+      ]
+    },
+    ".claude/skills/cutokyo-runtime-qa/SKILL.md": {
+      "sha256": "4499636f7c4305d845a7c61437103659f5844a9fac589d719b0038161888bece",
+      "fingerprint": [
+        33188,
+        5617,
+        1789858746661506149,
+        1789858746662506163,
+        12629630
+      ]
+    },
+    ".claude/workflows/cutokyo-finish.js": {
+      "sha256": "763604cd4ec4e9badfc4b38b9a933b6906eda6f02d4a3a1864231bc4a274292b",
+      "fingerprint": [
+        33188,
+        47468,
+        1790045839832000161,
+        1790045839832000161,
+        12627794
+      ]
+    },
+    ".claude/workflows/cutokyo-v01.js": {
+      "sha256": "93edf9d5af380d6fe339951fb740b3410005884781082e2934d445200c6eac2f",
+      "fingerprint": [
+        33188,
+        36243,
+        1789883851785188846,
+        1789883851786188860,
+        12629929
+      ]
+    },
+    ".github/ISSUE_TEMPLATE/bug_report.yml": {
+      "sha256": "6b6961e20c7f0e3c6aecfc64047dd60f053f637ef2128d9bcfebf737281a99b4",
+      "fingerprint": [
+        33188,
+        1787,
+        1789865935289882602,
+        1789865935290882617,
+        14210787
+      ]
+    },
+    ".github/ISSUE_TEMPLATE/config.yml": {
+      "sha256": "838090a376322d7305cf9b359d451b6d0b3a78af1d373554c5fbc6eb00a339a6",
+      "fingerprint": [
+        33188,
+        234,
+        1789865935306882858,
+        1789865935307882873,
+        14210789
+      ]
+    },
+    ".github/ISSUE_TEMPLATE/feature_request.yml": {
+      "sha256": "4e100105d8afad687c045a2fd22ec66de7d496bce0030a16f015ca626739acfe",
+      "fingerprint": [
+        33188,
+        1308,
+        1789865935297882723,
+        1789865935299882752,
+        14210788
+      ]
+    },
+    ".github/PULL_REQUEST_TEMPLATE.md": {
+      "sha256": "d26b58d1bd14f031c4d7582a4187fc04b6dce89d2e06a90fb896171ef11fbbf7",
+      "fingerprint": [
+        33188,
+        961,
+        1789865935267882272,
+        1789865935268882287,
+        14210786
+      ]
+    },
+    ".github/workflows/ci.yml": {
+      "sha256": "7020915e8bc6a98c44e2cb143dcdafa632749b10ce2b0b807ad5ed98212f10e1",
+      "fingerprint": [
+        33188,
+        8725,
+        1790188600239165787,
+        1790188600239165787,
+        14161213
+      ]
+    },
+    ".github/workflows/dco.yml": {
+      "sha256": "acbb9f474e1f61344f7eb6209579e051a0fcd2575928656d19927620dd757316",
+      "fingerprint": [
+        33188,
+        375,
+        1789865935315882993,
+        1789865935316883008,
+        14210790
+      ]
+    },
+    ".github/workflows/drift.yml": {
+      "sha256": "8a101dbe9f61fab5b02edfae885611c57873b38734cd8bcd9557de9a5ce4ca26",
+      "fingerprint": [
+        33188,
+        1829,
+        1789890783990949028,
+        1789890783990949028,
+        14210792
+      ]
+    },
+    ".github/workflows/release.yml": {
+      "sha256": "5447522cf8310b360caa53f0a9e08b914514d36bb39a07c3a163d79767119c25",
+      "fingerprint": [
+        33188,
+        25817,
+        1790188600239779489,
+        1790188600239779489,
+        14161329
+      ]
+    },
+    ".gitignore": {
+      "sha256": "2d907c6dcd4b725118936411d8f4efa90390ebdaca196e42afb7dcbc86310a00",
+      "fingerprint": [
+        33188,
+        228,
+        1790188600239856224,
+        1790188600239856224,
+        4905510
+      ]
+    },
+    ".prettierignore": {
+      "sha256": "bdb574e5eee90ba4253bea2a445ece34e20a4f6601e3e91e999b4259390c7e45",
+      "fingerprint": [
+        33188,
+        88,
+        1789865549550088928,
+        1789865549552088958,
+        4905254
+      ]
+    },
+    "CODE_OF_CONDUCT.md": {
+      "sha256": "a384d8361da3ac034d5116aece38e339fa846bec8c18efcb1338a4ca0eace49a",
+      "fingerprint": [
+        33188,
+        3262,
+        1789865863913811395,
+        1789865863914811410,
+        4905261
+      ]
+    },
+    "CONTRIBUTING.md": {
+      "sha256": "0206892b5165c4a8e3729523bf0d0cbcb621aad4ad218560be908a3b6dcb62d7",
+      "fingerprint": [
+        33188,
+        3357,
+        1789865863893811095,
+        1789865863895811126,
+        4905259
+      ]
+    },
+    "Cargo.lock": {
+      "sha256": "fca4ebda879f206a7d238ec457ea6341f0c4c52646ae00e2dcc40845afc6b8f6",
+      "fingerprint": [
+        33188,
+        182022,
+        1791096741406010459,
+        1791096741406010459,
+        4905246
+      ]
+    },
+    "Cargo.toml": {
+      "sha256": "dbd4fead55ea774ecf1fa2838aa5f068d899243dbd712362365d06868827531b",
+      "fingerprint": [
+        33188,
+        3473,
+        1791095981024702385,
+        1791095981118703782,
+        4903964
+      ]
+    },
+    "LICENSE": {
+      "sha256": "c423df1acdcf55a60fd68a0b0a958a9b463ad1f769349aad2f40943e1aefdcc1",
+      "fingerprint": [
+        33188,
+        11357,
+        1789865863863810645,
+        1789865863864810660,
+        4905256
+      ]
+    },
+    "NOTICE": {
+      "sha256": "2c798b5a882eada91cef7aa455087a5a25fa656fa1f5c6cfc18d27dcf17167f0",
+      "fingerprint": [
+        33188,
+        406,
+        1789865863874810810,
+        1789865863875810825,
+        4905257
+      ]
+    },
+    "README.md": {
+      "sha256": "5f63573622974f5b8d5ba4c8fae325b43bdfc56b9879e746cd74ff8032fbb3dd",
+      "fingerprint": [
+        33188,
+        11336,
+        1791096754274201830,
+        1791096754275201845,
+        4903956
+      ]
+    },
+    "SECURITY.md": {
+      "sha256": "cccc86ceefd5a75a0feeefbdf7d751f0ffb1802fff2c242cd1ccf666a847ab7e",
+      "fingerprint": [
+        33188,
+        1594,
+        1789865863904811260,
+        1789865863906811290,
+        4905260
+      ]
+    },
+    "THIRD_PARTY.md": {
+      "sha256": "60fa697b7e1a06327edc6a81ccfbf885bb7d077f3b6a50bccb33f8f17a122b4b",
+      "fingerprint": [
+        33188,
+        12358,
+        1791096779245573194,
+        1791096779246573209,
+        4903963
+      ]
+    },
+    "TRADEMARK.md": {
+      "sha256": "f7f70c379554aea76f2d63bd01cdddeec461b7952c952860d418146ff202a1e2",
+      "fingerprint": [
+        33188,
+        942,
+        1789865863884810960,
+        1789865863886929604,
+        4905258
+      ]
+    },
+    "crates/cutokyo-cli/Cargo.toml": {
+      "sha256": "a09746e6a3ef76e8dbd27d37ea90ffd528f302faca5e035a1eb59c418a65ab0f",
+      "fingerprint": [
+        33188,
+        722,
+        1789890783991949041,
+        1789890783991949041,
+        14210736
+      ]
+    },
+    "crates/cutokyo-cli/src/bundle.rs": {
+      "sha256": "090ad913b07c95fa84104c2da351ad89951ba5dee9dc6907be8e5ef030816850",
+      "fingerprint": [
+        33188,
+        17674,
+        1791089154105430313,
+        1791089154105430313,
+        14211980
+      ]
+    },
+    "crates/cutokyo-cli/src/inventory.rs": {
+      "sha256": "68da4844208e4d7ad664f7cf0321d278c377568c9a5af164aad8faef7b4b3b6b",
+      "fingerprint": [
+        33188,
+        4763,
+        1791092892697012247,
+        1791092892697012247,
+        14208887
+      ]
+    },
+    "crates/cutokyo-cli/src/logging.rs": {
+      "sha256": "bfb5214f7b0a7908b0189846b7aced3d124826e9d29e9f7fd1b705e380f1dac7",
+      "fingerprint": [
+        33188,
+        26540,
+        1790049709150974935,
+        1790049709150974935,
+        14211981
+      ]
+    },
+    "crates/cutokyo-cli/src/main.rs": {
+      "sha256": "30630f4b2eb6fe039d335c1d02cf443b595ca9ffcac550a4ac499457d8505fbb",
+      "fingerprint": [
+        33188,
+        63072,
+        1791096917193492740,
+        1791096917193492740,
+        14208889
+      ]
+    },
+    "crates/cutokyo-cli/tests/backup_restore.rs": {
+      "sha256": "6c56afe5af0ec88e28bc002f1526cc3f43c863d27c2522c7bc1ff2a4174466e4",
+      "fingerprint": [
+        33188,
+        5502,
+        1791093121940387618,
+        1791093121940387618,
+        15388328
+      ]
+    },
+    "crates/cutokyo-cli/tests/cli_behavior.rs": {
+      "sha256": "bc40de5ddcc86587ce722861e18f176434231f5ee226c69db961240153fbf27d",
+      "fingerprint": [
+        33188,
+        46839,
+        1791094012079270564,
+        1791094012079270564,
+        15388326
+      ]
+    },
+    "crates/cutokyo-cli/tests/setup_resume.rs": {
+      "sha256": "63df1695d6acc7b9f2fc96daf25b1ff12e6bc8d616d2612c7d66ab04b296859a",
+      "fingerprint": [
+        33188,
+        9382,
+        1791096917202494625,
+        1791096917202494625,
+        15388327
+      ]
+    },
+    "crates/cutokyo-core/Cargo.toml": {
+      "sha256": "a31b7f29c1a92693b6256f02016448087e769d4ee0db84f77a4237ed6c8edc43",
+      "fingerprint": [
+        33188,
+        1294,
+        1791092678451857714,
+        1791092678453857743,
+        12760362
+      ]
+    },
+    "crates/cutokyo-core/migrations/0001_initial.sql": {
+      "sha256": "1bee65c7ca24d2c67a43aff46d241cd3b20034f1cb6c1c32f2bd3373dbdb8f35",
+      "fingerprint": [
+        33188,
+        3931,
+        1789878006900236139,
+        1789878006900236139,
+        12759360
+      ]
+    },
+    "crates/cutokyo-core/migrations/0002_durable_core.sql": {
+      "sha256": "2c2cf85982a47b7e09921dd09f3aad183b745b40724181cef1e3a49b3dde43af",
+      "fingerprint": [
+        33188,
+        9971,
+        1789878006901126801,
+        1789878006901126801,
+        12759361
+      ]
+    },
+    "crates/cutokyo-core/migrations/0003_session_search.sql": {
+      "sha256": "8abce7566be7f2043894193b704eaf18253ac4b7bf6f87a8a92a67e2d077d0aa",
+      "fingerprint": [
+        33188,
+        3426,
+        1791092333157773610,
+        1791092333158773624,
+        12760359
+      ]
+    },
+    "crates/cutokyo-core/src/adapters.rs": {
+      "sha256": "461a1134e92994fa3eab71983bccc1088fe257bda2cbebc1a6767cc531dc8473",
+      "fingerprint": [
+        33188,
+        2796,
+        1791091432188507745,
+        1791091432189507760,
+        14208875
+      ]
+    },
+    "crates/cutokyo-core/src/adapters/claude_code/capture.rs": {
+      "sha256": "754acaf5e836af791d02ef157587c1a2f34692cc0df6510d4de39bf4736b399d",
+      "fingerprint": [
+        33188,
+        53204,
+        1789890262215146819,
+        1789890262215146819,
+        18779259
+      ]
+    },
+    "crates/cutokyo-core/src/adapters/claude_code/inventory.rs": {
+      "sha256": "717fd20291cf371bb18323f92ff8af568ef7322c3cea20e0e918f1cd3b20aaab",
+      "fingerprint": [
+        33188,
+        39589,
+        1789890262215315107,
+        1789890262215315107,
+        18779260
+      ]
+    },
+    "crates/cutokyo-core/src/adapters/claude_code/mod.rs": {
+      "sha256": "cc762cebe029448d13a4fae554e736ac9c2b772c1293644ab0c0df7736ae5e8b",
+      "fingerprint": [
+        33188,
+        1814,
+        1789890262215315107,
+        1789890262215315107,
+        18779261
+      ]
+    },
+    "crates/cutokyo-core/src/adapters/claude_code/runtime.rs": {
+      "sha256": "d217a2d5a5d79f0fa85d1d69fafbe055b203d2be4b190997530bbdd00542d4d3",
+      "fingerprint": [
+        33188,
+        25103,
+        1789890262215315107,
+        1789890262215315107,
+        18779262
+      ]
+    },
+    "crates/cutokyo-core/src/adapters/claude_code/setup.rs": {
+      "sha256": "6daca3e6233849f6ed53499a9a37f27bd8d741a544a2dd78d4fe8bbeb932b618",
+      "fingerprint": [
+        33188,
+        77724,
+        1791093122020388796,
+        1791093122020388796,
+        18786016
+      ]
+    },
+    "crates/cutokyo-core/src/adapters/codex/capture.rs": {
+      "sha256": "92f94222261b800df577be38fa08e49a4da63b6e61cfd6492b147b73a4af0338",
+      "fingerprint": [
+        33188,
+        82919,
+        1789890274214117138,
+        1789890274214117138,
+        18779280
+      ]
+    },
+    "crates/cutokyo-core/src/adapters/codex/mod.rs": {
+      "sha256": "1bfd91109279c30231d22e30a69d1abff4a398164266b73ae8c081919cf0bfe9",
+      "fingerprint": [
+        33188,
+        39490,
+        1789931054147913312,
+        1789931054147913312,
+        18779281
+      ]
+    },
+    "crates/cutokyo-core/src/adapters/codex/setup.rs": {
+      "sha256": "68da0ea32627140a82fe569c5da440d52792ad5d769adfba61444c48adb73d96",
+      "fingerprint": [
+        33188,
+        79718,
+        1791096917293500629,
+        1791096917293500629,
+        18786032
+      ]
+    },
+    "crates/cutokyo-core/src/adapters/opencode/inventory.rs": {
+      "sha256": "6ab344b03c0a8b680db2002d622148f83387ee1d83883a2cbcf37185fe22a5e5",
+      "fingerprint": [
+        33188,
+        42624,
+        1789890341542019450,
+        1789890341542019450,
+        18779395
+      ]
+    },
+    "crates/cutokyo-core/src/adapters/opencode/mod.rs": {
+      "sha256": "e20db21ed7604aa03421480809381729e4371314d38c7adb270e16a45de32c28",
+      "fingerprint": [
+        33188,
+        50030,
+        1791096917305957877,
+        1791096917305957877,
+        18786023
+      ]
+    },
+    "crates/cutokyo-core/src/adapters/opencode/server.rs": {
+      "sha256": "8a477cd817addd386012f792a4031f601927cf0b4bda96ce97b99a5919fd1d69",
+      "fingerprint": [
+        33188,
+        53353,
+        1789890341543476420,
+        1789890341543476420,
+        18779397
+      ]
+    },
+    "crates/cutokyo-core/src/adapters/opencode/setup.rs": {
+      "sha256": "244d2a7381e9cc7034f3183030caa2188970462a808bd270c0913726b6fe1c87",
+      "fingerprint": [
+        33188,
+        57688,
+        1791096917316736802,
+        1791096917316736802,
+        18799703
+      ]
+    },
+    "crates/cutokyo-core/src/adapters/terminal.rs": {
+      "sha256": "c33dc0cafbf7beb3628a6428b909360516e73dcd2b1f21c43a827a818009720f",
+      "fingerprint": [
+        33188,
+        12625,
+        1791093122068389503,
+        1791093122068389503,
+        18799711
+      ]
+    },
+    "crates/cutokyo-core/src/analysis.rs": {
+      "sha256": "bf7e6230657b8560561af991dfcac32d9d373d9c84e4a65e3a4c310641f23242",
+      "fingerprint": [
+        33188,
+        30110,
+        1791089382510392615,
+        1791089382510392615,
+        14211931
+      ]
+    },
+    "crates/cutokyo-core/src/analysis_tests.rs": {
+      "sha256": "adbe857066e8f80d8631097b954ae3342881ac66f80af4f3d00f5a4416a7ee58",
+      "fingerprint": [
+        33188,
+        10801,
+        1791089154101208864,
+        1791089154101208864,
+        14211932
+      ]
+    },
+    "crates/cutokyo-core/src/app.rs": {
+      "sha256": "56e6e51ced47d7fd10a20c42240200a98af4a75eaf1c4fe1c5f1f0cf5e19f4ee",
+      "fingerprint": [
+        33188,
+        71869,
+        1791096917326626679,
+        1791096917326626679,
+        14208891
+      ]
+    },
+    "crates/cutokyo-core/src/bundle.rs": {
+      "sha256": "17f52a743ad6ae5dcab3143000832b00b4b6d95fd011823f31fd0bf1634114a4",
+      "fingerprint": [
+        33188,
+        6320,
+        1791089836686015578,
+        1791089836686015578,
+        14211933
+      ]
+    },
+    "crates/cutokyo-core/src/capture_setup.rs": {
+      "sha256": "0dd0d9077408ab9c9edba3366bfb104ac2948b17c058dc65db90e4a8b133bfc8",
+      "fingerprint": [
+        33188,
+        39962,
+        1791097035327381540,
+        1791097035328381555,
+        14208872
+      ]
+    },
+    "crates/cutokyo-core/src/capture_setup_tests.rs": {
+      "sha256": "edd964dbf40d9b840d63db7c08f6a521121ad37ce6f8c38eddbb671b724693e5",
+      "fingerprint": [
+        33188,
+        10100,
+        1791096917338309329,
+        1791096917338309329,
+        14208884
+      ]
+    },
+    "crates/cutokyo-core/src/config.rs": {
+      "sha256": "c939a2c8b1d9a644ad396ceda738d68040876acedc34143cc053aa860b15e7aa",
+      "fingerprint": [
+        33188,
+        46948,
+        1791090441689923644,
+        1791090441691923673,
+        14159878
+      ]
+    },
+    "crates/cutokyo-core/src/guards.rs": {
+      "sha256": "b7b3aede84b3cb0edbea85abfb62dab3e0d8e43975e68b80a5a411cf67c32ff4",
+      "fingerprint": null
+    },
+    "crates/cutokyo-core/src/guards_tests.rs": {
+      "sha256": "b7b3aede84b3cb0edbea85abfb62dab3e0d8e43975e68b80a5a411cf67c32ff4",
+      "fingerprint": null
+    },
+    "crates/cutokyo-core/src/ingest.rs": {
+      "sha256": "48402743c5964eddab3f3e9ed410d3985f0edf2e02a9ab014e29502cdd8dd85a",
+      "fingerprint": [
+        33188,
+        42272,
+        1791096917347245441,
+        1791096917347245441,
+        14208892
+      ]
+    },
+    "crates/cutokyo-core/src/inventory_management.rs": {
+      "sha256": "a527fed865cdd0328bd2303485e8c954606a775d6f1e29a286381fc36f222145",
+      "fingerprint": [
+        33188,
+        72505,
+        1791093431879951164,
+        1791093431879951164,
+        14208888
+      ]
+    },
+    "crates/cutokyo-core/src/inventory_management/tests.rs": {
+      "sha256": "71102b8f2825fa383acd3399821c76bc3346347e5b6a071e3c7f7a25bd0316da",
+      "fingerprint": [
+        33188,
+        28969,
+        1791093431867950987,
+        1791093431867950987,
+        14160301
+      ]
+    },
+    "crates/cutokyo-core/src/lib.rs": {
+      "sha256": "b16589e1d516e89d4a06b61f94c598e6f42f0bc0187af3145fd41c94e15450a5",
+      "fingerprint": [
+        33188,
+        558,
+        1791089836693015680,
+        1791089836693015680,
+        14208867
+      ]
+    },
+    "crates/cutokyo-core/src/mcp.rs": {
+      "sha256": "74978f5f0a054c4e1fd10fc926810c71c86c9ca905b9551da3aab5277dbe7266",
+      "fingerprint": [
+        33188,
+        64387,
+        1791093122118390239,
+        1791093122118390239,
+        14161527
+      ]
+    },
+    "crates/cutokyo-core/src/mcp_config.rs": {
+      "sha256": "fae159bdd5f20904fe2106ce7ba3c5978f6e65fa54def8fc6900ae7e93c31e52",
+      "fingerprint": [
+        33188,
+        46240,
+        1789890565049014829,
+        1789890565049014829,
+        14211937
+      ]
+    },
+    "crates/cutokyo-core/src/mcp_tests.rs": {
+      "sha256": "b7c249389611922fd4153b8b81aac3b6240e52d08fd9ddd9ad928bd604632f50",
+      "fingerprint": [
+        33188,
+        27967,
+        1791093122127390371,
+        1791093122127390371,
+        14160573
+      ]
+    },
+    "crates/cutokyo-core/src/plugin.rs": {
+      "sha256": "9252d76b620b2aad2b5cf714dd78cf6820241cd4c2d3063f954d85e1cfadedec",
+      "fingerprint": [
+        33188,
+        68423,
+        1789890565050014842,
+        1789890565050014842,
+        14211939
+      ]
+    },
+    "crates/cutokyo-core/src/plugin_protocol_tests.rs": {
+      "sha256": "ed8a29eb4861f51c0b2a6d2d11ef17d00773be081f2997241d24ac0167c9ee47",
+      "fingerprint": [
+        33188,
+        20574,
+        1789890565050014842,
+        1789890565050014842,
+        14211940
+      ]
+    },
+    "crates/cutokyo-core/src/proxy.rs": {
+      "sha256": "f772841e0e2bde685571fae8179fb7317169b81e66be4bf70162f43dbc38e100",
+      "fingerprint": [
+        33188,
+        24602,
+        1791093693446802474,
+        1791093693447802489,
+        14208885
+      ]
+    },
+    "crates/cutokyo-core/src/proxy_tests.rs": {
+      "sha256": "c2e87b5ec2bfc4b8534058c24f992de339674eea33cda65baffdc6224dd0d38e",
+      "fingerprint": [
+        33188,
+        11944,
+        1791093782560114581,
+        1791093782561114596,
+        14208862
+      ]
+    },
+    "crates/cutokyo-core/src/redaction.rs": {
+      "sha256": "a9b3c8be036db43f126957d548117514918722540417f07c8a0b517ce3460e76",
+      "fingerprint": [
+        33188,
+        12534,
+        1791093693459802666,
+        1791093693460802680,
+        14160734
+      ]
+    },
+    "crates/cutokyo-core/src/redaction_tests.rs": {
+      "sha256": "6c1a6be49d7807fdfe5f858ba9efb504aa585a4f6412ea64a632773a443dbf87",
+      "fingerprint": [
+        33188,
+        3641,
+        1791089836672015371,
+        1791089836672015371,
+        14208865
+      ]
+    },
+    "crates/cutokyo-core/src/resume.rs": {
+      "sha256": "e343392eccca58cc14fdcb6b3a79f5078260a6fa4fb99bf3f2a5999a0ccf5298",
+      "fingerprint": [
+        33188,
+        2512,
+        1791093122142390593,
+        1791093122142390593,
+        14208882
+      ]
+    },
+    "crates/cutokyo-core/src/store.rs": {
+      "sha256": "b63abe83c117ba78e59490a3dcd534f8ee815515ae319d42876ccdd8308d3f82",
+      "fingerprint": [
+        33188,
+        279168,
+        1791096917423334467,
+        1791096917423334467,
+        14208883
+      ]
+    },
+    "crates/cutokyo-core/src/store_backup_tests.rs": {
+      "sha256": "396cabc6a2997ef3846af4be134155c5403ee88759e645dab537f0f095b5ba88",
+      "fingerprint": [
+        33188,
+        19305,
+        1791093122178391122,
+        1791093122178391122,
+        14208868
+      ]
+    },
+    "crates/cutokyo-core/src/store_search_tests.rs": {
+      "sha256": "7a164c83cc95902682cebc9afccf48c29030767ae7bc7bed88b852bc5577a0cf",
+      "fingerprint": [
+        33188,
+        16003,
+        1791093122180391152,
+        1791093122180391152,
+        14208877
+      ]
+    },
+    "crates/cutokyo-desktop/Cargo.toml": {
+      "sha256": "bd227c600fa648c2958e621406f707d4fa8f8f190b7525c2e8e5afd3abd3a43c",
+      "fingerprint": [
+        33188,
+        1072,
+        1790698677160813213,
+        1790698677165813296,
+        14207184
+      ]
+    },
+    "crates/cutokyo-desktop/build.rs": {
+      "sha256": "2f0fd2f2780c306fd1e15f11f44e2afb00f737a96482707acc07859c4cf9d511",
+      "fingerprint": [
+        33188,
+        199,
+        1789867391231805314,
+        1789867391232805330,
+        14210800
+      ]
+    },
+    "crates/cutokyo-desktop/capabilities/main.json": {
+      "sha256": "4cf94d0adc7f61521c3ac908295b524a11be58722b30b4b2ba06b50c48fda50d",
+      "fingerprint": [
+        33188,
+        228,
+        1789891810841710566,
+        1789891810841710566,
+        16434844
+      ]
+    },
+    "crates/cutokyo-desktop/icons/128x128.png": {
+      "sha256": "151b8ec940f133ad9c01a24c52fdcee9793a89496a85de58c1d7d45f094e61d3",
+      "fingerprint": [
+        33188,
+        3127,
+        1789890783993949068,
+        1789890783993949068,
+        15910825
+      ]
+    },
+    "crates/cutokyo-desktop/icons/128x128@2x.png": {
+      "sha256": "26a9ce7a29b8436b6161f9e7bb3943e5a546e7491ec83908e70a177a0483af0b",
+      "fingerprint": [
+        33188,
+        5966,
+        1789890783994811344,
+        1789890783994811344,
+        15910828
+      ]
+    },
+    "crates/cutokyo-desktop/icons/32x32.png": {
+      "sha256": "bd58db4bc1f3dc2844283e96c402650e19dca0618f0566db4f3e12cd5d9a3cce",
+      "fingerprint": [
+        33188,
+        924,
+        1789890783994811344,
+        1789890783994811344,
+        15910829
+      ]
+    },
+    "crates/cutokyo-desktop/icons/64x64.png": {
+      "sha256": "30f8f9440e70f253377268861dc088263fcb1dcb58d97e16a14795acbcae2bdd",
+      "fingerprint": [
+        33188,
+        1625,
+        1789890783994811344,
+        1789890783994811344,
+        15910830
+      ]
+    },
+    "crates/cutokyo-desktop/icons/Square107x107Logo.png": {
+      "sha256": "0ae86bea35fcf7b0f6ffc544fd947dd31e39392dad3eaca76044946f6a17cf9c",
+      "fingerprint": [
+        33188,
+        2538,
+        1789890783994811344,
+        1789890783994811344,
+        15910831
+      ]
+    },
+    "crates/cutokyo-desktop/icons/Square142x142Logo.png": {
+      "sha256": "3303cfec2252857c117bb887fb35426c4ccfb8b202908718ccc0f33d9ef0262d",
+      "fingerprint": [
+        33188,
+        3368,
+        1789890783994811344,
+        1789890783994811344,
+        15910832
+      ]
+    },
+    "crates/cutokyo-desktop/icons/Square150x150Logo.png": {
+      "sha256": "1508f0e7eb8b859f11961cca6017acc4938128a39ac51f9be2723e75f6b79425",
+      "fingerprint": [
+        33188,
+        3470,
+        1789890783994811344,
+        1789890783994811344,
+        15910833
+      ]
+    },
+    "crates/cutokyo-desktop/icons/Square284x284Logo.png": {
+      "sha256": "25d5b6d9d4e908667ad1f00a333fe7a7f1e5a3d193ed21014e99b4d0155be7d9",
+      "fingerprint": [
+        33188,
+        6700,
+        1789890783994811344,
+        1789890783994811344,
+        15910834
+      ]
+    },
+    "crates/cutokyo-desktop/icons/Square30x30Logo.png": {
+      "sha256": "1d5fdee8f82fb8ab2e2d0ee1f7db7a722ec37961335aebc0d0710a32cbd8dde7",
+      "fingerprint": [
+        33188,
+        783,
+        1789890783994811344,
+        1789890783994811344,
+        15910835
+      ]
+    },
+    "crates/cutokyo-desktop/icons/Square310x310Logo.png": {
+      "sha256": "1fcba8b91b5bdb187209dbb8a977967bcb4c1d44380fc0d64227ac5fd6b75771",
+      "fingerprint": [
+        33188,
+        7357,
+        1789890783994811344,
+        1789890783994811344,
+        15910836
+      ]
+    },
+    "crates/cutokyo-desktop/icons/Square44x44Logo.png": {
+      "sha256": "31704acf7c9195edeb6cc9d017731ee8da9899aba4a613b3328b951eb81f7320",
+      "fingerprint": [
+        33188,
+        1165,
+        1789890783994811344,
+        1789890783994811344,
+        15910837
+      ]
+    },
+    "crates/cutokyo-desktop/icons/Square71x71Logo.png": {
+      "sha256": "74a77cee31953c22c52b3bd530e52497d645e51c9be2d77a59c24b84bddc4ca4",
+      "fingerprint": [
+        33188,
+        1696,
+        1789890783994811344,
+        1789890783994811344,
+        15910838
+      ]
+    },
+    "crates/cutokyo-desktop/icons/Square89x89Logo.png": {
+      "sha256": "599f7637521cb5d1f2cc4eb87e9b8f6382f29c8c96dfd0bfa7a8755c8bcfd98b",
+      "fingerprint": [
+        33188,
+        2005,
+        1789890783994811344,
+        1789890783994811344,
+        15910839
+      ]
+    },
+    "crates/cutokyo-desktop/icons/StoreLogo.png": {
+      "sha256": "cc406f94ebb760cd63455a35f3ef8382d9d949528cef727d85dbba1f647c6b74",
+      "fingerprint": [
+        33188,
+        1229,
+        1789890783994949081,
+        1789890783994949081,
+        15910840
+      ]
+    },
+    "crates/cutokyo-desktop/icons/android/mipmap-anydpi-v26/ic_launcher.xml": {
+      "sha256": "298feaeffcd125a02ade0f1f285ec01d79591d53d9209c0df528e34b725564ff",
+      "fingerprint": [
+        33188,
+        261,
+        1789890783995704402,
+        1789890783995704402,
+        15910843
+      ]
+    },
+    "crates/cutokyo-desktop/icons/android/mipmap-hdpi/ic_launcher.png": {
+      "sha256": "b218642c857a18b85abb56183c3b25658641ed741b1a976570272ac1ba94c084",
+      "fingerprint": [
+        33188,
+        2400,
+        1789890783995704402,
+        1789890783995704402,
+        16434832
+      ]
+    },
+    "crates/cutokyo-desktop/icons/android/mipmap-hdpi/ic_launcher_foreground.png": {
+      "sha256": "c32d02ce1c7631b83ef1fe1e4a50b906c7ac63db7790ade4abf8d44144ab7951",
+      "fingerprint": [
+        33188,
+        3746,
+        1789890783995955787,
+        1789890783995955787,
+        16434833
+      ]
+    },
+    "crates/cutokyo-desktop/icons/android/mipmap-hdpi/ic_launcher_round.png": {
+      "sha256": "f255631b8f7e3ea6d11eddca0a1cfe49decd2bf4ce17b8d61de685c784beac8c",
+      "fingerprint": [
+        33188,
+        2410,
+        1789890783995955787,
+        1789890783995955787,
+        16434834
+      ]
+    },
+    "crates/cutokyo-desktop/icons/android/mipmap-mdpi/ic_launcher.png": {
+      "sha256": "e11ad7444333ba056d66d51a2a897676fa2fc9ad2715f846a75927dfe0a9d8af",
+      "fingerprint": [
+        33188,
+        2159,
+        1789890783995955787,
+        1789890783995955787,
+        16434836
+      ]
+    },
+    "crates/cutokyo-desktop/icons/android/mipmap-mdpi/ic_launcher_foreground.png": {
+      "sha256": "860bb0c159b5ef0e42c3806abb04a2556185d0de2a24f0b3e11ed055b797b703",
+      "fingerprint": [
+        33188,
+        2513,
+        1789890783996089279,
+        1789890783996089279,
+        16434837
+      ]
+    },
+    "crates/cutokyo-desktop/icons/android/mipmap-mdpi/ic_launcher_round.png": {
+      "sha256": "0e0fec68f8351bdff0220567c862cf3b289fc48a30515522d499285170433b91",
+      "fingerprint": [
+        33188,
+        2191,
+        1789890783996089279,
+        1789890783996089279,
+        16434838
+      ]
+    },
+    "crates/cutokyo-desktop/icons/android/mipmap-xhdpi/ic_launcher.png": {
+      "sha256": "cf023aa07961280a888f8a32f01f1e21b6ec277299b1d0671bf8e91be2086430",
+      "fingerprint": [
+        33188,
+        4714,
+        1789890783996089279,
+        1789890783996089279,
+        16434840
+      ]
+    },
+    "crates/cutokyo-desktop/icons/android/mipmap-xhdpi/ic_launcher_foreground.png": {
+      "sha256": "a988137185e4f69380ca899f45fd465709c3b5ba4310b1013cb5c549c11258ca",
+      "fingerprint": [
+        33188,
+        4839,
+        1789890783996213524,
+        1789890783996213524,
+        16434841
+      ]
+    },
+    "crates/cutokyo-desktop/icons/android/mipmap-xhdpi/ic_launcher_round.png": {
+      "sha256": "3d12d133b7b1e5bf69fc091b59c9af6fcba57cad8345bc6f61022bd9c889456e",
+      "fingerprint": [
+        33188,
+        4474,
+        1789890783996213524,
+        1789890783996213524,
+        16434842
+      ]
+    },
+    "crates/cutokyo-desktop/icons/android/mipmap-xxhdpi/ic_launcher.png": {
+      "sha256": "563dcdd4d35d7f38ccbc191afe48dc6184f6b5d55242ee0ca07468007de6544c",
+      "fingerprint": [
+        33188,
+        7618,
+        1789890783996213524,
+        1789890783996213524,
+        16571078
+      ]
+    },
+    "crates/cutokyo-desktop/icons/android/mipmap-xxhdpi/ic_launcher_foreground.png": {
+      "sha256": "d126a0452b53560abacb4166cef2cdf86f0567c660d4478ac022cdd387703e55",
+      "fingerprint": [
+        33188,
+        7691,
+        1789890783996616025,
+        1789890783996616025,
+        16571079
+      ]
+    },
+    "crates/cutokyo-desktop/icons/android/mipmap-xxhdpi/ic_launcher_round.png": {
+      "sha256": "647d324df0b572ea53c07ff3d6def144053f403550a6851a29e2c1df6029b6eb",
+      "fingerprint": [
+        33188,
+        6475,
+        1789890783996616025,
+        1789890783996616025,
+        16571080
+      ]
+    },
+    "crates/cutokyo-desktop/icons/android/mipmap-xxxhdpi/ic_launcher.png": {
+      "sha256": "148205540a5525d70bca5de98bdbcbffece397a509aff0ef3c7d9967de454dff",
+      "fingerprint": [
+        33188,
+        9957,
+        1789890783996616025,
+        1789890783996616025,
+        16571082
+      ]
+    },
+    "crates/cutokyo-desktop/icons/android/mipmap-xxxhdpi/ic_launcher_foreground.png": {
+      "sha256": "416edf0232fe21e71473518ccdbebfb801c4133d9c988f48542d0c92f7ae1d65",
+      "fingerprint": [
+        33188,
+        10862,
+        1789890783996989601,
+        1789890783996989601,
+        16571083
+      ]
+    },
+    "crates/cutokyo-desktop/icons/android/mipmap-xxxhdpi/ic_launcher_round.png": {
+      "sha256": "fa99b3b94acdfcefc6868a52299151a4985eeed8f3a598bea7201ba5e9f38a45",
+      "fingerprint": [
+        33188,
+        8682,
+        1789890783996989601,
+        1789890783996989601,
+        16571084
+      ]
+    },
+    "crates/cutokyo-desktop/icons/android/values/ic_launcher_background.xml": {
+      "sha256": "b99fd1f0953ff48a8e5ec0612b6d05cc9eba01bfd87c9a71378f287bf8c3bfbe",
+      "fingerprint": [
+        33188,
+        115,
+        1789890783996989601,
+        1789890783996989601,
+        16571086
+      ]
+    },
+    "crates/cutokyo-desktop/icons/icon.icns": {
+      "sha256": "8ec7e71d959793595a6671464643763cf369c26bf7b57095177f3ccd9cb43f7d",
+      "fingerprint": [
+        33188,
+        76680,
+        1789890783996989601,
+        1789890783996989601,
+        15910844
+      ]
+    },
+    "crates/cutokyo-desktop/icons/icon.ico": {
+      "sha256": "78dc0281773b5dfafc75640f6c90c1467f51ada86d27600f1cf012423b7adac5",
+      "fingerprint": [
+        33188,
+        12922,
+        1789890783996989601,
+        1789890783996989601,
+        15910845
+      ]
+    },
+    "crates/cutokyo-desktop/icons/icon.png": {
+      "sha256": "4c70c6a7e6cfb7f0bc5f42a91a6ff2a6d4c91b1d83ce7bc43b210fa6789f4db9",
+      "fingerprint": [
+        33188,
+        13195,
+        1789890783996989601,
+        1789890783996989601,
+        15910846
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-20x20@1x.png": {
+      "sha256": "8c33f63b83201b265f320ba8742e5e4bdabe9132907b1f38d07afad600ebb244",
+      "fingerprint": [
+        33188,
+        569,
+        1789890783996989601,
+        1789890783996989601,
+        16571088
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-20x20@2x-1.png": {
+      "sha256": "6d15b040df6d513a88a931bd4b99f1c4d64c1d84b9ea857350345f04cb5ae269",
+      "fingerprint": [
+        33188,
+        932,
+        1789890783997692800,
+        1789890783997692800,
+        16571089
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-20x20@2x.png": {
+      "sha256": "6d15b040df6d513a88a931bd4b99f1c4d64c1d84b9ea857350345f04cb5ae269",
+      "fingerprint": [
+        33188,
+        932,
+        1789890783997692800,
+        1789890783997692800,
+        16571090
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-20x20@3x.png": {
+      "sha256": "e9abc3a9aaa603e28f665965d46f4f0634e6082df00e8180901da0208da088c5",
+      "fingerprint": [
+        33188,
+        1503,
+        1789890783997692800,
+        1789890783997692800,
+        16571091
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-29x29@1x.png": {
+      "sha256": "b7d650c03073c3f847db136ce715ca143d185629fcc03419cdef853b885de972",
+      "fingerprint": [
+        33188,
+        800,
+        1789890783997692800,
+        1789890783997692800,
+        16571092
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-29x29@2x-1.png": {
+      "sha256": "422ff20b3d1402b88de5b7845c8eb1150bad87fe207fad30b5e6abc0f41e2a9f",
+      "fingerprint": [
+        33188,
+        1388,
+        1789890783997692800,
+        1789890783997692800,
+        16571093
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-29x29@2x.png": {
+      "sha256": "422ff20b3d1402b88de5b7845c8eb1150bad87fe207fad30b5e6abc0f41e2a9f",
+      "fingerprint": [
+        33188,
+        1388,
+        1789890783997692800,
+        1789890783997692800,
+        16571094
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-29x29@3x.png": {
+      "sha256": "74741da72c8c9cf1269ec95a319c5c939de77c8122fc917f9c6ad5f3df9b2513",
+      "fingerprint": [
+        33188,
+        1921,
+        1789890783997692800,
+        1789890783997692800,
+        16571095
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-40x40@1x.png": {
+      "sha256": "6d15b040df6d513a88a931bd4b99f1c4d64c1d84b9ea857350345f04cb5ae269",
+      "fingerprint": [
+        33188,
+        932,
+        1789890783997692800,
+        1789890783997692800,
+        16571096
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-40x40@2x-1.png": {
+      "sha256": "af8f2a1676883b5423f99df702f834067c849c081e7b3c28bab1446b9bda2174",
+      "fingerprint": [
+        33188,
+        1913,
+        1789890783997692800,
+        1789890783997692800,
+        16571097
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-40x40@2x.png": {
+      "sha256": "af8f2a1676883b5423f99df702f834067c849c081e7b3c28bab1446b9bda2174",
+      "fingerprint": [
+        33188,
+        1913,
+        1789890783997692800,
+        1789890783997692800,
+        16571098
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-40x40@3x.png": {
+      "sha256": "606dd15c3efe1f566cb4f1f1e0ea0852054fbe865ec47666370f1584607f2e87",
+      "fingerprint": [
+        33188,
+        2657,
+        1789890783997692800,
+        1789890783997692800,
+        16571099
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-512@2x.png": {
+      "sha256": "9b58a4f6698896740952a09b231015e996276b309153b351f72a69cd4e06df00",
+      "fingerprint": [
+        33188,
+        28748,
+        1789890783997692800,
+        1789890783997692800,
+        16571100
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-60x60@2x.png": {
+      "sha256": "606dd15c3efe1f566cb4f1f1e0ea0852054fbe865ec47666370f1584607f2e87",
+      "fingerprint": [
+        33188,
+        2657,
+        1789890783997692800,
+        1789890783997692800,
+        16571101
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-60x60@3x.png": {
+      "sha256": "59fccc1673844caeab1e18cf724e36264a996717faab3fbbb4d84119cca87a98",
+      "fingerprint": [
+        33188,
+        4044,
+        1789890783997692800,
+        1789890783997692800,
+        16571102
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-76x76@1x.png": {
+      "sha256": "ccbb173947c092a4daa2ff274d866205cb5036fef14094ee4ece7c367cdc68bc",
+      "fingerprint": [
+        33188,
+        1837,
+        1789890783997692800,
+        1789890783997692800,
+        16571103
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-76x76@2x.png": {
+      "sha256": "a7784a1be8ed40fc87c5ec4426525037f64a3bf8af1f924f24d89f97ee9adbe3",
+      "fingerprint": [
+        33188,
+        3314,
+        1789890783997692800,
+        1789890783997692800,
+        16571104
+      ]
+    },
+    "crates/cutokyo-desktop/icons/ios/AppIcon-83.5x83.5@2x.png": {
+      "sha256": "ad20210277bf1e285798fed001989d2da4a5c2364476b6bcd59c68be40d47c8d",
+      "fingerprint": [
+        33188,
+        3621,
+        1789890783997692800,
+        1789890783997692800,
+        16571105
+      ]
+    },
+    "crates/cutokyo-desktop/icons/source.svg": {
+      "sha256": "e9e22d557429673d5c139a86e2694dcaf0a47328fc6eeb69585081e3af2949df",
+      "fingerprint": [
+        33188,
+        496,
+        1789890783997692800,
+        1789890783997692800,
+        15910847
+      ]
+    },
+    "crates/cutokyo-desktop/src/backup_tests.rs": {
+      "sha256": "83c3ee44189e25e85c49927abc99bebe40ee7d498703879eed3ff9bf27f3b378",
+      "fingerprint": [
+        33188,
+        7102,
+        1791094266398238618,
+        1791094266398238618,
+        14208870
+      ]
+    },
+    "crates/cutokyo-desktop/src/health_binding.rs": {
+      "sha256": "9c8f72aafee215b925623dd7cf8ba969505f8611bde6d222568c64fbeac39729",
+      "fingerprint": [
+        33188,
+        3576,
+        1790049709150974935,
+        1790049709150974935,
+        14212754
+      ]
+    },
+    "crates/cutokyo-desktop/src/lib.rs": {
+      "sha256": "a783e9f12cbb902a19e3da7f70e9575f0272c3a750dcdfbfc356aee28d0478de",
+      "fingerprint": [
+        33188,
+        732,
+        1790188417045541758,
+        1790188417045541758,
+        14160058
+      ]
+    },
+    "crates/cutokyo-desktop/src/main.rs": {
+      "sha256": "e949277b3ba53396d606ab7dcb35e7c7e5caefb29e549b25bb7b9286c34128fb",
+      "fingerprint": [
+        33188,
+        2552,
+        1790188600241137809,
+        1790188600241137809,
+        14161418
+      ]
+    },
+    "crates/cutokyo-desktop/src/native_test.rs": {
+      "sha256": "047c6c3ce8a6aaf097add880205b5340921e4e13c51622e50b69a51f14809817",
+      "fingerprint": [
+        33188,
+        3000,
+        1790188417045541758,
+        1790188417045541758,
+        14160295
+      ]
+    },
+    "crates/cutokyo-desktop/src/onboarding_tests.rs": {
+      "sha256": "9ac7679196316fe2610be327c282604b6ba7b3a3b764ed1ccf06934cb4e5bcc4",
+      "fingerprint": [
+        33188,
+        7490,
+        1791096917435735709,
+        1791096917435735709,
+        14208876
+      ]
+    },
+    "crates/cutokyo-desktop/src/runtime.rs": {
+      "sha256": "01d825984ecfdc7e9eaac70c07c83aa97093d605ef3e8e2da811b772658b3844",
+      "fingerprint": [
+        33188,
+        15556,
+        1791093122187391255,
+        1791093122187391255,
+        14207182
+      ]
+    },
+    "crates/cutokyo-desktop/src/service.rs": {
+      "sha256": "957c5bcee9e958221751917a3f6b018acf2c5fde0ba6f45ddf3a750097dea0ce",
+      "fingerprint": [
+        33188,
+        121715,
+        1791096917450999652,
+        1791096917450999652,
+        14208893
+      ]
+    },
+    "crates/cutokyo-desktop/src/shared_runtime_tests.rs": {
+      "sha256": "1a01b2a85e5fcd9aa289c0c75da6909302c6bf89c5eb4116f860d7e319e2e978",
+      "fingerprint": [
+        33188,
+        21075,
+        1791093122203391491,
+        1791093122203391491,
+        14208879
+      ]
+    },
+    "crates/cutokyo-desktop/tauri.conf.json": {
+      "sha256": "3ec70dfd3e790ee397ae609454da9af15875bbd296ce9a97d76ad00603876dcd",
+      "fingerprint": [
+        33188,
+        1169,
+        1790188417045913772,
+        1790188417045913772,
+        14160576
+      ]
+    },
+    "crates/cutokyo-desktop/tauri.release.conf.json": {
+      "sha256": "2ed2b7aec0ac941c9007dcea5f84fbe7cf6b8882a064a9c7610773c6a7e7933e",
+      "fingerprint": [
+        33188,
+        107,
+        1789890783997692800,
+        1789890783997692800,
+        14211983
+      ]
+    },
+    "crates/cutokyo-desktop/test-capabilities/native-e2e.json": {
+      "sha256": "9c5c169dcf7e8a82002b67af55a3ccb1a3edc286ea4e3bd42c9b88fcea05d67c",
+      "fingerprint": [
+        33188,
+        324,
+        1790188417045913772,
+        1790188417045913772,
+        14160602
+      ]
+    },
+    "crates/cutokyo-domain/Cargo.toml": {
+      "sha256": "37eea5158cf0e867fe0041b4c7422c507e56f6d4e590d9d0718de9eccb362d06",
+      "fingerprint": [
+        33188,
+        374,
+        1789865115247563933,
+        1789865115248563948,
+        12759333
+      ]
+    },
+    "crates/cutokyo-domain/src/entities.rs": {
+      "sha256": "57d089c05b304869f334fbd7b4ba9ddaf182ac69990f1bba4774d6362d17d55e",
+      "fingerprint": [
+        33188,
+        31845,
+        1789878006901236159,
+        1789878006901236159,
+        12759362
+      ]
+    },
+    "crates/cutokyo-domain/src/error.rs": {
+      "sha256": "598ee452605e8bb82dcf9adcebfacf812da3880de9b5e67e73d3d93c9baf8a2c",
+      "fingerprint": [
+        33188,
+        3114,
+        1789865116020575547,
+        1789865116021575562,
+        12759335
+      ]
+    },
+    "crates/cutokyo-domain/src/ids.rs": {
+      "sha256": "bd2d759a0f3a2a6e29f5abe62660ebde5009a55ef20fd8a96cb97b3d62e1b051",
+      "fingerprint": [
+        33188,
+        4952,
+        1789878006901236159,
+        1789878006901236159,
+        12759350
+      ]
+    },
+    "crates/cutokyo-domain/src/lib.rs": {
+      "sha256": "46c59bf3536d56a6bd59c2c20f26ba95c8d9762d628be728d00e08e94d00232c",
+      "fingerprint": [
+        33188,
+        1384,
+        1789878006901236159,
+        1789878006901236159,
+        12759339
+      ]
+    },
+    "crates/cutokyo-domain/src/model.rs": {
+      "sha256": "c589a7fd6624c3de4fd4c073960a9fc11012a78a048e0eb5722dbb8804eb1067",
+      "fingerprint": [
+        33188,
+        14162,
+        1789878006901236159,
+        1789878006901236159,
+        12759344
+      ]
+    },
+    "crates/cutokyo-domain/src/ports.rs": {
+      "sha256": "fce3cf23e9b9081f75b58d5389f0fe536fac3e1030140411c58d5e70b885e30f",
+      "fingerprint": [
+        33188,
+        1661,
+        1789866073204952420,
+        1789866073211952525,
+        12759340
+      ]
+    },
+    "crates/cutokyo-domain/src/reconciliation.rs": {
+      "sha256": "79c7c64b6cd8be467121c8b52f30afe9587efbfeba4e01e0ae06a536c13e1f9f",
+      "fingerprint": [
+        33188,
+        6254,
+        1789878006901236159,
+        1789878006901236159,
+        12759363
+      ]
+    },
+    "crates/cutokyo-domain/src/settings.rs": {
+      "sha256": "9c91365e530e3208bac70e381e387fef6d303b6240a0146822583eecfc9da3e3",
+      "fingerprint": [
+        33188,
+        7367,
+        1791089836699015769,
+        1791089836699015769,
+        12759342
+      ]
+    },
+    "crates/cutokyo-domain/src/time_value.rs": {
+      "sha256": "72bcc933785141d540b569f7454a6454854b974001eb5faec96af74401b24256",
+      "fingerprint": [
+        33188,
+        2985,
+        1789878006901236159,
+        1789878006901236159,
+        12759336
+      ]
+    },
+    "deny.toml": {
+      "sha256": "42415117afdedb288d786ba4081e6f8bcb1d8c3f016fd17e0f7ce48668e4b8ee",
+      "fingerprint": [
+        33188,
+        733,
+        1789867518539733249,
+        1789867518540733264,
+        4905252
+      ]
+    },
+    "docs/adr/0001-local-first-single-writer.md": {
+      "sha256": "e5ce0abc733b233a9e662dd845c30c3fdf4ac8ca7e8504b90a4155624953acd9",
+      "fingerprint": [
+        33188,
+        1399,
+        1789865688933183032,
+        1789865688934183048,
+        14210774
+      ]
+    },
+    "docs/adr/0002-native-capture-before-proxy.md": {
+      "sha256": "65aa3026e52df2c66ad700ab7f3f59f6ac963ccdc225872581fe984aa7e7cd86",
+      "fingerprint": [
+        33188,
+        1494,
+        1791089726770626453,
+        1791089726770626453,
+        14210775
+      ]
+    },
+    "docs/adr/0003-versioned-raw-observations.md": {
+      "sha256": "4b9279d17a183488c256546905fae88c2e9816303bbf1e9486a0d44c95b5a062",
+      "fingerprint": [
+        33188,
+        1373,
+        1789865688950183288,
+        1789865688951183303,
+        14210776
+      ]
+    },
+    "docs/adr/0004-atomic-spool-and-quarantine.md": {
+      "sha256": "f0119e7625ff757dc40f8b59fb5d1fc200779895a41f1b828c9b6e09cf3d92f7",
+      "fingerprint": [
+        33188,
+        1244,
+        1789865688958183408,
+        1789865688959183423,
+        14210777
+      ]
+    },
+    "docs/adr/0005-reversible-config-mutation.md": {
+      "sha256": "b65c68d1068f7f297c4baaa24ee6673d99d1bae252a9c54511da5f1f7b15a82f",
+      "fingerprint": [
+        33188,
+        1480,
+        1789865688966183528,
+        1789865688967183543,
+        14210778
+      ]
+    },
+    "docs/adr/0006-plugin-capabilities.md": {
+      "sha256": "c7067beddbda6e8097abeecfd3b0ebeba7917110693f6e0ec4693c4d414e3183",
+      "fingerprint": [
+        33188,
+        1558,
+        1789865688973183633,
+        1789865688974183648,
+        14210779
+      ]
+    },
+    "docs/adr/0007-version-policy.md": {
+      "sha256": "1650df56b73fbebf2919fa603421e27e3df0df8c6c8b72c78425f48be56ac0c3",
+      "fingerprint": [
+        33188,
+        1326,
+        1789865688981183754,
+        1789865688982183769,
+        14210780
+      ]
+    },
+    "docs/adr/0008-dependency-baseline.md": {
+      "sha256": "2c66bef6caf9ddb9c361620375464213b717565c95a3acbfd2444e30f3965b44",
+      "fingerprint": [
+        33188,
+        4857,
+        1789890341543476420,
+        1789890341543476420,
+        14210740
+      ]
+    },
+    "docs/adr/0009-desktop-appearance.md": {
+      "sha256": "27c2223cbc2b13d37f0aa5b284dc1e71948c6d098875415876a156aea86bac26",
+      "fingerprint": [
+        33188,
+        4820,
+        1790702123917789163,
+        1790702123921789231,
+        14207181
+      ]
+    },
+    "docs/adr/0010-management-first-workflows.md": {
+      "sha256": "769d351298614105b9afc6708cbba9b2ac9adee44e9ca7cbe7dcb06864b776e6",
+      "fingerprint": [
+        33188,
+        5485,
+        1791088829070179443,
+        1791088829071179458,
+        14208861
+      ]
+    },
+    "docs/architecture.md": {
+      "sha256": "f919d9cdd6af0f1fe1b5575f97a157460c472c9f97d3daf90897d361a850235d",
+      "fingerprint": [
+        33188,
+        7001,
+        1789890783997949122,
+        1789890783997949122,
+        14211984
+      ]
+    },
+    "docs/backup-and-restore.md": {
+      "sha256": "00e6425ff074c1a2de2476f452a4f5cdf2fb4e12b1cf735cb0e8e182194c9a66",
+      "fingerprint": [
+        33188,
+        6299,
+        1791093780233080317,
+        1791093780234080332,
+        14208874
+      ]
+    },
+    "docs/clean-install.md": {
+      "sha256": "d5ac253d59b49ae37555e8fb16539cc4414a6615e8216e374133c7516c4b73e8",
+      "fingerprint": [
+        33188,
+        6314,
+        1789890783997949122,
+        1789890783997949122,
+        14211985
+      ]
+    },
+    "docs/harnesses/opencode.md": {
+      "sha256": "6d7eb2d87ba560e5eee93fe8b20513be21d525e72735f1e886ad8509e2a11c9d",
+      "fingerprint": [
+        33188,
+        15311,
+        1789890341543476420,
+        1789890341543476420,
+        18779400
+      ]
+    },
+    "docs/management-workflow-contract.md": {
+      "sha256": "e41c6ba9f042cc528d2eae6b085281b1c29705309e1f6a31091485973e21cc92",
+      "fingerprint": [
+        33188,
+        6309,
+        1791095416839312054,
+        1791095416840312068,
+        14208886
+      ]
+    },
+    "docs/plugin-authoring.md": {
+      "sha256": "26b3b0c2092fc0756cc899f6cf30d58fe0bd9567363bed4b68e8a531c09d81e1",
+      "fingerprint": [
+        33188,
+        6228,
+        1789891611282036125,
+        1789891611283036139,
+        14210734
+      ]
+    },
+    "docs/privacy.md": {
+      "sha256": "530e15b70f7c0b677409c912475c58b6b0eb46dd09050515b3b233f3ae735791",
+      "fingerprint": [
+        33188,
+        6680,
+        1791096784328648788,
+        1791096784329648803,
+        14208880
+      ]
+    },
+    "docs/provenance/clean-room-policy.md": {
+      "sha256": "4ea60bacd24a94065a40f29741b6259e1ae9bce973c047599a2ec9d1403460a0",
+      "fingerprint": [
+        33188,
+        2365,
+        1789865762956295162,
+        1789865762958295192,
+        14210783
+      ]
+    },
+    "docs/provenance/decision-ledger.md": {
+      "sha256": "9d1fdcb66795d4f0ed251e9deb2aff2b0eecfe55f02e246973b81904343ba228",
+      "fingerprint": [
+        33188,
+        11663,
+        1790188417045913772,
+        1790188417045913772,
+        14160705
+      ]
+    },
+    "docs/provenance/reference-observations.md": {
+      "sha256": "8f0006b2dd91d2c9a50ba55108287b1aaece411ddc718560b2422dcbb40d9906",
+      "fingerprint": [
+        33188,
+        6760,
+        1789931054147913312,
+        1789931054147913312,
+        14210575
+      ]
+    },
+    "docs/release/recovery.md": {
+      "sha256": "41825afcae760672173f8783bf7ccdb371354c09c0732445e6df751600d117df",
+      "fingerprint": [
+        33188,
+        6232,
+        1789890783997949122,
+        1789890783997949122,
+        16702157
+      ]
+    },
+    "docs/release/signing.md": {
+      "sha256": "1d12bf7b5193d8d66971580bb805c1cdc7e23e44e04e8f09ccf06fad00e9cec8",
+      "fingerprint": [
+        33188,
+        11907,
+        1790188600241137809,
+        1790188600241137809,
+        16699610
+      ]
+    },
+    "docs/spec/product.md": {
+      "sha256": "85019a89d0a4b3871ebc95419184e38d4d1474fe4b9243dcbd92b75308b633ff",
+      "fingerprint": [
+        33188,
+        14595,
+        1791096784451650617,
+        1791096784452650632,
+        14208895
+      ]
+    },
+    "docs/support.md": {
+      "sha256": "9a475f2f2bc8a126d329f985b1d3471bbc5cab28c3a2c69ab3a164c4814fbf98",
+      "fingerprint": [
+        33188,
+        5577,
+        1789890783999334773,
+        1789890783999334773,
+        14211987
+      ]
+    },
+    "evidence/final/native/search-detail-resume-1280x800.png": {
+      "sha256": "67a3f1c8512f8758b6d4b6c18189258ba006f2e70931ab07333d003c9b1fd805",
+      "fingerprint": [
+        33188,
+        101643,
+        1790188417046468041,
+        1790188417046468041,
+        4905695
+      ]
+    },
+    "evidence/final/screens/analysis-consent-1280x800.png": {
+      "sha256": "d50f0c9e951740abf273dbc6553836e4d3be824254146aef120a24c94a8e1c50",
+      "fingerprint": [
+        33188,
+        115438,
+        1791096010654143021,
+        1791096010654143021,
+        4905489
+      ]
+    },
+    "evidence/final/screens/analysis-consent-1536x960.png": {
+      "sha256": "dfbc66f00661715731c5ecaf3230cd6bda286799006b394743afb86ebd4c3d00",
+      "fingerprint": [
+        33188,
+        151637,
+        1791096012029163470,
+        1791096012029163470,
+        4905490
+      ]
+    },
+    "evidence/final/screens/analysis-consent-900x700.png": {
+      "sha256": "c0458f2a85bf53a4960a4078c0b996a8b6ec9ed38ac2e62884ab83abd3ba98d4",
+      "fingerprint": [
+        33188,
+        80926,
+        1791096009396124312,
+        1791096009396124312,
+        4905491
+      ]
+    },
+    "evidence/final/screens/dashboard-1280x800.png": {
+      "sha256": "380b15a594b580d72cdeaeedd2ad60c8ad02ab1186c71bc1de003e34919b3922",
+      "fingerprint": [
+        33188,
+        130370,
+        1791096010053134083,
+        1791096010053134083,
+        4905492
+      ]
+    },
+    "evidence/final/screens/dashboard-1536x960.png": {
+      "sha256": "eb31a7c111d911c0b006bcca209b2ac7a80dce13c43be28c873fd19fbce4a68a",
+      "fingerprint": [
+        33188,
+        143058,
+        1791096011326153015,
+        1791096011326153015,
+        4905493
+      ]
+    },
+    "evidence/final/screens/dashboard-900x700.png": {
+      "sha256": "269788d6cc8d6afbfad80f641a56e756694fdb19d921a9bb3366adf981df8933",
+      "fingerprint": [
+        33188,
+        93348,
+        1791096008746114646,
+        1791096008746114646,
+        4905494
+      ]
+    },
+    "evidence/final/screens/empty-history-1280x800.png": {
+      "sha256": "f5bfdf2c23c011b9230bbbfcc6d18c37c13b26fee0495820db4872a2492330e6",
+      "fingerprint": [
+        33188,
+        85216,
+        1791096009899131793,
+        1791096009899131793,
+        4905495
+      ]
+    },
+    "evidence/final/screens/empty-history-1536x960.png": {
+      "sha256": "515d0be732e5fcded7a8f794df0d6a20ba82020a686c95e222f7f1b4c50fba0a",
+      "fingerprint": [
+        33188,
+        90401,
+        1791096011156150487,
+        1791096011156150487,
+        4905496
+      ]
+    },
+    "evidence/final/screens/empty-history-900x700.png": {
+      "sha256": "7922add7f967250e783064857c4cf749d23860a009ad02597c13244d1837f278",
+      "fingerprint": [
+        33188,
+        82181,
+        1791096008577112132,
+        1791096008577112132,
+        4905497
+      ]
+    },
+    "evidence/final/screens/health-degraded-1280x800.png": {
+      "sha256": "77f6627cc80efb4186e9727857a48eaaf60046631d6088ef28b36ea2e130f469",
+      "fingerprint": [
+        33188,
+        137807,
+        1791096010819145475,
+        1791096010819145475,
+        4905498
+      ]
+    },
+    "evidence/final/screens/health-degraded-1536x960.png": {
+      "sha256": "6b93fbf4e0da1c108e2786ba93a1abd6f83d7baf267cb2b43df8a5014f322b99",
+      "fingerprint": [
+        33188,
+        165113,
+        1791096012227166415,
+        1791096012227166415,
+        4905499
+      ]
+    },
+    "evidence/final/screens/health-degraded-900x700.png": {
+      "sha256": "d22dcca5d558367b2c93f276a6bf7b7bd92e6383869f21d79ec62d3eae8c7b1a",
+      "fingerprint": [
+        33188,
+        97780,
+        1791096009560126751,
+        1791096009560126751,
+        4905500
+      ]
+    },
+    "evidence/final/screens/inventory-mcp-1280x800.png": {
+      "sha256": "907a8f3815e57cbd3f7e6e0970165ee53e8c61ac946643c398e1d27c0adcbb9a",
+      "fingerprint": [
+        33188,
+        128805,
+        1791096010436139779,
+        1791096010436139779,
+        4905501
+      ]
+    },
+    "evidence/final/screens/inventory-mcp-1536x960.png": {
+      "sha256": "5d786c088202f8b5ae2bd5975323424ea3a2110147460d30425e156006fe10f9",
+      "fingerprint": [
+        33188,
+        152333,
+        1791096011726158964,
+        1791096011726158964,
+        4905502
+      ]
+    },
+    "evidence/final/screens/inventory-mcp-900x700.png": {
+      "sha256": "b99f4c4557f8f76ef4d147d4d246c8e1dd39efe4848391379fb8bf8f83918866",
+      "fingerprint": [
+        33188,
+        106410,
+        1791096009147120609,
+        1791096009147120609,
+        4905503
+      ]
+    },
+    "evidence/final/screens/onboarding-1280x800.png": {
+      "sha256": "9d860dabf7bcb4f4c381834190dbd8fad21426d93734330ece2c49a926654840",
+      "fingerprint": [
+        33188,
+        141758,
+        1791096009737129384,
+        1791096009737129384,
+        4905504
+      ]
+    },
+    "evidence/final/screens/onboarding-1536x960.png": {
+      "sha256": "6a60c82bbf23cd58e5891eb0d283f4fda4bb543930721f28f0d3bb439365b3bc",
+      "fingerprint": [
+        33188,
+        168379,
+        1791096010995148092,
+        1791096010995148092,
+        4905505
+      ]
+    },
+    "evidence/final/screens/onboarding-900x700.png": {
+      "sha256": "e1a40e0d5f13e176495f5c720591086bb47c35a51dc5cc9e9e7ce050484268ee",
+      "fingerprint": [
+        33188,
+        96938,
+        1791096008350108756,
+        1791096008350108756,
+        4905506
+      ]
+    },
+    "evidence/final/screens/session-resume-1280x800.png": {
+      "sha256": "10caaf8171bdaec7dfaaee5c27a5d2cae4c7c1b0c476fabaa8930e4191e3dac3",
+      "fingerprint": [
+        33188,
+        134829,
+        1791096010271137325,
+        1791096010271137325,
+        4905507
+      ]
+    },
+    "evidence/final/screens/session-resume-1536x960.png": {
+      "sha256": "2d5cef8e9b1c8a1f49853c5eb7180230d849f9a27b159990ae438e5ae12c3bac",
+      "fingerprint": [
+        33188,
+        156730,
+        1791096011561156510,
+        1791096011561156510,
+        4905250
+      ]
+    },
+    "evidence/final/screens/session-resume-900x700.png": {
+      "sha256": "63bd72c27711e525bb4c602b46503c67e3f6287c28844cf9dd3242fbf8309b0a",
+      "fingerprint": [
+        33188,
+        100311,
+        1791096008964117888,
+        1791096008964117888,
+        4905509
+      ]
+    },
+    "examples/plugins/py-source/README.md": {
+      "sha256": "ac6e0cb09013c4fe7d8f2eed6b8f9075624c8b0339789aef2b23abd1af131b24",
+      "fingerprint": [
+        33188,
+        450,
+        1789891619172141866,
+        1789891619173141879,
+        14210782
+      ]
+    },
+    "examples/plugins/py-source/cutokyo-plugin.json": {
+      "sha256": "daeee2a9042072b9442a59fe0546d7b6cf07cc637ba29f8b76f8b3e63f77645c",
+      "fingerprint": [
+        33188,
+        243,
+        1789890565051014855,
+        1789890565051014855,
+        14211943
+      ]
+    },
+    "examples/plugins/py-source/source.py": {
+      "sha256": "f041e9a1564097a86c1bdcb92954f54a1b799fa4a8d14a32bc4ea6a3a7ae7041",
+      "fingerprint": [
+        33188,
+        8807,
+        1789890565051014855,
+        1789890565051014855,
+        14211944
+      ]
+    },
+    "examples/plugins/ts-processor/README.md": {
+      "sha256": "fea3a28f4a441ce55f36c996775e356a9d1e8c6c25e8285296f1fd7ae38ce3b2",
+      "fingerprint": [
+        33188,
+        554,
+        1789891619180141973,
+        1789891619181141987,
+        14210771
+      ]
+    },
+    "examples/plugins/ts-processor/cutokyo-plugin.json": {
+      "sha256": "e84c469f5cfd9b2b47a5a53d9f9c1000c9870271c6561f821bddf05d2ad69f74",
+      "fingerprint": [
+        33188,
+        250,
+        1789890565051014855,
+        1789890565051014855,
+        14211945
+      ]
+    },
+    "examples/plugins/ts-processor/processor.ts": {
+      "sha256": "5faaf766ce078af73ce017d3460c1cc29e928602ee17361e358289185ddb1606",
+      "fingerprint": [
+        33188,
+        10403,
+        1789890565051014855,
+        1789890565051014855,
+        14211946
+      ]
+    },
+    "fixtures/cli/v1/bad/success-with-error.json": {
+      "sha256": "f412d28eee3a8ba6f0f0691dd4d41207feae27d23e2855f5bd05222f92fd7803",
+      "fingerprint": [
+        33188,
+        245,
+        1789890783999634008,
+        1789890783999634008,
+        18785167
+      ]
+    },
+    "fixtures/cli/v1/bad/unknown-version.json": {
+      "sha256": "0eccc05415fc90cf5491fb1ebbb0f5427112b89c7224220b3eed15e7b780a03c",
+      "fingerprint": [
+        33188,
+        163,
+        1789890783999716354,
+        1789890783999716354,
+        18785168
+      ]
+    },
+    "fixtures/cli/v1/good/unavailable-error.json": {
+      "sha256": "ecba0d6578b990eeaf4aea95e384d6c58b5191599d42bccd40e7c953a7a9cd17",
+      "fingerprint": [
+        33188,
+        266,
+        1789890783999716354,
+        1789890783999716354,
+        18785170
+      ]
+    },
+    "fixtures/cli/v1/good/version-success.json": {
+      "sha256": "78f197f38f6884d2747be0bca57f0c0e838a296c92d85305b74481c1637d6167",
+      "fingerprint": [
+        33188,
+        231,
+        1789890783999799291,
+        1789890783999799291,
+        18785171
+      ]
+    },
+    "fixtures/codex/stdio/bounds-and-notifications.sh": {
+      "sha256": "322cfc6905149526cdb320a49b0335a6d4452d429f1a0cd3e37c86f3b69b312d",
+      "fingerprint": [
+        33261,
+        234,
+        1789931054147913312,
+        1789931054147913312,
+        19056061
+      ]
+    },
+    "fixtures/codex/stdio/malformed-jsonl.sh": {
+      "sha256": "3afc67e07b06eef7252a4bbba09ce737871d8e14d30296fa51088c3407cd9e87",
+      "fingerprint": [
+        33261,
+        74,
+        1789931054149588671,
+        1789931054149588671,
+        19056063
+      ]
+    },
+    "fixtures/codex/stdio/oversized-line.sh": {
+      "sha256": "35089c5d45a2b73b42470459cbfc388775ed755a67e6ca2b8126dbe7299a11bc",
+      "fingerprint": [
+        33261,
+        48,
+        1789931054149588671,
+        1789931054149588671,
+        19056064
+      ]
+    },
+    "fixtures/codex/v1/observed/app-server-handshake-empty-history.redacted.jsonl": {
+      "sha256": "1dd54371409383f119f93d002dea820ff59d0b123baf76ec5d02f290091dad9f",
+      "fingerprint": [
+        33188,
+        1013,
+        1789890274215077073,
+        1789890274215077073,
+        18779286
+      ]
+    },
+    "fixtures/codex/v1/provenance.v1.json": {
+      "sha256": "739eb071686c96868a1f68cfb8fae839bcb94c670cdc1261e6962a248fec08aa",
+      "fingerprint": [
+        33188,
+        7173,
+        1789931054149588671,
+        1789931054149588671,
+        18779287
+      ]
+    },
+    "fixtures/codex/v1/synthetic/app-server-scenarios.v1.json": {
+      "sha256": "5b3af03f0142b28d47f78055e7c24f1f868796bc5b3305f31d06be1a614747cd",
+      "fingerprint": [
+        33188,
+        11947,
+        1789890274215077073,
+        1789890274215077073,
+        18779289
+      ]
+    },
+    "fixtures/codex/v1/synthetic/otel-events.v1.json": {
+      "sha256": "62da5384e91e39947b5bcba0abfc126c3095ca0b6c8e5026b8d9579426b54aca",
+      "fingerprint": [
+        33188,
+        1296,
+        1789890274215244289,
+        1789890274215244289,
+        18779290
+      ]
+    },
+    "fixtures/db/README.md": {
+      "sha256": "251fe81201375af4269df4d2167ce3e0aed48a14b1c54018c5fd20b25876435e",
+      "fingerprint": [
+        33188,
+        328,
+        1789865329556783731,
+        1789865329557783745,
+        14210757
+      ]
+    },
+    "fixtures/domain/v1/bad/projection-without-evidence.json": {
+      "sha256": "08b9ee1e8d004c405c5795aa62d93c5998b23f20c4bd88dff44256c1c34cb089",
+      "fingerprint": [
+        33188,
+        664,
+        1789865329435781913,
+        1789865329436781928,
+        14210753
+      ]
+    },
+    "fixtures/domain/v1/good/projected-unknown-usage.json": {
+      "sha256": "736a81114b953a2ec731c217b829f6f7bfbd587872928bf3ba4086d104057bbb",
+      "fingerprint": [
+        33188,
+        719,
+        1789865329411781552,
+        1789865329412781567,
+        14210752
+      ]
+    },
+    "fixtures/harness/claude-code/v1/documented/session-start-resume.json": {
+      "sha256": "b0c97f23270af2b58daccce564aa0fec1a2653a6ecb8f55a8a74faf3106946cf",
+      "fingerprint": [
+        33188,
+        457,
+        1789890262215772571,
+        1789890262215772571,
+        18779267
+      ]
+    },
+    "fixtures/harness/claude-code/v1/manifest.json": {
+      "sha256": "c106c1ccf5021ae66217e49f26af07528b19461bbdada3fa4c96c8ef505d548d",
+      "fingerprint": [
+        33188,
+        5831,
+        1789890262215772571,
+        1789890262215772571,
+        18779268
+      ]
+    },
+    "fixtures/harness/claude-code/v1/observed/detection-2.1.278.sanitized.json": {
+      "sha256": "bf07cff7461f274b3566dd4282310f5c7e38c1eedacd1904f5d9fcac855bc83f",
+      "fingerprint": [
+        33188,
+        567,
+        1789890262215772571,
+        1789890262215772571,
+        18779270
+      ]
+    },
+    "fixtures/harness/claude-code/v1/synthetic/hook-resume-drift.jsonl": {
+      "sha256": "a1247e6092a44ff6c72c37c3e502123d33b3521f053c8ab94371842eb1c69f88",
+      "fingerprint": [
+        33188,
+        415,
+        1789890262215772571,
+        1789890262215772571,
+        18779272
+      ]
+    },
+    "fixtures/harness/claude-code/v1/synthetic/otel-api-request.json": {
+      "sha256": "c1b66cb153bd4e129163829a725cdfb954d2910feecb4310accd445eb69b5ad9",
+      "fingerprint": [
+        33188,
+        390,
+        1789890262215958492,
+        1789890262215958492,
+        18779273
+      ]
+    },
+    "fixtures/harness/claude-code/v1/synthetic/transcript-main.changed.jsonl": {
+      "sha256": "968dd448a1aa65ddb6272c929050789556af1ff65851ce3f776d79bf68aab8e0",
+      "fingerprint": [
+        33188,
+        131,
+        1789890262215958492,
+        1789890262215958492,
+        18779274
+      ]
+    },
+    "fixtures/harness/claude-code/v1/synthetic/transcript-main.initial.jsonl": {
+      "sha256": "7427ec1694715c32e7d2f0877313f9515abadeb186d3aa1db365a5283caa7399",
+      "fingerprint": [
+        33188,
+        70,
+        1789890262215958492,
+        1789890262215958492,
+        18779275
+      ]
+    },
+    "fixtures/harness/claude-code/v1/synthetic/transcript-main.truncated.jsonl": {
+      "sha256": "02143d5b956826f71a52dca91a1cb9e059afc11108469ff518aa98354e15b2f8",
+      "fingerprint": [
+        33188,
+        144,
+        1789890262215958492,
+        1789890262215958492,
+        18779276
+      ]
+    },
+    "fixtures/harness/claude-code/v1/synthetic/transcript-subagent.jsonl": {
+      "sha256": "e45a45016390bd906e1d77c8c7b66b2228fc1f29584479adb99f4750c1267576",
+      "fingerprint": [
+        33188,
+        63,
+        1789890262215958492,
+        1789890262215958492,
+        18779277
+      ]
+    },
+    "fixtures/harness/opencode/v1.18.28/documented-synthetic/finalization-snapshots.json": {
+      "sha256": "ed1f39533ed327bb103ce21d3a9b2d169186359ff3aced6c2556e9c5d23e9142",
+      "fingerprint": [
+        33188,
+        1281,
+        1789890341544218072,
+        1789890341544218072,
+        18779404
+      ]
+    },
+    "fixtures/harness/opencode/v1.18.28/documented-synthetic/unknown-plugin-generation.json": {
+      "sha256": "73cff512d81373b37928afd0f6a63b98b6fa33792551f72e331e55601dcdf3fc",
+      "fingerprint": [
+        33188,
+        233,
+        1789890341544281421,
+        1789890341544281421,
+        18779405
+      ]
+    },
+    "fixtures/harness/opencode/v1.18.28/documented-synthetic/v1-session-idle.json": {
+      "sha256": "bfb75f6e02371d50a2f02eca9a69879cd41ce3f832ebaae1bf9206efa1c062c6",
+      "fingerprint": [
+        33188,
+        94,
+        1789890341544281421,
+        1789890341544281421,
+        18779406
+      ]
+    },
+    "fixtures/harness/opencode/v1.18.28/documented-synthetic/v2-paginated-history.json": {
+      "sha256": "58a56023078a5c2c86ea408c5d693edbb9ddd87372b8cca552f3ee6fe7ea935d",
+      "fingerprint": [
+        33188,
+        1595,
+        1789890341544281421,
+        1789890341544281421,
+        18779407
+      ]
+    },
+    "fixtures/harness/opencode/v1.18.28/manifest.json": {
+      "sha256": "a09a5dd0f22235cf6f60408b9cb55d32e53b8e9d8923706e11f20566bccfda83",
+      "fingerprint": [
+        33188,
+        4035,
+        1789890341544281421,
+        1789890341544281421,
+        18779408
+      ]
+    },
+    "fixtures/harness/opencode/v1.18.28/observed-sanitized/server-connected.json": {
+      "sha256": "747ad53326973e1fd5c9958cadcfb94f0ca7c29aafeda991665e02c64a059737",
+      "fingerprint": [
+        33188,
+        101,
+        1789890341544281421,
+        1789890341544281421,
+        18779410
+      ]
+    },
+    "fixtures/harness/opencode/v1.18.28/observed-sanitized/session-created.json": {
+      "sha256": "b1c553550ede2c33b463f8417e13fc0b4dfb934b45c0d483c8b21f01162f5533",
+      "fingerprint": [
+        33188,
+        737,
+        1789890341544428379,
+        1789890341544428379,
+        18779411
+      ]
+    },
+    "fixtures/harness/opencode/v1.18.28/observed-sanitized/v2-empty-session-page-null-cursors.json": {
+      "sha256": "cb046b6a6a20074bcd580de68938c90b6aa26c7ed43f8ded76b5ca83f3c52eb6",
+      "fingerprint": [
+        33188,
+        75,
+        1789890341544428379,
+        1789890341544428379,
+        18779412
+      ]
+    },
+    "fixtures/harness/opencode/v1.18.28/observed-sanitized/v2-empty-session-page.json": {
+      "sha256": "56b4157eacf97e8c2fd3a921766db5f9a463e45c408ae0d93ea122fbd4cdece7",
+      "fingerprint": [
+        33188,
+        33,
+        1789890341544428379,
+        1789890341544428379,
+        18779413
+      ]
+    },
+    "fixtures/harness/scenarios.v1.json": {
+      "sha256": "775a66333aaffc094c41ade16e589f659094a31fc2730cb33d6a78d91efae7ea",
+      "fingerprint": [
+        33188,
+        1429,
+        1789865329532783370,
+        1789865329533783386,
+        14210756
+      ]
+    },
+    "fixtures/plugin/v1/bad/malformed-response.json": {
+      "sha256": "233e079661858835cbb5a84b2b7c99e08fd78a4c2eefe76994c9a92c84f5d1d9",
+      "fingerprint": [
+        33188,
+        146,
+        1789890565051014855,
+        1789890565051014855,
+        14211947
+      ]
+    },
+    "fixtures/plugin/v1/bad/missing-source-capability.json": {
+      "sha256": "991993ac91bd20b2947388eeb59a598f3d536f559923e18dacbb4a95d1294c35",
+      "fingerprint": [
+        33188,
+        216,
+        1789890565051014855,
+        1789890565051014855,
+        14211948
+      ]
+    },
+    "fixtures/plugin/v1/bad/non-idempotent-source-handshake.json": {
+      "sha256": "6948d21b9380877cf3666136e8b85fa8b6456d43c2332133f3d4885796aa678e",
+      "fingerprint": [
+        33188,
+        235,
+        1789890565051014855,
+        1789890565051014855,
+        14211949
+      ]
+    },
+    "fixtures/plugin/v1/bad/processor-request-with-source-fields.json": {
+      "sha256": "ac6ac354cb1bab288551ea478b94a60b8576bdd17686bd49da1de4005c4c0276",
+      "fingerprint": [
+        33188,
+        307,
+        1789890565051014855,
+        1789890565051014855,
+        14211950
+      ]
+    },
+    "fixtures/plugin/v1/bad/source-request-with-records.json": {
+      "sha256": "6cdc58d3f9846182f3c93501b28b8480bef0a855654dbe57020ca6c888faccce",
+      "fingerprint": [
+        33188,
+        383,
+        1789890565051014855,
+        1789890565051014855,
+        14211951
+      ]
+    },
+    "fixtures/plugin/v1/bad/undeclared-field.json": {
+      "sha256": "8a53330b35d59ef617486bcc339806c1c2f79ff892b07d5b3cb3f68b86d7a1a5",
+      "fingerprint": [
+        33188,
+        243,
+        1789865329380781086,
+        1789865329382781116,
+        14210751
+      ]
+    },
+    "fixtures/plugin/v1/bad/unknown-capability.json": {
+      "sha256": "4b46c8bc955c5846a5cdf230266409648c36682a943540127878acb61276c2c7",
+      "fingerprint": [
+        33188,
+        260,
+        1789890565051014855,
+        1789890565051014855,
+        14211952
+      ]
+    },
+    "fixtures/plugin/v1/bad/unknown-major.json": {
+      "sha256": "6028cbf002388526d41501f2083a292627d016cf68d69507294246431d078683",
+      "fingerprint": [
+        33188,
+        195,
+        1789865329339780470,
+        1789865329340780485,
+        14210750
+      ]
+    },
+    "fixtures/plugin/v1/good/cancel.json": {
+      "sha256": "3e205624ea3bd228766d639d2c6458c0366dba22795a211f30301c88d8bb6b17",
+      "fingerprint": [
+        33188,
+        94,
+        1789890565051014855,
+        1789890565051014855,
+        14211953
+      ]
+    },
+    "fixtures/plugin/v1/good/processor-handshake.json": {
+      "sha256": "9448e9c6924ced63fc6d11b5fde559a2f1d3b3f1e16e5e6842e93ae2f233a738",
+      "fingerprint": [
+        33188,
+        257,
+        1789890565051014855,
+        1789890565051014855,
+        14210749
+      ]
+    },
+    "fixtures/plugin/v1/good/processor-request.json": {
+      "sha256": "a1be6892485fe80d7837dcdf6a563be0c9a75ae48e678e6f3a66c940365a75b4",
+      "fingerprint": [
+        33188,
+        369,
+        1789890565051014855,
+        1789890565051014855,
+        14211954
+      ]
+    },
+    "fixtures/plugin/v1/good/processor-response.json": {
+      "sha256": "ebafc0f1e985b74c53074c8eb41c7bbfc5869e514a336ce4f89caa7f228eebb5",
+      "fingerprint": [
+        33188,
+        380,
+        1789890565051014855,
+        1789890565051014855,
+        14211955
+      ]
+    },
+    "fixtures/plugin/v1/good/source-handshake.json": {
+      "sha256": "be5ece56da462028055e8db948fd29a266ea36f3b14ea97364e98bf570b20de7",
+      "fingerprint": [
+        33188,
+        234,
+        1789890565051014855,
+        1789890565051014855,
+        14211956
+      ]
+    },
+    "fixtures/plugin/v1/good/source-request.json": {
+      "sha256": "38b30d878652f1e9f6f11df0473b8ed5f104d1369ff156c83947185f3b3d8fa2",
+      "fingerprint": [
+        33188,
+        341,
+        1789890565051014855,
+        1789890565051014855,
+        14211957
+      ]
+    },
+    "fixtures/plugin/v1/good/source-response.json": {
+      "sha256": "b91b8d68c2b85df85ecfa332c9010d9a4c7d71e472fa2d4adc753222de3dc725",
+      "fingerprint": [
+        33188,
+        398,
+        1789890565051014855,
+        1789890565051014855,
+        14211958
+      ]
+    },
+    "fixtures/plugin/v1/good/structured-error.json": {
+      "sha256": "b3cd2c0afcd4e53b60b4c1cbed93bea4702ba3e40f1e598e46560069ebe3d26d",
+      "fingerprint": [
+        33188,
+        296,
+        1789890565051014855,
+        1789890565051014855,
+        14211959
+      ]
+    },
+    "fixtures/plugin/v1/good/telemetry.json": {
+      "sha256": "645f54b0608bb3f7d46845b00b25a3812f9d52fba15dfc5a6ff15e5aa1b21526",
+      "fingerprint": [
+        33188,
+        171,
+        1789890565051014855,
+        1789890565051014855,
+        14211960
+      ]
+    },
+    "fixtures/registry.json": {
+      "sha256": "8684fa69fcac3f654766430e8ec280cde270a73358198f8201c38dd6e742753f",
+      "fingerprint": [
+        33188,
+        2466,
+        1791089726770699661,
+        1791089726770699661,
+        14210806
+      ]
+    },
+    "fixtures/settings/v1/bad/unknown-field.json": {
+      "sha256": "2ecdcd7f46a2652fdee37d1f01e3e9b830cfeff156b3b047eda7bff16c7c21f4",
+      "fingerprint": [
+        33188,
+        70,
+        1789865329498782859,
+        1789865329499782874,
+        14210755
+      ]
+    },
+    "fixtures/settings/v1/good/clear-retention.json": {
+      "sha256": "fda5015f5f8fad6858f8d310b818f7411c4c5342da048d6fe92f3ff392d6601c",
+      "fingerprint": [
+        33188,
+        29,
+        1789866867907880182,
+        1789866867909880212,
+        14210801
+      ]
+    },
+    "fixtures/settings/v1/good/one-field-patch.json": {
+      "sha256": "7da891c0d77b33f13f86956925ea2bca273cfcc3ac4b31ccf958e2f24aaae6d2",
+      "fingerprint": [
+        33188,
+        28,
+        1789865329476782528,
+        1789865329477782544,
+        14210754
+      ]
+    },
+    "fixtures/spool/v1/bad/truncated.jsonl": {
+      "sha256": "30afb62a3031d976f818cf19c05a2039988b9ef02321db2fe6576bdf953680d3",
+      "fingerprint": [
+        33188,
+        53,
+        1789865329087776684,
+        1789866254651675563,
+        14210748
+      ]
+    },
+    "fixtures/spool/v1/bad/unknown-format.jsonl": {
+      "sha256": "c613d6aa7c67c1e176e98633f2c0568df6f49af6c601631188a968414f505260",
+      "fingerprint": [
+        33188,
+        526,
+        1789866254666809300,
+        1789866254666809300,
+        14210747
+      ]
+    },
+    "fixtures/spool/v1/good/claude-duplicate-source.jsonl": {
+      "sha256": "15df1d5c5ad99cee2e86df209c0f4eeb979a78c9554db5ed07c2679d68a4482c",
+      "fingerprint": [
+        33188,
+        576,
+        1789866254666709702,
+        1789866254666709702,
+        14210746
+      ]
+    },
+    "lefthook.yml": {
+      "sha256": "9cf061a79e77f17ad93af8bb1c7a21a0f91089e2da91692cdd548776a4b07b62",
+      "fingerprint": [
+        33188,
+        562,
+        1789890783999799291,
+        1789890783999799291,
+        4905251
+      ]
+    },
+    "package.json": {
+      "sha256": "805f17512b99d3b5137b143e9430ddb823df5c553ab45f4d4b805c68fc7cfd64",
+      "fingerprint": [
+        33188,
+        320,
+        1789867282412157370,
+        1789867282413157385,
+        4905253
+      ]
+    },
+    "pnpm-lock.yaml": {
+      "sha256": "994cb752e25b65043efa2abcb1d23f7ea315f5ae4571f14dc0c9b2507d8c6622",
+      "fingerprint": [
+        33188,
+        205732,
+        1790188417046468041,
+        1790188417046468041,
+        4905263
+      ]
+    },
+    "pnpm-workspace.yaml": {
+      "sha256": "c17560c36f3bc4aaaf56ac60de6208d383b3a5dec2f2db4218fbbe1030b89c9d",
+      "fingerprint": [
+        33188,
+        121,
+        1789891810852710714,
+        1789891810852710714,
+        4905265
+      ]
+    },
+    "rust-toolchain.toml": {
+      "sha256": "48de18f5dbdb0f1c9c65d3e63919c79e06385375445e14ce61442f10cbf4d81d",
+      "fingerprint": [
+        33188,
+        86,
+        1789865001545855668,
+        1789865001546855683,
+        4905247
+      ]
+    },
+    "rustfmt.toml": {
+      "sha256": "875fc869ddbf0d14eb5cf5fbef2c1bcb4a861fcfdbb0d15ced4eda495010d5a0",
+      "fingerprint": [
+        33188,
+        72,
+        1789865001555855818,
+        1789865001556855833,
+        4905248
+      ]
+    },
+    "schemas/cli-output.v1.json": {
+      "sha256": "fc4345eea83958fc2b5c9d5b54513408a17e7984edbdda671abd758c60d4e735",
+      "fingerprint": [
+        33188,
+        1813,
+        1789890783999799291,
+        1789890783999799291,
+        14211988
+      ]
+    },
+    "schemas/domain/records.v1.json": {
+      "sha256": "0fe4b7f173b93153534923f0179b2fc65d29a4b60e6ab367f9cd2f9fd61c75f2",
+      "fingerprint": [
+        33188,
+        4521,
+        1789865273832946533,
+        1789865273833946547,
+        14210743
+      ]
+    },
+    "schemas/plugin-protocol.v1.json": {
+      "sha256": "540a74fd40be965886c7d49d19ef5f3c030d8b4d97f32796bb55156b7bb5fb3f",
+      "fingerprint": [
+        33188,
+        7927,
+        1789890565052014869,
+        1789890565052014869,
+        14210742
+      ]
+    },
+    "schemas/settings/settings-patch.v1.json": {
+      "sha256": "a4ce9c9243d5ec0a7807b70670ca1188d1710211b597343c47cb71e88e15163e",
+      "fingerprint": [
+        33188,
+        600,
+        1791089154104276783,
+        1791089154104276783,
+        14210744
+      ]
+    },
+    "schemas/spool-line.v1.json": {
+      "sha256": "10dcb046ecf9195f91a29bb82b6a8632b5e25170cdab8d4d4dbfc5fda19feeb8",
+      "fingerprint": [
+        33188,
+        3225,
+        1789865273797946007,
+        1789865273799946037,
+        14210741
+      ]
+    },
+    "tests/Cargo.toml": {
+      "sha256": "7ce5149fdf26d2181022902ba98392f346a509b922ea78ccde903ff3524dac3a",
+      "fingerprint": [
+        33188,
+        1306,
+        1790188636878110641,
+        1790188636878110641,
+        14161471
+      ]
+    },
+    "tests/architecture.rs": {
+      "sha256": "1fe3ada3a8a744b8fb3353e349d8415fce2007637d6cf5b20e8e35c14d3dc97d",
+      "fingerprint": [
+        33188,
+        3405,
+        1789866512479545021,
+        1789866512481545052,
+        14210761
+      ]
+    },
+    "tests/e2e.rs": {
+      "sha256": "dc5c3b52c84344438688978ecf2ccae36351f859a36afd36e2dbddff113e8fec",
+      "fingerprint": [
+        33188,
+        204283,
+        1791096917483093978,
+        1791096917483093978,
+        14208890
+      ]
+    },
+    "tests/fixtures/release/detect-libc-2.1.2.tgz": {
+      "sha256": "11ddde69be7ff8fd0db6e245e97caf4d18082049de524407d13638c45f061a3d",
+      "fingerprint": [
+        33188,
+        7776,
+        1790188600242003065,
+        1790188600242003065,
+        14161574
+      ]
+    },
+    "tests/pipeline.rs": {
+      "sha256": "5a6dc22ebbbff8450be5fa36f07a7b1891cf497e1af502555f8934a588843dbe",
+      "fingerprint": [
+        33188,
+        25622,
+        1791096917487553688,
+        1791096917487553688,
+        14208871
+      ]
+    },
+    "tests/src/lib.rs": {
+      "sha256": "71189da88415b3a1b41e9abf9eebd0de93802bfddd97cac5777d7b94ee581dd4",
+      "fingerprint": [
+        33188,
+        3149,
+        1789866498610336873,
+        1789866498611336888,
+        14210759
+      ]
+    },
+    "tests/upgrade.rs": {
+      "sha256": "527120d2d64d780174fcbcbb97bc408dfd61c190934666001bde923de6188379",
+      "fingerprint": [
+        33188,
+        14634,
+        1791095416830311920,
+        1791095416831311935,
+        14208881
+      ]
+    },
+    "tools/fake-harness/Cargo.toml": {
+      "sha256": "e3d838288ed77311f34c14107026b53474c8d081b26bd4f81670dfd8e88b2e02",
+      "fingerprint": [
+        33188,
+        508,
+        1790188417047209665,
+        1790188417047209665,
+        14160726
+      ]
+    },
+    "tools/fake-harness/src/bin/fake-resume-harness.rs": {
+      "sha256": "e7d7011cac7b4572cded831f6269c835a34fabea4fe69d14be8f016e79db0663",
+      "fingerprint": [
+        33188,
+        5800,
+        1791096917490338412,
+        1791096917490338412,
+        16680729
+      ]
+    },
+    "tools/fake-harness/src/claude_code.rs": {
+      "sha256": "bf7e03e6cd93f992a001a51253e7c2410db3998ca1aa84e7063d2bf5413d9dd4",
+      "fingerprint": [
+        33188,
+        15416,
+        1789890262215958492,
+        1789890262215958492,
+        14211872
+      ]
+    },
+    "tools/fake-harness/src/lib.rs": {
+      "sha256": "7c10d2467c38441714c2ab3b1449d4cde95d8362a4d417c384984ae7878dc5fc",
+      "fingerprint": [
+        33188,
+        54588,
+        1789890541057693304,
+        1789890541058693318,
+        14211913
+      ]
+    },
+    "tools/fleet/cutokyo-acceptance.py": {
+      "sha256": "4a2b6c695b6b01acea0e1d3b9d0e60abd40d3b02f1d9d3a7091e63b04e140beb",
+      "fingerprint": [
+        33261,
+        19177,
+        1790045839832000161,
+        1790045839832000161,
+        12756535
+      ]
+    },
+    "tools/fleet/cutokyo-finish.test.mjs": {
+      "sha256": "51e777484fece118a65461a02a382aedf220d26f28dd67d2c06ec6aa425c6d6d",
+      "fingerprint": [
+        33188,
+        31292,
+        1790045839832000161,
+        1790045839832000161,
+        12757776
+      ]
+    },
+    "tools/fleet/cutokyo-gates.py": {
+      "sha256": "477f94d098f02beb05d4398ccc4a380d77838685fd4c2624402ed1dc5e5d558f",
+      "fingerprint": [
+        33261,
+        25171,
+        1789890783999799291,
+        1789890783999799291,
+        12756558
+      ]
+    },
+    "tools/fleet/test_cutokyo_acceptance.py": {
+      "sha256": "0b6c880e83970448d5317a4fb008f1cd44e2356cb1bb0a3b9dc9d2d662925b79",
+      "fingerprint": [
+        33188,
+        18865,
+        1790045839832000161,
+        1790045839832000161,
+        12757786
+      ]
+    },
+    "tools/generate-settings-types.mjs": {
+      "sha256": "4908a3098fede93c3641b2eb328fe80967d79cd5e7617ce001a58be151073d5c",
+      "fingerprint": [
+        33188,
+        2144,
+        1789866244363521157,
+        1789866244365521187,
+        12759341
+      ]
+    },
+    "tools/release/build-linux-package.py": {
+      "sha256": "fc4fa85ada66c0591ef1c0fa8085141918469496bef8da55a09506338d2e3240",
+      "fingerprint": [
+        33188,
+        8542,
+        1790188600242003065,
+        1790188600242003065,
+        12756533
+      ]
+    },
+    "tools/release/check-workflows.py": {
+      "sha256": "12ab6d01caf55d3a2f8deec366e56b16e148aa8f6392d98982a72182a8ab52ec",
+      "fingerprint": [
+        33188,
+        9224,
+        1790188600242003065,
+        1790188600242003065,
+        12757606
+      ]
+    },
+    "tools/release/create-manifest.py": {
+      "sha256": "67a3c6642f6413c365b39f7c4743221cad502f2a78baf79aacbb6ef919e4b398",
+      "fingerprint": [
+        33261,
+        33744,
+        1790188600242284358,
+        1790188600242284358,
+        12757607
+      ]
+    },
+    "tools/release/create-provenance.py": {
+      "sha256": "92ea543c6671b7c9045538f3f649bd2a5d9a216f7ae31cecae5c27598b3855ba",
+      "fingerprint": [
+        33261,
+        4801,
+        1790188600242284358,
+        1790188600242284358,
+        12757608
+      ]
+    },
+    "tools/release/prepare-signing-config.py": {
+      "sha256": "0257c70d3f355f6e44a4c2eb31a6fade0469e9e76c6660e057b548e120eccbbb",
+      "fingerprint": [
+        33188,
+        2665,
+        1790188600242284358,
+        1790188600242284358,
+        12757609
+      ]
+    },
+    "tools/release/smoke-dist.py": {
+      "sha256": "7528ff74fa52bb1755bddebd17c2116ec3e9f0df96c05d48c47e133a6c9f6f76",
+      "fingerprint": [
+        33261,
+        4598,
+        1789890784000335083,
+        1789890784000335083,
+        12759661
+      ]
+    },
+    "tools/release/smoke-npm.py": {
+      "sha256": "25e24531ad2555f1996b14128247b507f5603aa58b17adece7ce0f4bb8eab064",
+      "fingerprint": [
+        33261,
+        26939,
+        1790188600242570970,
+        1790188600242570970,
+        12757610
+      ]
+    },
+    "tools/release/smoke-tauri-linux.py": {
+      "sha256": "b1df294f91887cfee673e5a3bc26fdddd94e29f53175e2c9120d2d64c113595d",
+      "fingerprint": [
+        33261,
+        7894,
+        1790188600242570970,
+        1790188600242570970,
+        12757611
+      ]
+    },
+    "tools/release/test_contracts.py": {
+      "sha256": "2710403a633ccbcf3ea17bd7c576fc82cbeb76e1cb06c78d60ceef74349dea25",
+      "fingerprint": [
+        33188,
+        8553,
+        1790188600242724009,
+        1790188600242724009,
+        12757613
+      ]
+    },
+    "tools/scripts/check-commit-message.py": {
+      "sha256": "072ac501a79724d8bb7646ae0798066808d2c182045e85cbba2edb66687a27a0",
+      "fingerprint": [
+        33261,
+        904,
+        1789890784000335083,
+        1789890784000335083,
+        14210772
+      ]
+    },
+    "tools/scripts/source-snapshot.py": {
+      "sha256": "338f271dba5572a2b0f2294fe3bcbcfd9e90fb6f0651c2042e7bc4171874cd0b",
+      "fingerprint": [
+        33261,
+        15118,
+        1790188600242724009,
+        1790188600242724009,
+        14161579
+      ]
+    },
+    "tools/updater-signature-verifier/Cargo.toml": {
+      "sha256": "cb6f12e42ecc6f2419758d622fdd20863fa383c813ed6249532882da744caa6f",
+      "fingerprint": [
+        33188,
+        390,
+        1790188600242724009,
+        1790188600242724009,
+        12757615
+      ]
+    },
+    "tools/updater-signature-verifier/src/main.rs": {
+      "sha256": "4323eda4be0d90c425e5c26d137b8cf7bb47ee0ba1027d957a106af3e224f34f",
+      "fingerprint": [
+        33188,
+        4467,
+        1791093786606174155,
+        1791093786607174170,
+        12756750
+      ]
+    },
+    "ui/.prettierignore": {
+      "sha256": "b0126f0a5a005e024d4f5a215aa1e46f893070dfaeaaeb10b35206f01257d820",
+      "fingerprint": [
+        33188,
+        53,
+        1789891810852710714,
+        1789891810852710714,
+        12759343
+      ]
+    },
+    "ui/foundation/index.html": {
+      "sha256": "cd69db46e7bd171e08015780c766f8be495e60e6de24943e66df7d5915436290",
+      "fingerprint": [
+        33188,
+        1014,
+        1789867396853890454,
+        1789867396853890454,
+        12759351
+      ]
+    },
+    "ui/index.html": {
+      "sha256": "9041299e62bb922d067518bec37640a2b83ab008c363ba3636fb7052868bbdfa",
+      "fingerprint": [
+        33188,
+        398,
+        1790697819017478803,
+        1790697819018478822,
+        12756729
+      ]
+    },
+    "ui/knip.json": {
+      "sha256": "b53056c3d274f1f729882bb4752af284da04b8ed9647ff1a941d074bd57b7a36",
+      "fingerprint": [
+        33188,
+        211,
+        1789891810852710714,
+        1789891810852710714,
+        12759671
+      ]
+    },
+    "ui/package.json": {
+      "sha256": "8c27b0b9ef0bece10bed871bac0c7bea3faa23421733ade704da5e4f68ae41b8",
+      "fingerprint": [
+        33188,
+        2177,
+        1790188417047209665,
+        1790188417047209665,
+        12752174
+      ]
+    },
+    "ui/playwright.config.ts": {
+      "sha256": "72ccc1b34f94662c3731021239a5a3248ef329954f046e8a30c972cb4844b164",
+      "fingerprint": [
+        33188,
+        705,
+        1789891810852710714,
+        1789891810852710714,
+        12759672
+      ]
+    },
+    "ui/scripts/check-production-bundle.ts": {
+      "sha256": "9556531f118b0bdbbf0fd982f03172c43399c9c51924cfc5fb8b9cd104ee24ba",
+      "fingerprint": [
+        33188,
+        1507,
+        1790188417047393633,
+        1790188417047393633,
+        12755333
+      ]
+    },
+    "ui/scripts/native-e2e.py": {
+      "sha256": "a0c316fb00651c2b12b684606e2532c66696e0e97ee9ebdd30c1b5b80500685f",
+      "fingerprint": [
+        33188,
+        18199,
+        1791096910323345550,
+        1791096910323665014,
+        12759947
+      ]
+    },
+    "ui/scripts/test_native_e2e.py": {
+      "sha256": "a7076139aa68def7d230dfae67286f095aeae2a8c1d19ea042cf82f867d25ffd",
+      "fingerprint": [
+        33188,
+        12657,
+        1790700446481579121,
+        1790700446482503763,
+        12756741
+      ]
+    },
+    "ui/src/App.test.tsx": {
+      "sha256": "a861f01a6b304eb74308f61e7b2514eb063d170f9818c4e5404e584bd492c51e",
+      "fingerprint": [
+        33188,
+        1487,
+        1791092572394296127,
+        1791092572394296127,
+        14159855
+      ]
+    },
+    "ui/src/App.tsx": {
+      "sha256": "d35706c4cbc30908b86b551b77ccc6673e6b7afa41208d8cda7423d9c5d1fa8a",
+      "fingerprint": [
+        33188,
+        3238,
+        1791092425321130625,
+        1791092425405131862,
+        14208873
+      ]
+    },
+    "ui/src/accessibility.test.tsx": {
+      "sha256": "2032d6fba2e7881bba069149e881eb71e06c9c23780979e0466885ffc1dd5417",
+      "fingerprint": [
+        33188,
+        2697,
+        1791089911775121180,
+        1791089911854122343,
+        14208864
+      ]
+    },
+    "ui/src/appearance.test.ts": {
+      "sha256": "1016581d85d28dac1ab48778e733e2a60286b3e3cb09bb770d9406e40a6a5956",
+      "fingerprint": [
+        33188,
+        5742,
+        1790701548070076027,
+        1790701548072076061,
+        14207183
+      ]
+    },
+    "ui/src/appearance.ts": {
+      "sha256": "5ae24c67dde80bd1df1847e99c62eadc9c5263367f6e7bdf5d8e2e0b86b4ac26",
+      "fingerprint": [
+        33188,
+        4182,
+        1790701538653917200,
+        1790701538654917216,
+        14155777
+      ]
+    },
+    "ui/src/commands/context.tsx": {
+      "sha256": "5a5d6377359ed29410f6388f7ccab0463ea476cebe5b31c093b14e1c4be55311",
+      "fingerprint": [
+        33188,
+        2137,
+        1789891810853710727,
+        1789891810853710727,
+        16702163
+      ]
+    },
+    "ui/src/commands/tauri.test.ts": {
+      "sha256": "63056b1007b677e879873c342c28eb009b25838b6bdd60f06ebc9694cfeb47ca",
+      "fingerprint": [
+        33188,
+        1703,
+        1791093066214567116,
+        1791093066214567116,
+        16680730
+      ]
+    },
+    "ui/src/commands/tauri.ts": {
+      "sha256": "09e28bd0d229251e33db5949b600badbe8c24627784fcbac995b344ba88ab718",
+      "fingerprint": [
+        33188,
+        5684,
+        1791094560311574127,
+        1791094560313574157,
+        16680731
+      ]
+    },
+    "ui/src/components/Announcer.tsx": {
+      "sha256": "c6fa073abe7622e5f2ff3ae46cff6d1e86ae17d02127d0376c394343bb549e95",
+      "fingerprint": [
+        33188,
+        838,
+        1789891810854933347,
+        1789891810854933347,
+        18786014
+      ]
+    },
+    "ui/src/components/AppShell.tsx": {
+      "sha256": "3d1c7ad9e35aee915d4c25a335d37d39bde3dc242110e822418201d86306a2d9",
+      "fingerprint": [
+        33188,
+        6025,
+        1791090560865678387,
+        1791090560866678401,
+        18799691
+      ]
+    },
+    "ui/src/components/BackupControls.test.tsx": {
+      "sha256": "3444d1ba4b882776c2610cc720edbba93232df38e344e97130fa67030c6c2ece",
+      "fingerprint": [
+        33188,
+        9634,
+        1791094662217089624,
+        1791094662217089624,
+        18799705
+      ]
+    },
+    "ui/src/components/BackupControls.tsx": {
+      "sha256": "f3e6eef98773b8a4c2eac822ababe2cc3cee26f7611606481d43e6665d4e580b",
+      "fingerprint": [
+        33188,
+        11666,
+        1791094609251301938,
+        1791094609253301968,
+        18799694
+      ]
+    },
+    "ui/src/components/InventoryManager.tsx": {
+      "sha256": "f1454ed0a93bd5752178251675eb1816b3e9bdb2336f95ab2f883e0e31c73ff0",
+      "fingerprint": [
+        33188,
+        11996,
+        1791092424886124220,
+        1791092424887124235,
+        18799713
+      ]
+    },
+    "ui/src/components/Primitives.tsx": {
+      "sha256": "444bc8752dee2e336bb8622b2b8c1d198513e74e13241beb4aa9e6f30f4d1bde",
+      "fingerprint": [
+        33188,
+        11122,
+        1791089911556117956,
+        1791089911558117985,
+        18786038
+      ]
+    },
+    "ui/src/contracts.test.ts": {
+      "sha256": "3bff59e34fa153f5499711d07b2d2fe3f5c55806f9275f90b01d1e1a01669021",
+      "fingerprint": [
+        33188,
+        729,
+        1791089473919361211,
+        1791089473919361211,
+        14210769
+      ]
+    },
+    "ui/src/contracts.ts": {
+      "sha256": "4674861a4d1c675ba1763b9ce7604bbf616a035c0b3920f9b85c06afb155557a",
+      "fingerprint": [
+        33188,
+        17341,
+        1791094551163438080,
+        1791094551166438125,
+        14208878
+      ]
+    },
+    "ui/src/designTokens.test.ts": {
+      "sha256": "71635bb049fe43d9f2a17e7a7f081a9716a582489c731cb6d46aa1758698132d",
+      "fingerprint": [
+        33188,
+        1318,
+        1790200174850829917,
+        1790200174850829917,
+        14168569
+      ]
+    },
+    "ui/src/domain/reconcile.test.ts": {
+      "sha256": "b29f1fa2051669371e255664ead6a61aa3f8bf0af16672694ee65f3527652857",
+      "fingerprint": [
+        33188,
+        3750,
+        1789891810855043545,
+        1789891810855043545,
+        18786018
+      ]
+    },
+    "ui/src/domain/reconcile.ts": {
+      "sha256": "5501f87d2f1c85563cc0bfe2bff8cc273a7272ea7c91c849fa68f94c1f244753",
+      "fingerprint": [
+        33188,
+        6071,
+        1789891810855663316,
+        1789891810855663316,
+        18786019
+      ]
+    },
+    "ui/src/domain/sessionSearch.test.ts": {
+      "sha256": "1c0bc5e8a197abfa4dc09985b350ac293cd4a859b044dd29f726d481b0d190fd",
+      "fingerprint": [
+        33188,
+        2994,
+        1791092546403913445,
+        1791092546403913445,
+        18786028
+      ]
+    },
+    "ui/src/domain/sessionSearch.ts": {
+      "sha256": "32258ff3e7de46e046c4c268bac416afda5e9aed50b211ab54c8cbdd80c08c3c",
+      "fingerprint": [
+        33188,
+        3835,
+        1791093243146172251,
+        1791093243148172280,
+        18786015
+      ]
+    },
+    "ui/src/fixtures/backupManagement.ts": {
+      "sha256": "8bd8974df53dc8469ecfe5eefe7f00878a112bf8617371dbe9e8af1db4ae3b6a",
+      "fingerprint": [
+        33188,
+        3992,
+        1791091390851899106,
+        1791091390852899120,
+        18799701
+      ]
+    },
+    "ui/src/fixtures/browserAdapter.test.ts": {
+      "sha256": "e0e616f53be09bee3d7a46dfb7f5832394fd8de57e3e82fdc76dae00fa9c3f01",
+      "fingerprint": [
+        33188,
+        7929,
+        1791094039525898147,
+        1791094039526898161,
+        18799709
+      ]
+    },
+    "ui/src/fixtures/browserAdapter.ts": {
+      "sha256": "b6e8747eb98ecace8642f2d1ab1eee9e156c6112fe9a16524d14feda7c9d449a",
+      "fingerprint": [
+        33188,
+        29424,
+        1791094683867411600,
+        1791094683867411600,
+        18799712
+      ]
+    },
+    "ui/src/fixtures/inventoryManagement.ts": {
+      "sha256": "a963c7025514383378825152bc9a0d57b5e998f469c52f9c612edc883d5d7159",
+      "fingerprint": [
+        33188,
+        6280,
+        1791090492863677126,
+        1791090492863677126,
+        18799699
+      ]
+    },
+    "ui/src/fixtures/scenarios.ts": {
+      "sha256": "b63a705e061af39ac5bc3418f1c3f5423fc8e95c7655b3366bf458b75ecb5b94",
+      "fingerprint": [
+        33188,
+        20306,
+        1791092556777066179,
+        1791092556778066194,
+        18799698
+      ]
+    },
+    "ui/src/generated/settings.ts": {
+      "sha256": "6f866275a4b6be1eee91dad7cb55c309f2d613d723365b6a666aa7cb24795bb4",
+      "fingerprint": [
+        33188,
+        390,
+        1791089382542328773,
+        1791089382542328773,
+        14210767
+      ]
+    },
+    "ui/src/main.tsx": {
+      "sha256": "7500c949436376d10f1af322ccf67d5cfa4aa4460efe0a56d4209782b901dae6",
+      "fingerprint": [
+        33188,
+        2293,
+        1790697732160936487,
+        1790697732162936522,
+        14160859
+      ]
+    },
+    "ui/src/pages/AnalysisPage.test.tsx": {
+      "sha256": "5b1bc6cb35c5a05caaa9630277fedf6b33f309e89f759c4081400bb45fa27232",
+      "fingerprint": [
+        33188,
+        5263,
+        1791094683912412269,
+        1791094683912412269,
+        18786030
+      ]
+    },
+    "ui/src/pages/AnalysisPage.tsx": {
+      "sha256": "a4a291629c572eb35d820214e99bde12eca9e56566c465fbcc51be313ac12e0f",
+      "fingerprint": [
+        33188,
+        14571,
+        1791094551250439374,
+        1791094551251439389,
+        18786021
+      ]
+    },
+    "ui/src/pages/DashboardPage.tsx": {
+      "sha256": "2225aa49ff2ee4e6fdbfa8757a9073067409de70937f6014390d75e6eaf3b57a",
+      "fingerprint": [
+        33188,
+        15993,
+        1791089473919260911,
+        1791089473919260911,
+        18786026
+      ]
+    },
+    "ui/src/pages/DataControlsPage.test.tsx": {
+      "sha256": "8ebe0052e12197d4bf6740e593512c47e056ca190b46f7710bc70d94d6e2807f",
+      "fingerprint": [
+        33188,
+        9209,
+        1791093379430178891,
+        1791093379432178920,
+        18799716
+      ]
+    },
+    "ui/src/pages/DataControlsPage.tsx": {
+      "sha256": "163417a2c0ae0c5eb6716a604339f76699eb9a5ec9930c80af57ba6b1491ae00",
+      "fingerprint": [
+        33188,
+        17438,
+        1791093637722981998,
+        1791093637723982012,
+        18779263
+      ]
+    },
+    "ui/src/pages/GuardsPage.tsx": {
+      "sha256": "b7b3aede84b3cb0edbea85abfb62dab3e0d8e43975e68b80a5a411cf67c32ff4",
+      "fingerprint": null
+    },
+    "ui/src/pages/HealthPage.test.tsx": {
+      "sha256": "400206bce5616596e6014e06e3b8a11574ee2d138f819d108d078c0a527cba60",
+      "fingerprint": [
+        33188,
+        5501,
+        1791092123257683046,
+        1791092123259683075,
+        18786025
+      ]
+    },
+    "ui/src/pages/HealthPage.tsx": {
+      "sha256": "b1b716ff245063b9d871d1e1094f73d534da1a43bb4e4714015302052b91c9f0",
+      "fingerprint": [
+        33188,
+        13988,
+        1791092425213129035,
+        1791092425214129050,
+        18799704
+      ]
+    },
+    "ui/src/pages/InventoryPage.test.tsx": {
+      "sha256": "4ab44c877b70e011d243f47e9b8f4a80024ad1eebd14ed790aaeb4b44144c1d7",
+      "fingerprint": [
+        33188,
+        12127,
+        1791092605834788504,
+        1791092605834788504,
+        18786029
+      ]
+    },
+    "ui/src/pages/InventoryPage.tsx": {
+      "sha256": "20c6cb8ff0dc327fc9b16577f32097a1df8e37e91295e9c185208ade172883d1",
+      "fingerprint": [
+        33188,
+        14752,
+        1791091266205063806,
+        1791091266205063806,
+        18799696
+      ]
+    },
+    "ui/src/pages/OnboardingPage.tsx": {
+      "sha256": "8cb2f1ed1a104f6e850941e7160150e2765ced7618bb6896845532278120ae53",
+      "fingerprint": [
+        33188,
+        12129,
+        1791094590246019300,
+        1791094590247019315,
+        18786022
+      ]
+    },
+    "ui/src/pages/SessionsPage.tsx": {
+      "sha256": "d6c91fe1046494916f1e44cc5eccecf41481c4938bfd83542015999cfb0d41ca",
+      "fingerprint": [
+        33188,
+        27769,
+        1791094683999413564,
+        1791094683999413564,
+        18799715
+      ]
+    },
+    "ui/src/pages/SettingsPage.test.tsx": {
+      "sha256": "25d75070f48a1cb6cb5658d030b1167c57695005cf6bbe76e7f939824f27d2fc",
+      "fingerprint": [
+        33188,
+        15551,
+        1791093397052438363,
+        1791093397052438363,
+        18786040
+      ]
+    },
+    "ui/src/pages/SettingsPage.tsx": {
+      "sha256": "cd20502d792cd7af9e96b93ffadb39ad0a1434c0e524d5a10e593a59cb109b10",
+      "fingerprint": [
+        33188,
+        23738,
+        1791093397004437656,
+        1791093397004437656,
+        18799707
+      ]
+    },
+    "ui/src/pages/capabilities.test.tsx": {
+      "sha256": "4a81c90ed0a328f5473caab23a0690abe2c9ff03681096a7256d96b2cde259f8",
+      "fingerprint": [
+        33188,
+        2394,
+        1791091148530331162,
+        1791091148530331162,
+        18799706
+      ]
+    },
+    "ui/src/pages/pages.test.tsx": {
+      "sha256": "9940142013ba779a5dcdf9f3c7ea53e7b846f27cefcc03eb1c1fa31f47fcffc9",
+      "fingerprint": [
+        33188,
+        12786,
+        1791095224237447759,
+        1791095224237447759,
+        18799714
+      ]
+    },
+    "ui/src/pages/session-search.test.tsx": {
+      "sha256": "7a1c97427efe212b38a04c636e3cbfcbac9f712d78329225dcf83dd20f420171",
+      "fingerprint": [
+        33188,
+        8579,
+        1791094684015413801,
+        1791094684015413801,
+        18786033
+      ]
+    },
+    "ui/src/router.ts": {
+      "sha256": "36e575f6bd2b52f7ef3738dfeffeebac2ebcf5791a9e2db037f81816c5638a87",
+      "fingerprint": [
+        33188,
+        1597,
+        1791089473919124443,
+        1791089473919124443,
+        14212024
+      ]
+    },
+    "ui/src/styles.css": {
+      "sha256": "70c9ce05baed767c072d19ec7adc82d9e469e9b32e30bb92ebcea344923cb28f",
+      "fingerprint": [
+        33188,
+        60239,
+        1791094683162401115,
+        1791094683163401130,
+        14208863
+      ]
+    },
+    "ui/src/test/setup.ts": {
+      "sha256": "5bd60d86344e015a61e6f972d8a2934765d99b5c313ecdd5dd66f0b1f03bb884",
+      "fingerprint": [
+        33188,
+        586,
+        1789891810856710768,
+        1789891810856710768,
+        18786036
+      ]
+    },
+    "ui/src/testing/nativeE2eBridge.ts": {
+      "sha256": "43dc4178872bb454a26eee741bcd5ddfc061fa5358b630d850ed4853eef15ff9",
+      "fingerprint": [
+        33188,
+        771,
+        1790188417047632225,
+        1790188417047632225,
+        14160876
+      ]
+    },
+    "ui/src/testing/nativeHarness.test.ts": {
+      "sha256": "c8caaf4ba7c62c674c5862ec54835638f22c566e6aecf3f646b722d90d2abf10",
+      "fingerprint": [
+        33188,
+        703,
+        1790188417047707918,
+        1790188417047707918,
+        14160896
+      ]
+    },
+    "ui/tests/e2e/backup-restore.spec.ts": {
+      "sha256": "e8fb267318d07d33857041094e7377f1f36f817b8244046f4e8eae403f8d9f3e",
+      "fingerprint": [
+        33188,
+        4733,
+        1791093577714098425,
+        1791093577714098425,
+        18799697
+      ]
+    },
+    "ui/tests/e2e/desktop.spec.ts": {
+      "sha256": "d6355e63d8f6335ce60338666e42c5965183a857b9135d489924da70d8cb2a01",
+      "fingerprint": [
+        33188,
+        25936,
+        1791094099523781555,
+        1791094099524781570,
+        18799710
+      ]
+    },
+    "ui/tests/e2e/management-visual.spec.ts": {
+      "sha256": "714e6e1b7a3df63eb844a451c147dc56fd6d0947413181aa72b97696d5870131",
+      "fingerprint": [
+        33188,
+        3757,
+        1791095168153613704,
+        1791095168154613719,
+        18779396
+      ]
+    },
+    "ui/tests/e2e/management.spec.ts": {
+      "sha256": "9840770ad8c68e5821f717f0bc13c8778cbedb62b051752f48a8fea4ddcd2124",
+      "fingerprint": [
+        33188,
+        3738,
+        1791092261492718417,
+        1791092261492718417,
+        18799700
+      ]
+    },
+    "ui/tests/e2e/session-search.spec.ts": {
+      "sha256": "80453a57fffa8a10f47cb0438f9bd7bb38ea34819141c4c05b7b3fa766658696",
+      "fingerprint": [
+        33188,
+        9044,
+        1791095754138429282,
+        1791095754138429282,
+        18799695
+      ]
+    },
+    "ui/tests/tauri/backup-restore.spec.ts": {
+      "sha256": "66095158d9fa0f3448987233f06c8987c7c2d6eb5c565ad73a208b874230a556",
+      "fingerprint": [
+        33188,
+        8226,
+        1791093848916091606,
+        1791093848917091621,
+        18799708
+      ]
+    },
+    "ui/tests/tauri/geometry.ts": {
+      "sha256": "73051a9050a1e351ca4ba757d1aeda92241ac7694b675c8f53a4263ada2e8b92",
+      "fingerprint": [
+        33188,
+        317,
+        1790188417047707918,
+        1790188417047707918,
+        18800169
+      ]
+    },
+    "ui/tests/tauri/inventory-management.spec.ts": {
+      "sha256": "e543130185f7ebe98dc52c047627206a83833d89b7e8cef53e2e5ec8da9ed173",
+      "fingerprint": [
+        33188,
+        8268,
+        1791092567390222447,
+        1791092567392222477,
+        18779398
+      ]
+    },
+    "ui/tests/tauri/native-desktop.spec.ts": {
+      "sha256": "3517e48a1930f627ed09b8bbb2290056a7023d86209e56e5eb9b3ec2eaab29cf",
+      "fingerprint": [
+        33188,
+        15559,
+        1791096993571760567,
+        1791096993573760596,
+        18786031
+      ]
+    },
+    "ui/tests/tauri/zz-health-capabilities.spec.ts": {
+      "sha256": "af431c622733f4fe43636bbc0d23b50bf4707aad0e28d847af1b4bc8bea20c2a",
+      "fingerprint": [
+        33188,
+        5341,
+        1791093039675176352,
+        1791093039676176367,
+        18779282
+      ]
+    },
+    "ui/tsconfig.json": {
+      "sha256": "a96d087b4e6784f2711a525a18c03006e5775929b27dd301e923ebe865b7f20b",
+      "fingerprint": [
+        33188,
+        791,
+        1789891810857794063,
+        1789891810857794063,
+        12759332
+      ]
+    },
+    "ui/vite.config.ts": {
+      "sha256": "fbc7373b2e6a8a0b356610bd6dcda5b7e115590f038897a9063cb9baadd7bf5f",
+      "fingerprint": [
+        33188,
+        1140,
+        1790188417048062409,
+        1790188417048062409,
+        12757603
+      ]
+    },
+    "ui/vitest.config.ts": {
+      "sha256": "36109b5863b9567540202d503b67df31f89469c97abd9602fbd19fd0fe11eaa8",
+      "fingerprint": [
+        33188,
+        333,
+        1789891810857794063,
+        1789891810857794063,
+        12759677
+      ]
+    },
+    "ui/wdio.conf.ts": {
+      "sha256": "62636a7732ed5b83ef3ebd118c88725e91e6aa736abef472f21c4c17b4a44b6c",
+      "fingerprint": [
+        33188,
+        3234,
+        1790188417048062409,
+        1790188417048062409,
+        12757604
+      ]
+    }
+  }
+}

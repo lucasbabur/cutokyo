@@ -1,0 +1,25 @@
+{
+  "reviewed_source_still_matches": true,
+  "members": [
+    {
+      "path": "evidence/management/native-review/trusted-keyboard-cli-review-receipt.json",
+      "sha256": "e590e87239c59fccc01daf4d9b41f6924979cca7f0faee5ccef5b30bf0d548c4",
+      "bytes": 4968
+    },
+    {
+      "path": "evidence/management/native-review/trusted-keyboard-cli-node-34-regressions.log",
+      "sha256": "27aa0dfb144d1b30a7859479c9d92db766b702b01108d3386c0b14774b399648",
+      "bytes": 6617
+    },
+    {
+      "path": "evidence/management/native-review/trusted-keyboard-cli-python-five-runtime-regressions.log",
+      "sha256": "8d6419e1a81594516f5f649510895aae217060a5936c4b5dd444aadf9a6653c7",
+      "bytes": 895
+    },
+    {
+      "path": "evidence/management/native-review/trusted-keyboard-cli-real-cli-prerequisite-validation.log",
+      "sha256": "e51dc1ef7e98da53a5a27a9755ef1dc8a91d181f17744b9a8453b4eda008f76d",
+      "bytes": 1110
+    }
+  ]
+}

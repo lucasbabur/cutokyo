@@ -1,0 +1,99 @@
+{
+  "images": [
+    {
+      "path": "target/native-evidence/attempt-d3yyqmm_/analysis-unavailable-1280x800.png",
+      "sha256": "e62a2522c8d4c3d4288914b45c12ae7f0f2224f7ccd5fb2164178bbdcfa2c53f",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true
+    },
+    {
+      "path": "target/native-evidence/attempt-d3yyqmm_/appearance-dark-1280x800.png",
+      "sha256": "8097a25a8c125786deacdd53500d02bfc3c62d3914b11930fbe52256575f8728",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true
+    },
+    {
+      "path": "target/native-evidence/attempt-d3yyqmm_/backup-created-1280x800.png",
+      "sha256": "28e3f6cc518921388c4f36b1c8b8517a988e5711ab430c275f87a612ee525ffd",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true
+    },
+    {
+      "path": "target/native-evidence/attempt-d3yyqmm_/backup-restore-confirmation-1280x800.png",
+      "sha256": "bdc19b2dd3f3cdb6ea229245ad3b56b13ebe4ac7c61a7bc5ab0dd4319429921a",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true
+    },
+    {
+      "path": "target/native-evidence/attempt-d3yyqmm_/backup-restored-1280x800.png",
+      "sha256": "50da50b5126ba675e9366ed6b42647b34e693aa91590456d6987f7c90c424541",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true
+    },
+    {
+      "path": "target/native-evidence/attempt-d3yyqmm_/diagnostic-created-1280x800.png",
+      "sha256": "a7364eb3e42a6e15c0664f9e0d9fd42a3b8e586774f8ca57cee6cdef230a5ecf",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true
+    },
+    {
+      "path": "target/native-evidence/attempt-d3yyqmm_/diagnostic-preview-1280x800.png",
+      "sha256": "601f9200681b6a126c73c318d106265e4cd4f29a54e19f0c158be9d525015c25",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true
+    },
+    {
+      "path": "target/native-evidence/attempt-d3yyqmm_/inventory-native-configured-1280x800.png",
+      "sha256": "45a80e9d4d06e4b9483077a11ca2c44a239e722da54a08d05cdde8e6435e6f83",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true
+    },
+    {
+      "path": "target/native-evidence/attempt-d3yyqmm_/inventory-remove-confirmation-1280x800.png",
+      "sha256": "b8015288e587d7614c54ce2c478d89400b8599b6d4a672ac920dc416f40fdc78",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true
+    },
+    {
+      "path": "target/native-evidence/attempt-d3yyqmm_/search-detail-resume-1280x800.png",
+      "sha256": "31c2ee704628735641cf590998a98aca82c54fae6d114297b9c43ba8c4ed0a65",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true
+    }
+  ],
+  "inspected_count": 10,
+  "native_aggregate_exit_code": 1,
+  "no_new_layout_failure_established": true,
+  "copy_finding": "Settings unavailable proxy note falsely says native capture remains active where configured; assigned bounded correction",
+  "resume_execution": "unverified; failed aggregate read old announcer status"
+}

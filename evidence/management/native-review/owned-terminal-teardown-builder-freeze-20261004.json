@@ -1,0 +1,28 @@
+{
+  "files": {
+    "ui/scripts/native-e2e.py": "8a8d781cfc687943e816f671f715998edb59291c872f3b86c1046100843f8d3f",
+    "ui/scripts/test_native_e2e.py": "e647de448b3e6a152181b4dc00e718d5fd5963b6fbe86b56184140d9607d31f5",
+    "ui/tests/tauri/native-desktop.spec.ts": "cc3ac3648b2d34f7489cf4632c80de2ec65cb558f8f3149269df429873bbe16f"
+  },
+  "builder_commands": [
+    {
+      "command": [
+        "pnpm",
+        "--dir",
+        "/home/lucas/Developer/personal/cutokyo-community/ui",
+        "test:native-harness"
+      ],
+      "exit_code": 0,
+      "python_tests": 22,
+      "node_tests": 34,
+      "log": "evidence/management/checks/owned-terminal-teardown-runner-20261004.log"
+    },
+    {
+      "command": "pnpm --dir <ui> typecheck && pnpm --dir <ui> lint && pnpm --dir <ui> format:check && pyright <ui>/scripts/native-e2e.py",
+      "exit_code": 0,
+      "log": "evidence/management/checks/owned-terminal-teardown-static-20261004.log"
+    }
+  ],
+  "boundary": "builder unit/static execution only; no real signals or application/terminal/provider launch; independent review and real replay still pending",
+  "waivers": []
+}

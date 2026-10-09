@@ -1,0 +1,79 @@
+{
+  "recorded_at": "2026-10-04T08:07:17.196131+00:00",
+  "scope": "Bounded independent CLI resolution/validation delta safety review only, no application launch or appearance investigation",
+  "source_sha256_before": {
+    "ui/tests/tauri/trusted-keyboard.ts": "fa57d82c9d6e3b07e48b818cf90eff2548487c59c4af1b65f49430095e53f990",
+    "ui/tests/tauri/trusted-keyboard.test.ts": "f0bed12622d8682ebdaa412dcbbf94d783023845eb6e63ed9f83564cee24f9df",
+    "ui/scripts/native-e2e.py": "99591e00960ab29bfaaf3983ecec72894736d4ffeaea6fcb5c91257aa858899f",
+    "ui/scripts/test_native_e2e.py": "94175bee9109281d12cbd52aeaddd8b0bb25bf6837e21d3153fb5c7bd9440a51",
+    "README.md": "28a00b97355b59130330f388e19a75d4d129400a8cba7bd3fae3873ca9ae6480"
+  },
+  "source_sha256_after": {
+    "ui/tests/tauri/trusted-keyboard.ts": "fa57d82c9d6e3b07e48b818cf90eff2548487c59c4af1b65f49430095e53f990",
+    "ui/tests/tauri/trusted-keyboard.test.ts": "f0bed12622d8682ebdaa412dcbbf94d783023845eb6e63ed9f83564cee24f9df",
+    "ui/scripts/native-e2e.py": "99591e00960ab29bfaaf3983ecec72894736d4ffeaea6fcb5c91257aa858899f",
+    "ui/scripts/test_native_e2e.py": "94175bee9109281d12cbd52aeaddd8b0bb25bf6837e21d3153fb5c7bd9440a51",
+    "README.md": "28a00b97355b59130330f388e19a75d4d129400a8cba7bd3fae3873ca9ae6480"
+  },
+  "reviewed_sources_unchanged": true,
+  "checks": [
+    {
+      "command": [
+        "/home/lucas/.nvm/versions/node/v22.22.3/bin/node",
+        "--import",
+        "/home/lucas/Developer/personal/cutokyo-community/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx/dist/loader.mjs",
+        "--test",
+        "/home/lucas/Developer/personal/cutokyo-community/ui/tests/tauri/trusted-keyboard.test.ts"
+      ],
+      "exit_code": 0,
+      "transcript": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/trusted-keyboard-cli-delta-review/node-34-regressions.log"
+    },
+    {
+      "command": [
+        "python3",
+        "-B",
+        "/home/lucas/Developer/personal/cutokyo-community/ui/scripts/test_native_e2e.py",
+        "NativePackageHarness.test_concurrent_roots_ports_and_runtime_home_are_isolated",
+        "NativePackageHarness.test_x11_requires_a_real_display_and_never_invents_one",
+        "NativePackageHarness.test_compositor_environment_preserves_host_socket_only_for_scoped_helper",
+        "NativePackageHarness.test_missing_compositor_environment_is_not_invented",
+        "NativePackageHarness.test_runtime_environment_excludes_credentials_and_loader_hooks",
+        "-v"
+      ],
+      "exit_code": 0,
+      "transcript": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/trusted-keyboard-cli-delta-review/python-five-runtime-regressions.log"
+    },
+    {
+      "command": [
+        "/home/lucas/.nvm/versions/node/v22.22.3/bin/node",
+        "--import",
+        "/home/lucas/Developer/personal/cutokyo-community/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx/dist/loader.mjs",
+        "/tmp/cutokyo-keyboard-isolation-20261004/cli-validation-probe.mts"
+      ],
+      "exit_code": 0,
+      "transcript": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/trusted-keyboard-cli-delta-review/real-cli-prerequisite-validation.log"
+    }
+  ],
+  "findings": [],
+  "verdict": "No concrete safety/fidelity issue found in bounded delta; actual native aggregate remains pending",
+  "observations": [
+    "Runner resolves hyprctl from original environment PATH before private bin prefix and ignores preexisting CLI/runtime overrides",
+    "Helper requires resolved absolute CLI, realpath equality, regular file and X_OK; direct real-file probe accepts executable and rejects symlink/directory/non-executable/missing paths without any CLI execution",
+    "All helper compositor calls use explicit resolved CLI via execFileSync; trace records CLI; existing ownership, mapped address, active window and foreign-XWayland guards retained",
+    "Application HOME/XDG remain isolated; host runtime substituted only in compositor subprocess environment",
+    "README states Linux/Hyprland/XWayland/hyprctl prerequisite rather than implying arbitrary platform support"
+  ],
+  "no_source_edits": true,
+  "no_app_or_server_launch": true,
+  "revision": {
+    "observed_head": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+    "identity_note": "Concurrent dirty integrated checkout; exact reviewed file hashes and preserved source snapshots establish bounded review identity, not an immutable HEAD claim"
+  },
+  "environment": {
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+    "node": "v22.22.3",
+    "python": "3.14.4",
+    "viewport": "not applicable; no GUI launched"
+  },
+  "readme_verified_lines": "220-229: Linux/Hyprland/XWayland, resolved CLI, scoped runtime, private application HOME/XDG, blocked unsupported inputs, no fallback or concurrent native runner"
+}

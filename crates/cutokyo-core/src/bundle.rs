@@ -11,8 +11,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::{
-    guards::{GuardChannel, GuardCoverageState, GuardError, SanitizedFinding, SecretGuard},
     mcp, plugin,
+    redaction::{RedactionBoundary, RedactionCoverage, RedactionError, Redactor},
 };
 
 /// Maximum categorical diagnostics included in one bundle.
@@ -42,14 +42,10 @@ pub struct DiagnosticBundle {
     pub plugin_protocol: Value,
     /// MCP tool/config metadata without upstream secrets.
     pub mcp: Value,
-    /// Guard coverage metadata.
-    pub guards: Value,
     /// Content-free categorical counters after complete-value inspection.
     pub diagnostics: Vec<BundleDiagnostic>,
-    /// Sanitized scanner projections produced at the bundle boundary.
-    pub redaction_findings: Vec<SanitizedFinding>,
     /// Honest bundle-boundary inspection state.
-    pub coverage: GuardCoverageState,
+    pub coverage: RedactionCoverage,
     /// Explicit exclusion statement displayed by CLI/UI.
     pub excludes: Vec<String>,
 }
@@ -80,8 +76,8 @@ impl Display for BundleError {
 
 impl std::error::Error for BundleError {}
 
-impl From<GuardError> for BundleError {
-    fn from(error: GuardError) -> Self {
+impl From<RedactionError> for BundleError {
+    fn from(error: RedactionError) -> Self {
         Self {
             field: error.field,
             expected: error.expected,
@@ -117,17 +113,16 @@ pub fn build_diagnostic_bundle(
     let payload = serde_json::json!({
         "plugin_protocol": plugin::protocol_manifest(),
         "mcp": mcp::surface_manifest(),
-        "guards": crate::guards::guard_manifest(),
         "diagnostics": diagnostics,
     });
-    let guarded = SecretGuard::new()?.redact_json(GuardChannel::Bundle, &payload)?;
+    let guarded = Redactor::new()?.redact_json(RedactionBoundary::Bundle, &payload)?;
     let mut guarded_payload = guarded
         .value
         .as_object()
         .cloned()
         .ok_or_else(|| BundleError {
             field: "bundle".to_owned(),
-            expected: "guarded JSON object".to_owned(),
+            expected: "redacted JSON object".to_owned(),
             actual: "different JSON shape".to_owned(),
             message: "diagnostic bundle could not be projected".to_owned(),
         })?;
@@ -143,18 +138,13 @@ pub fn build_diagnostic_bundle(
     let mcp = guarded_payload
         .remove("mcp")
         .ok_or_else(|| missing_projection("mcp"))?;
-    let guards = guarded_payload
-        .remove("guards")
-        .ok_or_else(|| missing_projection("guards"))?;
 
     Ok(DiagnosticBundle {
         bundle_version: 1,
         app_version: env!("CARGO_PKG_VERSION").to_owned(),
         plugin_protocol,
         mcp,
-        guards,
         diagnostics,
-        redaction_findings: guarded.findings,
         coverage: guarded.coverage,
         excludes: vec![
             "prompts".to_owned(),
@@ -187,7 +177,7 @@ fn validate_identifier(field: &str, value: &str) -> Result<(), BundleError> {
 fn missing_projection(field: &str) -> BundleError {
     BundleError {
         field: field.to_owned(),
-        expected: "guarded bundle projection".to_owned(),
+        expected: "redacted bundle projection".to_owned(),
         actual: "projection unavailable".to_owned(),
         message: "diagnostic bundle could not be projected".to_owned(),
     }

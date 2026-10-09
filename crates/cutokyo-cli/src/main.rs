@@ -2,21 +2,22 @@
 //! TypeScript command implementation.
 
 mod bundle;
+mod inventory;
 mod logging;
 
 use std::{
     fs,
     io::{self, Read as _, Write as _},
     path::{Path, PathBuf},
-    process::{Command as ProcessCommand, ExitCode},
+    process::ExitCode,
     sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
 };
 
 use clap::{Args, CommandFactory as _, Parser, Subcommand, error::ErrorKind};
 use cutokyo_core::app::{
-    Application, DoctorOutcome, LockOwner, RetentionOverride, RuntimePaths, SessionSearch,
-    SettingsOverrides,
+    Application, DoctorOutcome, HistoryImportOptions, HistoryRoots, LockOwner, RetentionOverride,
+    RuntimePaths, SessionSearch, SettingsOverrides,
 };
 use cutokyo_domain::{
     CaptureChannel, Confidence, ContractError, Coverage, CoverageState, ErrorCode, Harness,
@@ -51,9 +52,6 @@ struct Cli {
     /// Override proxy consent for this invocation only.
     #[arg(long, global = true, value_parser = clap::value_parser!(bool))]
     proxy_enabled: Option<bool>,
-    /// Override outgoing guard state for this invocation only.
-    #[arg(long, global = true, value_parser = clap::value_parser!(bool))]
-    outgoing_guard_enabled: Option<bool>,
     /// Override read-only search MCP exposure for this invocation only.
     #[arg(long, global = true, value_parser = clap::value_parser!(bool))]
     search_mcp_enabled: Option<bool>,
@@ -79,6 +77,19 @@ enum CliCommand {
         #[command(subcommand)]
         command: SessionsCommand,
     },
+    /// Import past sessions from each harness's own local history (read-only).
+    History {
+        #[command(subcommand)]
+        command: HistoryCommand,
+    },
+    /// Discover and manage native skills, hooks, MCP, plugins and instructions.
+    Inventory {
+        /// Add a native project root to every inventory operation.
+        #[arg(long, global = true)]
+        project: Option<PathBuf>,
+        #[command(subcommand)]
+        command: inventory::InventoryCommand,
+    },
     /// Preview or apply a stable retention plan.
     Retention {
         #[command(subcommand)]
@@ -88,6 +99,37 @@ enum CliCommand {
     Config {
         #[command(subcommand)]
         command: ConfigCommand,
+    },
+    /// Preview, install, recover or remove one native capture integration.
+    CaptureSetup {
+        #[arg(long, value_parser = ["claude_code", "codex", "opencode"])]
+        harness: String,
+        /// Inspect only. No file or directory is created.
+        #[arg(long)]
+        dry_run: bool,
+        /// Follow interrupted durable intent, including cleanup intent.
+        #[arg(long, conflicts_with = "uninstall")]
+        recover: bool,
+        /// Remove only owned capture entries, preserving unrelated native config.
+        #[arg(long)]
+        uninstall: bool,
+    },
+    /// Receive a documented native hook payload. Capture failure never blocks the harness.
+    NativeHook {
+        #[arg(long, value_parser = ["claude_code", "codex", "opencode"])]
+        harness: String,
+        #[arg(long)]
+        version: String,
+        #[arg(long)]
+        cutokyo_owner: Option<String>,
+        #[arg(long)]
+        event: Option<String>,
+    },
+    /// Internal visible-terminal helper. Refuses stdin/stdout without a real TTY.
+    #[command(hide = true)]
+    ResumeTerminal {
+        #[arg(long)]
+        request: PathBuf,
     },
     /// Accept one raw observation from stdin and atomically spool it.
     Hook,
@@ -114,11 +156,20 @@ enum CliCommand {
     Doctor,
     /// Preview or create a content-free diagnostic archive.
     Bundle(BundleArgs),
-    /// Create a verified SQLite online backup.
+    /// Create one private local-history backup (default: data-dir/backups).
     Backup {
-        /// Backup database destination. A digest manifest is written beside it.
-        #[arg(value_name = "PATH")]
-        destination: PathBuf,
+        /// Optional new backup directory. Existing locations are never overwritten.
+        #[arg(value_name = "DIRECTORY")]
+        destination: Option<PathBuf>,
+    },
+    /// Verify and preview a backup, or restore it with explicit confirmation.
+    Restore {
+        /// Backup directory created by Cutokyo.
+        #[arg(value_name = "DIRECTORY")]
+        backup: PathBuf,
+        /// Replace current local history, retaining a verified recovery copy.
+        #[arg(long)]
+        confirm: bool,
     },
     /// Print the complete application contract snapshot.
     Contract,
@@ -127,10 +178,29 @@ enum CliCommand {
 }
 
 #[derive(Debug, Subcommand)]
+enum HistoryCommand {
+    /// Read each harness's own session storage (never modified) into local history.
+    /// Re-running is idempotent and only reads what changed.
+    Import {
+        /// Limit to one harness; repeat for several. Default: all three.
+        #[arg(long, value_parser = ["claude_code", "codex", "opencode"])]
+        harness: Vec<String>,
+        /// Bring back sessions you deleted earlier. Without this they stay deleted.
+        #[arg(long)]
+        restore_deleted: bool,
+        /// Stop after this many seconds and report what remains. Default: run to completion.
+        #[arg(long, value_name = "SECONDS")]
+        max_seconds: Option<u64>,
+    },
+    /// Show the latest import report and per-source coverage without reading native files.
+    Status,
+}
+
+#[derive(Debug, Subcommand)]
 enum SessionsCommand {
     /// List recent sessions.
     List(SearchArgs),
-    /// Search transcript FTS and exact filters.
+    /// Search stored session metadata and transcript with exact filters.
     Search(SearchArgs),
     /// Show one exact session and attributable usage.
     Show { session_id: String },
@@ -156,9 +226,21 @@ enum SessionsCommand {
 
 #[derive(Clone, Debug, Default, Args)]
 struct SearchArgs {
-    /// Full-text transcript search.
+    /// Literal words in session metadata and transcript. FTS operators are not accepted.
     #[arg(long)]
     query: Option<String>,
+    /// Match consecutive words instead of all terms.
+    #[arg(long)]
+    phrase: bool,
+    /// Sort matching sessions by weighted relevance or start time.
+    #[arg(long, default_value = "relevance", value_parser = ["relevance", "newest"])]
+    sort: String,
+    /// Skip this many matches. Page size is bounded, history is not.
+    #[arg(long, default_value_t = 0)]
+    offset: u32,
+    /// Return an exact total, page metadata, matches, and observed facets.
+    #[arg(long)]
+    page: bool,
     #[arg(long)]
     project: Option<String>,
     #[arg(long)]
@@ -403,7 +485,15 @@ fn initialize_logging(
     json: bool,
     command: Option<&CliCommand>,
 ) -> Option<logging::LogGuard> {
-    if matches!(command, Some(CliCommand::Setup { dry_run: true })) {
+    if matches!(
+        command,
+        Some(
+            CliCommand::Setup { dry_run: true }
+                | CliCommand::CaptureSetup { dry_run: true, .. }
+                | CliCommand::NativeHook { .. }
+                | CliCommand::ResumeTerminal { .. }
+        )
+    ) {
         return None;
     }
     match logging::initialize(paths) {
@@ -509,35 +599,31 @@ fn run(
                 "product_readiness": "not_checked"
             }),
         )),
-        Some(CliCommand::Setup { dry_run }) => {
-            let plan = app.setup(paths, dry_run)?;
-            json_success("setup", &plan)
-        }
-        Some(CliCommand::Uninstall) => {
-            let receipt = app.uninstall(paths)?;
-            json_success("uninstall", &receipt)
-        }
+        Some(CliCommand::Setup { dry_run }) => json_success("setup", &app.setup(paths, dry_run)?),
+        Some(CliCommand::Uninstall) => json_success("uninstall", &app.uninstall(paths)?),
         Some(CliCommand::Sessions { command }) => sessions(app, paths, command),
+        Some(CliCommand::History { command }) => history(app, paths, command),
+        Some(CliCommand::Inventory { project, command }) => {
+            inventory::run(app, paths, project.as_ref(), command)
+        }
         Some(CliCommand::Retention { command }) => retention(app, paths, command),
         Some(CliCommand::Config { command }) => config(app, paths, overrides, command),
+        Some(CliCommand::CaptureSetup {
+            harness,
+            dry_run,
+            recover,
+            uninstall,
+        }) => capture_setup(app, paths, &harness, dry_run, recover, uninstall),
+        Some(CliCommand::NativeHook {
+            harness,
+            version,
+            cutokyo_owner: _,
+            event: _,
+        }) => Ok(native_hook(app, paths, &harness, &version)),
+        Some(CliCommand::ResumeTerminal { request }) => resume_terminal(app, &request),
         Some(CliCommand::Hook) => hook(app, paths),
         Some(CliCommand::Spool { command }) => spool(app, paths, command),
-        Some(CliCommand::Drain) => {
-            let owner = LockOwner::current("cli", None)?;
-            let core = app.open_local(&paths.database_file, &paths.spool_dir, owner)?;
-            let span = info_span!("ingest", operation = "drain");
-            let _entered = span.enter();
-            let report = core.drain()?;
-            info!(
-                attempted = report.attempted,
-                inserted = report.inserted,
-                duplicates = report.duplicates,
-                quarantined = report.quarantined,
-                status = "complete",
-                "ingest drain completed"
-            );
-            json_success("drain", &report)
-        }
+        Some(CliCommand::Drain) => drain(app, paths),
         Some(CliCommand::Plugin { command }) => plugin(app, paths, command),
         Some(CliCommand::Mcp { command }) => mcp(app, paths, overrides, &command),
         Some(CliCommand::Analyze(arguments)) => analyze(&arguments),
@@ -560,8 +646,34 @@ fn run(
         Some(CliCommand::Backup { destination }) => {
             let owner = LockOwner::current("cli", None)?;
             let core = app.open_local(&paths.database_file, &paths.spool_dir, owner)?;
-            let manifest = core.backup(destination)?;
-            json_success("backup", &manifest)
+            let backup = core.create_backup(destination.as_deref())?;
+            json_success("backup", &backup)
+        }
+        Some(CliCommand::Restore { backup, confirm }) => {
+            let owner = LockOwner::current("cli", None)?;
+            let core = app.open_local(&paths.database_file, &paths.spool_dir, owner)?;
+            let plan = core.preview_backup_restore(&backup)?;
+            if !confirm {
+                return json_success(
+                    "restore",
+                    &json!({
+                        "confirmed": false,
+                        "backup": plan.backup,
+                        "currentSessionCount": plan.current_session_count,
+                        "detail": "History has not been changed. Use --confirm to restore this verified backup; current history will be retained in a recovery copy."
+                    }),
+                );
+            }
+            let receipt = core.restore_backup(&plan)?;
+            json_success(
+                "restore",
+                &json!({
+                    "recoveryPath": receipt.previous_backup.parent().ok_or_else(|| ContractError::new(ErrorCode::Internal, "Retained recovery directory is unavailable."))?,
+                    "restoredSessionCount": receipt.restored_session_count,
+                    "integrityResult": receipt.integrity_result,
+                    "scope": plan.backup.scope,
+                }),
+            )
         }
         Some(CliCommand::Contract) => json_success("contract", &app.contract_snapshot()),
         Some(CliCommand::Version) => json_success(
@@ -602,28 +714,20 @@ fn sessions(
         } => {
             let queries = app.open_read_only(&paths.database_file)?;
             let plan = queries.resume_plan(&session_id)?;
-            if execute {
-                let mut process = ProcessCommand::new(&plan.executable);
-                process.args(&plan.arguments);
-                if let Some(directory) = &plan.working_directory {
-                    process.current_dir(directory);
-                }
-                let status = process.status().map_err(|_| {
+            let launch = if execute {
+                let receiver = std::env::current_exe().map_err(|_| {
                     ContractError::new(
                         ErrorCode::CapabilityUnavailable,
-                        "native harness executable could not be launched",
+                        "Cutokyo CLI path is unavailable",
                     )
                 })?;
-                if !status.success() {
-                    return Err(ContractError::new(
-                        ErrorCode::Unhealthy,
-                        "native harness resume process exited unsuccessfully",
-                    ));
-                }
-            }
+                Some(app.launch_terminal_resume(paths, &plan, &receiver)?)
+            } else {
+                None
+            };
             json_success(
                 "sessions.resume",
-                &json!({"executed": execute, "plan": plan}),
+                &json!({"executed": launch.as_ref().is_some_and(|receipt| receipt.harness_started), "nativeSessionConfirmed": false, "launch": launch, "plan": plan}),
             )
         }
         SessionsCommand::Delete {
@@ -688,8 +792,13 @@ fn session_search(
         return fixture_session_search(app, arguments, command);
     }
     let queries = app.open_read_only(&paths.database_file)?;
-    let results = queries.search_sessions(&search_request(arguments))?;
-    json_success(command, &results)
+    let paged = arguments.page;
+    let request = search_request(arguments);
+    if paged {
+        json_success(command, &queries.search_sessions_page(&request)?)
+    } else {
+        json_success(command, &queries.search_sessions(&request)?)
+    }
 }
 
 fn fixture_session_search(
@@ -726,8 +835,13 @@ fn fixture_session_search(
     let owner = LockOwner::current("cli-fixture", None)?;
     let core = app.open_local(&database_path, &spool_path, owner)?;
     core.drain()?;
-    let results = core.search_sessions(&search_request(arguments))?;
-    json_success(command, &results)
+    let paged = arguments.page;
+    let request = search_request(arguments);
+    if paged {
+        json_success(command, &core.search_sessions_page(&request)?)
+    } else {
+        json_success(command, &core.search_sessions(&request)?)
+    }
 }
 
 fn fixture_observation(
@@ -872,6 +986,151 @@ fn config(
                 json_success("config.list", &resolved.settings)
             }
         }
+    }
+}
+
+fn native_hook(
+    app: &Application,
+    paths: &RuntimePaths,
+    harness: &str,
+    version: &str,
+) -> CommandSuccess {
+    let result = (|| {
+        let harness =
+            serde_json::from_value::<cutokyo_domain::Harness>(json!(harness)).map_err(|_| {
+                ContractError::new(ErrorCode::InvalidInput, "invalid native capture harness")
+            })?;
+        let bytes = read_bounded_stdin(STDIN_MAX_BYTES)?;
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|_| ContractError::new(ErrorCode::Internal, "capture clock is unavailable"))?;
+        let timestamp =
+            Timestamp::from_unix_timestamp(i64::try_from(timestamp.as_secs()).map_err(|_| {
+                ContractError::new(ErrorCode::Internal, "capture clock exceeds bounds")
+            })?)?;
+        app.capture_native_hook(paths, harness, version, &bytes, timestamp)
+    })();
+    if let Err(error) = result {
+        eprintln!(
+            "Cutokyo native capture unavailable: {}. The harness may continue.",
+            error.message
+        );
+    }
+    let mut receipt = success("native-hook", Value::Null);
+    receipt.render = false;
+    receipt
+}
+
+fn resume_terminal(app: &Application, request: &Path) -> Result<CommandSuccess, ContractError> {
+    app.run_terminal_resume_helper(request)?;
+    let mut receipt = success("resume-terminal", Value::Null);
+    receipt.render = false;
+    Ok(receipt)
+}
+
+fn parse_harness(name: &str) -> Result<Harness, ContractError> {
+    match name {
+        "claude_code" => Ok(Harness::ClaudeCode),
+        "codex" => Ok(Harness::Codex),
+        "opencode" => Ok(Harness::OpenCode),
+        _ => Err(ContractError::new(
+            ErrorCode::InvalidInput,
+            "harness must be claude_code, codex, or opencode",
+        )),
+    }
+}
+
+fn history(
+    app: &Application,
+    paths: &RuntimePaths,
+    command: HistoryCommand,
+) -> Result<CommandSuccess, ContractError> {
+    match command {
+        HistoryCommand::Status => {
+            let queries = app.open_read_only(&paths.database_file)?;
+            json_success("history", &queries.history_import_status()?)
+        }
+        HistoryCommand::Import {
+            harness,
+            restore_deleted,
+            max_seconds,
+        } => {
+            let harnesses = harness
+                .iter()
+                .map(|name| parse_harness(name))
+                .collect::<Result<Vec<_>, _>>()?;
+            let owner = LockOwner::current("cli", None)?;
+            let core = app.open_local(&paths.database_file, &paths.spool_dir, owner)?;
+            let span = info_span!("ingest", operation = "history_import");
+            let _entered = span.enter();
+            let mut options = HistoryImportOptions::unbounded(harnesses);
+            options.restore_deleted = restore_deleted;
+            options.max_duration = max_seconds.map(std::time::Duration::from_secs);
+            let report = core.import_native_history(&HistoryRoots::discover()?, &options)?;
+            info!(
+                bytes_read = report.bytes_read,
+                complete = report.complete,
+                status = "complete",
+                "history import completed"
+            );
+            json_success("history", &report)
+        }
+    }
+}
+
+fn drain(app: &Application, paths: &RuntimePaths) -> Result<CommandSuccess, ContractError> {
+    let owner = LockOwner::current("cli", None)?;
+    let core = app.open_local(&paths.database_file, &paths.spool_dir, owner)?;
+    let span = info_span!("ingest", operation = "drain");
+    let _entered = span.enter();
+    let report = core.drain()?;
+    info!(
+        attempted = report.attempted,
+        inserted = report.inserted,
+        duplicates = report.duplicates,
+        quarantined = report.quarantined,
+        status = "complete",
+        "ingest drain completed"
+    );
+    json_success("drain", &report)
+}
+
+fn capture_setup(
+    app: &Application,
+    paths: &RuntimePaths,
+    harness: &str,
+    dry_run: bool,
+    recover: bool,
+    uninstall: bool,
+) -> Result<CommandSuccess, ContractError> {
+    let harness = serde_json::from_value::<cutokyo_domain::Harness>(json!(harness))
+        .map_err(|_| ContractError::new(ErrorCode::InvalidInput, "invalid harness"))?;
+    let operation = if recover {
+        cutokyo_core::app::CaptureSetupOperation::Recover
+    } else if uninstall {
+        cutokyo_core::app::CaptureSetupOperation::Uninstall
+    } else {
+        cutokyo_core::app::CaptureSetupOperation::Install
+    };
+    let spec = cutokyo_core::app::CaptureSetupSpec {
+        roots: cutokyo_core::app::InventoryRoots::discover(Vec::new())
+            .map_err(|message| ContractError::new(ErrorCode::CapabilityUnavailable, message))?,
+        paths: paths.clone(),
+        receiver: std::env::current_exe().map_err(|_| {
+            ContractError::new(
+                ErrorCode::CapabilityUnavailable,
+                "Cutokyo CLI path is unavailable",
+            )
+        })?,
+        native_executable: app.capture_harness_executable(harness)?,
+        version: app.capture_harness_version(harness)?,
+        harness,
+    };
+    let plan = app.preview_capture_setup(spec, operation)?;
+    if dry_run {
+        json_success("capture-setup", &plan.preview)
+    } else {
+        json_success("capture-setup", &app.execute_capture_setup(&plan)?)
     }
 }
 
@@ -1086,7 +1345,7 @@ fn analyze(arguments: &AnalyzeArgs) -> Result<CommandSuccess, ContractError> {
     let preview = json!({
         "preview": true,
         "source_sessions": arguments.sessions,
-        "content_scope": "redacted selected session text only; credentials and guard findings are excluded",
+        "content_scope": "redacted selected session text only; credentials are excluded",
         "provider": arguments.provider,
         "model": arguments.model,
         "prompt_version": "analysis-v1",
@@ -1148,6 +1407,17 @@ fn search_request(arguments: SearchArgs) -> SessionSearch {
         skill: arguments.skill,
         agent: arguments.agent,
         limit: arguments.limit,
+        offset: arguments.offset,
+        mode: if arguments.phrase {
+            cutokyo_core::app::SearchMode::Phrase
+        } else {
+            cutokyo_core::app::SearchMode::Terms
+        },
+        sort: if arguments.sort == "newest" {
+            cutokyo_core::app::SearchSort::Newest
+        } else {
+            cutokyo_core::app::SearchSort::Relevance
+        },
     }
 }
 
@@ -1160,7 +1430,6 @@ fn parse_overrides(cli: &Cli) -> Result<SettingsOverrides, ContractError> {
         .map(|value| value.map_or(RetentionOverride::KeepUntilDeleted, RetentionOverride::Days));
     Ok(SettingsOverrides {
         proxy_enabled: cli.proxy_enabled,
-        outgoing_guard_enabled: cli.outgoing_guard_enabled,
         search_mcp_enabled: cli.search_mcp_enabled,
         retention_days,
     })
@@ -1170,7 +1439,6 @@ fn setting_patch(key: &str, value: &str) -> Result<SettingsPatch, ContractError>
     let mut patch = SettingsPatch::default();
     match key {
         "proxy_enabled" => patch.proxy_enabled = Some(parse_bool(value)?),
-        "outgoing_guard_enabled" => patch.outgoing_guard_enabled = Some(parse_bool(value)?),
         "search_mcp_enabled" => patch.search_mcp_enabled = Some(parse_bool(value)?),
         "retention_days" => {
             patch.retention_days = parse_retention_value(value)?
@@ -1522,8 +1790,13 @@ fn command_name(command: Option<&CliCommand>) -> &'static str {
         Some(CliCommand::Setup { .. }) => "setup",
         Some(CliCommand::Uninstall) => "uninstall",
         Some(CliCommand::Sessions { .. }) => "sessions",
+        Some(CliCommand::History { .. }) => "history",
+        Some(CliCommand::Inventory { .. }) => "inventory",
         Some(CliCommand::Retention { .. }) => "retention",
         Some(CliCommand::Config { .. }) => "config",
+        Some(CliCommand::CaptureSetup { .. }) => "capture-setup",
+        Some(CliCommand::NativeHook { .. }) => "native-hook",
+        Some(CliCommand::ResumeTerminal { .. }) => "resume-terminal",
         Some(CliCommand::Hook) => "hook",
         Some(CliCommand::Spool { .. }) => "spool",
         Some(CliCommand::Drain) => "drain",
@@ -1533,6 +1806,7 @@ fn command_name(command: Option<&CliCommand>) -> &'static str {
         Some(CliCommand::Doctor) => "doctor",
         Some(CliCommand::Bundle(_)) => "bundle",
         Some(CliCommand::Backup { .. }) => "backup",
+        Some(CliCommand::Restore { .. }) => "restore",
         Some(CliCommand::Contract) => "contract",
         Some(CliCommand::Version) => "version",
     }
@@ -1540,12 +1814,22 @@ fn command_name(command: Option<&CliCommand>) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use super::{Cli, ErrorCode, exit_code};
+    use super::{Cli, ErrorCode, exit_code, setting_patch};
     use clap::Parser as _;
     use cutokyo_core::{
         bundle::{BundleDiagnostic, build_diagnostic_bundle},
-        guards::REDACTION_MARKER,
+        redaction::REDACTION_MARKER,
     };
+
+    #[test]
+    fn cli_rejects_removed_guard_flag_and_setting() {
+        assert!(
+            Cli::try_parse_from(["cutokyo", "--outgoing-guard-enabled", "true", "version"])
+                .is_err()
+        );
+        assert!(setting_patch("outgoing_guard_enabled", "true").is_err());
+        assert!(Cli::try_parse_from(["cutokyo", "guards"]).is_err());
+    }
 
     #[test]
     fn shell_accepts_json_before_or_after_subcommands() {
@@ -1587,7 +1871,7 @@ mod tests {
         assert!(!serialized.contains("raw_url_value"));
         assert_eq!(
             bundle.coverage,
-            cutokyo_core::guards::GuardCoverageState::Inspected
+            cutokyo_core::redaction::RedactionCoverage::Inspected
         );
         assert!(bundle.excludes.contains(&"prompts".to_owned()));
         assert!(bundle.excludes.contains(&"transcripts".to_owned()));

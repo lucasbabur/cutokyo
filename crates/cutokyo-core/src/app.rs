@@ -2,6 +2,7 @@
 
 use std::{
     fs,
+    io::Write as _,
     path::{Path, PathBuf},
     process::Command,
     time::SystemTime,
@@ -17,28 +18,77 @@ use serde::{Deserialize, Serialize};
 use crate::{
     adapters::{CaptureDecision, CaptureResolver},
     config,
-    guards::{GuardChannel, GuardError, GuardErrorCode, SecretGuard},
     ingest::{IngestContract, Spool, SpoolCapReason, SpoolStatus},
     proxy::{ProxyState, ProxyStateStore},
+    redaction::{RedactionBoundary, RedactionError, RedactionErrorCode, Redactor},
     store::{ReadStore, StoreContract, WriterStore, health_persistence_marker_present},
 };
 
 pub use crate::{
+    bundle::{BundleDiagnostic, DiagnosticBundle},
     config::{
         EffectiveValue, OriginCandidate, ResolvedSettings, RetentionOverride, RuntimePaths,
         SecretBackend, SecretBackendPreference, SecretReceipt, SettingsOverrides, SetupAction,
         SetupPlan, UninstallReceipt,
     },
+    inventory_management::{
+        InventoryDocument, InventoryReceipt, InventoryRoots, LiveInventory, LiveInventoryItem,
+    },
     store::{
-        BackupManifest, CheckpointMode, CheckpointResult, ConnectionEvidence,
-        DELETE_ALL_CONFIRMATION, DELETION_DISCLOSURE, DeletionReceipt, DiagnosticRowCounts,
-        HealthSnapshot, HealthStatus, LockOwner, RestoreReceipt, RetentionPlan, SearchQuery,
-        SearchResult, SessionDetail, UsageTotals,
+        BackupInfo, BackupManifest, BackupRestorePlan, CheckpointMode, CheckpointResult,
+        ConnectionEvidence, DELETE_ALL_CONFIRMATION, DELETION_DISCLOSURE, DeletionReceipt,
+        DiagnosticRowCounts, HealthSnapshot, HealthStatus, LockOwner, RestoreReceipt,
+        RetentionPlan, SearchMode, SearchPage, SearchQuery, SearchResult, SearchSort,
+        SessionDetail, UsageTotals,
     },
 };
 
+#[path = "capture_setup.rs"]
+mod capture_setup;
+pub use capture_setup::{
+    CaptureSetupOperation, CaptureSetupPlan, CaptureSetupPreview, CaptureSetupReceipt,
+    CaptureSetupSpec,
+};
+#[path = "history_import.rs"]
+mod history_import;
+#[cfg(test)]
+#[path = "history_import_tests.rs"]
+mod history_import_tests;
+pub use history_import::{
+    HarnessImportReport, HistoryImportOptions, HistoryImportReport, HistoryImportStatus,
+    HistoryRoots,
+};
+#[path = "resume.rs"]
+mod resume;
+pub use resume::TerminalLaunchReceipt;
+
 /// Supported external plugin protocol major.
 pub const PLUGIN_PROTOCOL_MAJOR: u32 = 1;
+
+/// The sole file advertised and written by the native diagnostic export.
+pub const DIAGNOSTIC_BUNDLE_FILENAME: &str = "cutokyo-diagnostic-bundle.json";
+
+/// Content-free manifest shared by native preview and export.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct DiagnosticBundlePreview {
+    /// Exact filenames in the export directory.
+    pub files: Vec<String>,
+    /// Categories that cannot enter this export.
+    pub exclusions: Vec<String>,
+    /// Baseline privacy processing applied to the allowed metadata.
+    pub redactions: Vec<String>,
+    /// Approximate size of the bounded categorical export.
+    pub estimated_bytes: u64,
+}
+
+/// Receipt for a unique, private native diagnostic export.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DiagnosticBundleExport {
+    /// Actual file selected by the application, not a frontend-supplied filename.
+    pub path: PathBuf,
+    /// Actual serialized file length.
+    pub bytes: u64,
+}
 
 /// Stable summary of foundation-level runtime contracts.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -88,6 +138,12 @@ pub struct SessionSearch {
     pub agent: Option<String>,
     /// Bounded result count (`0` selects the contract default).
     pub limit: u32,
+    /// Number of matches to skip.
+    pub offset: u32,
+    /// Literal terms by default, or an explicit phrase.
+    pub mode: SearchMode,
+    /// Relevance or newest.
+    pub sort: SearchSort,
 }
 
 /// An exact native resume launch plan. Previewing this value never launches a
@@ -182,6 +238,213 @@ impl Application {
             ingest: IngestContract::default(),
             store: StoreContract::default(),
         }
+    }
+
+    /// Returns the exact native diagnostic export manifest before any file write.
+    #[must_use]
+    pub fn preview_diagnostic_bundle(&self) -> DiagnosticBundlePreview {
+        DiagnosticBundlePreview {
+            files: vec![DIAGNOSTIC_BUNDLE_FILENAME.to_owned()],
+            exclusions: vec![
+                "prompts",
+                "transcripts",
+                "raw observations",
+                "credentials",
+                "full filesystem paths",
+                "health detail",
+                "writer identities",
+                "observation identifiers",
+            ]
+            .into_iter()
+            .map(str::to_owned)
+            .collect(),
+            redactions: vec![
+                "Only fixed health status categories and numeric counters are included".to_owned(),
+                "The complete allowed metadata passes through baseline diagnostic redaction"
+                    .to_owned(),
+            ],
+            estimated_bytes: 16_384,
+        }
+    }
+
+    /// Projects a health snapshot into the fixed diagnostic allowlist.
+    ///
+    /// # Errors
+    /// Returns an availability error if mandatory bundle redaction cannot complete.
+    pub fn health_diagnostic_bundle(&self, health: &HealthSnapshot) -> Result<DiagnosticBundle> {
+        let mut diagnostics = Vec::new();
+        for key in [
+            "health_persistence",
+            "quarantine",
+            "spool_cap",
+            "spool_drain",
+            "writer_lock",
+            "schema",
+            "derive",
+            "integrity",
+            "rebuild",
+            "backup",
+            "restore",
+        ] {
+            let status = health
+                .dimensions
+                .get(key)
+                .map_or(HealthStatus::Unknown, |dimension| dimension.status);
+            diagnostics.push(BundleDiagnostic {
+                component: key.to_owned(),
+                category: match status {
+                    HealthStatus::Healthy => "healthy",
+                    HealthStatus::Degraded => "degraded",
+                    HealthStatus::Unknown => "unknown",
+                }
+                .to_owned(),
+                count: 1,
+            });
+        }
+        for (category, count) in [
+            ("current_quarantine_count", health.current_quarantine_count),
+            (
+                "lifetime_quarantine_count",
+                health.lifetime_quarantine_count,
+            ),
+            ("drain_pending_count", health.drain_pending_count),
+            ("drain_pending_bytes", health.drain_pending_bytes),
+            ("schema_version", u64::from(health.schema_version)),
+            ("derive_version", u64::from(health.derive_version)),
+        ] {
+            diagnostics.push(BundleDiagnostic {
+                component: "health".to_owned(),
+                category: category.to_owned(),
+                count,
+            });
+        }
+        if let Some(count) = health.drain_lag_seconds {
+            diagnostics.push(BundleDiagnostic {
+                component: "health".to_owned(),
+                category: "drain_lag_seconds".to_owned(),
+                count,
+            });
+        }
+        crate::bundle::build_diagnostic_bundle(&diagnostics).map_err(|error| {
+            ContractError::new(ErrorCode::CapabilityUnavailable, error.message).at_field(
+                error.field,
+                error.expected,
+                error.actual,
+            )
+        })
+    }
+
+    /// Writes only the previewed filename into a fresh private export directory.
+    /// Existing exports are never replaced, including on repeated clicks.
+    ///
+    /// # Errors
+    /// Refuses unsafe directory components, unavailable redaction, and publication failure.
+    pub fn export_diagnostic_bundle(
+        &self,
+        root: &Path,
+        health: &HealthSnapshot,
+    ) -> Result<DiagnosticBundleExport> {
+        let bundle = self.health_diagnostic_bundle(health)?;
+        let bytes =
+            serde_json::to_vec_pretty(&bundle).map_err(|_| diagnostic_export_error("serialize"))?;
+        prepare_diagnostic_directory(root)?;
+        let mut directory_builder = tempfile::Builder::new();
+        directory_builder.prefix("bundle-");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt as _;
+            directory_builder.permissions(fs::Permissions::from_mode(0o700));
+        }
+        let directory = directory_builder
+            .tempdir_in(root)
+            .map_err(|_| diagnostic_export_error("create unique directory"))?;
+        let path = directory.path().join(DIAGNOSTIC_BUNDLE_FILENAME);
+        let mut options = fs::OpenOptions::new();
+        options.write(true).create_new(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt as _;
+            options.mode(0o600);
+        }
+        let mut file = options
+            .open(&path)
+            .map_err(|_| diagnostic_export_error("create private file"))?;
+        file.write_all(&bytes)
+            .and_then(|()| file.sync_all())
+            .map_err(|_| diagnostic_export_error("write private file"))?;
+        drop(file);
+        let _published = directory.keep();
+        Ok(DiagnosticBundleExport {
+            path,
+            bytes: bytes.len() as u64,
+        })
+    }
+
+    /// Discovers native inventory from explicitly selected roots, not stored snapshots.
+    ///
+    /// # Errors
+    /// Returns a discovery error when roots or source metadata are unavailable.
+    pub fn discover_inventory(
+        &self,
+        roots: &InventoryRoots,
+    ) -> std::result::Result<LiveInventory, String> {
+        crate::inventory_management::discover(roots)
+    }
+
+    /// Reads an opaque discovered source and its exact revision.
+    ///
+    /// # Errors
+    /// Refuses missing, unsafe, unbounded or undecodable native sources.
+    pub fn inventory_document(
+        &self,
+        roots: &InventoryRoots,
+        item_id: &str,
+    ) -> std::result::Result<InventoryDocument, String> {
+        crate::inventory_management::document(roots, item_id)
+    }
+
+    /// Saves a checked native document while retaining private recovery copies.
+    ///
+    /// # Errors
+    /// Refuses stale revisions, protected entries, malformed content and unsafe targets.
+    pub fn save_inventory_document(
+        &self,
+        roots: &InventoryRoots,
+        recovery: &Path,
+        item_id: &str,
+        revision: &str,
+        content: &str,
+    ) -> std::result::Result<InventoryReceipt, String> {
+        crate::inventory_management::save(roots, recovery, item_id, revision, content)
+    }
+
+    /// Removes a checked native entry, never an arbitrary frontend path.
+    ///
+    /// # Errors
+    /// Refuses stale revisions, protected entries, unsafe targets or failed recovery copies.
+    pub fn remove_inventory_item(
+        &self,
+        roots: &InventoryRoots,
+        recovery: &Path,
+        item_id: &str,
+        revision: &str,
+    ) -> std::result::Result<InventoryReceipt, String> {
+        crate::inventory_management::remove(roots, recovery, item_id, revision)
+    }
+
+    /// Copies/converts an entry only when the target format and scope are safe.
+    ///
+    /// # Errors
+    /// Refuses stale revisions, collisions, unsafe targets or incompatible native fields.
+    pub fn install_inventory_item(
+        &self,
+        roots: &InventoryRoots,
+        recovery: &Path,
+        item_id: &str,
+        revision: &str,
+        harness: Harness,
+    ) -> std::result::Result<InventoryReceipt, String> {
+        crate::inventory_management::install(roots, recovery, item_id, revision, harness)
     }
 
     /// Returns a serializable contract snapshot for frontend and doctor wiring.
@@ -375,7 +638,7 @@ impl Application {
         spool_path: impl AsRef<Path>,
         owner: LockOwner,
     ) -> Result<LocalCore> {
-        let guard = SecretGuard::new().map_err(guard_contract_error)?;
+        let guard = Redactor::new().map_err(redaction_contract_error)?;
         let spool = Spool::open(spool_path)?;
         let store = WriterStore::open(database_path, owner)?;
         Ok(LocalCore {
@@ -494,6 +757,14 @@ impl QueryUseCases {
         self.store.search(query)
     }
 
+    /// Reads a bounded search page with an exact total and observed facets.
+    ///
+    /// # Errors
+    /// Returns invalid input or a store read error.
+    pub fn search_page(&self, query: &SearchQuery) -> Result<SearchPage> {
+        self.store.search_page(query)
+    }
+
     /// Searches from stable frontend strings after parsing at the app boundary.
     ///
     /// # Errors
@@ -501,6 +772,14 @@ impl QueryUseCases {
     /// Returns invalid-input for malformed harness/date filters or a store error.
     pub fn search_sessions(&self, request: &SessionSearch) -> Result<Vec<SearchResult>> {
         self.store.search(&search_query(request)?)
+    }
+
+    /// Searches with an exact total and observed facets.
+    ///
+    /// # Errors
+    /// Returns invalid input or a store error.
+    pub fn search_sessions_page(&self, request: &SessionSearch) -> Result<SearchPage> {
+        self.store.search_page(&search_query(request)?)
     }
 
     /// Looks up one exact Cutokyo session identity.
@@ -531,7 +810,9 @@ impl QueryUseCases {
         let result = self
             .session(session_id)?
             .ok_or_else(|| ContractError::new(ErrorCode::NotFound, "session was not found"))?;
-        resume_plan_from_result(&result)
+        let mut plan = resume_plan_from_result(&result)?;
+        plan.working_directory = self.store.session_project_directory(&result.session_id)?;
+        Ok(plan)
     }
 
     /// Returns deduplicated usage without replacing unknown metrics with zero.
@@ -559,6 +840,14 @@ impl QueryUseCases {
     /// Returns a store or contract-decoding error if the snapshot cannot be read.
     pub fn latest_installation(&self, harness: Harness) -> Result<Option<InstallationSnapshot>> {
         self.store.latest_installation(harness)
+    }
+
+    /// Locates bounded known projects; native files, not metadata, authorize inventory edits.
+    ///
+    /// # Errors
+    /// Returns a store error when project paths cannot be read.
+    pub fn inventory_project_roots(&self) -> Result<Vec<PathBuf>> {
+        self.store.inventory_project_roots()
     }
 
     /// Resolves applicable pricing without mutating history.
@@ -600,7 +889,7 @@ impl QueryUseCases {
 pub struct LocalCore {
     spool: Spool,
     store: WriterStore,
-    guard: SecretGuard,
+    guard: Redactor,
 }
 
 /// Narrow application adapter for durable proxy lifecycle state.
@@ -647,8 +936,8 @@ impl LocalCore {
     pub fn capture(&self, observation: &RawObservation) -> Result<SpoolReceipt> {
         let guarded = self
             .guard
-            .redact_json(GuardChannel::Spool, &observation.payload)
-            .map_err(guard_contract_error)?;
+            .redact_json(RedactionBoundary::Spool, &observation.payload)
+            .map_err(redaction_contract_error)?;
         let mut sanitized = observation.clone();
         sanitized.payload = guarded.value;
         self.spool.append(&sanitized)
@@ -675,7 +964,11 @@ impl LocalCore {
         let mut duplicates = 0_u64;
         let mut quarantined = 0_u64;
         for entry in &pending {
-            match self.spool.read_entry(entry) {
+            match self
+                .spool
+                .read_entry(entry)
+                .and_then(capture_setup::project_native_spool)
+            {
                 Ok(observation) => {
                     let outcome = self
                         .store
@@ -768,6 +1061,14 @@ impl LocalCore {
         self.store.search(query)
     }
 
+    /// Reads a bounded search page with an exact total and observed facets.
+    ///
+    /// # Errors
+    /// Returns invalid input or a store read error.
+    pub fn search_page(&self, query: &SearchQuery) -> Result<SearchPage> {
+        self.store.search_page(query)
+    }
+
     /// Searches from stable frontend strings after parsing at the app boundary.
     ///
     /// # Errors
@@ -775,6 +1076,14 @@ impl LocalCore {
     /// Returns invalid-input for malformed harness/date filters or a store error.
     pub fn search_sessions(&self, request: &SessionSearch) -> Result<Vec<SearchResult>> {
         self.store.search(&search_query(request)?)
+    }
+
+    /// Searches with an exact total and observed facets.
+    ///
+    /// # Errors
+    /// Returns invalid input or a store error.
+    pub fn search_sessions_page(&self, request: &SessionSearch) -> Result<SearchPage> {
+        self.store.search_page(&search_query(request)?)
     }
 
     /// Looks up one exact session.
@@ -804,7 +1113,9 @@ impl LocalCore {
         let result = self
             .session(session_id)?
             .ok_or_else(|| ContractError::new(ErrorCode::NotFound, "session was not found"))?;
-        resume_plan_from_result(&result)
+        let mut plan = resume_plan_from_result(&result)?;
+        plan.working_directory = self.store.session_project_directory(&result.session_id)?;
+        Ok(plan)
     }
 
     /// Returns deduplicated usage.
@@ -846,6 +1157,14 @@ impl LocalCore {
     /// Returns a store or contract-decoding error if the snapshot cannot be read.
     pub fn latest_installation(&self, harness: Harness) -> Result<Option<InstallationSnapshot>> {
         self.store.latest_installation(harness)
+    }
+
+    /// Locates bounded known projects; native files, not metadata, authorize inventory edits.
+    ///
+    /// # Errors
+    /// Returns a store error when project paths cannot be read.
+    pub fn inventory_project_roots(&self) -> Result<Vec<PathBuf>> {
+        self.store.inventory_project_roots()
     }
 
     /// Persists an explicitly requested attributable summary.
@@ -922,6 +1241,38 @@ impl LocalCore {
         self.store.checkpoint(mode)
     }
 
+    /// Creates a private, timestamped database-only backup at the default or a new location.
+    ///
+    /// # Errors
+    /// Returns publication, collision, validation, or store errors.
+    pub fn create_backup(&self, destination: Option<&Path>) -> Result<BackupInfo> {
+        self.store.create_backup(destination)
+    }
+
+    /// Lists complete backups in this installation's default backup directory.
+    ///
+    /// # Errors
+    /// Returns filesystem access errors.
+    pub fn list_backups(&self) -> Result<Vec<BackupInfo>> {
+        self.store.list_backups()
+    }
+
+    /// Verifies backup bytes and previews exactly the current history to replace.
+    ///
+    /// # Errors
+    /// Returns verification, unsupported schema, or path errors.
+    pub fn preview_backup_restore(&self, path: &Path) -> Result<BackupRestorePlan> {
+        self.store.preview_backup_restore(path)
+    }
+
+    /// Restores a confirmed, unchanged preview and retains a coherent recovery copy.
+    ///
+    /// # Errors
+    /// Returns stale-preview, verification, or recoverable replacement errors.
+    pub fn restore_backup(&self, plan: &BackupRestorePlan) -> Result<RestoreReceipt> {
+        self.store.restore_backup(plan)
+    }
+
     /// Creates a verified SQLite online backup.
     ///
     /// # Errors
@@ -967,12 +1318,52 @@ impl crate::analysis::AnalysisSummarySink for LocalCore {
     }
 }
 
-fn guard_contract_error(error: GuardError) -> ContractError {
+fn diagnostic_export_error(operation: &str) -> ContractError {
+    ContractError::new(
+        ErrorCode::Internal,
+        format!("diagnostic export could not {operation}; filesystem details withheld"),
+    )
+}
+
+fn prepare_diagnostic_directory(root: &Path) -> Result<()> {
+    for component in root.ancestors() {
+        match fs::symlink_metadata(component) {
+            Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_dir() => {
+                return Err(ContractError::new(
+                    ErrorCode::InvalidInput,
+                    "diagnostic export requires regular directory components",
+                ));
+            }
+            Ok(_) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(_) => return Err(diagnostic_export_error("inspect destination")),
+        }
+    }
+    let mut builder = fs::DirBuilder::new();
+    builder.recursive(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt as _;
+        builder.mode(0o700);
+    }
+    builder
+        .create(root)
+        .map_err(|_| diagnostic_export_error("create destination"))?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        fs::set_permissions(root, fs::Permissions::from_mode(0o700))
+            .map_err(|_| diagnostic_export_error("set private directory permissions"))?;
+    }
+    Ok(())
+}
+
+fn redaction_contract_error(error: RedactionError) -> ContractError {
     let code = match error.code {
-        GuardErrorCode::BoundExceeded => ErrorCode::CapacityReached,
-        GuardErrorCode::ScannerUnavailable
-        | GuardErrorCode::InvalidScannerRange
-        | GuardErrorCode::UninspectableChannel => ErrorCode::CapabilityUnavailable,
+        RedactionErrorCode::BoundExceeded => ErrorCode::CapacityReached,
+        RedactionErrorCode::ScannerUnavailable
+        | RedactionErrorCode::InvalidScannerRange
+        | RedactionErrorCode::InvalidEncoding => ErrorCode::CapabilityUnavailable,
     };
     ContractError::new(code, error.message).at_field(error.field, error.expected, error.actual)
 }
@@ -1528,6 +1919,9 @@ fn search_query(request: &SessionSearch) -> Result<SearchQuery> {
         skill: request.skill.clone(),
         agent: request.agent.clone(),
         limit: request.limit,
+        offset: request.offset,
+        mode: request.mode,
+        sort: request.sort,
     })
 }
 
@@ -1573,8 +1967,8 @@ fn resume_plan_from_result(result: &SearchResult) -> Result<ResumePlan> {
         native_resume_id,
         executable,
         arguments,
-        // Search results deliberately omit full local project paths. A future
-        // harness adapter may supply a validated private working directory.
+        // Query use cases attach the selected session's private stored project
+        // directory. List/search DTOs still omit it.
         working_directory: None,
     })
 }
@@ -1616,7 +2010,7 @@ mod tests {
     #[test]
     fn settings_patch_preserves_omitted_controls() {
         let current = Settings {
-            outgoing_guard_enabled: true,
+            search_mcp_enabled: false,
             ..Settings::default()
         };
         let updated = Application::new().patch_settings(
@@ -1629,7 +2023,7 @@ mod tests {
         assert!(updated.is_ok());
         if let Ok(updated) = updated {
             assert!(updated.proxy_enabled);
-            assert!(updated.outgoing_guard_enabled);
+            assert!(!updated.search_mcp_enabled);
         }
     }
 

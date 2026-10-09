@@ -1,0 +1,32 @@
+[
+  {
+    "command": [
+      "hyprctl",
+      "dispatch",
+      "togglefloating",
+      "address:0x5c07e2f7ec20"
+    ],
+    "exitCode": 0,
+    "output": "ok\n"
+  },
+  {
+    "command": [
+      "hyprctl",
+      "dispatch",
+      "resizewindowpixel",
+      "exact 1280 800,address:0x5c07e2f7ec20"
+    ],
+    "exitCode": 0,
+    "output": "ok\n"
+  },
+  {
+    "command": [
+      "hyprctl",
+      "dispatch",
+      "movewindowpixel",
+      "exact 400 250,address:0x5c07e2f7ec20"
+    ],
+    "exitCode": 0,
+    "output": "ok\n"
+  }
+]

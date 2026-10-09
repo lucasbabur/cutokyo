@@ -1,0 +1,11 @@
+{
+  "onboarding_complete": true,
+  "selected_harnesses": [
+    "claude_code",
+    "codex",
+    "opencode"
+  ],
+  "updater_choice": "notify",
+  "crash_reports_enabled": false,
+  "appearance": "system"
+}

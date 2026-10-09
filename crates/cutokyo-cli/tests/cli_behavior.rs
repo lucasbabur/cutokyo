@@ -8,7 +8,7 @@ use std::{
     process::{Command, Output, Stdio},
 };
 
-use cutokyo_core::guards::{GuardChannel, SecretGuard};
+use cutokyo_core::redaction::{REDACTION_MARKER, RedactionBoundary, Redactor};
 use flate2::read::GzDecoder;
 use serde_json::{Value, json};
 
@@ -26,6 +26,176 @@ fn invoke(root: &Path, arguments: &[&str]) -> Result<Output, Box<dyn std::error:
         .arg(data)
         .args(arguments)
         .output()?)
+}
+
+fn inventory_command(root: &Path) -> Command {
+    let home = root.join("home");
+    let mut command = Command::new(binary());
+    command
+        .current_dir(&home)
+        .env("HOME", &home)
+        .env("USERPROFILE", &home)
+        .env("XDG_CONFIG_HOME", home.join(".config"))
+        .env("CLAUDE_CONFIG_DIR", home.join(".claude"))
+        .env("CODEX_HOME", home.join(".codex"))
+        .env("OPENCODE_CONFIG_DIR", home.join(".config/opencode"))
+        .env_remove("OPENCODE_CONFIG")
+        .arg("--config-file")
+        .arg(root.join("config/config.toml"))
+        .arg("--data-dir")
+        .arg(root.join("data"))
+        .args(["--json", "inventory"]);
+    command
+}
+fn invoke_native_inventory(
+    root: &Path,
+    args: &[&str],
+) -> Result<Value, Box<dyn std::error::Error>> {
+    let output = inventory_command(root).args(args).output()?;
+    let value = decode(&output)?;
+    assert_eq!(output.status.success(), value["ok"] == true);
+    Ok(value)
+}
+
+#[test]
+fn inventory_cli_manages_real_native_files_with_checked_revisions()
+-> Result<(), Box<dyn std::error::Error>> {
+    let directory = tempfile::tempdir()?;
+    let root = directory.path();
+    let home = root.join("home");
+    let bundle = home.join(".claude/skills/cli-skill");
+    fs::create_dir_all(bundle.join("references"))?;
+    fs::write(bundle.join("SKILL.md"), "# CLI original")?;
+    fs::write(bundle.join("references/guide.md"), "supporting asset")?;
+    let invoke_inventory = |args: &[&str]| invoke_native_inventory(root, args);
+    let list = invoke_inventory(&["list"])?;
+    assert_eq!(list["ok"], true);
+    let id = list["data"]["items"]
+        .as_array()
+        .ok_or("inventory items")?
+        .iter()
+        .find(|i| i["name"] == "cli-skill")
+        .and_then(|i| i["id"].as_str())
+        .ok_or("skill id")?
+        .to_owned();
+    let document = invoke_inventory(&["show", &id])?;
+    let revision = document["data"]["revision"]
+        .as_str()
+        .ok_or("revision")?
+        .to_owned();
+    let content = root.join("edited.md");
+    fs::write(
+        &content,
+        "---\nname: cli-skill\ndescription: CLI edited skill\n---\n# CLI disk edit",
+    )?;
+    let content_path = content.to_str().ok_or("content path")?;
+    assert_eq!(
+        invoke_inventory(&[
+            "edit",
+            &id,
+            "--revision",
+            &revision,
+            "--content-file",
+            content_path
+        ])?["ok"],
+        true
+    );
+    assert_eq!(
+        fs::read_to_string(bundle.join("SKILL.md"))?,
+        "---\nname: cli-skill\ndescription: CLI edited skill\n---\n# CLI disk edit"
+    );
+    assert_eq!(
+        invoke_inventory(&[
+            "remove",
+            &id,
+            "--revision",
+            &revision,
+            "--confirm-item",
+            &id
+        ])?["ok"],
+        false
+    );
+    let document = invoke_inventory(&["show", &id])?;
+    let revision = document["data"]["revision"].as_str().ok_or("revision")?;
+    assert_eq!(
+        invoke_inventory(&["install", &id, "--revision", revision, "--harness", "codex"])?["ok"],
+        true
+    );
+    assert_eq!(
+        fs::read_to_string(home.join(".codex/skills/cli-skill/references/guide.md"))?,
+        "supporting asset"
+    );
+    assert_eq!(
+        invoke_inventory(&["install", &id, "--revision", revision, "--harness", "codex"])?["ok"],
+        false
+    );
+    assert_eq!(
+        invoke_inventory(&[
+            "remove",
+            &id,
+            "--revision",
+            revision,
+            "--confirm-item",
+            "wrong"
+        ])?["ok"],
+        false
+    );
+    assert!(bundle.exists());
+    assert_eq!(
+        invoke_inventory(&["remove", &id, "--revision", revision, "--confirm-item", &id])?["ok"],
+        true
+    );
+    assert!(!bundle.exists());
+    assert_eq!(invoke_inventory(&["show", &id])?["ok"], false);
+    assert!(home.join(".codex/skills/cli-skill/SKILL.md").is_file());
+    assert!(fs::read_dir(root.join("data/inventory-recovery"))?.count() >= 3);
+    Ok(())
+}
+
+#[test]
+fn inventory_cli_discovers_custom_opencode_file_and_additive_global_tree()
+-> Result<(), Box<dyn std::error::Error>> {
+    let directory = tempfile::tempdir()?;
+    let root = directory.path();
+    let home = root.join("home");
+    let global = home.join(".config/opencode");
+    let custom_dir = home.join("custom-opencode");
+    let custom_file = home.join("native.jsonc");
+    fs::create_dir_all(&global)?;
+    fs::create_dir_all(custom_dir.join("plugins"))?;
+    fs::write(
+        global.join("opencode.json"),
+        r#"{"mcp":{"global-server":{"type":"local","command":["node"]}}}"#,
+    )?;
+    fs::write(
+        custom_dir.join("plugins/user.ts"),
+        "export default () => ({})",
+    )?;
+    fs::write(
+        &custom_file,
+        r#"{"mcp":{"servers":{"custom-server":{"type":"local","command":["python"]}}}}"#,
+    )?;
+    let output = inventory_command(root)
+        .env("OPENCODE_CONFIG_DIR", &custom_dir)
+        .env("OPENCODE_CONFIG", &custom_file)
+        .arg("list")
+        .output()?;
+    assert!(output.status.success());
+    let value = decode(&output)?;
+    let items = value["data"]["items"].as_array().ok_or("items")?;
+    for name in ["global-server", "custom-server", "user.ts"] {
+        assert!(
+            items.iter().any(|i| i["name"] == name),
+            "missing native source {name}"
+        );
+    }
+    assert!(
+        value["data"]["notices"]
+            .as_array()
+            .ok_or("notices")?
+            .is_empty()
+    );
+    Ok(())
 }
 
 fn invoke_with_stdin(
@@ -590,13 +760,15 @@ fn decoded_bundle_values(name: &str, bytes: &[u8]) -> CliTestResult<Vec<Value>> 
 }
 
 fn assert_maintained_secret_corpus(corpus: &[(&str, String)]) -> CliTestResult {
-    let guard = SecretGuard::new()?;
+    let redactor = Redactor::new()?;
     for (label, secret) in corpus {
-        let guarded =
-            guard.redact_text(GuardChannel::Bundle, &format!("synthetic_{label}={secret}"))?;
+        let guarded = redactor.redact_text(
+            RedactionBoundary::Bundle,
+            &format!("synthetic_{label}={secret}"),
+        )?;
         assert!(
-            !guarded.findings.is_empty(),
-            "maintained scanner corpus entry {label} was not detected"
+            guarded.value.contains(REDACTION_MARKER),
+            "maintained scanner corpus entry {label} was not replaced"
         );
         assert!(
             !guarded.value.contains(secret),
@@ -682,11 +854,11 @@ fn seed_database_fixture(
 fn seed_backup_fixture(root: &Path, data: &Path, corpus: &[(&str, String)]) -> CliTestResult {
     let backup_directory = data.join("backups");
     fs::create_dir_all(&backup_directory)?;
-    let backup_path = backup_directory.join("history.sqlite3");
+    let backup_path = backup_directory.join("history-backup");
     let backup_argument = backup_path.to_str().ok_or("backup path is not UTF-8")?;
     assert_command_succeeded(&invoke(root, &["backup", backup_argument, "--json"])?);
     assert!(
-        contains_bytes(&fs::read(&backup_path)?, DATABASE_BYTES),
+        contains_bytes(&fs::read(backup_path.join("history.db"))?, DATABASE_BYTES),
         "real SQLite backup did not carry the database fixture sentinel"
     );
 
@@ -1118,7 +1290,7 @@ fn assert_safe_bundle_metadata(entries: &BTreeMap<String, Vec<u8>>) -> CliTestRe
     assert_eq!(row_counts["raw_observations"], 1);
     assert_eq!(row_counts["sessions"], 1);
     assert_eq!(row_counts["messages"], 1);
-    assert_eq!(row_counts["fts_rows"], 1);
+    assert_eq!(row_counts["fts_rows"], 3);
     assert_eq!(row_counts["summaries"], 0);
 
     let coverage: Value = serde_json::from_slice(
@@ -1165,6 +1337,87 @@ fn fixture_search_uses_all_three_exact_native_targets() -> Result<(), Box<dyn st
     )?)?;
     assert_eq!(list["command"], "sessions.list");
     assert_eq!(list["data"].as_array().map(Vec::len), Some(3));
+    Ok(())
+}
+
+#[test]
+fn fixture_search_literal_terms_phrase_and_exact_page_contract() -> CliTestResult {
+    let directory = tempfile::tempdir()?;
+    let terms = decode(&invoke(
+        directory.path(),
+        &[
+            "sessions",
+            "search",
+            "--fixture",
+            "all",
+            "--query",
+            "claude:fixture*",
+            "--page",
+            "--json",
+        ],
+    )?)?;
+    assert_eq!(terms["data"]["total"], 1);
+    assert_eq!(terms["data"]["offset"], 0);
+    assert_eq!(terms["data"]["limit"], 50);
+    assert_eq!(terms["data"]["has_more"], false);
+    assert!(
+        terms["data"]["sessions"][0]["matches"]
+            .as_array()
+            .ok_or("missing CLI plain matches")?
+            .iter()
+            .any(|item| item["source"] == "native_id")
+    );
+    let phrase = decode(&invoke(
+        directory.path(),
+        &[
+            "sessions",
+            "search",
+            "--fixture",
+            "all",
+            "--query",
+            "claude fixture",
+            "--phrase",
+            "--page",
+            "--json",
+        ],
+    )?)?;
+    assert_eq!(phrase["data"]["total"], 0);
+    let page = decode(&invoke(
+        directory.path(),
+        &[
+            "sessions",
+            "search",
+            "--fixture",
+            "all",
+            "--sort",
+            "newest",
+            "--offset",
+            "2",
+            "--limit",
+            "1",
+            "--page",
+            "--json",
+        ],
+    )?)?;
+    assert_eq!(page["data"]["total"], 3);
+    assert_eq!(page["data"]["offset"], 2);
+    assert_eq!(page["data"]["limit"], 1);
+    assert_eq!(page["data"]["has_more"], false);
+    assert_eq!(page["data"]["sessions"].as_array().map(Vec::len), Some(1));
+    let punctuation = decode(&invoke(
+        directory.path(),
+        &[
+            "sessions",
+            "search",
+            "--fixture",
+            "all",
+            "--query",
+            "*: ()",
+            "--page",
+            "--json",
+        ],
+    )?)?;
+    assert_eq!(punctuation["data"]["total"], 0);
     Ok(())
 }
 

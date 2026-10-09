@@ -723,6 +723,22 @@ fn otel_request_id(attributes: &BTreeMap<String, Value>) -> Option<&str> {
         .or_else(|| attributes.get("client_request_id").and_then(Value::as_str))
 }
 
+fn total_input(attributes: &BTreeMap<String, Value>) -> Option<u64> {
+    let parts = [
+        attributes.get("input_tokens").and_then(value_as_u64),
+        attributes.get("cache_read_tokens").and_then(value_as_u64),
+        attributes
+            .get("cache_creation_tokens")
+            .and_then(value_as_u64),
+    ];
+    parts.iter().any(Option::is_some).then(|| {
+        parts
+            .iter()
+            .flatten()
+            .fold(0_u64, |sum, n| sum.saturating_add(*n))
+    })
+}
+
 fn normalize_otel_usage(
     raw: &RawObservation,
     attributes: &BTreeMap<String, Value>,
@@ -737,7 +753,9 @@ fn normalize_otel_usage(
             .get("model")
             .and_then(Value::as_str)
             .map(str::to_owned),
-        input_tokens: attributes.get("input_tokens").and_then(value_as_u64),
+        // Claude reports fresh input apart from its cache counters; the domain's
+        // `input_tokens` is total input with the cache counters as its breakdown.
+        input_tokens: total_input(attributes),
         output_tokens: attributes.get("output_tokens").and_then(value_as_u64),
         cache_read_tokens: attributes.get("cache_read_tokens").and_then(value_as_u64),
         cache_write_tokens: attributes
@@ -1423,7 +1441,7 @@ mod tests {
         let event = br#"{"name":"claude_code.api_request","attributes":{"app.version":"2.1.278","session.id":"11111111-1111-4111-8111-111111111111","request_id":"req_synthetic","model":"claude-synthetic","input_tokens":42,"output_tokens":7,"cache_read_tokens":3,"cache_creation_tokens":2,"cost_usd_micros":1234,"event.sequence":9}}"#;
         let capture = capture_otel_log(event, timestamp()?)?;
         assert_eq!(capture.facts.usage.len(), 1);
-        assert_eq!(capture.facts.usage[0].input_tokens, Some(42));
+        assert_eq!(capture.facts.usage[0].input_tokens, Some(47));
         assert_eq!(capture.facts.usage[0].cache_write_tokens, Some(2));
         assert_eq!(capture.facts.usage[0].provider_cost_micros, None);
         assert_eq!(capture.raw.payload["attributes"]["cost_usd_micros"], 1234);

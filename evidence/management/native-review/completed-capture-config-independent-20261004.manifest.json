@@ -1,0 +1,18 @@
+{
+  "archive": "evidence/management/native-review/completed-capture-config-independent-20261004.tar.gz",
+  "sha256": "71325948c16706c1b734f7534c0cb7b61c011cd4bc55c1cc72aec4e935b52177",
+  "members": [
+    {
+      "member": "completed-capture-config-arrangement-delta-1.raw",
+      "source": "/tmp/cutokyo-independent-onboarding-review/completed-capture-config-arrangement-delta-1.raw",
+      "sha256": "33b0b2e7297d7a2c811d3c8321f46c2c77ffcbc1eab17071a519d025eaa31be7"
+    },
+    {
+      "member": "completed-capture-config-arrangement-tests-1.raw",
+      "source": "/tmp/cutokyo-independent-onboarding-review/completed-capture-config-arrangement-tests-1.raw",
+      "sha256": "379da4834a92a2acac116fb86d582957556a733af64380e27025b0db659b9a23"
+    }
+  ],
+  "source_mutation": false,
+  "fresh_aggregate_acceptance": false
+}

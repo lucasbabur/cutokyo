@@ -1,0 +1,429 @@
+{
+  "format_version": 1,
+  "review": "Independent setup/onboarding/native-hook/resume",
+  "created_utc": "2026-10-04T06:52:49.524080+00:00",
+  "repository": "/home/lucas/Developer/personal/cutokyo-community",
+  "head": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "tree": "shared dirty; no reviewer product-source edits",
+  "verdict": "All independently discovered app-path functional defects and final optional OpenCode JS writer fallback concern closed by independent retest. Not full release acceptance.",
+  "final_retest": {
+    "mandatory_open_code_api": "absolute UTF-8 spool/receiver required; no optional filesystem publisher fallback; one shared CLI delegation",
+    "matching_cli_sha256": "f8e378ab861369521931b8ed8dddeace21273eca4a4a023e953d864e3b6c704c",
+    "source_setup_sha256": "29f5aa05b26eab5cfd1fdfae8e1e9e4606d3bd64c839f18fe0de7bea98172122",
+    "actual_installed_plugin_sha256": "711d17385caf522ff8b3c4432489484ce86cef7d524ed1b5f78847291391c4bf",
+    "native_events": "4 raw observations retained, only valid native session projected, native text searchable, unknown/global resume exit69",
+    "symlink_cases": "spool/.tmp/quarantine/data refusal; no unexpected destination writes; no SQLite before drain; ordinary0755 spool secured0700",
+    "lifecycle": "invalid absolute/UTF8 paths refuse without write; genuine no-op cleanup; durable intent survives actual failed native writes; recovery/uninstall preserve originals; all four OpenCode injected recovery boundaries pass",
+    "independent_test_counts": {
+      "OpenCode adapter setup": 13,
+      "lasting desktop onboarding": 2,
+      "native runner regression": 12
+    }
+  },
+  "prior_independent_acceptance": {
+    "raw_files": [
+      "snapshots-4.raw",
+      "lifecycle-4.raw",
+      "drift-bytes-1.raw",
+      "desktop-3.raw",
+      "native-smoke-3.raw",
+      "opencode-events-3.raw",
+      "opencode-safety-2.raw",
+      "terminal-3.raw",
+      "core-setup-tests-2.raw",
+      "core-spool-tests-2.raw",
+      "cli-setup-resume-3.raw",
+      "onboarding-tests.raw",
+      "claude-resume-hook.raw"
+    ],
+    "coverage": "per-harness exact snapshots including executable bytes/modes and additive OpenCode config; partial cleanup preserves unmanaged byte layout; actual DesktopService token/browse/fresh finish; native capture/search/private project/exact fake PTY resume where authoritative evidence exists; bounded terminal refusal cases",
+    "counts": {
+      "core setup": 52,
+      "core spool": 3,
+      "CLI setup/resume": 5,
+      "actual onboarding UI component": 2
+    }
+  },
+  "latest_raw_files": [
+    "opencode-events-4.raw",
+    "opencode-safety-3.raw",
+    "lifecycle-5.raw",
+    "opencode-setup-tests-3.raw",
+    "desktop-onboarding-tests-1.raw",
+    "native-runner-tests-3.raw",
+    "cli-build-7.raw"
+  ],
+  "limits": [
+    "Codex hook IDs are not authoritative thread.id; searchable prompt/cwd pass but hook-only exact resume remains honestly unavailable.",
+    "Installed-harness live capture not independently exercised; all native executables and terminals isolated fakes.",
+    "Native session activation unconfirmed by design.",
+    "New package Browse/all-three lifecycle/installed-Claude-hook\u2192search/detail/resume phases inspected; actual full packaged execution main-owned and not independently claimed.",
+    "Earlier raw results are chronological evidence; current source hashes below bind final retest, not retroactively every earlier run.",
+    "codex-unmanaged-bytes.raw excluded from clean preservation proof: reviewer reserialization prechanged fixture; use drift-bytes-1.raw/install-only.raw instead."
+  ],
+  "security_scope": "No production source edits, predecessor access, real home/native mutations, commits, provider/paid requests, or progress reporting.",
+  "source_snapshot": {
+    "/home/lucas/Developer/personal/cutokyo-community/crates/cutokyo-core/src/adapters/opencode/setup.rs": "29f5aa05b26eab5cfd1fdfae8e1e9e4606d3bd64c839f18fe0de7bea98172122",
+    "/home/lucas/Developer/personal/cutokyo-community/crates/cutokyo-core/src/adapters/opencode/mod.rs": "89e258b1dbd2ffc4cdf1f857f6bf333fc218256716313ca22db502e65bb6238a",
+    "/home/lucas/Developer/personal/cutokyo-community/crates/cutokyo-core/src/capture_setup.rs": "af804b97c8736569b5f0c8a55bfb195887dd25dd7d5e4d45ab45c5aa97159c78",
+    "/home/lucas/Developer/personal/cutokyo-community/crates/cutokyo-core/src/app.rs": "222d88fb2ce2eb03cf82282a54522e9b521f7a2336956e14eee73f97f766b381",
+    "/home/lucas/Developer/personal/cutokyo-community/crates/cutokyo-core/src/store.rs": "e3b125efc4c766765304548c62d060cd96ab906d8e2a235b45689f03569a63b6",
+    "/home/lucas/Developer/personal/cutokyo-community/crates/cutokyo-core/src/ingest.rs": "1c6770ae5f201e0e8dac9a71098055d41a9ad235cbc45bc2f687fd16fafc7bbc",
+    "/home/lucas/Developer/personal/cutokyo-community/crates/cutokyo-core/src/resume.rs": "e7cc795eb3d470b797ff19163f250d0c010b07d41c16482628dd4848a1d6f21d",
+    "/home/lucas/Developer/personal/cutokyo-community/crates/cutokyo-core/src/adapters/terminal.rs": "7502b3697670d99611d1bae27ea7cda54ac944a0cf720f373b848409286b2bad",
+    "/home/lucas/Developer/personal/cutokyo-community/crates/cutokyo-cli/src/main.rs": "01299584eefb7a3d4d5eb8213d5c91e133c801cc4a1f934753809f200a8d0c84",
+    "/home/lucas/Developer/personal/cutokyo-community/crates/cutokyo-desktop/src/service.rs": "82d8bac1580838109c379f8c1ce5ffee91b7f2af95c61645705fc48125b50719",
+    "/home/lucas/Developer/personal/cutokyo-community/crates/cutokyo-desktop/src/onboarding_tests.rs": "1b4c35a1ff4521f2fe8f00b16a110940d9ff1d5e584d86679af7698d757ff5a8",
+    "/home/lucas/Developer/personal/cutokyo-community/ui/src/pages/OnboardingPage.tsx": "adff98ff490fd28238593b6f332ae72139ee9c86fda142f872b44f375d349b1f",
+    "/home/lucas/Developer/personal/cutokyo-community/ui/scripts/native-e2e.py": "c0bb81a0ab1ee8cece5118344486ed33d69660fa4d3bc7d79703d614fce2f53f",
+    "/home/lucas/Developer/personal/cutokyo-community/ui/tests/tauri/native-desktop.spec.ts": "d155fee2a3b547a6711110f6e02cfd8c40dddee08f170583edb46d422c013727",
+    "/home/lucas/Developer/personal/cutokyo-community/tools/fake-harness/src/bin/fake-resume-harness.rs": "8533d0c7f05885212cd43fe5b5da31441b2939a9d45e40a2f801817d53b9af13"
+  },
+  "evidence_files": {
+    "opencode-safety-3.raw": {
+      "sha256": "66125803fb90b2e0b8958752d14b45bd056a43bc850e27390884ef0b26465759",
+      "bytes": 3236
+    },
+    "opencode-events-4.raw": {
+      "sha256": "5e96e8e374e0532298fae2d5857f8f3ee2c204409ec9bfd264814e1040d620ce",
+      "bytes": 7895
+    },
+    "cli-build-7.raw": {
+      "sha256": "e6544688e62034ce79058344039e64f3a56a233067793a12722b45be876f14d2",
+      "bytes": 266
+    },
+    "opencode-setup-tests-3.raw": {
+      "sha256": "5c9adc1308398444805ce4b7e53c2e8020a8fe382c5084d772c4eeffadee4a13",
+      "bytes": 1705
+    },
+    "lifecycle-5.raw": {
+      "sha256": "c62b7dce84e521052ee477edde02c4878afe1a0dec240a932f2dc3963a45fecf",
+      "bytes": 13493
+    },
+    "lifecycle-build-5.raw": {
+      "sha256": "22ebe0548fd59092349083f8743a9fd21d76dd08b036ac60e9700e563694b944",
+      "bytes": 279
+    },
+    "lifecycle.rs": {
+      "sha256": "9fbb8b0933690589dd4c1731a086865c74bf5ebee535c0a7fd4cba364bb9ca81",
+      "bytes": 5091
+    },
+    "native-runner-tests-3.raw": {
+      "sha256": "6eeb4834fc78f7741fb79fcc9fc49103c60e227e39da43f69474911d48f728f9",
+      "bytes": 2430
+    },
+    "desktop-onboarding-tests-1.raw": {
+      "sha256": "c1037add206a03462713e296e3606dde68fc9e9462583e10e7a0c9e48d470a19",
+      "bytes": 2462
+    },
+    "drift-bytes-1.raw": {
+      "sha256": "a3ef72ab3d617a79da7bc8213e19ed406fe97ee3489ecbd6ed90716a50ad77e3",
+      "bytes": 5211
+    },
+    "desktop-3.raw": {
+      "sha256": "6ea169e3bd505d10124051315609b22e1e2b18c270bd3ca6b5c5b5b59d32a32e",
+      "bytes": 6925
+    },
+    "desktop-build-2.raw": {
+      "sha256": "dbb5a8f67895154bb4bf8f5ea696c09c99c0edad489bcc3b172674bd8e6861cb",
+      "bytes": 21302
+    },
+    "desktop.rs": {
+      "sha256": "f4670a2bdb45805d8c18cce9d34c839dfacc5dd1d00e6bcf702e3f38a806e2a9",
+      "bytes": 3851
+    },
+    "desktop-2.raw": {
+      "sha256": "ddf4d131f95eaabf4a1e0c7bba157f537cc5dce4d84c6a4a6c2b745768cfba65",
+      "bytes": 6510
+    },
+    "desktop-repro.py": {
+      "sha256": "2a2b931465564bdaf1a9d127c7fadd158d9542d4fbfd82ddf51fd4fed2f3f322",
+      "bytes": 1261
+    },
+    "native-runner-tests-2.raw": {
+      "sha256": "605c20be5acd963fccbacec09dbf0d0fbf49adcd65fe94ba30e1d05c6d4187ab",
+      "bytes": 2430
+    },
+    "core-spool-tests-2.raw": {
+      "sha256": "38b2e9092b98e4b22c64c3966476ddfd983b0a6d9422d6f1543b48f0b73efa67",
+      "bytes": 541
+    },
+    "core-setup-tests-2.raw": {
+      "sha256": "90b259c190fe3d26bd82be64f148f09e8157f06d41e149562fa35d5e6514fbb4",
+      "bytes": 5499
+    },
+    "desktop-1.raw": {
+      "sha256": "e7b46779ea77f4ca178d23813eeb879489f3f8b0e88547e1f5b199b586b06cb3",
+      "bytes": 1320
+    },
+    "desktop-build-1.raw": {
+      "sha256": "b622855a6da04bb83f86bd1b9949d91b74393acb96095355219aab3a74563f27",
+      "bytes": 21406
+    },
+    "Cargo.toml": {
+      "sha256": "80ba4acc323241bb786f318c71d01db031f24d2a4a47e2886428658e08d84954",
+      "bytes": 671
+    },
+    "opencode-safety-2.raw": {
+      "sha256": "cf315238b2544e2768376cd189cc16ab3f115cd474a9baa47e51df36a0eb9b62",
+      "bytes": 3236
+    },
+    "opencode-events-3.raw": {
+      "sha256": "59e36a790721a6744efad04b83c6981c9fe3137d39d4bea4e16c193a69a6ef96",
+      "bytes": 7895
+    },
+    "terminal-3.raw": {
+      "sha256": "46e0bfb8ba661fe5b487a282b55113ad6e308b64c0aaba155581ecff71eae6bc",
+      "bytes": 3802
+    },
+    "external-build-6.raw": {
+      "sha256": "8d89c3fe9bd932ed72395b85e6a33bc33e12b1d1c81f9755b84222abc85c0144",
+      "bytes": 175
+    },
+    "snapshots-4.raw": {
+      "sha256": "229eaae591f20ed57ba13655609e616345550a80c7ecc5a586d987c474299455",
+      "bytes": 8680
+    },
+    "cli-build-6.raw": {
+      "sha256": "23bfbc8e81e0c8fe2c4ff32a6725da8f5fc1748b7767d161f8fa7348fde5cd90",
+      "bytes": 422
+    },
+    "terminal-fixtures.py": {
+      "sha256": "da12c6dc1c0d473eefe36474ca76a786c7724be5282915c2ba92833d287343ba",
+      "bytes": 3281
+    },
+    "cli-setup-resume-3.raw": {
+      "sha256": "0e70e152b8c13718f60ab51d09f0e0582a2f4c94c4c11d16f0b760329cc52c7a",
+      "bytes": 688
+    },
+    "lifecycle-4.raw": {
+      "sha256": "bd3a76181826e0ffb342bef905be7e5065a74eab56c0ef819cd263047880f222",
+      "bytes": 12280
+    },
+    "opencode-safety-1.raw": {
+      "sha256": "3a73bb95d12679d19ec15148956a5d7a1c50017edd69487fe122eccb3617df7b",
+      "bytes": 3236
+    },
+    "opencode-events-2.raw": {
+      "sha256": "16adf95f1340b06ac5ed64a1f6ac4767accf70875761a70e85e5819cac7c0a3e",
+      "bytes": 9516
+    },
+    "cli-setup-resume-2.raw": {
+      "sha256": "85948b69533b78b7b30c42423f9a0897b4c64ba751baf8a5d31cc60c0f5e7446",
+      "bytes": 956
+    },
+    "core-capture-setup-2.raw": {
+      "sha256": "16beaecc283e80c78b93978ed624cf3977c037b7ac55ab242b578ffc93d129b3",
+      "bytes": 905
+    },
+    "native-smoke-3.raw": {
+      "sha256": "139a9df7bdc4ec03add34ca845ca80a5646e981680413be8fd7d37876147e1d8",
+      "bytes": 25010
+    },
+    "cli-build-5.raw": {
+      "sha256": "2ad101a0693b6992a04cc850363c38fb53053ec397a65bc41342c005774d71a1",
+      "bytes": 266
+    },
+    "snapshots-3.raw": {
+      "sha256": "e6f97965705fc65d2c87b2755a3dee6c5cd511dfe254c37c41f208822a94d5cd",
+      "bytes": 8445
+    },
+    "snapshot.rs": {
+      "sha256": "8e71ba35a339e958d11313f6c9aaa762758fc24ac63fede7696a005692a814ed",
+      "bytes": 3358
+    },
+    "opencode-safety.py": {
+      "sha256": "51d683ac47b3266bbf4f7faf35ebf2e5b2314bd04d3f1c2d937c09a3c14353f7",
+      "bytes": 2423
+    },
+    "lifecycle-3.raw": {
+      "sha256": "f9352d33f3ec34c1ec48bd58ef05988acbb5b2b6c9334d46b042e6cbcc421388",
+      "bytes": 8734
+    },
+    "lifecycle-2.raw": {
+      "sha256": "e90dabc3999a4615283f3596dd0367f417939f5c872c9d16bcd05f06fb14fa7e",
+      "bytes": 5011
+    },
+    "snapshots-2.raw": {
+      "sha256": "cae06daca64152344d0c3bd396f9459e44bed927e47422588606f22ce5844e87",
+      "bytes": 8148
+    },
+    "cli-build-4.raw": {
+      "sha256": "21997532e2b480b5efbe759525220dbb4a6490f283a2905ba575590065587014",
+      "bytes": 666
+    },
+    "drift-4.raw": {
+      "sha256": "1285bfdceabf0bac5b9a24a5859c2644124e52d35fc23acb180aaf5f0ca18d66",
+      "bytes": 5442
+    },
+    "lifecycle-1.raw": {
+      "sha256": "186d3f680555bac32ec858dea655e74b055c40f969b3873c14a58c784028eba5",
+      "bytes": 665
+    },
+    "opencode-events-1.raw": {
+      "sha256": "855be20ba613e58e2fb9b5dffecbfb69e8250db86482d0d505cd2b1dce914afe",
+      "bytes": 9906
+    },
+    "opencode-events.py": {
+      "sha256": "c560f1d7e59e609afb97cc4877d5cb72c407d01b24b66ffe04b4db76c371c285",
+      "bytes": 2487
+    },
+    "snapshots-1.raw": {
+      "sha256": "d09b9c4a9d7a8ea6137b63a2c47a726752b6c4ccc903293054f825c6ad80be81",
+      "bytes": 19887
+    },
+    "claude-resume-hook.raw": {
+      "sha256": "43943aa3cf719213f9b1068a39590c5472be713efa7c0e69caf00f425a46debf",
+      "bytes": 5284
+    },
+    "claude-resume-hook.py": {
+      "sha256": "71fcbc39b5f020c73bf0719c73db8c60d4051b94e8bf4a908f6680e3268c3340",
+      "bytes": 1626
+    },
+    "onboarding-tests.raw": {
+      "sha256": "9c5fc1b19b5b6fcd5d478a24cc8a34381759d9ebce07e3e9a93a05018f9d0507",
+      "bytes": 640
+    },
+    "vitest.config.ts": {
+      "sha256": "258cba2a55a47de2052bf1f9747facddde4dc714685d44b6185a10104497128f",
+      "bytes": 247
+    },
+    "onboarding.test.tsx": {
+      "sha256": "2706f8da06d99eb6952960b4b7e3935736c8ed48182af860ce2b5aaf66a909b3",
+      "bytes": 3681
+    },
+    "native-smoke-2-summary.raw": {
+      "sha256": "eb3317e67b10824f5792b8093654da917e57b55b735610c1333a3590f94b7d62",
+      "bytes": 15140
+    },
+    "opencode-symlink.raw": {
+      "sha256": "a3064bbd0bcb38a251023ec75949672926e0fdfc03e3fcbdbaf56f02a83b488d",
+      "bytes": 311
+    },
+    "opencode-symlink.mjs": {
+      "sha256": "f34d142b4896d5e665a01441d00c6f315545628104f5329d1e643fdf5fa50b8d",
+      "bytes": 831
+    },
+    "native-smoke-2.raw": {
+      "sha256": "4cbf3ff8cbcc6d4f357f63f5bdef0e973b9011c451afe22be96f7aa8d97d5f6a",
+      "bytes": 26467
+    },
+    "cli-build-3.raw": {
+      "sha256": "1642f4ef87557b1b7be9cfe0def19d3e5bf8dafa1617632cfae3e5aa7b9f5fad",
+      "bytes": 266
+    },
+    "native-smoke.py": {
+      "sha256": "5232c73eb8ca9fcb45116b7c23acf0b8748f4f81a222ca8cd0ac2a783d9fec28",
+      "bytes": 4718
+    },
+    "install-only.raw": {
+      "sha256": "ea30992d3d4fcf11ccf4cb51ac8e47bc53c2e76e3857e4f8dc8cf77cd79bf1f2",
+      "bytes": 3180
+    },
+    "codex-unmanaged-bytes.raw": {
+      "sha256": "6c379f4e986ac2710435665280831e1a244ce2d07080392ce8af82b67c78f96b",
+      "bytes": 4442
+    },
+    "native-smoke-1.raw": {
+      "sha256": "b68e6f42a62fac9b805bfc8d61f9c963e2897b9d9e817116b50f067cb668ab67",
+      "bytes": 22090
+    },
+    "retest-private-root-modes.raw": {
+      "sha256": "b17ad806c1e47ba8489ffaaf982ef7fa8b22be2974ec3a92f519b890a412d490",
+      "bytes": 868
+    },
+    "cli-resume-nontty-retest-2.raw": {
+      "sha256": "9dda54e36d02bfa6fc42aa095ee8f663bd725909581d1f5af07ae9b0f57d42e0",
+      "bytes": 3238
+    },
+    "cli-resume-nontty.py": {
+      "sha256": "2a9fb2286d7d7f54b2aced1ee44bcc7bdbf069ddc94cef9aa7a5229a73a86202",
+      "bytes": 2264
+    },
+    "cli-resume-nontty-retest.raw": {
+      "sha256": "8bf41afd375f4ca249092ee9562225755bfb23a5cc33df45d56ba697a4bfeaf8",
+      "bytes": 3317
+    },
+    "cli-build-2.raw": {
+      "sha256": "bd78efc584786aedeff4a2938ba22269233ac68fe183a1ecbdd47ccc783b7a43",
+      "bytes": 60
+    },
+    "drift-3.raw": {
+      "sha256": "cf23e531d37574661afe4a8d34554b0e9bff3696ce30563065dfae8c8ffed173",
+      "bytes": 4004
+    },
+    "cli-resume-nontty-2.raw": {
+      "sha256": "ba37f192e5b274de7015ee056e6860b1a85a9903f1daeb950bde2c93f0958a01",
+      "bytes": 3361
+    },
+    "cli-resume-nontty.raw": {
+      "sha256": "fbf649246607524e858405b80adb88f70fa666caf1d77b1ea09eea25b01245e8",
+      "bytes": 3548
+    },
+    "terminal-2.raw": {
+      "sha256": "6cb9f1e55f24db3227afecdb300f9cc7c4878ecff855548e97b426f130f4ca6f",
+      "bytes": 3794
+    },
+    "drift-2.raw": {
+      "sha256": "1ddf8dc42fd5da202dacef9091c523711b8d905e0f7f9d23b8eae8ed59f16070",
+      "bytes": 2261
+    },
+    "drift.raw": {
+      "sha256": "0a4046c91b61d2387080c207baa5441f2e59936f157bb4bb97ec298fddc27f55",
+      "bytes": 723
+    },
+    "environment.json": {
+      "sha256": "568b1997c723a24c1e2d784087b4ad1809ee1f9e7153c5f0ad0dcf32f468a290",
+      "bytes": 338
+    },
+    "core-setup-tests.raw": {
+      "sha256": "bbd7bd99e90af9e37aac84d3aeddf258f06806cc1989dd51325741bca483353b",
+      "bytes": 5062
+    },
+    "native-runner-tests.raw": {
+      "sha256": "dfb45e3df0bf9ba41a82daeed1f7bf642b2bd7cda15c164901c33d2b6737c761",
+      "bytes": 2430
+    },
+    "private-root-modes.raw": {
+      "sha256": "5ca1b784424ab53d01bd037f1ea1c284e271fae538b31bc7d07dfeff61043483",
+      "bytes": 1503
+    },
+    "opencode-spool-root.raw": {
+      "sha256": "d5a38674ccf842de7bbe2f019b4dbb5659eea54a7e77a33759d279ed8a10b574",
+      "bytes": 328
+    },
+    "opencode-spool-root.mjs": {
+      "sha256": "9fb4e7fc2ca3a33e5ad94cb047b29cd31954ad7ad560442421da699e33a66f24",
+      "bytes": 766
+    },
+    "terminal-1.raw": {
+      "sha256": "db1353eb5d8cf7a24aac178f308e0dbe4bde40d60b74394121b3f6ebf924df62",
+      "bytes": 2565
+    },
+    "cli-build.raw": {
+      "sha256": "f080eb10976a57e16b5ffd0aee0566d1d1075bddc506224124cbd00e628427f9",
+      "bytes": 114
+    },
+    "setup-2.raw": {
+      "sha256": "8ad049c311e1fcc307036da2cd5ebb7aaafba7a8a094f38dfb9e34548e4b51bf",
+      "bytes": 3705
+    },
+    "Cargo.lock": {
+      "sha256": "0001480af9edbc1c7c9484768bec27b337efd3dac759243c57e4b13f56355547",
+      "bytes": 105199
+    },
+    "setup-1.raw": {
+      "sha256": "157a418e93231625af0340b6ddad27c7adb278e24cdb37903299c44e139feea6",
+      "bytes": 2125
+    },
+    "src/main.rs": {
+      "sha256": "5916a42cd12deaf0daaa9eed184f5735d59f13c2754932479300ec3466f018ce",
+      "bytes": 5418
+    },
+    "opencode-events-4/config/opencode/plugins/cutokyo.ts": {
+      "sha256": "711d17385caf522ff8b3c4432489484ce86cef7d524ed1b5f78847291391c4bf",
+      "bytes": 1420
+    }
+  },
+  "durability": "Archive staged under tmpfs; main must copy archive to managed durable evidence tree before reboot."
+}

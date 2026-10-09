@@ -1,0 +1,20 @@
+{
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "source_manifest": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/package-launch.json",
+  "package": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/Cutokyo_0.1.0_amd64.deb",
+  "retained_package": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/Cutokyo_0.1.0_amd64.deb",
+  "package_sha256": "8a653612ae3b09388c3c5156226c501de27c6e52082fe7169a7486c632c8b70c",
+  "application": "/tmp/cutokyo-native-test-wdio-b08wz36k/package/usr/bin/cutokyo-desktop",
+  "application_sha256": "518eaf26d0fe4477249381faaaa00959f1732fc7bc53d99a7070c55dd6156c01",
+  "receiver": "/tmp/cutokyo-native-test-wdio-b08wz36k/bin/cutokyo",
+  "receiver_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+  "synthetic_harness": "/tmp/cutokyo-native-test-wdio-b08wz36k/bin/claude",
+  "synthetic_harness_sha256": "74b0648c3b0bd21ad2f61c354e364b016a3475cbb491f9f73d20c1d49eab5536",
+  "root": "/tmp/cutokyo-native-test-wdio-b08wz36k",
+  "port": 57513,
+  "launch_origin": "extracted-debian-bundle",
+  "test_only": true,
+  "frontend_origin": "embedded in verified extracted Debian application",
+  "purpose": "separate genuine failed-launch UI retest; not full aggregate acceptance",
+  "controlled_negative_environment": "WAYLAND_DISPLAY restored with no socket in private XDG_RUNTIME_DIR"
+}

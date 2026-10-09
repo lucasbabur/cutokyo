@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { App } from "./App.js";
+import { initializeAppearance, loadAppearance } from "./appearance.js";
 import { CommandProvider } from "./commands/context.js";
 import { createTauriCommandClient } from "./commands/tauri.js";
 import { AnnouncementProvider } from "./components/Announcer.js";
@@ -34,11 +35,15 @@ async function resolveCommandClient(): Promise<CommandClient> {
   return createTauriCommandClient();
 }
 
+// Apply the OS appearance synchronously; the saved choice is read before the
+// first app render when the command responds promptly.
+initializeAppearance();
 const container = document.querySelector<HTMLDivElement>("#root");
 if (container === null) throw new Error("Cutokyo root element is missing.");
 
 void resolveCommandClient()
-  .then((client) => {
+  .then(async (client) => {
+    await loadAppearance(client);
     createRoot(container).render(
       <StrictMode>
         <CommandProvider client={client}>

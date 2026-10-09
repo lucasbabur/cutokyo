@@ -1,0 +1,208 @@
+{
+  "private_root": "/tmp/cutokyo-native-test-wdio-sfr8r8ri",
+  "owned_processes": [
+    {
+      "pid": 3975906,
+      "parent_pid": 3975829,
+      "process_group": 3975906,
+      "start_ticks": 3793496,
+      "executable": "/home/lucas/.nvm/versions/node/v22.22.3/bin/node",
+      "argv": [
+        "/home/lucas/.nvm/versions/node/v22.22.3/bin/node",
+        "/home/lucas/.nvm/versions/node/v22.22.3/bin/pnpm",
+        "exec",
+        "wdio",
+        "run",
+        "./wdio.conf.ts",
+        "--spec",
+        "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-postdelete-diagnostic.spec.ts"
+      ],
+      "private_home": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/home",
+      "private_runtime": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/runtime",
+      "root_marker_matches": true
+    },
+    {
+      "pid": 3976632,
+      "parent_pid": 3975906,
+      "process_group": 3975906,
+      "start_ticks": 3794181,
+      "executable": "/home/lucas/.nvm/versions/node/v22.22.3/bin/node",
+      "argv": [
+        "/home/lucas/.nvm/versions/node/v22.22.3/bin/node",
+        "./node_modules/.bin/../@wdio/cli/bin/wdio.js",
+        "run",
+        "./wdio.conf.ts",
+        "--spec",
+        "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-postdelete-diagnostic.spec.ts"
+      ],
+      "private_home": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/home",
+      "private_runtime": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/runtime",
+      "root_marker_matches": true
+    },
+    {
+      "pid": 3976674,
+      "parent_pid": 3976632,
+      "process_group": 3975906,
+      "start_ticks": 3794225,
+      "executable": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/package/usr/bin/cutokyo-desktop",
+      "argv": [
+        "/tmp/cutokyo-native-test-wdio-sfr8r8ri/package/usr/bin/cutokyo-desktop"
+      ],
+      "private_home": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/home",
+      "private_runtime": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/runtime",
+      "root_marker_matches": true
+    },
+    {
+      "pid": 3976712,
+      "parent_pid": 3976674,
+      "process_group": 3975906,
+      "start_ticks": 3794232,
+      "executable": "/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1/WebKitNetworkProcess",
+      "argv": [
+        "/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1/WebKitNetworkProcess",
+        "1",
+        "24"
+      ],
+      "private_home": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/home",
+      "private_runtime": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/runtime",
+      "root_marker_matches": true
+    },
+    {
+      "pid": 3976717,
+      "parent_pid": 3976674,
+      "process_group": 3975906,
+      "start_ticks": 3794232,
+      "executable": "/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1/WebKitWebProcess",
+      "argv": [
+        "/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1/WebKitWebProcess",
+        "4",
+        "26"
+      ],
+      "private_home": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/home",
+      "private_runtime": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/runtime",
+      "root_marker_matches": true
+    },
+    {
+      "pid": 3976926,
+      "parent_pid": 3976632,
+      "process_group": 3975906,
+      "start_ticks": 3794379,
+      "executable": "/home/lucas/.nvm/versions/node/v22.22.3/bin/node",
+      "argv": [
+        "/home/lucas/.nvm/versions/node/v22.22.3/bin/node",
+        "/home/lucas/Developer/personal/cutokyo-community/node_modules/.pnpm/@wdio+local-runner@9.31.9_@wdio+globals@9.31.3_supports-color@8.1.1_webdriverio@9.31.9_supports-color@8.1.1_/node_modules/@wdio/local-runner/build/run.js",
+        "run",
+        "./wdio.conf.ts",
+        "--spec",
+        "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-postdelete-diagnostic.spec.ts"
+      ],
+      "private_home": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/home",
+      "private_runtime": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/runtime",
+      "root_marker_matches": true
+    },
+    {
+      "pid": 3976948,
+      "parent_pid": 3976926,
+      "process_group": 3975906,
+      "start_ticks": 3794434,
+      "executable": "/home/lucas/Developer/personal/cutokyo-community/node_modules/.pnpm/@esbuild+linux-x64@0.28.2/node_modules/@esbuild/linux-x64/bin/esbuild",
+      "argv": [
+        "/home/lucas/Developer/personal/cutokyo-community/node_modules/.pnpm/@esbuild+linux-x64@0.28.2/node_modules/@esbuild/linux-x64/bin/esbuild",
+        "--service=0.28.2",
+        "--ping"
+      ],
+      "private_home": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/home",
+      "private_runtime": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/runtime",
+      "root_marker_matches": true
+    },
+    {
+      "pid": 3977953,
+      "parent_pid": 3976674,
+      "process_group": 3975906,
+      "start_ticks": 3795277,
+      "executable": "/usr/bin/kitty",
+      "argv": [
+        "/usr/bin/kitty",
+        "--title=Cutokyo native session resume",
+        "--working-directory",
+        "/tmp/cutokyo-native-test-wdio-sfr8r8ri/data/native-resume-project",
+        "--hold",
+        "--",
+        "/tmp/cutokyo-native-test-wdio-sfr8r8ri/bin/cutokyo",
+        "--data-dir",
+        "/tmp/cutokyo-native-test-wdio-sfr8r8ri/data",
+        "resume-terminal",
+        "--request",
+        "/tmp/cutokyo-native-test-wdio-sfr8r8ri/data/resume-launch-DDXyZb/request.json"
+      ],
+      "private_home": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/home",
+      "private_runtime": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/runtime",
+      "root_marker_matches": true
+    },
+    {
+      "pid": 3977965,
+      "parent_pid": 3977953,
+      "process_group": 3975906,
+      "start_ticks": 3795339,
+      "executable": "/usr/bin/kitten",
+      "argv": [
+        "/usr/bin/kitten",
+        "__atexit__"
+      ],
+      "private_home": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/home",
+      "private_runtime": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/runtime",
+      "root_marker_matches": true
+    },
+    {
+      "pid": 3977972,
+      "parent_pid": 3977953,
+      "process_group": 3977972,
+      "start_ticks": 3795339,
+      "executable": "/usr/bin/bash",
+      "argv": [
+        "/bin/bash",
+        "--posix"
+      ],
+      "private_home": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/home",
+      "private_runtime": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/runtime",
+      "root_marker_matches": true
+    },
+    {
+      "pid": 3979411,
+      "parent_pid": 3976926,
+      "process_group": 3975906,
+      "start_ticks": 3796907,
+      "executable": "/usr/bin/python3.14",
+      "argv": [
+        "/usr/bin/python3",
+        "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/owned-terminal-snapshot.py"
+      ],
+      "private_home": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/home",
+      "private_runtime": "/tmp/cutokyo-native-test-wdio-sfr8r8ri/runtime",
+      "root_marker_matches": true
+    }
+  ],
+  "active_window": {
+    "address": "0x5c07e30033e0",
+    "pid": 3977953,
+    "class": "kitty",
+    "xwayland": true,
+    "mapped": true
+  },
+  "owned_windows": [
+    {
+      "address": "0x5c07e3042640",
+      "pid": 3976674,
+      "class": "Cutokyo-desktop",
+      "xwayland": true,
+      "mapped": true
+    },
+    {
+      "address": "0x5c07e30033e0",
+      "pid": 3977953,
+      "class": "kitty",
+      "xwayland": true,
+      "mapped": true
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "raw_log": "evidence/management/native-review/owned-terminal-teardown-final-binding-20261004/native-terminal-teardown-delta-2.raw",
+  "sha256": "ca5fd7adc37f51f1c92e8d6cc6145199438f6e59ad3bfa980845a6a9d60f3490",
+  "current_spec_sha256": "b88436c71e44e4f2a52c4e06e87d90d1dcddafb93c4e7073e8f3930a1af72bad",
+  "boundary": "Independent read-only inverse-delta verification; actor teardown unchanged. New settlement predicates are separate test-owner changes. Not native execution or aggregate proof."
+}

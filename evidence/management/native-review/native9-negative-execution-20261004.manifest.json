@@ -1,0 +1,59 @@
+{
+  "archive": "evidence/management/native-review/native9-negative-execution-20261004.tar.gz",
+  "sha256": "52f659e89fc5f7f42a7d6f3dbe8643c7d10d5755bce274878b28f950a7117568",
+  "members": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-3kkudjx2/execution-record.json",
+      "member": "execution-record.json",
+      "sha256": "202c573a8a869b585eba0bf5faf54b9964c4ce2f4eb603d8e8a1355173f9711b"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-3kkudjx2/execution.log",
+      "member": "execution.log",
+      "sha256": "0743d8faff1982cf769409ffb8941f45314e5ade001c6a22c13fe34f76786b89"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-3kkudjx2/negative-geometry-1280x800.json",
+      "member": "negative-geometry-1280x800.json",
+      "sha256": "cef5b94fe337a0a553810cc48e463f3fa302a28ae0b9648e3759853f7b130638"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-3kkudjx2/package-launch.json",
+      "member": "package-launch.json",
+      "sha256": "5aef900713e156e9605bcbddcb02b1ac9d386440cc741de2e4f0f88bfec5373e"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-3kkudjx2/resume-inline-failure-dom.html",
+      "member": "resume-inline-failure-dom.html",
+      "sha256": "87512324718677ba1e7b7c2cd7bbe1343f22964fcb3f041d25168a88b0c368a5"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-3kkudjx2/resume-inline-launch-failure-1280x800.png",
+      "member": "resume-inline-launch-failure-1280x800.png",
+      "sha256": "52da4c21e767c093b35873f00d9e5cea9ab6d526532a54234861bdcdb05f6ae8"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-3kkudjx2/resume-negative-retest-assertions.json",
+      "member": "resume-negative-retest-assertions.json",
+      "sha256": "0975b7c22191809ec89382bb1241dde28cd076bb22e8683bfbbf7854d2064041"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-3kkudjx2/resume-negative-retest.spec-0-0.log",
+      "member": "resume-negative-retest.spec-0-0.log",
+      "sha256": "8564acd75c5201e644c99a4e1eba6e2274c545bad657969b11bdb81e416f9d13"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-3kkudjx2/wdio-2026-10-04T12-29-05-300Z.log",
+      "member": "wdio-2026-10-04T12-29-05-300Z.log",
+      "sha256": "fd046ccf101d486fdba2ce5407bc02b964fe557bb9782931068b75ed3acba0f7"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-3kkudjx2/wdio.log",
+      "member": "wdio.log",
+      "sha256": "01b15fa4922b6ec72cfa18ba8fc6649bbebbcfe390ea3b008949cb304e6e715a"
+    }
+  ],
+  "scope": "Separate genuine failed-launch retest from the actual native9 Debian package. Exit 0, one case, 19.60 seconds. No full aggregate or image inspection substitution.",
+  "clean_release_proof": false,
+  "source_mutation": false
+}

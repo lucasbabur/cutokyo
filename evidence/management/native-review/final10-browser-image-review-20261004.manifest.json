@@ -1,0 +1,94 @@
+{
+  "archive": "evidence/management/native-review/final10-browser-image-review-20261004.tar.gz",
+  "sha256": "e82406249dd06ced5f83dbd35b267cc83adcc1ded9a7f4209b304257f798fcc3",
+  "members": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/evidence/final/screens/analysis-consent-1536x960.png",
+      "member": "evidence/final/screens/analysis-consent-1536x960.png",
+      "sha256": "16e3966eff7b43a63e82792a71721fae53d4d5fa572fceb677ba5ff1b4d868c5"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/evidence/final/screens/onboarding-1280x800.png",
+      "member": "evidence/final/screens/onboarding-1280x800.png",
+      "sha256": "c7b31a8713a25cfca3e5fd3568e49e8887b90606cdb7a142f0306f66aafbe53a"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/evidence/final/screens/onboarding-1536x960.png",
+      "member": "evidence/final/screens/onboarding-1536x960.png",
+      "sha256": "855084de0ad3fdddca6d9992151bc2c59652584ef1859966fc764a6f9e7b7c83"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/evidence/final/screens/onboarding-900x700.png",
+      "member": "evidence/final/screens/onboarding-900x700.png",
+      "sha256": "8a6f4816e1736594460dc71dbfe35277793eed8df4e0447dd28a683a06004552"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/evidence/management/screens/capture-management-dark-1280x800.png",
+      "member": "evidence/management/screens/capture-management-dark-1280x800.png",
+      "sha256": "06b3ce2686be3c5ba76b912d03f7fec40c2d91aa4b66d827f623afe0e307b176"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/evidence/management/screens/capture-management-dark-1536x960.png",
+      "member": "evidence/management/screens/capture-management-dark-1536x960.png",
+      "sha256": "dda424bb637e63708cb580d98209f4d4c699229d5e7471158b73cddecb9106b9"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/evidence/management/screens/capture-management-dark-900x700.png",
+      "member": "evidence/management/screens/capture-management-dark-900x700.png",
+      "sha256": "ea6966c83f91d67e21d592106eb82026c5b22e10a57eaa510898d9076e9604bb"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/evidence/management/screens/capture-management-light-1280x800.png",
+      "member": "evidence/management/screens/capture-management-light-1280x800.png",
+      "sha256": "ac092cda4c8f5cdb30af18d8306f4eb24e4672704c8e02e888e1c34e568a78fe"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/evidence/management/screens/capture-management-light-1536x960.png",
+      "member": "evidence/management/screens/capture-management-light-1536x960.png",
+      "sha256": "0f2a06a75ab89a8a0b7ee3d874de25aec5a8d33eaa61773a8600bc8b752ff044"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/evidence/management/screens/capture-management-light-900x700.png",
+      "member": "evidence/management/screens/capture-management-light-900x700.png",
+      "sha256": "97cb3aa8b7c53527f956f257c52b8286602c5771caf8cd87bba779ca2a150a86"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/evidence/management/screens/skill-editor-dark-900x700.png",
+      "member": "evidence/management/screens/skill-editor-dark-900x700.png",
+      "sha256": "3bba030eee6575cfff27332e3d1a28e24c36b13fda144e842a250d1148526540"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/evidence/management/search/search-matches-dark-1280x800.png",
+      "member": "evidence/management/search/search-matches-dark-1280x800.png",
+      "sha256": "50cdc9099942c3887e63fe0300165ede3b4cc0e21e629ad2fec409588d9fe73d"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/evidence/management/search/search-matches-dark-900x700.png",
+      "member": "evidence/management/search/search-matches-dark-900x700.png",
+      "sha256": "71a9863f7ee399b04c5060a15007f815c7807f1699fd2a863a7ce690face8342"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/evidence/theme/screens/settings-conflict-900x700.png",
+      "member": "evidence/theme/screens/settings-conflict-900x700.png",
+      "sha256": "e9019d258f0f4c45d98003282be27840d6180a21992a908f76764434e21bd31d"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/inspection-receipt.json",
+      "member": "inspection-receipt.json",
+      "sha256": "6b4fb96cbe29e95f41e524e873d370c6c1d67e6f754502940bafb4a093596276"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/manifest.json",
+      "member": "manifest.json",
+      "sha256": "3bd31dafb0432e279a83602f1f24fd4013fa46d23ccc8045c075ab8b90c5e074"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/recording-error-recovery-verification-20261004T121436Z.json",
+      "member": "recording-error-recovery-verification-20261004T121436Z.json",
+      "sha256": "acdd7d2d63bdb05d62c2e383c0d3f843c2a8a50d24d009e9273cacc26cda0f9f"
+    }
+  ],
+  "scope": "Independent bounded browser image review and verified EDQUOT recording recovery. Native closure is separate. Original initial preservation flags remain unchanged.",
+  "clean_release_proof": false,
+  "source_mutation": false
+}

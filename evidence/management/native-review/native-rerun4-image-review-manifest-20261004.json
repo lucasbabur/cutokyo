@@ -1,0 +1,13 @@
+{
+  "archive": "evidence/management/native-review/native-rerun4-image-review-20261004.tar.gz",
+  "sha256": "26e933929c45b37131930e5790f8e191d5493deb24c4da91adf87bda6ebcfb6e",
+  "member_count": 23,
+  "reviewer": "a47a3d8b974b536a6",
+  "individual_native_pngs_read": 10,
+  "native_aggregate_exit_code": 1,
+  "native_passed_cases": 8,
+  "native_failed_cases": 1,
+  "new_copy_finding": "NQA-COPY-01 single-session backup plural wording",
+  "later_main_diagnosis": "Actual retained backend stderr proves Kitty Wayland failure; image review alone did not establish it",
+  "clean_release_proof": false
+}

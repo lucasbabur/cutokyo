@@ -1,0 +1,247 @@
+{
+  "verdict": "PASS",
+  "dispatches": [
+    {
+      "cli": "/usr/bin/hyprctl",
+      "key": "Tab",
+      "pid": 3670093,
+      "address": "0x5c07e2f40a10",
+      "activeBefore": {
+        "address": "0x5c07e2f40a10",
+        "pid": 3670093,
+        "mapped": true,
+        "xwayland": true
+      },
+      "activeAfter": {
+        "address": "0x5c07e2f40a10",
+        "pid": 3670093,
+        "mapped": true,
+        "xwayland": true
+      },
+      "acknowledgement": "ok"
+    },
+    {
+      "cli": "/usr/bin/hyprctl",
+      "key": "Return",
+      "pid": 3670093,
+      "address": "0x5c07e2f40a10",
+      "activeBefore": {
+        "address": "0x5c07e2f40a10",
+        "pid": 3670093,
+        "mapped": true,
+        "xwayland": true
+      },
+      "activeAfter": {
+        "address": "0x5c07e2f40a10",
+        "pid": 3670093,
+        "mapped": true,
+        "xwayland": true
+      },
+      "acknowledgement": "ok"
+    }
+  ],
+  "before": {
+    "className": "",
+    "events": [
+      {
+        "className": "",
+        "id": "",
+        "isTrusted": true,
+        "key": null,
+        "tag": "H1",
+        "time": 22692,
+        "type": "focusout"
+      },
+      {
+        "className": "",
+        "id": "",
+        "isTrusted": true,
+        "key": null,
+        "tag": "BODY",
+        "time": 22692,
+        "type": "focusin"
+      },
+      {
+        "className": "",
+        "id": "",
+        "isTrusted": true,
+        "key": null,
+        "tag": "BODY",
+        "time": 22692,
+        "type": "focusout"
+      }
+    ],
+    "id": "",
+    "tag": "BODY",
+    "url": "tauri://localhost#/sessions"
+  },
+  "afterTab": {
+    "className": "skip-link",
+    "events": [
+      {
+        "className": "",
+        "id": "",
+        "isTrusted": true,
+        "key": null,
+        "tag": "H1",
+        "time": 22692,
+        "type": "focusout"
+      },
+      {
+        "className": "",
+        "id": "",
+        "isTrusted": true,
+        "key": null,
+        "tag": "BODY",
+        "time": 22692,
+        "type": "focusin"
+      },
+      {
+        "className": "",
+        "id": "",
+        "isTrusted": true,
+        "key": null,
+        "tag": "BODY",
+        "time": 22692,
+        "type": "focusout"
+      },
+      {
+        "className": "",
+        "id": "",
+        "isTrusted": true,
+        "key": "Tab",
+        "tag": "BODY",
+        "time": 22724,
+        "type": "keydown"
+      },
+      {
+        "className": "skip-link",
+        "id": "",
+        "isTrusted": true,
+        "key": null,
+        "tag": "A",
+        "time": 22724,
+        "type": "focusin"
+      },
+      {
+        "className": "skip-link",
+        "id": "",
+        "isTrusted": true,
+        "key": "Tab",
+        "tag": "A",
+        "time": 22724,
+        "type": "keyup"
+      }
+    ],
+    "id": "",
+    "tag": "A",
+    "url": "tauri://localhost#/sessions"
+  },
+  "afterReturn": {
+    "className": "main-content",
+    "events": [
+      {
+        "className": "",
+        "id": "",
+        "isTrusted": true,
+        "key": null,
+        "tag": "H1",
+        "time": 22692,
+        "type": "focusout"
+      },
+      {
+        "className": "",
+        "id": "",
+        "isTrusted": true,
+        "key": null,
+        "tag": "BODY",
+        "time": 22692,
+        "type": "focusin"
+      },
+      {
+        "className": "",
+        "id": "",
+        "isTrusted": true,
+        "key": null,
+        "tag": "BODY",
+        "time": 22692,
+        "type": "focusout"
+      },
+      {
+        "className": "",
+        "id": "",
+        "isTrusted": true,
+        "key": "Tab",
+        "tag": "BODY",
+        "time": 22724,
+        "type": "keydown"
+      },
+      {
+        "className": "skip-link",
+        "id": "",
+        "isTrusted": true,
+        "key": null,
+        "tag": "A",
+        "time": 22724,
+        "type": "focusin"
+      },
+      {
+        "className": "skip-link",
+        "id": "",
+        "isTrusted": true,
+        "key": "Tab",
+        "tag": "A",
+        "time": 22724,
+        "type": "keyup"
+      },
+      {
+        "className": "skip-link",
+        "id": "",
+        "isTrusted": true,
+        "key": "Enter",
+        "tag": "A",
+        "time": 22763,
+        "type": "keydown"
+      },
+      {
+        "className": "skip-link",
+        "id": "",
+        "isTrusted": true,
+        "key": null,
+        "tag": "A",
+        "time": 22763,
+        "type": "click"
+      },
+      {
+        "className": "skip-link",
+        "id": "",
+        "isTrusted": true,
+        "key": null,
+        "tag": "A",
+        "time": 22763,
+        "type": "focusout"
+      },
+      {
+        "className": "main-content",
+        "id": "main-content",
+        "isTrusted": true,
+        "key": null,
+        "tag": "MAIN",
+        "time": 22763,
+        "type": "focusin"
+      },
+      {
+        "className": "main-content",
+        "id": "main-content",
+        "isTrusted": true,
+        "key": "Enter",
+        "tag": "MAIN",
+        "time": 22764,
+        "type": "keyup"
+      }
+    ],
+    "id": "main-content",
+    "tag": "MAIN",
+    "url": "tauri://localhost#/sessions"
+  }
+}

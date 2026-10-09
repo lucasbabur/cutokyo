@@ -1,0 +1,7 @@
+{
+  "time": "2026-10-04T05:55:06.015791+00:00",
+  "port": 4173,
+  "listenInspection": "State          Recv-Q          Send-Q                   Local Address:Port                   Peer Address:Port          Process          \n",
+  "bindWithAddressReuseSucceeded": true,
+  "detail": "Bind succeeds with normal server address reuse; previous no-reuse probe encountered closing connection state"
+}

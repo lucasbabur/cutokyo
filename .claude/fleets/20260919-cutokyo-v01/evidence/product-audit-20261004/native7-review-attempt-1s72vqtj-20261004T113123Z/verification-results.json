@@ -1,0 +1,129 @@
+{
+  "native7-review-attempt-1s72vqtj-20261004T113123Z": {
+    "artifacts": 50,
+    "images": 14,
+    "hash_mismatches": [],
+    "dimensions": {
+      "analysis-unavailable-1280x800.png": [
+        1280,
+        800
+      ],
+      "appearance-dark-1280x800.png": [
+        1280,
+        800
+      ],
+      "backup-created-1280x800.png": [
+        1280,
+        800
+      ],
+      "backup-restore-confirmation-1280x800.png": [
+        1280,
+        800
+      ],
+      "backup-restored-1280x800.png": [
+        1280,
+        800
+      ],
+      "completed-capture-removal-1280x800.png": [
+        1280,
+        800
+      ],
+      "diagnostic-created-1280x800.png": [
+        1280,
+        800
+      ],
+      "diagnostic-preview-1280x800.png": [
+        1280,
+        800
+      ],
+      "inventory-native-configured-1280x800.png": [
+        1280,
+        800
+      ],
+      "inventory-remove-confirmation-1280x800.png": [
+        1280,
+        800
+      ],
+      "native-hook-detail-resume-1280x800.png": [
+        1280,
+        800
+      ],
+      "onboarding-browse-1280x800.png": [
+        1280,
+        800
+      ],
+      "onboarding-native-verified-1280x800.png": [
+        1280,
+        800
+      ],
+      "search-detail-resume-1280x800.png": [
+        1280,
+        800
+      ]
+    }
+  },
+  "negative7-review-resume-negative-retest-xejbbw5c-20261004T113123Z": {
+    "artifacts": 10,
+    "images": 1,
+    "hash_mismatches": [],
+    "dimensions": {
+      "resume-inline-launch-failure-1280x800.png": [
+        1280,
+        800
+      ]
+    }
+  },
+  "source_proof": {
+    "before_sha256": "9fa0b0fe15924512b6af9513573ab46d975eb52d0dfcb2d1ed0281bad99667f5",
+    "after_sha256": "9fa0b0fe15924512b6af9513573ab46d975eb52d0dfcb2d1ed0281bad99667f5",
+    "byte_identical": true,
+    "head_before": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+    "head_after": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+    "index_before": "c752b9009048069f7f3c5e0cf0c7b5aea6d5d0221a812be2e8a74ee0e26e7b42",
+    "index_after": "c752b9009048069f7f3c5e0cf0c7b5aea6d5d0221a812be2e8a74ee0e26e7b42",
+    "file_count_before": 394,
+    "file_count_after": 394,
+    "changed_records": [],
+    "scope": "Compare recorded before/after receipts; no Git queries or live source fingerprint refresh."
+  },
+  "package": {
+    "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/Cutokyo_0.1.0_amd64.deb",
+    "sha256": "8a653612ae3b09388c3c5156226c501de27c6e52082fe7169a7486c632c8b70c",
+    "bytes": 24183516,
+    "streamed_member": {
+      "name": "usr/bin/cutokyo-desktop",
+      "bytes": 104008528,
+      "sha256": "518eaf26d0fe4477249381faaaa00959f1732fc7bc53d99a7070c55dd6156c01"
+    },
+    "matches_launch_manifest": true,
+    "no_extraction_or_launch": true
+  },
+  "replay_inputs": [
+    {
+      "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/verified-replay-inputs/cutokyo",
+      "actual_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+      "matches": true
+    },
+    {
+      "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/verified-replay-inputs/claude",
+      "actual_sha256": "74b0648c3b0bd21ad2f61c354e364b016a3475cbb491f9f73d20c1d49eab5536",
+      "matches": true
+    }
+  ],
+  "native6_late_audits": [
+    {
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-original-save-audits-20261004/resume-audit.txt",
+      "preserved_matches": true,
+      "resolved_source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/retained-roots/cutokyo-native-test-wdio-qn_d75i0/resume-audit.txt",
+      "resolved_source_exists": true,
+      "resolved_source_matches": true
+    },
+    {
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/native6-original-save-audits-20261004/resume-audit.context.json",
+      "preserved_matches": true,
+      "resolved_source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/retained-roots/cutokyo-native-test-wdio-qn_d75i0/resume-audit.context.json",
+      "resolved_source_exists": true,
+      "resolved_source_matches": true
+    }
+  ]
+}

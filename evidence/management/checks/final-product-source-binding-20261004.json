@@ -1,0 +1,10 @@
+{
+  "baseline": "native-local-source-after-rerun7-20261004.json",
+  "after_final_rust_refresh": true,
+  "changed": [],
+  "allowed_report_only_updates": [
+    "evidence/management/README.md"
+  ],
+  "head_unchanged": true,
+  "product_source_unchanged": true
+}

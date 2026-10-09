@@ -1,0 +1,75 @@
+{
+  "results": [
+    {
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.38,
+      "log": "evidence/management/checks/final3-rust-format-20261004.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 8.95,
+      "log": "evidence/management/checks/final3-rust-clippy-20261004.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--workspace"
+      ],
+      "exit_code": 101,
+      "duration_seconds": 139.21,
+      "log": "evidence/management/checks/final3-rust-workspace-20261004.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--test",
+        "architecture",
+        "--test",
+        "pipeline",
+        "--test",
+        "upgrade"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 22.7,
+      "log": "evidence/management/checks/final3-rust-unreached-product-20261004.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "fake-harness",
+        "-p",
+        "cutokyo-updater-signature-verifier"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.32,
+      "log": "evidence/management/checks/final3-rust-tools-20261004.log"
+    }
+  ],
+  "head": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "dirty_working_tree": true,
+  "waivers": []
+}

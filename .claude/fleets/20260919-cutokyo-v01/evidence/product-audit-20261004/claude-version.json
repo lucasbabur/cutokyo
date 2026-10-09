@@ -1,0 +1,10 @@
+{
+  "command": [
+    "/home/lucas/.local/bin/claude",
+    "--version"
+  ],
+  "exitCode": 0,
+  "output": "2.1.289 (Claude Code)\n",
+  "isolatedHome": "/tmp/cutokyo-product-audit-20261004/home",
+  "utc": "2026-10-04T04:44:16.437484+00:00"
+}

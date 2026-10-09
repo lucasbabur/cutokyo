@@ -1,0 +1,17 @@
+{
+  "command": "pnpm --dir /home/lucas/Developer/personal/cutokyo-community/ui exec vitest run --config /tmp/cutokyo-search-review.HJ6CZt/resume-review.vitest.config.mjs",
+  "executed_at": "2026-10-04T09:51:41.988Z",
+  "result_at": "2026-10-04T09:51:44.397Z",
+  "exit_code": 1,
+  "source_transcript": "/home/lucas/.claude/projects/-home-lucas-Developer-personal-cutokyo-community/bef15e81-1dde-4a4a-b63b-a981d304023c/subagents/agent-ad9da28302928395f.jsonl",
+  "source_tool_use_id": "call_RqC9MOIjumRS2WpIWITqffDk",
+  "log": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/resume-receipt-red-original-20261004.log",
+  "log_sha256": "a3caff9c3353d2ec374987d78b34d42c9badb367ec86ced3b5fd19ced5de0b91",
+  "log_bytes": 10138,
+  "output_kind": "Verbatim original tool-result text; the harness truncated part of the diagnostic DOM output.",
+  "tool_output_contains_truncation_marker": true,
+  "reexecuted_for_preservation": false,
+  "session_page_sha256_at_execution": "e687c1267007df9c593b498be94b846cb581f64bfd34678f2af9fe865666d191",
+  "test_input": "/tmp/cutokyo-search-review.HJ6CZt/native-resume-receipt.test.tsx",
+  "config_input": "/tmp/cutokyo-search-review.HJ6CZt/resume-review.vitest.config.mjs"
+}

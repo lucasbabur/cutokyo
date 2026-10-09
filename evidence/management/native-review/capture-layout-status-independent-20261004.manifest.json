@@ -1,0 +1,23 @@
+{
+  "archive": "evidence/management/native-review/capture-layout-status-independent-20261004.tar.gz",
+  "sha256": "ae1c782752bdab47296386b0c34267774516bb79fa297b705799ca5ce60ecdae",
+  "members": [
+    {
+      "member": "capture-layout-status-delta-1.raw",
+      "source": "/tmp/cutokyo-independent-onboarding-review/capture-layout-status-delta-1.raw",
+      "sha256": "ed5ac4a7cf10f1ca80b3ce15e8dae1893e5a1eaf50761a3c86be4ddab4c7e21b"
+    },
+    {
+      "member": "capture-layout-status-delta-2.raw",
+      "source": "/tmp/cutokyo-independent-onboarding-review/capture-layout-status-delta-2.raw",
+      "sha256": "d0f38f71a99b72c40b3748c50e5edad57b27c771442a67c0b8a7a1705daa36db"
+    },
+    {
+      "member": "capture-layout-status-react-1.raw",
+      "source": "/tmp/cutokyo-independent-onboarding-review/capture-layout-status-react-1.raw",
+      "sha256": "8da059254defa6c811c6800e29137ce6dce75c46a783ea3d234533c44356ea29"
+    }
+  ],
+  "scope": "Source and React closure only. Actual browser/native rendering remains separate. Initial reviewer inverse newline error retained.",
+  "source_mutation": false
+}

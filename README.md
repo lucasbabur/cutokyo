@@ -11,6 +11,7 @@ native executable.
 
 - [Product boundary](#product-boundary)
 - [Clean install](#clean-install)
+- [Desktop workflows](#desktop-workflows)
 - [CLI tour](#cli-tour)
 - [Architecture](#architecture)
 - [Privacy and storage](#privacy-and-storage)
@@ -22,8 +23,8 @@ native executable.
 
 Cutokyo is a local session-history, provenance, exact-resume, configuration,
 and diagnostics tool. Native hooks, documented local APIs, and OTel precede any
-proxy fallback. Proxy capture and provider-bound analysis are opt-in and must
-preview egress before confirmation.
+proxy fallback. Proxy capture and CLI-only provider-bound analysis are opt-in and must
+preview egress before confirmation. The desktop app has no analysis feature.
 
 Cutokyo is not a coding harness, model provider, cloud account, hosted memory
 service, telemetry collector, tenant control plane, or invisible
@@ -63,6 +64,59 @@ cutokyo uninstall
 Read the platform paths, package verification, no-state uninstall, and rollback
 procedure in [`docs/clean-install.md`](docs/clean-install.md).
 
+## Desktop workflows
+
+Onboarding starts with no harness selected. **Browse without installing** saves
+that choice without changing native capture configuration. To enable capture,
+preview a harness, review its exact targets, acknowledge plaintext local storage,
+and confirm installation. Selecting a checkbox alone installs nothing. Finish
+rechecks each selected integration before saving it. Configuration verified does
+not mean live capture verified; restart the harness and wait for native evidence.
+Recover follows recorded installation or cleanup intent. Removal deletes only
+unchanged Cutokyo-owned entries and retains modified user entries with an issue.
+
+Automatic capture setup is verified for Claude Code `2.1.278`, Codex `0.153.4`,
+and OpenCode `1.18.28`. Other versions, missing binaries, unsafe paths, or
+uninspectable configuration make automatic setup unavailable. Browse still works.
+Setup, recovery, and removal currently require the tested harness binary and the
+Cutokyo receiver. A removed or upgraded harness can therefore prevent recovery;
+restore the supported binary before retrying. POSIX command hooks are unavailable
+on Windows in this build.
+
+**Agent tools** is the place to manage installed MCP servers, skills, hooks,
+plugins, and instruction files. Search by name or source, filter by harness or
+kind, and choose **Manage** to read the actual source. Editable installations
+support saving changes and removal with a retained recovery copy. Cutokyo-owned
+capture and search entries explain why they cannot be edited here.
+
+A skill or supported MCP server can be installed into another harness as an
+independent copy. The preview names the destination and explains unavailable
+formats or credential substitutions. Existing installations are never
+overwritten. Shared sources show every affected harness; removing one shared
+source affects all of them. Hook and plugin formats are harness-specific and
+are not advertised as portable.
+
+**Sessions** supports literal terms and exact phrases, relevance or newest
+ordering, match excerpts, filters, and paginated results. Returning from session
+detail keeps the search and page. **Today** means the machine's local calendar
+day. Resume preserves the exact native identity and recorded project directory,
+then opens a visible interactive terminal. Missing terminal, harness, or display
+access fails with a retryable explanation. Success means the native process
+acknowledged a real TTY and survived startup. It does not prove session activation;
+check the terminal for native login or session errors. Codex hook session IDs
+alone are not verified App Server thread IDs and cannot authorize resume.
+
+**Data controls** separates saving a retention policy from deleting history.
+Create a backup with one action at the default private location, then review
+and confirm a verified restore without copying a digest. Read the scope and
+recovery details in [Local backups and restore](docs/backup-and-restore.md).
+
+**Health** offers scoped retries and a previewed local diagnostic report.
+Unavailable updater or proxy services disclose the reason rather
+than implying a working provider or listener. The guardrails feature is not
+included; local redaction, explicit egress consent, and file/database integrity
+checks remain.
+
 ## CLI tour
 
 Every command has readable terminal output and a stable `--json` envelope. JSON
@@ -74,7 +128,12 @@ and unhealthy state (78).
 cutokyo sessions search --query "migration" --project my-project --json
 cutokyo sessions show SESSION_ID
 cutokyo sessions resume SESSION_ID            # exact command preview
-cutokyo sessions resume SESSION_ID --execute  # explicit process launch
+cutokyo sessions resume SESSION_ID --execute  # acknowledged visible-terminal startup
+
+cutokyo capture-setup --harness claude_code --dry-run
+cutokyo capture-setup --harness claude_code
+cutokyo capture-setup --harness claude_code --recover
+cutokyo capture-setup --harness claude_code --uninstall
 
 cutokyo retention preview --days 30 --write-plan retention-plan.json
 cutokyo retention apply --plan retention-plan.json --confirm-digest DIGEST
@@ -88,7 +147,16 @@ cutokyo plugin verify ./my-plugin
 cutokyo mcp manifest --json
 cutokyo doctor --json
 cutokyo bundle --output cutokyo-diagnostics.tar.gz
-cutokyo backup ./cutokyo-backup.db
+cutokyo backup                              # private default backup directory
+cutokyo backup ./cutokyo-history-backup       # optional new directory
+cutokyo restore ./cutokyo-history-backup      # verified preview only
+cutokyo restore ./cutokyo-history-backup --confirm
+
+cutokyo inventory list --json
+cutokyo inventory show ITEM_ID --json
+cutokyo inventory edit ITEM_ID --revision REVISION --content-file edited-source.json
+cutokyo inventory install ITEM_ID --revision REVISION --harness opencode
+cutokyo inventory remove ITEM_ID --revision REVISION --confirm-item ITEM_ID
 ```
 
 Destructive commands preview exact scope and require a command-specific
@@ -149,6 +217,17 @@ pnpm --dir ui check
 python3 tools/scripts/source-snapshot.py -- dist plan
 ```
 
+The packaged native keyboard journey in `pnpm --dir ui test:e2e:tauri` currently
+requires Linux, a running Hyprland session with XWayland, and an executable
+`hyprctl` on the host runner's `PATH`. The runner resolves that system tool to its
+absolute real path in `CUTOKYO_NATIVE_COMPOSITOR_CLI`; the test refuses a missing,
+relative, non-regular, or non-executable CLI. Keep the host
+`HYPRLAND_INSTANCE_SIGNATURE` and `XDG_RUNTIME_DIR` available to the runner. Only
+its scoped compositor subprocess uses the host runtime directory; the application
+keeps private HOME and XDG directories. Unsupported compositor/input prerequisites
+fail the journey, without skipping it or falling back to global keys or window
+focus commands. Run native GUI acceptance without another native runner in parallel.
+
 CI lints once on Linux and builds/tests on Linux, macOS, and Windows. RustSec,
 cargo-pup, cargo-machete, and Knip are visible non-gating drift reports. Release
 tests produce local or dry-run artifacts only; publishing requires an authorized
@@ -160,6 +239,8 @@ tag and all signing credentials.
 - [Architecture](docs/architecture.md)
 - [Privacy and diagnostic bundles](docs/privacy.md)
 - [Clean installation and uninstall](docs/clean-install.md)
+- [Local backups and restore](docs/backup-and-restore.md)
+- [Management workflow contract](docs/management-workflow-contract.md)
 - [Plugin authoring](docs/plugin-authoring.md)
 - [Release signing and notarization](docs/release/signing.md)
 - [Release recovery](docs/release/recovery.md)

@@ -3,20 +3,24 @@ import { invoke } from "@tauri-apps/api/core";
 import type { SettingsPatch } from "../generated/settings.js";
 import type {
   ActionReceipt,
-  AnalysisCandidate,
-  AnalysisPreview,
-  AnalysisResult,
   BootstrapResponse,
+  BackupInfo,
+  BackupRestorePreview,
+  BackupRestoreReceipt,
   BundlePreview,
   CommandClient,
   CompleteOnboardingRequest,
+  CaptureSetupPreview,
+  CaptureSetupReceipt,
   DashboardResponse,
   DeletionPreview,
   DeletionReceipt,
+  DesktopCapabilities,
   DesktopSettings,
   DoctorReport,
-  GuardsResponse,
+  ProxyStatus,
   HealthResponse,
+  InventoryDocument,
   InventoryResponse,
   OnboardingResponse,
   PluginVerification,
@@ -29,6 +33,8 @@ import type {
   UpdateStatus,
 } from "../contracts.js";
 
+import { localMidnight } from "../domain/sessionSearch.js";
+
 function command<T>(name: string, args?: Record<string, unknown>): Promise<T> {
   return invoke<T>(name, args);
 }
@@ -36,13 +42,27 @@ function command<T>(name: string, args?: Record<string, unknown>): Promise<T> {
 /** The production adapter exposes only named application use cases over Tauri IPC. */
 export function createTauriCommandClient(): CommandClient {
   return {
+    getCapabilities: () => command<DesktopCapabilities>("desktop_capabilities"),
     getBootstrap: () => command<BootstrapResponse>("desktop_bootstrap"),
     getOnboarding: () => command<OnboardingResponse>("onboarding_status"),
+    previewCaptureSetup: (harness, operation) =>
+      command<CaptureSetupPreview>("preview_capture_setup", {
+        harness,
+        operation,
+      }),
+    applyCaptureSetup: (previewToken) =>
+      command<CaptureSetupReceipt>("apply_capture_setup", { previewToken }),
     completeOnboarding: (request: CompleteOnboardingRequest) =>
       command<ActionReceipt>("complete_onboarding", { request }),
     getDashboard: () => command<DashboardResponse>("dashboard_query"),
     searchSessions: (filters: SessionFilters) =>
-      command<SessionSearchResponse>("search_sessions", { filters }),
+      command<SessionSearchResponse>("search_sessions", {
+        filters: {
+          ...filters,
+          todayStart:
+            filters.dateRange === "today" ? localMidnight(new Date()) : null,
+        },
+      }),
     getSession: (sessionId: string) =>
       command<SessionRecord>("session_detail", { sessionId }),
     previewResume: (sessionId: string) =>
@@ -59,25 +79,38 @@ export function createTauriCommandClient(): CommandClient {
       command<DeletionReceipt>("apply_retention", { previewToken }),
     deleteAll: (confirmation: string) =>
       command<DeletionReceipt>("delete_all_history", { confirmation }),
+    createBackup: (destination) =>
+      command<BackupInfo>("create_backup", {
+        destination: destination ?? null,
+      }),
+    listBackups: () => command<readonly BackupInfo[]>("list_backups"),
+    previewBackupRestore: (path) =>
+      command<BackupRestorePreview>("preview_backup_restore", { path }),
+    restoreBackup: (previewToken) =>
+      command<BackupRestoreReceipt>("restore_backup", { previewToken }),
     getInventory: () => command<InventoryResponse>("inventory_query"),
-    setMcpEnabled: (itemId: string, enabled: boolean) =>
-      command<InventoryResponse>("set_mcp_enabled", { itemId, enabled }),
+    getInventoryDocument: (itemId) =>
+      command<InventoryDocument>("inventory_document", { itemId }),
+    saveInventoryDocument: (itemId, revision, content) =>
+      command<ActionReceipt>("save_inventory_document", {
+        itemId,
+        revision,
+        content,
+      }),
+    removeInventoryItem: (itemId, revision) =>
+      command<ActionReceipt>("remove_inventory_item", { itemId, revision }),
+    installInventoryItem: (itemId, revision, harness) =>
+      command<ActionReceipt>("install_inventory_item", {
+        itemId,
+        revision,
+        harness,
+      }),
     getPluginVerification: (itemId: string) =>
       command<PluginVerification>("plugin_verification", { itemId }),
-    getGuards: () => command<GuardsResponse>("guard_coverage"),
+    getProxyStatus: () => command<ProxyStatus>("proxy_status"),
     previewProxy: () => command<ProxyPreview>("preview_proxy_consent"),
     setProxyEnabled: (enabled: boolean, consentToken: string | null) =>
-      command<GuardsResponse>("set_proxy_enabled", { enabled, consentToken }),
-    setOutgoingGuardEnabled: (enabled: boolean) =>
-      command<GuardsResponse>("set_outgoing_guard_enabled", { enabled }),
-    getAnalysisCandidates: () =>
-      command<readonly AnalysisCandidate[]>("analysis_candidates"),
-    previewAnalysis: (sessionIds: readonly string[]) =>
-      command<AnalysisPreview>("preview_analysis", { sessionIds }),
-    runAnalysis: (previewToken: string) =>
-      command<AnalysisResult>("run_analysis", { previewToken }),
-    cancelAnalysis: (requestId: string) =>
-      command<ActionReceipt>("cancel_analysis", { requestId }),
+      command<ProxyStatus>("set_proxy_enabled", { enabled, consentToken }),
     getHealth: () => command<HealthResponse>("health_snapshot"),
     retryHealth: (dimensionId: string) =>
       command<HealthResponse>("retry_health_dimension", { dimensionId }),

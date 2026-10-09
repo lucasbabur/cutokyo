@@ -1,0 +1,16 @@
+{
+  "command": [
+    "/home/lucas/Developer/personal/cutokyo-community/target/debug/cutokyo",
+    "--config-file",
+    "/tmp/cutokyo-product-audit-20261004/config/settings.toml",
+    "--data-dir",
+    "/tmp/cutokyo-product-audit-20261004/data/cli",
+    "--json",
+    "sessions",
+    "list"
+  ],
+  "exitCode": 70,
+  "output": "{\"schema_version\":\"1.0.0\",\"command\":\"sessions\",\"ok\":false,\"error\":{\"code\":\"internal\",\"message\":\"failed to open SQLite read connection: unable to open database file: /tmp/cutokyo-product-audit-20261004/data/cli/cutokyo.db\"},\"meta\":{\"app_version\":\"0.1.0\",\"pending_crash_record\":false}}\n",
+  "isolatedHome": "/tmp/cutokyo-product-audit-20261004/home",
+  "utc": "2026-10-04T04:44:07.831323+00:00"
+}

@@ -1,0 +1,554 @@
+{
+  "scope": "Serverless Chromium minimal isolation of exact embedded Enter scripts and exact AppShell click handler; NOT native Tauri acceptance or a full app run",
+  "sources": {
+    "driver": "/home/lucas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-plugin-wdio-webdriver-1.4.0/src/platform/executor.rs",
+    "appShell": "/home/lucas/Developer/personal/cutokyo-community/ui/src/components/AppShell.tsx"
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "repetitions": 5,
+  "results": [
+    {
+      "round": 0,
+      "mode": "embedded-driver-script",
+      "expectedActiveId": "main-content",
+      "actual": {
+        "id": "",
+        "tag": "A",
+        "class": "skip-link",
+        "hash": "",
+        "events": [
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keydown",
+            "key": "Enter",
+            "trusted": false,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keyup",
+            "key": "Enter",
+            "trusted": false,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          }
+        ]
+      },
+      "acceptance": "FAIL"
+    },
+    {
+      "round": 0,
+      "mode": "trusted-keyboard",
+      "expectedActiveId": "main-content",
+      "actual": {
+        "id": "main-content",
+        "tag": "MAIN",
+        "class": "",
+        "hash": "",
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "tag": "BODY",
+            "id": "",
+            "class": ""
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keyup",
+            "key": "Tab",
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keydown",
+            "key": "Enter",
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "click",
+            "key": null,
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "tag": "MAIN",
+            "id": "main-content",
+            "class": ""
+          },
+          {
+            "type": "keyup",
+            "key": "Enter",
+            "trusted": true,
+            "tag": "MAIN",
+            "id": "main-content",
+            "class": ""
+          }
+        ]
+      },
+      "acceptance": "PASS"
+    },
+    {
+      "round": 1,
+      "mode": "embedded-driver-script",
+      "expectedActiveId": "main-content",
+      "actual": {
+        "id": "",
+        "tag": "A",
+        "class": "skip-link",
+        "hash": "",
+        "events": [
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keydown",
+            "key": "Enter",
+            "trusted": false,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keyup",
+            "key": "Enter",
+            "trusted": false,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          }
+        ]
+      },
+      "acceptance": "FAIL"
+    },
+    {
+      "round": 1,
+      "mode": "trusted-keyboard",
+      "expectedActiveId": "main-content",
+      "actual": {
+        "id": "main-content",
+        "tag": "MAIN",
+        "class": "",
+        "hash": "",
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "tag": "BODY",
+            "id": "",
+            "class": ""
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keyup",
+            "key": "Tab",
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keydown",
+            "key": "Enter",
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "click",
+            "key": null,
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "tag": "MAIN",
+            "id": "main-content",
+            "class": ""
+          },
+          {
+            "type": "keyup",
+            "key": "Enter",
+            "trusted": true,
+            "tag": "MAIN",
+            "id": "main-content",
+            "class": ""
+          }
+        ]
+      },
+      "acceptance": "PASS"
+    },
+    {
+      "round": 2,
+      "mode": "embedded-driver-script",
+      "expectedActiveId": "main-content",
+      "actual": {
+        "id": "",
+        "tag": "A",
+        "class": "skip-link",
+        "hash": "",
+        "events": [
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keydown",
+            "key": "Enter",
+            "trusted": false,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keyup",
+            "key": "Enter",
+            "trusted": false,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          }
+        ]
+      },
+      "acceptance": "FAIL"
+    },
+    {
+      "round": 2,
+      "mode": "trusted-keyboard",
+      "expectedActiveId": "main-content",
+      "actual": {
+        "id": "main-content",
+        "tag": "MAIN",
+        "class": "",
+        "hash": "",
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "tag": "BODY",
+            "id": "",
+            "class": ""
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keyup",
+            "key": "Tab",
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keydown",
+            "key": "Enter",
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "click",
+            "key": null,
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "tag": "MAIN",
+            "id": "main-content",
+            "class": ""
+          },
+          {
+            "type": "keyup",
+            "key": "Enter",
+            "trusted": true,
+            "tag": "MAIN",
+            "id": "main-content",
+            "class": ""
+          }
+        ]
+      },
+      "acceptance": "PASS"
+    },
+    {
+      "round": 3,
+      "mode": "embedded-driver-script",
+      "expectedActiveId": "main-content",
+      "actual": {
+        "id": "",
+        "tag": "A",
+        "class": "skip-link",
+        "hash": "",
+        "events": [
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keydown",
+            "key": "Enter",
+            "trusted": false,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keyup",
+            "key": "Enter",
+            "trusted": false,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          }
+        ]
+      },
+      "acceptance": "FAIL"
+    },
+    {
+      "round": 3,
+      "mode": "trusted-keyboard",
+      "expectedActiveId": "main-content",
+      "actual": {
+        "id": "main-content",
+        "tag": "MAIN",
+        "class": "",
+        "hash": "",
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "tag": "BODY",
+            "id": "",
+            "class": ""
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keyup",
+            "key": "Tab",
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keydown",
+            "key": "Enter",
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "click",
+            "key": null,
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "tag": "MAIN",
+            "id": "main-content",
+            "class": ""
+          },
+          {
+            "type": "keyup",
+            "key": "Enter",
+            "trusted": true,
+            "tag": "MAIN",
+            "id": "main-content",
+            "class": ""
+          }
+        ]
+      },
+      "acceptance": "PASS"
+    },
+    {
+      "round": 4,
+      "mode": "embedded-driver-script",
+      "expectedActiveId": "main-content",
+      "actual": {
+        "id": "",
+        "tag": "A",
+        "class": "skip-link",
+        "hash": "",
+        "events": [
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keydown",
+            "key": "Enter",
+            "trusted": false,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keyup",
+            "key": "Enter",
+            "trusted": false,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          }
+        ]
+      },
+      "acceptance": "FAIL"
+    },
+    {
+      "round": 4,
+      "mode": "trusted-keyboard",
+      "expectedActiveId": "main-content",
+      "actual": {
+        "id": "main-content",
+        "tag": "MAIN",
+        "class": "",
+        "hash": "",
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "tag": "BODY",
+            "id": "",
+            "class": ""
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keyup",
+            "key": "Tab",
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "keydown",
+            "key": "Enter",
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "click",
+            "key": null,
+            "trusted": true,
+            "tag": "A",
+            "id": "",
+            "class": "skip-link"
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "tag": "MAIN",
+            "id": "main-content",
+            "class": ""
+          },
+          {
+            "type": "keyup",
+            "key": "Enter",
+            "trusted": true,
+            "tag": "MAIN",
+            "id": "main-content",
+            "class": ""
+          }
+        ]
+      },
+      "acceptance": "PASS"
+    }
+  ]
+}

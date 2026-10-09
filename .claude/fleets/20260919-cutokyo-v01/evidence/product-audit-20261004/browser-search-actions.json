@@ -1,0 +1,129 @@
+[
+  {
+    "args": [
+      "open",
+      "http://127.0.0.1:4318/?jev_case=search-resume#/sessions"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=search-resume#/sessions\n"
+  },
+  {
+    "args": [
+      "set",
+      "viewport",
+      "900",
+      "700"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "wait",
+      "--text",
+      "Newest first"
+    ],
+    "exitCode": 0,
+    "output": "Newest first\n"
+  },
+  {
+    "args": [
+      "find",
+      "role",
+      "searchbox",
+      "fill",
+      "73A9",
+      "--name",
+      "Search session content"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "snapshot",
+      "-i"
+    ],
+    "exitCode": 0,
+    "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisInventoryGuardsHealthDataSettingsLo\" [ref=e78] clickable [onclick]\n  - link \"Skip to content\" [ref=e79]\n  - navigation \"Primary navigation\" [ref=e80]\n    - link \"Overview\" [ref=e82]\n    - link \"Sessions\" [ref=e83]\n    - link \"Analysis\" [ref=e84]\n    - link \"Inventory\" [ref=e85]\n    - link \"Guards\" [ref=e86]\n    - link \"Health\" [ref=e87]\n    - link \"Data\" [ref=e88]\n    - link \"Settings\" [ref=e89]\n  - heading \"Sessions\" [level=1, ref=e90]\n  - button \"Clear filters\" [ref=e91]\n  - region \"Session search filters\" [ref=e81]\n    - searchbox \"Search session content\" [ref=e96]: 73A9\n    - combobox \"HARNESS\" [expanded=false, ref=e97]: All harnesses\n      - option \"All harnesses\" [selected, ref=e99]\n      - option \"Claude Code\" [ref=e100]\n      - option \"Codex\" [ref=e101]\n      - option \"OpenCode\" [ref=e102]\n    - combobox \"DATE\" [expanded=false, ref=e98]: Any time\n      - option \"Any time\" [selected, ref=e103]\n      - option \"Today\" [ref=e104]\n      - option \"Last 7 days\" [ref=e105]\n      - option \"Last 30 days\" [ref=e106]\n      - option \"Last 90 days\" [ref=e107]\n  - link \"Reconcile usage capture\" [ref=e92]\n  - link \"Open Reconcile usage capture\" [ref=e93]\n  - link \"analysis-73A9\" [ref=e94]\n  - link \"Open analysis-73A9\" [ref=e95]\n"
+  },
+  {
+    "args": [
+      "find",
+      "role",
+      "link",
+      "click",
+      "--name",
+      "Reconcile usage capture",
+      "--exact"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "wait",
+      "--text",
+      "Native target"
+    ],
+    "exitCode": 0,
+    "output": "Native target\n"
+  },
+  {
+    "args": [
+      "find",
+      "role",
+      "button",
+      "click",
+      "--name",
+      "Resume",
+      "--exact"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "snapshot"
+    ],
+    "exitCode": 0,
+    "output": "- generic [ref=e78] clickable [onclick]\n  - main\n    - dialog \"Resume this exact native session?\"\n      - sectionheader\n        - paragraph\n          - StaticText \"CONFIRMATION\"\n        - heading \"Resume this exact native session?\" [level=2, ref=e111]\n        - paragraph\n          - StaticText \"Cutokyo will pass only the recorded native resume target to the selected harness.\"\n        - button \"Close dialog\" [ref=e112]\n      - region \"Dialog content\" [ref=e110] focusable [tabindex]\n        - DescriptionList\n          - term \"HARNESS\"\n          - definition\n            - StaticText \"Claude Code\"\n          - term \"NATIVE SESSION\"\n          - definition\n            - code\n              - StaticText \"claude-jev-73A9\"\n          - term \"ACTION\"\n          - definition\n            - StaticText \"Open Claude Code with recorded native target claude-jev-73A9\"\n      - sectionfooter\n        - button \"Cancel\" [ref=e113]\n        - button \"Resume in Claude Code\" [ref=e114]\n"
+  },
+  {
+    "args": [
+      "screenshot",
+      "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/resume-fixture-900x700.png"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/resume-fixture-900x700.png\n"
+  },
+  {
+    "args": [
+      "press",
+      "Escape"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "find",
+      "role",
+      "link",
+      "click",
+      "--name",
+      "Back to sessions",
+      "--exact"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "eval",
+      "JSON.stringify({query:document.querySelector(\"input[type=search]\").value,viewport:[innerWidth,innerHeight],text:document.querySelector(\"main\").innerText})"
+    ],
+    "exitCode": 0,
+    "output": "\"{\\\"query\\\":\\\"\\\",\\\"viewport\\\":[900,700],\\\"text\\\":\\\"NATIVE SESSION HISTORY\\\\n\\\\nSessions\\\\n\\\\nSearch transcript text and filter attributable local history without losing exact native resume identity.\\\\n\\\\nSearch session content\\\\nCtrl/\u2318 K\\\\nHARNESS\\\\nAll harnesses\\\\nClaude Code\\\\nCodex\\\\nOpenCode\\\\nDATE\\\\nAny time\\\\nToday\\\\nLast 7 days\\\\nLast 30 days\\\\nLast 90 days\\\\nMore filters\\\\n4 sessions\\\\nNewest first\\\\nClaude Code\\\\nReconcile usage capture\\\\n\u2713\\\\nCOMPLETE\\\\n\\\\nJEV exact resume needle 73A9 \u00b7 reconciled native usage without proxy double counting.\\\\n\\\\nSep 19, 2026, 11:08 AM\\\\nfeature/observability\\\\ncutokyo-community\\\\n64,200 in\\\\n16,800 out\\\\nClaude Code\\\\nanalysis-73A9\\\\n\u2713\\\\nCOMPLETE\\\\n\\\\nA fixture session selected for consented analysis.\\\\n\\\\nSep 19, 2026, 11:08 AM\\\\nfeature/observability\\\\ncutokyo-community\\\\nUnknown in\\\\nUnknown out\\\\nCodex\\\\nVerify migration boundaries\\\\n!\\\\nPARTIAL\\\\n\\\\nChecked schema downgrade refusal and retained an incomplete-history warning.\\\\n\\\\nSep 18, 2026, 7:12 AM\\\\nfeature/storage\\\\ncutokyo-community\\\\n78,000 in\\\\n17,510 out\\\\nOpenCode\\\\nTrace plugin finalization\\\\n\u2713\\\\nCOMPLETE\\\\n\\\\nObserved the final tool result after the session idle event.\\\\n\\\\nSep 17, 2026, 5:40 AM\\\\nmain\\\\nfixture-plugin-lab\\\\n42,000 in\\\\n8,500 out\\\"}\"\n"
+  }
+]

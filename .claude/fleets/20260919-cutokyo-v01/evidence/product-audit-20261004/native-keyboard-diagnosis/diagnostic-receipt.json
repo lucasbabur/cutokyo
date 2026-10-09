@@ -1,0 +1,41 @@
+{
+  "recorded_at": "2026-10-04T07:11:43.103455+00:00",
+  "key": "NQA-KEYBOARD-01",
+  "owner": "integration",
+  "severity": "Medium",
+  "status": "native journey remains failing/unverified; embedded-driver limitation independently isolated",
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49; packaged artifact provenance preserved; dirty checkout not immutable",
+  "actual_native_evidence": "Existing packaged log records skip-link focus request, performActions, unchanged tauri://localhost#/sessions URL and empty activeElement.id. No tag/event trace recorded, so race not fully ruled out. No new native app/driver started by reviewer.",
+  "independent_isolation": "Ran node /tmp/cutokyo-keyboard-isolation-20261004/probe.cjs: exact embedded driver Enter dispatch produces empty active ID on A.skip-link in 5/5; trusted Chromium Tab+Enter produces trusted click then main-content focus in 5/5. This is a reduced serverless seam, not native proof.",
+  "source_trace": {
+    "test": "/home/lucas/Developer/personal/cutokyo-community/ui/tests/tauri/zz-health-capabilities.spec.ts:14-27",
+    "app": "/home/lucas/Developer/personal/cutokyo-community/ui/src/components/AppShell.tsx:98-107,198",
+    "wdio": "/home/lucas/Developer/personal/cutokyo-community/ui/node_modules/webdriverio/build/index.js:3792-3810",
+    "executor": "/home/lucas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-plugin-wdio-webdriver-1.4.0/src/platform/executor.rs:1215-1405",
+    "actions": "/home/lucas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-plugin-wdio-webdriver-1.4.0/src/server/handlers/actions.rs:214-237"
+  },
+  "expected": "Genuine native keyboard activation focuses main-content and preserves Sessions route. Never replace Enter with click or direct main focus.",
+  "hypotheses": [
+    {
+      "rank": 1,
+      "cause": "Embedded driver emits untrusted KeyboardEvent without anchor default activation",
+      "prediction": "Native trace shows Enter keydown/up isTrusted false with no activation click; trusted native Enter succeeds."
+    },
+    {
+      "rank": 2,
+      "cause": "Deferred route-heading focus steals skip focus",
+      "prediction": "Native trace shows heading focus after skip focus; settled route and verified skip focus remove race but still test genuine key activation."
+    },
+    {
+      "rank": 3,
+      "cause": "Packaged source differs from inspected AppShell",
+      "prediction": "Packaged markup/activation differs despite trusted Enter delivered."
+    }
+  ],
+  "native_next_step": "Coordinator must explicitly provide ownership window before retained packaged app starts. Attach-only scratch probe can record native events and prerequisites without launching apps or changing test expectations. A trusted native key path remains necessary for acceptance.",
+  "scratch_native_probe": "/tmp/cutokyo-keyboard-isolation-20261004/native-attach-probe.cjs",
+  "native_probe_executed": false,
+  "source_edits": false,
+  "server_start": false,
+  "limitations": "Driver mechanics and isolated browser behavior established; native product keyboard behavior not independently accepted. No paid calls or operator harness mutations."
+}

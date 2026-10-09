@@ -6,8 +6,12 @@ use cutokyo_domain::CaptureChannel;
 pub mod claude_code;
 /// Native Codex integration, normalization, resume, inventory, and reversible setup.
 pub mod codex;
+/// Read-only readers for each harness's own local session history.
+pub mod history;
 /// OpenCode plugin/server, setup, inventory, and exact-resume adapter.
 pub mod opencode;
+/// Visible terminal launch and interactive startup acknowledgement.
+pub(crate) mod terminal;
 
 /// Native capture channels ordered before any consented proxy fallback.
 pub const NATIVE_CAPTURE_ORDER: [CaptureChannel; 7] = [

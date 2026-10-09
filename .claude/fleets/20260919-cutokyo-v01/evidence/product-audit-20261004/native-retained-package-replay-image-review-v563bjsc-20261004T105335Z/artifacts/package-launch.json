@@ -1,0 +1,20 @@
+{
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "source_manifest": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/package-launch.json",
+  "package": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/Cutokyo_0.1.0_amd64.deb",
+  "retained_package": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/Cutokyo_0.1.0_amd64.deb",
+  "package_sha256": "58d8d44446644662721bdfb06d85fcba4a9bd80853d21d4a06e26d5ce0bc0258",
+  "application": "/tmp/cutokyo-native-test-wdio-ljto4gxt/package/usr/bin/cutokyo-desktop",
+  "application_sha256": "163cc7e67716d27d0c8958eb371b0ad6e0c830d5936908332d45b40a46dc992c",
+  "receiver": "/tmp/cutokyo-native-test-wdio-ljto4gxt/bin/cutokyo",
+  "receiver_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+  "synthetic_harness": "/tmp/cutokyo-native-test-wdio-ljto4gxt/bin/claude",
+  "synthetic_harness_sha256": "74b0648c3b0bd21ad2f61c354e364b016a3475cbb491f9f73d20c1d49eab5536",
+  "root": "/tmp/cutokyo-native-test-wdio-ljto4gxt",
+  "port": 34053,
+  "launch_origin": "extracted-debian-bundle",
+  "test_only": true,
+  "frontend_origin": "embedded in verified extracted Debian application",
+  "purpose": "retained-package replay of unchanged maintained resume/delete and trusted-keyboard journeys after test-actor repairs; not fresh aggregate acceptance",
+  "controlled_environment": "corrected private X11, no failed-launch injection"
+}

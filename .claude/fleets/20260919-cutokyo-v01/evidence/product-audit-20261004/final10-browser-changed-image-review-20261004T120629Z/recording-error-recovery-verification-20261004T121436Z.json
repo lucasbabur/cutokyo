@@ -1,0 +1,43 @@
+{
+  "scope": "Post-quota recovery verification only; existing completed receipt and initial preservation manifest not overwritten",
+  "receipt": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/inspection-receipt.json",
+  "receipt_sha256": "6b4fb96cbe29e95f41e524e873d370c6c1d67e6f754502940bafb4a093596276",
+  "receipt_exists_and_complete_json": true,
+  "receipt_actual_read_count": 14,
+  "six_management_images_recorded": true,
+  "manifest": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final10-browser-changed-image-review-20261004T120629Z/manifest.json",
+  "manifest_sha256": "3bd31dafb0432e279a83602f1f24fd4013fa46d23ccc8045c075ab8b90c5e074",
+  "initial_false_inspection_flags_preserved": true,
+  "current_png_set_exact_match": true,
+  "original_png_hashes_checked": 94,
+  "preserved_delta_png_hashes_checked": 14,
+  "baseline_final9_manifest_hash_matches": true,
+  "baseline_preserved_images_checked": 7,
+  "context_source_and_copy_pairs_checked": 7,
+  "mismatches": [],
+  "recording_errors": [
+    {
+      "operation": "Locate fixture warning provenance and frontend test totals",
+      "tool_result": "EDQUOT in Claude task temporary directory; output lost, no independent results claimed."
+    },
+    {
+      "operation": "Save final10 image inspection and scoped repair dispositions",
+      "tool_exit_code": 120,
+      "tool_result": "EDQUOT in Claude task temporary directory; stdout unavailable. Existing target now independently parses as complete JSON with intended14 inspection records. No overwrite or rerun of receipt write."
+    }
+  ],
+  "native8_boundary": {
+    "basis": "Coordinator message; no native8 artifact review performed in this assignment",
+    "reported_command_exit_code": 1,
+    "reported_duration_seconds": 129.94,
+    "reported_passed_phases": {
+      "save": 9,
+      "reopen": 3
+    },
+    "reported_failure": "Browse Debian extraction truncated by EDQUOT before browse case",
+    "reported_outer_hook_exit_code": 120,
+    "accepted": false,
+    "native_visual_closure": "Native7 failures preserved; fresh native9 required and not predicted."
+  },
+  "reviewer_safety": "No root relocation/deletion, evidence discard, app/provider launch, compositor input, Git query, source/tracked image edit or historical receipt rewrite by reviewer."
+}

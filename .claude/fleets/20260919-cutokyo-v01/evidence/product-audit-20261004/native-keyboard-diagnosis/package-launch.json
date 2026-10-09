@@ -1,0 +1,17 @@
+{
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "package": "/tmp/cutokyo-native-test-wdio-rb9i8e8s/target/debug/bundle/deb/Cutokyo_0.1.0_amd64.deb",
+  "package_sha256": "4b801e4346ac3291e8e9792270f26324e1d36184aef2a60a5b712555ee06047f",
+  "retained_package": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-smrhxu6w/Cutokyo_0.1.0_amd64.deb",
+  "application": "/tmp/cutokyo-native-test-wdio-rb9i8e8s/package/usr/bin/cutokyo-desktop",
+  "application_sha256": "05c44f853b7f7b6af0a2c086702e9e6d14c016f95af9b1cd4e5394817038e04a",
+  "receiver": "/tmp/cutokyo-native-test-wdio-rb9i8e8s/bin/cutokyo",
+  "receiver_sha256": "07927390e941d23ef501a5d363b8d4d8614668a36a2a29639a22a9f64ed50d1d",
+  "synthetic_harness": "/tmp/cutokyo-native-test-wdio-rb9i8e8s/bin/claude",
+  "synthetic_harness_sha256": "74b0648c3b0bd21ad2f61c354e364b016a3475cbb491f9f73d20c1d49eab5536",
+  "asset_directory": "/tmp/cutokyo-native-test-wdio-rb9i8e8s/assets",
+  "root": "/tmp/cutokyo-native-test-wdio-rb9i8e8s",
+  "port": 43393,
+  "launch_origin": "extracted-debian-bundle",
+  "test_only": true
+}

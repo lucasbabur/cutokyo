@@ -1,0 +1,9 @@
+{
+  "command": [
+    "python3",
+    "/home/lucas/Developer/personal/cutokyo-community/tools/fleet/cutokyo-gates.py",
+    "selftest"
+  ],
+  "exitCode": 0,
+  "output": "[PASS] selftest\n"
+}

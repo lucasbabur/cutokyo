@@ -7,13 +7,11 @@ describe("settings contract", () => {
   it("preserves controls omitted by a patch", () => {
     const current = {
       proxy_enabled: false,
-      outgoing_guard_enabled: true,
       search_mcp_enabled: true,
       retention_days: null,
     };
     const updated = applySettingsPatch(current, { proxy_enabled: true });
     expect(updated.proxy_enabled).toBe(true);
-    expect(updated.outgoing_guard_enabled).toBe(true);
     expect(updated.search_mcp_enabled).toBe(true);
   });
 

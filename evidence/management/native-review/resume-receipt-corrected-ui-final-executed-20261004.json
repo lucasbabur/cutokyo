@@ -1,0 +1,32 @@
+{
+  "command": "pnpm --dir /home/lucas/Developer/personal/cutokyo-community/ui exec vitest run --config /tmp/cutokyo-search-review.HJ6CZt/resume-corrected-review.vitest.config.mjs",
+  "cwd": "/home/lucas/Developer/personal/cutokyo-community",
+  "startedAt": "2026-10-04T10:06:01.458091+00:00",
+  "finishedAt": "2026-10-04T10:06:02.846196+00:00",
+  "exitCode": 0,
+  "logPath": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/resume-receipt-corrected-ui-final-20261004.log",
+  "logSha256": "e6e417264adfd02fe025e25c6a09a8b67a69de01fe784b8d7d7c986fdce37195",
+  "logBytes": 228,
+  "sourceHashesBefore": {
+    "/home/lucas/Developer/personal/cutokyo-community/ui/src/pages/SessionsPage.tsx": "e687c1267007df9c593b498be94b846cb581f64bfd34678f2af9fe865666d191",
+    "/home/lucas/Developer/personal/cutokyo-community/ui/src/pages/pages.test.tsx": "4100354e6b167e762a72c67a12503fee9006ff8520066a7aeaf476b21d0d0b52",
+    "/home/lucas/Developer/personal/cutokyo-community/crates/cutokyo-desktop/src/service.rs": "aee52611adcac8f3ad2dfba128c58819d4012d185c06875cc29adddb655990ac",
+    "/tmp/cutokyo-search-review.HJ6CZt/native-resume-receipt-corrected.test.tsx": "48a1c99a3067364cdca87c4bc94c013f82705be3417a0a8c2834aabe59386ff3",
+    "/tmp/cutokyo-search-review.HJ6CZt/resume-corrected-review.vitest.config.mjs": "97030c32294445e7ab56fc0bb96ec3b5f506c1d3075ae08052769640b5bad43e"
+  },
+  "sourceHashesAfter": {
+    "/home/lucas/Developer/personal/cutokyo-community/ui/src/pages/SessionsPage.tsx": "e687c1267007df9c593b498be94b846cb581f64bfd34678f2af9fe865666d191",
+    "/home/lucas/Developer/personal/cutokyo-community/ui/src/pages/pages.test.tsx": "4100354e6b167e762a72c67a12503fee9006ff8520066a7aeaf476b21d0d0b52",
+    "/home/lucas/Developer/personal/cutokyo-community/crates/cutokyo-desktop/src/service.rs": "aee52611adcac8f3ad2dfba128c58819d4012d185c06875cc29adddb655990ac",
+    "/tmp/cutokyo-search-review.HJ6CZt/native-resume-receipt-corrected.test.tsx": "48a1c99a3067364cdca87c4bc94c013f82705be3417a0a8c2834aabe59386ff3",
+    "/tmp/cutokyo-search-review.HJ6CZt/resume-corrected-review.vitest.config.mjs": "97030c32294445e7ab56fc0bb96ec3b5f506c1d3075ae08052769640b5bad43e"
+  },
+  "sourceStable": true,
+  "outputCapture": "Unabridged combined stdout/stderr from this execution.",
+  "scope": "Isolated React/jsdom corrected acknowledged-launch receipt; no native test execution, app/provider launch or product edits. Original red reproduction untouched.",
+  "priorProbe": {
+    "logPath": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/resume-receipt-corrected-ui-20261004.log",
+    "exitCode": 1,
+    "reason": "Reviewer test used singular getByRole(status) although success UI and sr-only announcement both have that role. Temporary test now separately verifies both status nodes and awaits the existing announcement; no product or maintained acceptance test changed."
+  }
+}

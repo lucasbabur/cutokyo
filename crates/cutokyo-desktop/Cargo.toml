@@ -21,6 +21,7 @@ native-e2e = [
 [dependencies]
 cutokyo-core.workspace = true
 cutokyo-domain.workspace = true
+fs4.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 time.workspace = true

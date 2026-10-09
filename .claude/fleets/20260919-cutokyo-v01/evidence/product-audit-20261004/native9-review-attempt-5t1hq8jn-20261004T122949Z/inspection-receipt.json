@@ -1,0 +1,1097 @@
+{
+  "scope": "Independent actualnative9 aggregate and all14PNG, bothrawaudits, source/package proof review",
+  "runtime_verdict": "PASS_EXACT_AGGREGATE_16_CASES_FIVE_PHASES",
+  "rendered_verdict": "PASS_BOUNDED_ALL14_NATIVE_IMAGES_TWO_TARGETED_FINDINGS_CLOSED",
+  "whole_fleet_or_clean_release_pass": false,
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "dirty_source": true,
+  "environment": {
+    "platform": "Linux",
+    "engine": "WebKitGTK605.1.15",
+    "origin": "ActualextractedDebian Tauri with embeddedfrontend",
+    "viewport": [
+      1280,
+      800
+    ]
+  },
+  "execution": {
+    "command": [
+      "pnpm",
+      "--dir",
+      "ui",
+      "test:e2e:tauri"
+    ],
+    "command_exit_code": 0,
+    "duration_seconds": 242.17,
+    "proof_kind": "local-dirty-working-tree-not-clean-release-proof",
+    "dirty_working_tree": true,
+    "head": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+    "source_changed": [],
+    "git_changed": false,
+    "log": "evidence/management/checks/native-packaged-rerun9-20261004.log",
+    "clean_release_proof": false,
+    "waivers": []
+  },
+  "package_launch": {
+    "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+    "package": "/tmp/cutokyo-native-test-wdio-wjrqekkw/target/debug/bundle/deb/Cutokyo_0.1.0_amd64.deb",
+    "package_sha256": "e3e3747e2aaa71ae973637364aa299ac82ec2d576bb85c6b7342d0133dc30b8a",
+    "retained_package": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/Cutokyo_0.1.0_amd64.deb",
+    "application": "/tmp/cutokyo-native-test-wdio-wjrqekkw/package/usr/bin/cutokyo-desktop",
+    "application_sha256": "8c6cf7f3d632f3c22df8463f7baf399abfb5ae3074e352f9e02c9db72b8418a9",
+    "receiver": "/tmp/cutokyo-native-test-wdio-wjrqekkw/bin/cutokyo",
+    "receiver_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+    "synthetic_harness": "/tmp/cutokyo-native-test-wdio-wjrqekkw/bin/claude",
+    "synthetic_harness_sha256": "74b0648c3b0bd21ad2f61c354e364b016a3475cbb491f9f73d20c1d49eab5536",
+    "asset_directory": "/tmp/cutokyo-native-test-wdio-wjrqekkw/assets",
+    "root": "/tmp/cutokyo-native-test-wdio-wjrqekkw",
+    "port": 48759,
+    "launch_origin": "extracted-debian-bundle",
+    "test_only": true
+  },
+  "verification": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/verification-results-recovery.json",
+  "verified_source": {
+    "before": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-local-source-before-rerun9-20261004.json",
+    "after": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-local-source-after-rerun9-20261004.json",
+    "before_sha256": "40ee0c91c1bf6c25c0f72ef12bc1d7c43de08147a50f0645a857e2bae6fe318d",
+    "after_sha256": "40ee0c91c1bf6c25c0f72ef12bc1d7c43de08147a50f0645a857e2bae6fe318d",
+    "byte_identical": true,
+    "records": 394,
+    "head": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+    "index_sha256": "c752b9009048069f7f3c5e0cf0c7b5aea6d5d0221a812be2e8a74ee0e26e7b42",
+    "changes": [],
+    "binding": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native9-capture-repair-source-binding-20261004.json",
+    "binding_sha256": "7029d9d74c765827c831a16ee320a7cccb6c5a5939e3b347fa9a3aa2de2c5dd3",
+    "six_repair_files": [
+      {
+        "path": "/home/lucas/Developer/personal/cutokyo-community/ui/src/pages/OnboardingPage.tsx",
+        "sha256": "c7267878445cdd1a368d64ea75431a398413207244e0ada81ed91b5eee27824e",
+        "matches_before_after_and_current": true
+      },
+      {
+        "path": "/home/lucas/Developer/personal/cutokyo-community/ui/src/styles.css",
+        "sha256": "4f7a233a0a24299758b4a24a9dbfa88149f67bf7c1e551fcab101f1241c8ffe8",
+        "matches_before_after_and_current": true
+      },
+      {
+        "path": "/home/lucas/Developer/personal/cutokyo-community/ui/src/App.test.tsx",
+        "sha256": "81e8ea87b162de4c8305cd13c58597a31c8ecf455d2c4aaeca8cb4765c641a9c",
+        "matches_before_after_and_current": true
+      },
+      {
+        "path": "/home/lucas/Developer/personal/cutokyo-community/ui/src/pages/pages.test.tsx",
+        "sha256": "78e4384a926a4be939750609ce54f714ef690e2e68f07bd1893d0d8b9a2eb523",
+        "matches_before_after_and_current": true
+      },
+      {
+        "path": "/home/lucas/Developer/personal/cutokyo-community/ui/src/designTokens.test.ts",
+        "sha256": "6e6709474cc20528036d810a845bf7216480e029c29df08589add7c543d774e4",
+        "matches_before_after_and_current": true
+      },
+      {
+        "path": "/home/lucas/Developer/personal/cutokyo-community/ui/tests/e2e/management-visual.spec.ts",
+        "sha256": "3dd23bb9be72e66cfbc80b8ece600e5822226fc7625eb2e1deb3b0ae3db01311",
+        "matches_before_after_and_current": true
+      }
+    ],
+    "suffix_correction": "Actual ui/src/designTokens.test.ts; earlier .tsx lookup error retained in supplementalbinding.",
+    "scope": "Recorded completed-run interval, not cleanreleaseproof or postrunREADME immutability. No Gitquery."
+  },
+  "verified_package": {
+    "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/Cutokyo_0.1.0_amd64.deb",
+    "bytes": 24183362,
+    "sha256": "e3e3747e2aaa71ae973637364aa299ac82ec2d576bb85c6b7342d0133dc30b8a",
+    "streamed_application": {
+      "name": "usr/bin/cutokyo-desktop",
+      "bytes": 104008656,
+      "sha256": "8c6cf7f3d632f3c22df8463f7baf399abfb5ae3074e352f9e02c9db72b8418a9"
+    },
+    "matches_launch": true,
+    "extraction_or_launch": false
+  },
+  "cases": [
+    {
+      "phase": "save",
+      "name": "creates, cancels safely, restores actual history, and retains verified prior history",
+      "actual": "PASS",
+      "reporter_line": 737,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "save",
+      "name": "reports tampering inside the restore modal without replacing native history",
+      "actual": "PASS",
+      "reporter_line": 738,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "save",
+      "name": "edits, copies all skill assets, then removes only the selected native bundle",
+      "actual": "PASS",
+      "reporter_line": 747,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "save",
+      "name": "rejects stale and malformed MCP edits, converts real config credentials, and protects capture hooks",
+      "actual": "PASS",
+      "reporter_line": 748,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "save",
+      "name": "searches, opens, exactly resumes, and deletes an isolated native fixture",
+      "actual": "PASS",
+      "reporter_line": 757,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "save",
+      "name": "saves appearance to native desktop state",
+      "actual": "PASS",
+      "reporter_line": 758,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "save",
+      "name": "keeps trusted keyboard skip navigation on the current native route",
+      "actual": "PASS",
+      "reporter_line": 767,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "save",
+      "name": "discloses unavailable analysis and signed updates before dead-end actions",
+      "actual": "PASS",
+      "reporter_line": 768,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "save",
+      "name": "cancels safely then exports exactly the previewed private diagnostic report",
+      "actual": "PASS",
+      "reporter_line": 769,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "reopen",
+      "name": "rediscovers the private backup after a real application restart",
+      "actual": "PASS",
+      "reporter_line": 795,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "reopen",
+      "name": "rediscovers persisted native edits/copies without resurrecting deleted bundles",
+      "actual": "PASS",
+      "reporter_line": 804,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "reopen",
+      "name": "restores saved appearance after a native application restart",
+      "actual": "PASS",
+      "reporter_line": 813,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "browse",
+      "name": "browses a real packaged application without installing native capture",
+      "actual": "PASS",
+      "reporter_line": 838,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "capture-setup",
+      "name": "previews, cancels, installs, verifies, recovers and removes each real isolated native integration",
+      "actual": "PASS",
+      "reporter_line": 863,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "capture-setup",
+      "name": "manages completed-user capture through Settings without resetting saved intent or unmanaged native bytes",
+      "actual": "PASS",
+      "reporter_line": 864,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    },
+    {
+      "phase": "capture-history",
+      "name": "opens real native-hook and transcript evidence and resumes its exact private native context",
+      "actual": "PASS",
+      "reporter_line": 886,
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun9-20261004.log"
+    }
+  ],
+  "phase_counts": {
+    "save": 9,
+    "reopen": 3,
+    "browse": 1,
+    "capture-setup": 2,
+    "capture-history": 1
+  },
+  "individually_read_png_count": 14,
+  "images": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/analysis-unavailable-1280x800.png",
+      "relative": "analysis-unavailable-1280x800.png",
+      "sha256": "e489aa6f5065cfb1e27e1480f3fcda6c219318964910c5496a8a48cf844ffeab",
+      "bytes": 90205,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/screens/analysis-unavailable-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individually displayed actualoriginalPNG through functions.Read before completedreceipt",
+      "viewport": [
+        1280,
+        800
+      ],
+      "expected": "Legible truthful native state; no targetedcard-width or disabled-status ambiguity.",
+      "actual": "Truthful unavailable nativeprovider state, no successful analysis inferred."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/appearance-dark-1280x800.png",
+      "relative": "appearance-dark-1280x800.png",
+      "sha256": "b3ade8cb7ea091ef08214d06d67efadc1884b7330332682adc5e30a5c5b28d1a",
+      "bytes": 115301,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/screens/appearance-dark-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individually displayed actualoriginalPNG through functions.Read before completedreceipt",
+      "viewport": [
+        1280,
+        800
+      ],
+      "expected": "Legible truthful native state; no targetedcard-width or disabled-status ambiguity.",
+      "actual": "SavedDark status and focusvisible; unavailableproxy explicit."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/backup-created-1280x800.png",
+      "relative": "backup-created-1280x800.png",
+      "sha256": "56bac3f1180d604b7eaa2df152ba91a7e27fc7cf2f62d9e11c3088538b3d5519",
+      "bytes": 127516,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/screens/backup-created-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individually displayed actualoriginalPNG through functions.Read before completedreceipt",
+      "viewport": [
+        1280,
+        800
+      ],
+      "expected": "Legible truthful native state; no targetedcard-width or disabled-status ambiguity.",
+      "actual": "One session348160bytes; pathwrap, exclusions andDone fit."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/backup-restore-confirmation-1280x800.png",
+      "relative": "backup-restore-confirmation-1280x800.png",
+      "sha256": "5f57e592d0c56f38ab3a7af42747195269b3459df2bdb2d7fb9023d858652247",
+      "bytes": 145185,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/screens/backup-restore-confirmation-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individually displayed actualoriginalPNG through functions.Read before completedreceipt",
+      "viewport": [
+        1280,
+        800
+      ],
+      "expected": "Legible truthful native state; no targetedcard-width or disabled-status ambiguity.",
+      "actual": "0current to1backed-up session; retainedrecovery; visibleCancel/Restore."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/backup-restored-1280x800.png",
+      "relative": "backup-restored-1280x800.png",
+      "sha256": "9985745ce4435e102e07cc6bffac033d8652d0153ff8d499782236de92522938",
+      "bytes": 131869,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/screens/backup-restored-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individually displayed actualoriginalPNG through functions.Read before completedreceipt",
+      "viewport": [
+        1280,
+        800
+      ],
+      "expected": "Legible truthful native state; no targetedcard-width or disabled-status ambiguity.",
+      "actual": "Restored1 session, integrityok, recoverypath andDone legible."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/completed-capture-removal-1280x800.png",
+      "relative": "completed-capture-removal-1280x800.png",
+      "sha256": "7fb1bb0b001acca9ff12d33133c4cfb24feacd4ef708f2b973b834f3bd2a584a",
+      "bytes": 142157,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/screens/completed-capture-removal-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individually displayed actualoriginalPNG through functions.Read before completedreceipt",
+      "viewport": [
+        1280,
+        800
+      ],
+      "expected": "Legible truthful native state; no targetedcard-width or disabled-status ambiguity.",
+      "actual": "Allthree completedmanagement cards usefullbodywidth withnormalwrapping; no collapsedcheckboxtrack. Configurationnotverified afterremoval distinctfrom liveunknown/savedselectionunchanged."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/diagnostic-created-1280x800.png",
+      "relative": "diagnostic-created-1280x800.png",
+      "sha256": "d6a7266f98e53ddd86d23c32c3c72dacec88298b83adacf1e091b0ba1f3a59f4",
+      "bytes": 134997,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/screens/diagnostic-created-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individually displayed actualoriginalPNG through functions.Read before completedreceipt",
+      "viewport": [
+        1280,
+        800
+      ],
+      "expected": "Legible truthful native state; no targetedcard-width or disabled-status ambiguity.",
+      "actual": "Local path andNotfullychecked; explicitunknown dimensions;0current/lifetime notlargehistoryproof."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/diagnostic-preview-1280x800.png",
+      "relative": "diagnostic-preview-1280x800.png",
+      "sha256": "5948b4199da94cc4a2e3fc46d22927820ad6af71240b3c2dee5ef74e7efdca42",
+      "bytes": 109093,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/screens/diagnostic-preview-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individually displayed actualoriginalPNG through functions.Read before completedreceipt",
+      "viewport": [
+        1280,
+        800
+      ],
+      "expected": "Legible truthful native state; no targetedcard-width or disabled-status ambiguity.",
+      "actual": "Local-onlyscope/exclusionlist andCancel/Create visible."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/inventory-native-configured-1280x800.png",
+      "relative": "inventory-native-configured-1280x800.png",
+      "sha256": "98ec90982601fa571ad2014413861933cd1c1e9415fab37bdcfad590a5d0a663",
+      "bytes": 96578,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/screens/inventory-native-configured-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individually displayed actualoriginalPNG through functions.Read before completedreceipt",
+      "viewport": [
+        1280,
+        800
+      ],
+      "expected": "Legible truthful native state; no targetedcard-width or disabled-status ambiguity.",
+      "actual": "Ownedconfiguredhook/nativepath explicit; no runtime/brokerhealth claim."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/inventory-remove-confirmation-1280x800.png",
+      "relative": "inventory-remove-confirmation-1280x800.png",
+      "sha256": "170f3e1285e6ba44be7b8a7da6208cd61a604086f5745123b88f51eb4babd358",
+      "bytes": 109293,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/screens/inventory-remove-confirmation-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individually displayed actualoriginalPNG through functions.Read before completedreceipt",
+      "viewport": [
+        1280,
+        800
+      ],
+      "expected": "Legible truthful native state; no targetedcard-width or disabled-status ambiguity.",
+      "actual": "Sharedsource scope, independentcopies/historyunchanged and recovery labelled; controlsfit."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/native-hook-detail-resume-1280x800.png",
+      "relative": "native-hook-detail-resume-1280x800.png",
+      "sha256": "461e63c4952e7a474775f03c83a40a2db532b566d100340b16fda1049dcf4bcb",
+      "bytes": 96900,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/screens/native-hook-detail-resume-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individually displayed actualoriginalPNG through functions.Read before completedreceipt",
+      "viewport": [
+        1280,
+        800
+      ],
+      "expected": "Legible truthful native state; no targetedcard-width or disabled-status ambiguity.",
+      "actual": "Actualpostlaunch status retains exactUUID and cannotverifyactivation caveat; hook/transcript timeline andResumefocus."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/onboarding-browse-1280x800.png",
+      "relative": "onboarding-browse-1280x800.png",
+      "sha256": "95a5321ff9fa5d07a833500c05e6571e8c294051cc0ef8dfda0d50c4db99303c",
+      "bytes": 82479,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/screens/onboarding-browse-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individually displayed actualoriginalPNG through functions.Read before completedreceipt",
+      "viewport": [
+        1280,
+        800
+      ],
+      "expected": "Legible truthful native state; no targetedcard-width or disabled-status ambiguity.",
+      "actual": "Real unfilteredemptyhistory, no fabricatedusage."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/onboarding-native-verified-1280x800.png",
+      "relative": "onboarding-native-verified-1280x800.png",
+      "sha256": "20170fe6b9aadb5af9deff24f254c585c249f9c28dbcbe5ad498ee117017835c",
+      "bytes": 131315,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/screens/onboarding-native-verified-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individually displayed actualoriginalPNG through functions.Read before completedreceipt",
+      "viewport": [
+        1280,
+        800
+      ],
+      "expected": "Legible truthful native state; no targetedcard-width or disabled-status ambiguity.",
+      "actual": "Codex/OpenCode verifiedbadges visible; selectedforsetup and liveunknown explicit; globalinstalledverifiedreceipt consistent. Claude header/badgeaboveviewport, verifiedline visible; notallthreebadges simultaneouslyshown."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/search-detail-resume-1280x800.png",
+      "relative": "search-detail-resume-1280x800.png",
+      "sha256": "29df0e14eab2b6acec317095f5a1ac6cd9a4f426081da5a97f3f012a8f7bcab5",
+      "bytes": 115225,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/screens/search-detail-resume-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individually displayed actualoriginalPNG through functions.Read before completedreceipt",
+      "viewport": [
+        1280,
+        800
+      ],
+      "expected": "Legible truthful native state; no targetedcard-width or disabled-status ambiguity.",
+      "actual": "Preconfirmation exactclaude-native-73A9/privatecwd; startupnotactivation caveat; visibleactions, notpostlaunchproof."
+    }
+  ],
+  "findings": [
+    {
+      "key": "NQA-CAPTURE-LAYOUT-01",
+      "owner": "desktop",
+      "severity": "Medium",
+      "status": "CLOSED_ACTUAL_NATIVE9_1280X800",
+      "reproduction": "Completedonboarding > Settings > Managecapture > removeintegration > inspectmanagementcards.",
+      "expected": "Cardbody fills availablewidth andwrapsnormally.",
+      "actual": "Allthree actualnativecards readable/fullwidth; collapsedcheckboxtrack absent.",
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/completed-capture-removal-1280x800.png",
+      "sha256": "7fb1bb0b001acca9ff12d33133c4cfb24feacd4ef708f2b973b834f3bd2a584a"
+    },
+    {
+      "key": "NQA-CAPTURE-STATE-01",
+      "owner": "desktop",
+      "severity": "Medium",
+      "status": "CLOSED_TARGETED_STATUS_AMBIGUITY_ACTUAL_NATIVE9_1280X800",
+      "reproduction": "Disposableallthree setup preview/cancel/install/verify/recover/remove/reinstall/select; inspectpreFinish.",
+      "expected": "Setupselection/configverification/livecapture clearly distinct.",
+      "actual": "Verifiedconfiguration badges replaceDISABLED; selectedforsetup labelled; liveunknown and globalverifiedreceipt consistent. Claudeheader/badge aboveviewport, verifiedlinevisible.",
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/onboarding-native-verified-1280x800.png",
+      "sha256": "20170fe6b9aadb5af9deff24f254c585c249f9c28dbcbe5ad498ee117017835c"
+    }
+  ],
+  "other_rendered_regressions": "None concretely observed in all14 inspectedactualnativePNGs.",
+  "raw_resume_audits": {
+    "save": {
+      "argv": "--resume\nclaude-native-73A9\n",
+      "context": {
+        "cwd": "/tmp/cutokyo-native-test-wdio-wjrqekkw/data/native-resume-project",
+        "stdinTty": true,
+        "stdoutTty": true
+      },
+      "evidence": [
+        "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/resume-audit.txt",
+        "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/resume-audit.context.json"
+      ]
+    },
+    "capture_history": {
+      "argv": "--resume\n12345678-1234-1234-1234-123456789abc\n",
+      "context": {
+        "cwd": "/tmp/cutokyo-native-test-wdio-xwws03oe/project with spaces ' and $literal",
+        "stdinTty": true,
+        "stdoutTty": true
+      },
+      "evidence": [
+        "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/native-hook-resume-audit.txt",
+        "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/native-hook-resume-audit.context.json"
+      ]
+    }
+  },
+  "read_actual_receipts": {
+    "geometry-1280x800.json": {
+      "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/geometry-1280x800.json",
+      "contents": {
+        "windowSize": {
+          "height": 800,
+          "width": 1280
+        },
+        "viewport": {
+          "height": 800,
+          "width": 1280
+        }
+      }
+    },
+    "backup-restore-receipt.json": {
+      "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/backup-restore-receipt.json",
+      "contents": {
+        "location": "/tmp/cutokyo-native-test-wdio-wjrqekkw/data/backups/backup-1791116759-82475c48-88ea-46ba-8f8a-5e4d77434726",
+        "recoveryPath": "/tmp/cutokyo-native-test-wdio-wjrqekkw/data/backups/recovery-1791116759-ff9bb74f-c628-4840-abd3-84ed8cd81e01",
+        "manifest": {
+          "manifest_version": 1,
+          "sha256": "8e11731d5fa213b5c12bb87f30dc08f7c3412a223b311115536465e6cef07f42",
+          "byte_length": 348160,
+          "created_at": "2026-10-04T12:25:59.140568899Z",
+          "schema_version": 3,
+          "sqlite_version": "3.53.2",
+          "integrity_result": "ok"
+        }
+      }
+    },
+    "native-process-restart.json": {
+      "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/native-process-restart.json",
+      "contents": {
+        "save_pid": 588176,
+        "reopen_pid": 590465
+      }
+    },
+    "native-keyboard-trusted.json": {
+      "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/native-keyboard-trusted.json",
+      "contents": {
+        "verdict": "PASS",
+        "dispatches": [
+          {
+            "cli": "/usr/bin/hyprctl",
+            "key": "Tab",
+            "pid": 588176,
+            "address": "0x5c07e30f5650",
+            "activeBefore": {
+              "address": "0x5c07e30f5650",
+              "pid": 588176,
+              "mapped": true,
+              "xwayland": true
+            },
+            "activeAfter": {
+              "address": "0x5c07e30f5650",
+              "pid": 588176,
+              "mapped": true,
+              "xwayland": true
+            },
+            "acknowledgement": "ok"
+          },
+          {
+            "cli": "/usr/bin/hyprctl",
+            "key": "Return",
+            "pid": 588176,
+            "address": "0x5c07e30f5650",
+            "activeBefore": {
+              "address": "0x5c07e30f5650",
+              "pid": 588176,
+              "mapped": true,
+              "xwayland": true
+            },
+            "activeAfter": {
+              "address": "0x5c07e30f5650",
+              "pid": 588176,
+              "mapped": true,
+              "xwayland": true
+            },
+            "acknowledgement": "ok"
+          }
+        ],
+        "before": {
+          "className": "",
+          "events": [
+            {
+              "className": "",
+              "id": "",
+              "isTrusted": true,
+              "key": null,
+              "tag": "H1",
+              "time": 9482,
+              "type": "focusout"
+            },
+            {
+              "className": "",
+              "id": "",
+              "isTrusted": true,
+              "key": null,
+              "tag": "BODY",
+              "time": 9482,
+              "type": "focusin"
+            },
+            {
+              "className": "",
+              "id": "",
+              "isTrusted": true,
+              "key": null,
+              "tag": "BODY",
+              "time": 9482,
+              "type": "focusout"
+            }
+          ],
+          "id": "",
+          "tag": "BODY",
+          "url": "tauri://localhost#/sessions"
+        },
+        "afterTab": {
+          "className": "skip-link",
+          "events": [
+            {
+              "className": "",
+              "id": "",
+              "isTrusted": true,
+              "key": null,
+              "tag": "H1",
+              "time": 9482,
+              "type": "focusout"
+            },
+            {
+              "className": "",
+              "id": "",
+              "isTrusted": true,
+              "key": null,
+              "tag": "BODY",
+              "time": 9482,
+              "type": "focusin"
+            },
+            {
+              "className": "",
+              "id": "",
+              "isTrusted": true,
+              "key": null,
+              "tag": "BODY",
+              "time": 9482,
+              "type": "focusout"
+            },
+            {
+              "className": "",
+              "id": "",
+              "isTrusted": true,
+              "key": "Tab",
+              "tag": "BODY",
+              "time": 9514,
+              "type": "keydown"
+            },
+            {
+              "className": "skip-link",
+              "id": "",
+              "isTrusted": true,
+              "key": null,
+              "tag": "A",
+              "time": 9514,
+              "type": "focusin"
+            },
+            {
+              "className": "skip-link",
+              "id": "",
+              "isTrusted": true,
+              "key": "Tab",
+              "tag": "A",
+              "time": 9515,
+              "type": "keyup"
+            }
+          ],
+          "id": "",
+          "tag": "A",
+          "url": "tauri://localhost#/sessions"
+        },
+        "afterReturn": {
+          "className": "main-content",
+          "events": [
+            {
+              "className": "",
+              "id": "",
+              "isTrusted": true,
+              "key": null,
+              "tag": "H1",
+              "time": 9482,
+              "type": "focusout"
+            },
+            {
+              "className": "",
+              "id": "",
+              "isTrusted": true,
+              "key": null,
+              "tag": "BODY",
+              "time": 9482,
+              "type": "focusin"
+            },
+            {
+              "className": "",
+              "id": "",
+              "isTrusted": true,
+              "key": null,
+              "tag": "BODY",
+              "time": 9482,
+              "type": "focusout"
+            },
+            {
+              "className": "",
+              "id": "",
+              "isTrusted": true,
+              "key": "Tab",
+              "tag": "BODY",
+              "time": 9514,
+              "type": "keydown"
+            },
+            {
+              "className": "skip-link",
+              "id": "",
+              "isTrusted": true,
+              "key": null,
+              "tag": "A",
+              "time": 9514,
+              "type": "focusin"
+            },
+            {
+              "className": "skip-link",
+              "id": "",
+              "isTrusted": true,
+              "key": "Tab",
+              "tag": "A",
+              "time": 9515,
+              "type": "keyup"
+            },
+            {
+              "className": "skip-link",
+              "id": "",
+              "isTrusted": true,
+              "key": "Enter",
+              "tag": "A",
+              "time": 9555,
+              "type": "keydown"
+            },
+            {
+              "className": "skip-link",
+              "id": "",
+              "isTrusted": true,
+              "key": null,
+              "tag": "A",
+              "time": 9555,
+              "type": "click"
+            },
+            {
+              "className": "skip-link",
+              "id": "",
+              "isTrusted": true,
+              "key": null,
+              "tag": "A",
+              "time": 9555,
+              "type": "focusout"
+            },
+            {
+              "className": "main-content",
+              "id": "main-content",
+              "isTrusted": true,
+              "key": null,
+              "tag": "MAIN",
+              "time": 9555,
+              "type": "focusin"
+            },
+            {
+              "className": "main-content",
+              "id": "main-content",
+              "isTrusted": true,
+              "key": "Enter",
+              "tag": "MAIN",
+              "time": 9555,
+              "type": "keyup"
+            }
+          ],
+          "id": "main-content",
+          "tag": "MAIN",
+          "url": "tauri://localhost#/sessions"
+        }
+      }
+    },
+    "onboarding-package-worlds.json": {
+      "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/onboarding-package-worlds.json",
+      "contents": [
+        {
+          "journey": "browse",
+          "root": "/tmp/cutokyo-native-test-wdio-wmdbortj",
+          "application": "/tmp/cutokyo-native-test-wdio-wmdbortj/package/usr/bin/cutokyo-desktop",
+          "application_sha256": "8c6cf7f3d632f3c22df8463f7baf399abfb5ae3074e352f9e02c9db72b8418a9",
+          "package_sha256": "e3e3747e2aaa71ae973637364aa299ac82ec2d576bb85c6b7342d0133dc30b8a",
+          "receiver_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+          "fixture_seeding": false
+        },
+        {
+          "journey": "capture-setup",
+          "root": "/tmp/cutokyo-native-test-wdio-xwws03oe",
+          "application": "/tmp/cutokyo-native-test-wdio-xwws03oe/package/usr/bin/cutokyo-desktop",
+          "application_sha256": "8c6cf7f3d632f3c22df8463f7baf399abfb5ae3074e352f9e02c9db72b8418a9",
+          "package_sha256": "e3e3747e2aaa71ae973637364aa299ac82ec2d576bb85c6b7342d0133dc30b8a",
+          "receiver_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+          "fixture_seeding": false
+        }
+      ]
+    },
+    "browse-desktop-state.json": {
+      "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/browse-desktop-state.json",
+      "contents": {
+        "onboarding_complete": true,
+        "selected_harnesses": [],
+        "updater_choice": "notify",
+        "crash_reports_enabled": false,
+        "appearance": "system"
+      }
+    },
+    "capture-setup-desktop-state.json": {
+      "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/capture-setup-desktop-state.json",
+      "contents": {
+        "onboarding_complete": true,
+        "selected_harnesses": [
+          "claude_code",
+          "codex",
+          "opencode"
+        ],
+        "updater_choice": "notify",
+        "crash_reports_enabled": false,
+        "appearance": "system"
+      }
+    },
+    "native-hook-capture-drain.json": {
+      "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/native-hook-capture-drain.json",
+      "contents": {
+        "native_id": "12345678-1234-1234-1234-123456789abc",
+        "installed_hook_executed": true,
+        "database_unchanged_by_hook": true,
+        "published_entries": 2,
+        "drain": {
+          "schema_version": "1.0.0",
+          "command": "drain",
+          "ok": true,
+          "data": {
+            "attempted": 2,
+            "duplicates": 0,
+            "inserted": 2,
+            "quarantined": 0,
+            "status": {
+              "cap_reason": null,
+              "drain_lag_seconds": null,
+              "oldest_pending_unix": null,
+              "pending_bytes": 0,
+              "pending_entries": 0
+            }
+          },
+          "meta": {
+            "app_version": "0.1.0",
+            "pending_crash_record": false
+          }
+        }
+      }
+    },
+    "native-resume-terminal-cleanup-save.json": {
+      "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/native-resume-terminal-cleanup-save.json",
+      "contents": {
+        "verdict": "PASS",
+        "before": {
+          "ready": true,
+          "app": {
+            "pid": 588176,
+            "parent": 588069,
+            "group": 587497,
+            "start": 4603599,
+            "exe": "/tmp/cutokyo-native-test-wdio-wjrqekkw/package/usr/bin/cutokyo-desktop",
+            "argv": [
+              "/tmp/cutokyo-native-test-wdio-wjrqekkw/package/usr/bin/cutokyo-desktop"
+            ]
+          },
+          "terminal": {
+            "pid": 589887,
+            "parent": 588176,
+            "group": 587497,
+            "start": 4605062,
+            "exe": "/usr/bin/kitty",
+            "argv": [
+              "/usr/bin/kitty",
+              "--title=Cutokyo native session resume",
+              "--working-directory",
+              "/tmp/cutokyo-native-test-wdio-wjrqekkw/data/native-resume-project",
+              "--hold",
+              "--",
+              "/tmp/cutokyo-native-test-wdio-wjrqekkw/bin/cutokyo",
+              "--data-dir",
+              "/tmp/cutokyo-native-test-wdio-wjrqekkw/data",
+              "resume-terminal",
+              "--request",
+              "/tmp/cutokyo-native-test-wdio-wjrqekkw/data/resume-launch-s0kT8L/request.json"
+            ]
+          },
+          "window": {
+            "pid": 589887,
+            "address": "0x5c07e3102570",
+            "mapped": true,
+            "xwayland": true
+          },
+          "descendants": [
+            {
+              "pid": 589904,
+              "parent": 589887,
+              "group": 587497,
+              "start": 4605126,
+              "exe": "/usr/bin/kitten",
+              "argv": [
+                "/usr/bin/kitten",
+                "__atexit__"
+              ]
+            },
+            {
+              "pid": 589911,
+              "parent": 589887,
+              "group": 589911,
+              "start": 4605126,
+              "exe": "/usr/bin/bash",
+              "argv": [
+                "/bin/bash",
+                "--posix"
+              ]
+            }
+          ]
+        },
+        "signal": "SIGTERM via pidfd",
+        "terminalExited": true,
+        "descendantsExited": true,
+        "windowRemoved": true,
+        "applicationPreserved": true,
+        "keyboardDispatches": [],
+        "focusChangedByHelper": false
+      }
+    },
+    "native-resume-terminal-cleanup-capture-history.json": {
+      "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/native-resume-terminal-cleanup-capture-history.json",
+      "contents": {
+        "verdict": "PASS",
+        "before": {
+          "ready": true,
+          "app": {
+            "pid": 601375,
+            "parent": 601323,
+            "group": 601294,
+            "start": 4616629,
+            "exe": "/tmp/cutokyo-native-test-wdio-xwws03oe/package/usr/bin/cutokyo-desktop",
+            "argv": [
+              "/tmp/cutokyo-native-test-wdio-xwws03oe/package/usr/bin/cutokyo-desktop"
+            ]
+          },
+          "terminal": {
+            "pid": 602603,
+            "parent": 601375,
+            "group": 601294,
+            "start": 4617674,
+            "exe": "/usr/bin/kitty",
+            "argv": [
+              "/usr/bin/kitty",
+              "--title=Cutokyo native session resume",
+              "--working-directory",
+              "/tmp/cutokyo-native-test-wdio-xwws03oe/project with spaces ' and $literal",
+              "--hold",
+              "--",
+              "/tmp/cutokyo-native-test-wdio-xwws03oe/bin/cutokyo",
+              "--data-dir",
+              "/tmp/cutokyo-native-test-wdio-xwws03oe/data",
+              "resume-terminal",
+              "--request",
+              "/tmp/cutokyo-native-test-wdio-xwws03oe/data/resume-launch-RrJd2V/request.json"
+            ]
+          },
+          "window": {
+            "pid": 602603,
+            "address": "0x5c07e3125a20",
+            "mapped": true,
+            "xwayland": true
+          },
+          "descendants": [
+            {
+              "pid": 602621,
+              "parent": 602603,
+              "group": 601294,
+              "start": 4617734,
+              "exe": "/usr/bin/kitten",
+              "argv": [
+                "/usr/bin/kitten",
+                "__atexit__"
+              ]
+            },
+            {
+              "pid": 602628,
+              "parent": 602603,
+              "group": 602628,
+              "start": 4617734,
+              "exe": "/usr/bin/bash",
+              "argv": [
+                "/bin/bash",
+                "--posix"
+              ]
+            }
+          ]
+        },
+        "signal": "SIGTERM via pidfd",
+        "terminalExited": true,
+        "descendantsExited": true,
+        "windowRemoved": true,
+        "applicationPreserved": true,
+        "keyboardDispatches": [],
+        "focusChangedByHelper": false
+      }
+    }
+  },
+  "nonfatal_warning": {
+    "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-5t1hq8jn/wdio.log",
+    "actual": "AfterSession mockstore cleanup: A sessionId is required. Aggregate exit0; productfailure notestablished."
+  },
+  "reviewer_helper_failure": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/reviewer-helper-error-recovery.json",
+  "limitations": [
+    "NativePNG1280x800 only; threeviewport light/dark browserreview separate.",
+    "SyntheticcredentialfreeClaude exactargv/cwd/TTY/startup is not operatorinstalledactivation or nativeCodex/OpenCode resume.",
+    "Earlier allthree installedread-only/dry-run probes notrefreshed by artifactonlyassignment.",
+    "Actualmaintainedsetupcases pass; no retainedrawnativesettings snapshots beyondassertions; capturehistoryworker overwrote earlierworkerprotocol.",
+    "Other adverse health/quarantine/proxy/analysis/deletion/CLIworlds not inferred fromthis16case aggregate.",
+    "Localdirty integratedsource notcleanreleaseproof.",
+    "Native7visualFAIL, native8quotaFAIL and all earlierfailures remainhistorical.",
+    "No newer fullRustgate verdict received."
+  ],
+  "manifest": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native9-review-attempt-5t1hq8jn-20261004T122949Z/manifest.json",
+  "initial_manifest_flags": "Falseinitialpreservation flags untouched; completedreceipt records14actualReads.",
+  "reviewer_safety": {
+    "launches": 0,
+    "live_process_or_Git_queries": 0,
+    "product_test_fixture_threshold_config_trackedimage_changes": 0,
+    "historical_records_overwritten": 0,
+    "writes": "NewindependentJSON/transcripts only; earlier partialverification unchanged."
+  }
+}

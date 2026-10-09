@@ -18,7 +18,7 @@ use crate::analysis::{
     AnalysisProviderFuture, AnalysisProviderOutput, AnalysisService, AnalysisSummarySink,
     CredentialOrigin, CredentialSource, EnvironmentCredentialSource, ProviderCredential,
 };
-use crate::guards::REDACTION_MARKER;
+use crate::redaction::REDACTION_MARKER;
 
 type TestResult = Result<(), Box<dyn Error>>;
 

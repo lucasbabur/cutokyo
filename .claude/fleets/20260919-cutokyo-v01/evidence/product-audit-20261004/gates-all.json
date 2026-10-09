@@ -1,0 +1,11 @@
+{
+  "command": [
+    "python3",
+    "/home/lucas/Developer/personal/cutokyo-community/tools/fleet/cutokyo-gates.py",
+    "all",
+    "--root",
+    "/home/lucas/Developer/personal/cutokyo-community"
+  ],
+  "exitCode": 0,
+  "output": "[PASS] layout\n[PASS] architecture\n[PASS] contracts\n[PASS] legal\n[PASS] ci\n[PASS] scope\n"
+}

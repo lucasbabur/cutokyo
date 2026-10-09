@@ -18,6 +18,20 @@ describe("design tokens", () => {
     expect(raw).toEqual([]);
   });
 
+  it("gives checkbox-free capture management one full-width track", () => {
+    const rule = /\.harness-choice--management\s*\{([^}]+)\}/.exec(
+      stylesheet,
+    )?.[1];
+    expect(rule).toBeDefined();
+    expect(rule).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)\s*;/);
+    expect(rule).toMatch(/cursor:\s*default\s*;/);
+    expect(rule).not.toMatch(/20px/);
+    const choice = /\.harness-choice\s*\{([^}]+)\}/.exec(stylesheet)?.[1];
+    expect(choice).toMatch(
+      /grid-template-columns:\s*20px\s+minmax\(0,\s*1fr\)/,
+    );
+  });
+
   it("keeps the smallest type step legible", () => {
     const step = /--font-size-2xs:\s*(\d+)px/.exec(stylesheet)?.[1];
     expect(Number(step)).toBeGreaterThanOrEqual(10);

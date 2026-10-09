@@ -1,0 +1,10 @@
+{
+  "command": [
+    "/home/lucas/.nvm/versions/node/v22.22.3/bin/pnpm",
+    "--dir",
+    "/home/lucas/Developer/personal/cutokyo-community/ui",
+    "build"
+  ],
+  "exitCode": 1,
+  "output": "$ tsc --noEmit && vite build && tsx scripts/check-production-bundle.ts\nsrc/fixtures/browserAdapter.ts(203,9): error TS2739: Type '{ getBootstrap(): Promise<BootstrapResponse>; getOnboarding(): Promise<OnboardingResponse>; completeOnboarding(request: CompleteOnboardingRequest): Promise<...>; ... 30 more ...; fixtureAudit(): { ...; }; }' is missing the following properties from type 'BrowserFixtureClient': getInventoryDocument, saveInventoryDocument, removeInventoryItem, installInventoryItem\n[ELIFECYCLE] Command failed with exit code 1.\n"
+}

@@ -1,0 +1,16 @@
+{
+  "command": [
+    "/home/lucas/Developer/personal/cutokyo-community/target/debug/cutokyo",
+    "--config-file",
+    "/tmp/cutokyo-product-audit-20261004/config/settings.toml",
+    "--data-dir",
+    "/tmp/cutokyo-product-audit-20261004/data/cli",
+    "--json",
+    "plugin",
+    "verify",
+    "/home/lucas/Developer/personal/cutokyo-community/examples/plugins/ts-processor"
+  ],
+  "exitCode": 0,
+  "output": "{\"schema_version\":\"1.0.0\",\"command\":\"plugin.verify\",\"ok\":true,\"data\":{\"report\":{\"capabilities\":[\"emit_derived_fact\"],\"cursor_idempotency_checked\":false,\"isolation\":\"capability-gated subprocess; no database path or store handle; no portable OS filesystem/network sandbox claimed\",\"plugin_id\":\"example:ts-processor\",\"plugin_kind\":\"processor\",\"protocol_major\":1,\"validated_messages\":3},\"runtime_validation\":true,\"valid\":true},\"meta\":{\"app_version\":\"0.1.0\",\"pending_crash_record\":false}}\n",
+  "existingArtifactOnly": true
+}

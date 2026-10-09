@@ -1,0 +1,165 @@
+{
+  "format_version": 1,
+  "review": "Completed-user native capture management independent supplement",
+  "created_utc": "2026-10-04T07:48:12.561180+00:00",
+  "repository": "/home/lucas/Developer/personal/cutokyo-community",
+  "verdict": "Bounded completed-user management gap closed. One concrete live-deactivation copy overclaim independently reproduced, repaired, and closed. No remaining concrete finding in this bounded review; not full native/package acceptance.",
+  "verified_source_behavior": [
+    "Permanent Settings link is independent of session-history emptiness.",
+    "Completed users enter management mode rather than repeating onboarding; selection/Finish/Browse controls absent.",
+    "Existing exact preview/apply with storage acknowledgement; cancellation read-only; pending-action guard; Return to Settings; failed apply clears stale verification.",
+    "Management does not invoke onboarding completion/settings/preference mutations.",
+    "Uninstall preview BEFORE confirmation and management footer disclose config-only removal, already-loaded callbacks until harness restart, and unknown live capture."
+  ],
+  "independent_results": {
+    "maintained_UI_tests": {
+      "passed": 36,
+      "raw": "management-product-tests-2.raw",
+      "command": "pnpm --dir /home/lucas/Developer/personal/cutokyo-community/ui exec vitest run src/App.test.tsx src/pages/pages.test.tsx src/accessibility.test.tsx src/pages/SettingsPage.test.tsx"
+    },
+    "reviewer_UI_tests": {
+      "passed": 5,
+      "breakdown": "3 all-three populated fixture user management journeys + 2 original onboarding tests",
+      "raw": "management-independent-tests-2.raw",
+      "command": "pnpm --dir /home/lucas/Developer/personal/cutokyo-community/ui exec vitest run --config /tmp/cutokyo-independent-onboarding-review/vitest.config.ts",
+      "assertions": "read-only route/cancel; acknowledgement; exact token; uninstall unverified; recovery unverified; reinstall verified; unchanged fixture onboarding/settings/history; correct restart caveat before confirmation; false inactive claim absent"
+    },
+    "actual_DesktopService": "Source-linked production service in isolated external Cargo binary, all-three separately: preview cancellation no native/prefs mutation; uninstall verified:false/restores exact original native bytes; fresh install preview verified:false; recover no reinstall; reinstall verified:true; persisted onboarding_complete/selected harness preference bytes unchanged; absent general config file remained absent (no general-config creation). Each command retains original45second deadline.",
+    "actual_loaded_plugin_repro": {
+      "before": "management-loaded-plugin.raw",
+      "after": "management-loaded-plugin-fixed.raw",
+      "behavior": "Actual installed OpenCode callback loaded in Node; actual CLI uninstall exit0/verifiedfalse/plugin file removed; retained callback still publishes one atomic raw native spool observation/noDB. Behavior is expected; removed inaccurate UI inactive claim, added pre-confirm restart caveat. No process termination or revocation added."
+    }
+  },
+  "chronology": {
+    "incomplete": [
+      "management-desktop-1.raw: combined historical+management aggregate exceeded45s before new assertions completed.",
+      "management-desktop-2.raw: all-three combined management aggregate exceeded45s after Claude success and Codex partial success. Neither counted as pass nor completed product defect."
+    ],
+    "accepted": [
+      "management-desktop-claude-3.raw",
+      "management-desktop-codex-3.raw",
+      "management-desktop-opencode-3.raw"
+    ],
+    "explanation": "Split independent harness worlds; did not increase or remove45s per-command timeout, remove management assertions, or change product code."
+  },
+  "package": "Frozen postcompletion packaged Settings\u2192management\u2192cancel/remove\u2192exact state/config/native bytes/fresh unverified preview\u2192reinstall scenario inspected only. Main must run fresh package acceptance; no concurrent packaged application launch by reviewer.",
+  "limits": [
+    "UI populated-history proof uses explicit browser fixture client, not a packaged backend.",
+    "Actual service repro proves native bytes, persisted preference bytes, and no general-config creation, but does not itself exercise packaged UI with existing native history or pre-existing general-config bytes. UI fixture settings are unchanged; the inspected package scenario asserts pre-existing general-config bytes, with execution main-owned.",
+    "Full package execution and aggregate acceptance remain main-owned.",
+    "Earlier native limitations retain Codex hook-only exact-thread resume unavailable and unknown installed-live coverage/native activation."
+  ],
+  "security_scope": "No product source edits, real home/native harness mutations, predecessor access, commits, provider/paid requests, or progress reporting. Only isolated repro roots and version-only fake executables; no packaged application/terminal launched.",
+  "source_snapshot": {
+    "/home/lucas/Developer/personal/cutokyo-community/ui/src/App.tsx": "3210dda623744998af6a12a4c6695a7d33a99bf243ee5f3e5ef841ede4ae669c",
+    "/home/lucas/Developer/personal/cutokyo-community/ui/src/App.test.tsx": "165e90ea604795842fb341f860ee0beb34ada9a9d3bc22b4a752d3a127807817",
+    "/home/lucas/Developer/personal/cutokyo-community/ui/src/pages/OnboardingPage.tsx": "872bd0e27dd49f2402ee273c2c70694e24e16fd2e6e65f45516817ec0d92b83b",
+    "/home/lucas/Developer/personal/cutokyo-community/ui/src/pages/SettingsPage.tsx": "efa6189f92e8dec8ed2ab814204eee8317f9b6b29f676c3cb8f7e16ecbb0405f",
+    "/home/lucas/Developer/personal/cutokyo-community/ui/src/pages/pages.test.tsx": "17ae992a1618c456eb536f7703e1e633a6888cef1fb08cb9e44872797568019d",
+    "/home/lucas/Developer/personal/cutokyo-community/ui/src/pages/SettingsPage.test.tsx": "341c9b19d914a1a9411233d63410f99792b95f770ba5ed286fe32ae643b5b3a8",
+    "/home/lucas/Developer/personal/cutokyo-community/ui/src/accessibility.test.tsx": "f835108f0e72ef559153d13c2959b196cf376ae2bda94a4f873c63fddee9c45b",
+    "/home/lucas/Developer/personal/cutokyo-community/ui/src/components/AppShell.tsx": "43357c5b0ab05dbd2d269a6f1e9f43d08505f565f760f22a357b4f9bc7fe2d37",
+    "/home/lucas/Developer/personal/cutokyo-community/ui/src/router.ts": "ceec75d63d0706260d6f5f262bb8f6ac0952f42915b39b68d8654d88a9064084",
+    "/home/lucas/Developer/personal/cutokyo-community/ui/src/fixtures/browserAdapter.ts": "06567591614c3e1588dc103990d112574e528dcdba244339848d507b0a7a1a2a",
+    "/home/lucas/Developer/personal/cutokyo-community/ui/tests/tauri/native-desktop.spec.ts": "f5f1ccd8ea8b43ef4e6aa5491c02ced064c82ef22dceb2e5701b2d37e3d00dd1",
+    "/home/lucas/Developer/personal/cutokyo-community/crates/cutokyo-desktop/src/service.rs": "583d337484d7a26f7671cc6750ac3f7707c474b521622825a2f122a2545cd3e5"
+  },
+  "current_CLI_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+  "evidence_files": {
+    "management-loaded-plugin-fixed.raw": {
+      "sha256": "9361b2946d6b1fce9ead9aa3cace78c431e459850af304f6456136847464a853",
+      "bytes": 895
+    },
+    "management-independent-tests-2.raw": {
+      "sha256": "785f9ce3cf3f6a5d7316dcdf3f210f4e54b246b3c76348eb79685dbad9cacd46",
+      "bytes": 642
+    },
+    "management-product-tests-2.raw": {
+      "sha256": "9f87fb78841be1e2563dbe680550ab4f2c044ede619a78607a17a681095d099b",
+      "bytes": 1028
+    },
+    "management-loaded-plugin.raw": {
+      "sha256": "a5ecab81a528fa4762de1caf4311f42a74bebbe1305e9b861e67be438205b3bc",
+      "bytes": 895
+    },
+    "management-desktop-opencode-3.raw": {
+      "sha256": "019e599b58568d80823df1d36a325d9aaa09a0e281eedacebd7abe931a25b785",
+      "bytes": 1887
+    },
+    "management-desktop-codex-3.raw": {
+      "sha256": "1ea3d936a225ac0dfe640f2386723a307096a6631205efce0db5b11cb011a0cc",
+      "bytes": 2011
+    },
+    "management-desktop-claude-3.raw": {
+      "sha256": "23c6064782763e24f160dce877e1ebc8960a1a0432e4b8ce522b9f1641061f31",
+      "bytes": 1959
+    },
+    "management-desktop-build-3.raw": {
+      "sha256": "7c6ca5685a5d4dfe684d4f15d34b604e1e4744249f7c862763218df605643c36",
+      "bytes": 21302
+    },
+    "management-desktop-2.raw": {
+      "sha256": "bc6e80678b370078256c49520d1d803bd77777fb5f5c79ed884f66539f0854b1",
+      "bytes": 4262
+    },
+    "management-desktop-build-2.raw": {
+      "sha256": "aa44721eac7b3977b422ca4926ebd8ff247940ab0bde83455176d5768d21ba21",
+      "bytes": 21302
+    },
+    "management-desktop-1.raw": {
+      "sha256": "3e7f26e9bca683079bbd803d1de2b7c00f61edc9bab469b0251ce155eca806ec",
+      "bytes": 7958
+    },
+    "management-desktop-build-1.raw": {
+      "sha256": "db93154b61639363c2ed1147190bd0782c6be559212632ed18bad012f9049799",
+      "bytes": 21406
+    },
+    "management-independent-tests-1.raw": {
+      "sha256": "e0ec1dc4e3cbf5639b9ba3c518985df95ae0955053a91d01adbb63a71b56a44b",
+      "bytes": 643
+    },
+    "management-product-tests-1.raw": {
+      "sha256": "f6275a8dd0123a2e7c1244df4256f1e27f0c072a58aa9ff02c930900af6f891b",
+      "bytes": 1028
+    },
+    "management.test.tsx": {
+      "sha256": "28c8ea868ca0a19e3d0efebc3ad6fa34933422c6c15ec8762b13c70193947140",
+      "bytes": 5260
+    },
+    "onboarding.test.tsx": {
+      "sha256": "7296e2aef36861c216dccdd82ab93d5a32e5458e7a56e7c41a55e4c37a32c28b",
+      "bytes": 3699
+    },
+    "vitest.config.ts": {
+      "sha256": "6bbb0ab074bcc90eab88fc96cc8c84f8edac2a7c7c0cdb6daf39cf6f4f3948f5",
+      "bytes": 269
+    },
+    "desktop.rs": {
+      "sha256": "52f1e23b2e7de9de2ef6f4b6ee36128c1f2ada1bbf2954a0cad287746aa545fd",
+      "bytes": 6800
+    },
+    "desktop-repro.py": {
+      "sha256": "3cc87b8b29ccafe749d8fc1fd6a4be60630b677688f8f8ebbdf1e3f7abe9c66b",
+      "bytes": 1275
+    },
+    "management-loaded-plugin.py": {
+      "sha256": "c920debb8c4edcb56dac5a9b0c4a6acc0a5a72c1cb0d204983fdc43f121f77b5",
+      "bytes": 2670
+    },
+    "Cargo.toml": {
+      "sha256": "80ba4acc323241bb786f318c71d01db031f24d2a4a47e2886428658e08d84954",
+      "bytes": 671
+    },
+    "Cargo.lock": {
+      "sha256": "0001480af9edbc1c7c9484768bec27b337efd3dac759243c57e4b13f56355547",
+      "bytes": 105199
+    },
+    "management-loaded-plugin-fixed/loaded.mjs": {
+      "sha256": "d2b64566eca57e3916dcda4b0422521074e8d2fd8153fb52a518df792d580f2d",
+      "bytes": 1540
+    }
+  },
+  "previous_review_archive": "independent-review-evidence.tar.gz SHA2564b010a68b7e2a08ef8f555f5cf523193f0297b2542b35929b1d9c80511fee8eb; coordinator reports preserved under managed durable evidence/management/native-review",
+  "durability": "Supplement staged in tmpfs; main must copy archive/manifest into managed durable evidence tree."
+}

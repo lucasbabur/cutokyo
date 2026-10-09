@@ -1,0 +1,271 @@
+{
+  "scope": "Native5 all actual images and exact aggregate outcome; not fullFleetre-review",
+  "completed_utc": "2026-10-04T10:16:55.628922+00:00",
+  "manifest": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-ux4kmj6p-20261004T101115Z/manifest.json",
+  "package": {
+    "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+    "package": "/tmp/cutokyo-native-test-wdio-02q7867g/target/debug/bundle/deb/Cutokyo_0.1.0_amd64.deb",
+    "package_sha256": "58d8d44446644662721bdfb06d85fcba4a9bd80853d21d4a06e26d5ce0bc0258",
+    "retained_package": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/Cutokyo_0.1.0_amd64.deb",
+    "application": "/tmp/cutokyo-native-test-wdio-02q7867g/package/usr/bin/cutokyo-desktop",
+    "application_sha256": "163cc7e67716d27d0c8958eb371b0ad6e0c830d5936908332d45b40a46dc992c",
+    "receiver": "/tmp/cutokyo-native-test-wdio-02q7867g/bin/cutokyo",
+    "receiver_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+    "synthetic_harness": "/tmp/cutokyo-native-test-wdio-02q7867g/bin/claude",
+    "synthetic_harness_sha256": "74b0648c3b0bd21ad2f61c354e364b016a3475cbb491f9f73d20c1d49eab5536",
+    "asset_directory": "/tmp/cutokyo-native-test-wdio-02q7867g/assets",
+    "root": "/tmp/cutokyo-native-test-wdio-02q7867g",
+    "port": 41043,
+    "launch_origin": "extracted-debian-bundle",
+    "test_only": true
+  },
+  "package_sha256_independently_verified": "58d8d44446644662721bdfb06d85fcba4a9bd80853d21d4a06e26d5ce0bc0258",
+  "packaged_application_sha256_independently_verified": "163cc7e67716d27d0c8958eb371b0ad6e0c830d5936908332d45b40a46dc992c",
+  "revision_note": "RecordedHEAD8e7c6b0e2352c388b59aa4b593110445469a0c49;actualdirtysnapshot notcleanreleaseproof. Retainedbefore/aftersourcerecords equal;reviewer did notrunGit.",
+  "environment": {
+    "actual_runtime": "LinuxWebKitGTK605.1.15,TauriextractedDebian,privateHOME/XDGroot",
+    "root": "/tmp/cutokyo-native-test-wdio-02q7867g",
+    "viewport": [
+      1280,
+      800
+    ],
+    "harness": "Credential-free syntheticClaudeCodeharness,notinstalledprovideractivation"
+  },
+  "coverage": {
+    "all_attempt_pngs": 10,
+    "individual_Read_inspections": 10,
+    "later_aggregate_phases_established": false,
+    "new_installed_harness_probes": 0
+  },
+  "actual_aggregate": {
+    "exit_code": 1,
+    "duration_seconds": 132.04,
+    "tests_passed": 7,
+    "tests_failed": 2,
+    "spec_files_passed": 2,
+    "spec_files_failed": 2,
+    "passed_case_groups": {
+      "backup": 2,
+      "inventory": 2,
+      "appearance": 1,
+      "health_exports_capabilities": 2
+    },
+    "failure_phase": "first/save;lateraggregatephasesnotreached"
+  },
+  "steps": [
+    "EnumerateallattemptartifactsandretainoriginalDebian",
+    "Hash/copyartifacts tonewevidencepaths;rawlogs onlydesignatednative-review",
+    "Readall10actualPNGandgeometry,launch,backup,keyboard,executionreceipts",
+    "Readexactaggregateresults,currentfrozenassertionsandworkeracknowledgement/deletionsequence",
+    "Verifyallsource/preservedhashesstableandreadpackagedexecutablebyteswithoutlaunch"
+  ],
+  "expected": "Readable nativeconsoleanddialogs;correctsingularcopy;accuratecapabilityanduncertaintylabels;successfulcompleteaggregate",
+  "actual_visual": "No new concrete rendered regression in supplied10images. Allmodalfooters fit at1280x800. No postdelete orkeyboardfailureimage supplied.",
+  "verdict": "FAIL actualnativeaggregate;bounded suppliedimagevisualinspectioncomplete",
+  "finding_dispositions": [
+    {
+      "key": "NQA-COPY-01",
+      "owner": "desktop",
+      "severity": "Low",
+      "status": "CLOSED_NATIVE_RENDERED_SINGULAR_COPY_AT1280x800",
+      "expected": "Singularsessionwordingfor1backed-up/restoredsession",
+      "actual": "1backed-upsessionandRestored1sessionvisibleinactualnativeconfirmation/result",
+      "evidence": [
+        "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/backup-restore-confirmation-1280x800.png",
+        "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/backup-restored-1280x800.png"
+      ]
+    },
+    {
+      "key": "NQA-RESUME-01",
+      "owner": "integration",
+      "severity": "Medium",
+      "status": "HISTORICAL_TIMEOUT_NOT_REPRODUCED_NATIVE_LOG_SUBSTEP_VERIFIED_NOT_FULL_JOURNEY_PASS",
+      "actual": "ActualworkergetElementTextreportsacknowledgedstartupwithexactclaude-native-73A9andactivationcaveat;currentfrozenassertions forexact--resume argv,recordedcwdandstdin/stdoutTTYrunbeforenextDeleteclick. Aggregate laterfailsat132.",
+      "evidence": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/native-desktop.spec-0-2.log",
+      "locations": "worker868,871;test78-110;failure132",
+      "limits": "Audits arenotretained inthe10PNGattemptinventory;suppliedresumePNGpre-confirmationonly;nosuccess-statevisualverdict,noinstalledmodel/nativeactivationproof,nofulljourneypass."
+    }
+  ],
+  "findings": [
+    {
+      "key": "NQA-DELETE-01",
+      "owner": "integration",
+      "severity": "Medium",
+      "status": "OPEN_ACCEPTANCE_FAILURE_ROOT_CAUSE_UNVERIFIED",
+      "reproduction": "Actual frozen fresh package aggregate first/save phase:search fixture,resumeexactClaude target,delete selectedsession,wait forSessionsheading,absenceofexactdeletedresult,thenemptyheading.",
+      "expected": "History is empty\u2014not zero heading displayed within15s afterdeletion.",
+      "actual": "Timeout at native-desktop.spec.ts:132. EarlierSessionsheading anddeleted-result absenceassertions reached; no postdeletefailurePNG in10image inventory. Do not infer failed database deletion,query/resetbugorwrongwindow ownership from pre-action resumePNG.",
+      "evidence": [
+        "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun5-20261004.log",
+        "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/native-desktop.spec-0-2.log"
+      ],
+      "locations": "aggregate727-728,770-773;test112-132;worker994=1rawobservation,997=3searchrows,1016confirmationclick"
+    },
+    {
+      "key": "NQA-KEYBOARD-02",
+      "owner": "integration",
+      "severity": "Medium",
+      "status": "BLOCKED_NATIVE_KEYBOARD_ACCEPTANCE_ENVIRONMENT_IDENTITY",
+      "reproduction": "Laterhealth/capabilitiestrustedskip-linkcasein samefailedfirst/savephase.",
+      "expected": "Owned-apptrustedTab/Return journey without affecting any foreign window.",
+      "actual": "Helper refusesdifferentactiveXWaylandwindow;receiptFAILanddispatches[]. Safety refusal correct;currenttrustedkeyboardjourney not covered. No screenshot orreceipt identifiesforeignwindowowner/rootcause.",
+      "evidence": [
+        "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/native-keyboard-trusted.json",
+        "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/native-packaged-rerun5-20261004.log"
+      ]
+    }
+  ],
+  "images": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/analysis-unavailable-1280x800.png",
+      "sha256": "e489aa6f5065cfb1e27e1480f3fcda6c219318964910c5496a8a48cf844ffeab",
+      "bytes": 90205,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-ux4kmj6p-20261004T101115Z/artifacts/analysis-unavailable-1280x800.png",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individual actual source PNG displayed with functions.Read",
+      "visual_observation": "Unavailable provider and no content sent disclosure; empty eligible-session state visible."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/appearance-dark-1280x800.png",
+      "sha256": "6c17bcba736d6f3d0b7aae8df322413f46bbf28f63f1e74ff072c3cf02ba4a6e",
+      "bytes": 114393,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-ux4kmj6p-20261004T101115Z/artifacts/appearance-dark-1280x800.png",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individual actual source PNG displayed with functions.Read",
+      "visual_observation": "Saved Dark selected; proxy unavailable and no proxy started; live capture unknown until evidence arrives; disclosure fits."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/backup-created-1280x800.png",
+      "sha256": "94197b7f60e59800f84b6e768b19a4bb5dd8a907f3caa3ed1178367230165316",
+      "bytes": 127355,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-ux4kmj6p-20261004T101115Z/artifacts/backup-created-1280x800.png",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individual actual source PNG displayed with functions.Read",
+      "visual_observation": "One session;340.0KiB(348160bytes);long private location wraps;scope and privacy exclusions readable;Done visible."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/backup-restore-confirmation-1280x800.png",
+      "sha256": "fe06ba88ac275eb0a40dabe14bdfd623d6829f1cfd7f3eddba8f1f519f21381d",
+      "bytes": 145037,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-ux4kmj6p-20261004T101115Z/artifacts/backup-restore-confirmation-1280x800.png",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individual actual source PNG displayed with functions.Read",
+      "visual_observation": "0 current sessions replaced by1 backed-up session;singular wording correct;recovery-copy disclosure;Cancel/Restore visible."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/backup-restored-1280x800.png",
+      "sha256": "2705510e7bcc931981441f413d842e27f3b57f8aed7f6447f6cbfbb205a6dd64",
+      "bytes": 131959,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-ux4kmj6p-20261004T101115Z/artifacts/backup-restored-1280x800.png",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individual actual source PNG displayed with functions.Read",
+      "visual_observation": "Restored1session;recovery path and integrity ok visible;singular wording correct;Done visible."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/diagnostic-created-1280x800.png",
+      "sha256": "ff50f917bbad68431d42c5a0041ada9ff5d22e12e8a2eeeaf2f2fdccad84bd82",
+      "bytes": 132613,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-ux4kmj6p-20261004T101115Z/artifacts/diagnostic-created-1280x800.png",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individual actual source PNG displayed with functions.Read",
+      "visual_observation": "Local diagnostic destination readable;Not fully checked;0 current/0 lifetime quarantine;Unknown dimensions separately labelled."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/diagnostic-preview-1280x800.png",
+      "sha256": "05feb951c20dc4cbce6d9d62da34fe848fe46f6afa7cf94dca5cf0fdd9094d1f",
+      "bytes": 108205,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-ux4kmj6p-20261004T101115Z/artifacts/diagnostic-preview-1280x800.png",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individual actual source PNG displayed with functions.Read",
+      "visual_observation": "16.0KiB estimated size;localJSON output;explicit exclusions and sanitation boundary readable;Cancel/Create visible."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/inventory-native-configured-1280x800.png",
+      "sha256": "9fe49bd8318c08a74c648f90b0a986bf61627020ba3b47b9881d24db7596d278",
+      "bytes": 96456,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-ux4kmj6p-20261004T101115Z/artifacts/inventory-native-configured-1280x800.png",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individual actual source PNG displayed with functions.Read",
+      "visual_observation": "CONFIGURED explicitly not runtime loading or broker-health proof;Cutokyo-owned hook;source path and focusedManage visible."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/inventory-remove-confirmation-1280x800.png",
+      "sha256": "4b93b0a993725d86453796638dadf17b9d20c9a7042afc7f64be69b6b8561c4e",
+      "bytes": 109761,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-ux4kmj6p-20261004T101115Z/artifacts/inventory-remove-confirmation-1280x800.png",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individual actual source PNG displayed with functions.Read",
+      "visual_observation": "Sharedsource removal affectsClaudeCode/OpenCode;independentcopies unchanged;recovery copy andnot-sessiondeletion warning;source wraps;footer fits."
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-ux4kmj6p/search-detail-resume-1280x800.png",
+      "sha256": "5bcb077fd70d2038027dac20d588e2178b5c6c74c5b9a5c0fa018e68a7dd82af",
+      "bytes": 115073,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-image-review-attempt-ux4kmj6p-20261004T101115Z/artifacts/search-detail-resume-1280x800.png",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individual actual source PNG displayed with functions.Read",
+      "visual_observation": "Pre-confirmation only;exactclaude-native-73A9 differs fromnative-session-73A9;recorded privateprojectdirectory andstartup-not-activation warning readable;footer fits."
+    }
+  ],
+  "hash_checks": {
+    "completed_utc": "2026-10-04T10:16:55.628922+00:00",
+    "native5_all_artifact_source_and_preserved_hashes_stable": true,
+    "native5_all10_png_actual_dimensions1280x800": true,
+    "retained_debian_sha256_matches_both_launch_receipts": true,
+    "packaged_executable_sha256_independently_matches_both_launch_receipts": true,
+    "negative_all10_artifacts_hashes_stable_before_archive": true,
+    "negative_archived_copies_match": true,
+    "native5_before_after_source_records_identical": true,
+    "Git_not_queried_by_reviewer": true
+  },
+  "limits": [
+    "No native900x700or1536x960imagesinthisattempt",
+    "No visualproof ofaggregatepostdelete/keyboardfailurestates",
+    "Large-history,current/lifetimequarantineandrestartpersistencearenotprovedby0/0healthimage",
+    "Configured inventory isnotruntime/brokerhealthproof",
+    "No installedharness/providercallsbyreviewer",
+    "Mainseparatepostdeleteownershipdiagnosticpendingatassignment;notmergedintothisattempt"
+  ],
+  "reviewer_launches": 0,
+  "reviewer_product_test_fixture_config_threshold_Git_edits": 0
+}

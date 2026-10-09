@@ -38,14 +38,6 @@ cases:
       - do: Begin enabling proxy capture and stop before confirming consent
         expect: The preview states what will be inspected and no active-proxy status appears
 
-  - name: analysis-preview-cancel
-    path: /?jev_case=analysis-cancel
-    steps:
-      - do: Choose Analyze for fixture session "analysis-73A9"
-        expect: A preview names the session, redacted payload scope, provider, and model before any send
-      - do: Cancel the analysis preview
-        expect: The preview closes, no summary appears, and the fixture records no outbound request
-
   - name: degraded-health-recovery
     path: /?jev_case=health-degraded
     steps:

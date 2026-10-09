@@ -1,0 +1,15 @@
+{
+  "source_sha256": {
+    "ui/src/components/BackupControls.tsx": "4816c73650698ccafc4f289fd3e8a36bed6ff729a94feb9fc4fd12bdf42f9452",
+    "ui/src/components/BackupControls.test.tsx": "e06bb865bcec272847f3f4c1bb655f5e62a6af9d4d7efc6ef4d71acd594bce79",
+    "ui/src/pages/DataControlsPage.tsx": "4a2604f3861ad79bc49a4bf48293f207e1175f9bc2e8886a96dd54260f0275c4",
+    "ui/src/pages/DataControlsPage.test.tsx": "7353e3c828f374c6c18c84d80ebff6cdcf16b7eb48a5e9e750575ee2b4a9f38d"
+  },
+  "builder": "affa9a8b187ca2a06",
+  "independent_reviewer": "ad9da28302928395f",
+  "independent_test_scope": "pages/session-search/backup/data four maintained files",
+  "independent_tests_passed": 54,
+  "copy_delta_verdict": "accepted bounded grammar and retained operation semantics; native rendered retest pending",
+  "native_finding": "NQA-COPY-01",
+  "waivers": []
+}

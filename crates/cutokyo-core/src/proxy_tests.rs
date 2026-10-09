@@ -155,7 +155,7 @@ fn proxy_is_disabled_direct_and_facts_are_unavailable_by_default() -> TestResult
 fn proxy_requires_consent_and_non_loopback_approval() -> TestResult {
     let mut proxy = ProviderProxy::disabled(transport(), CapturingSink::default())?;
     let error = proxy
-        .activate(ProxyConfig::default(), &consent(false), &listener())
+        .activate(&ProxyConfig::default(), &consent(false), &listener())
         .err();
     assert!(error.is_some());
     if let Some(error) = error {
@@ -164,7 +164,7 @@ fn proxy_requires_consent_and_non_loopback_approval() -> TestResult {
 
     let error = proxy
         .activate(
-            ProxyConfig {
+            &ProxyConfig {
                 bind: "0.0.0.0:8080".to_owned(),
                 ..ProxyConfig::default()
             },
@@ -185,7 +185,7 @@ fn proxy_persists_listener_evidenced_lifecycle() -> TestResult {
     let states = Arc::clone(&state_store.states);
     let mut proxy =
         ProviderProxy::with_state_store(transport(), CapturingSink::default(), state_store)?;
-    proxy.activate(ProxyConfig::default(), &consent(true), &listener())?;
+    proxy.activate(&ProxyConfig::default(), &consent(true), &listener())?;
     assert_eq!(
         proxy.state(),
         &ProxyState::Active {
@@ -216,7 +216,7 @@ fn proxy_restart_uses_durable_app_port_and_requires_reactivation() -> TestResult
             CapturingSink::default(),
             core.proxy_state_port(),
         )?;
-        proxy.activate(ProxyConfig::default(), &consent(true), &listener())?;
+        proxy.activate(&ProxyConfig::default(), &consent(true), &listener())?;
         assert!(matches!(proxy.state(), ProxyState::Active { .. }));
     }
 
@@ -246,7 +246,7 @@ fn proxy_rejects_listener_receipt_that_does_not_match_requested_bind() -> TestRe
     let mut proxy = ProviderProxy::disabled(transport(), CapturingSink::default())?;
     let error = proxy
         .activate(
-            ProxyConfig::default(),
+            &ProxyConfig::default(),
             &consent(true),
             &ProxyListenerReceipt {
                 bound: "127.0.0.1:0".to_owned(),
@@ -261,23 +261,16 @@ fn proxy_rejects_listener_receipt_that_does_not_match_requested_bind() -> TestRe
 }
 
 #[test]
-fn proxy_transport_failure_falls_back_without_bypassing_enabled_guard() -> TestResult {
+fn proxy_transport_failure_falls_back_with_original_request() -> TestResult {
     let secret = synthetic_secret();
     let mut proxy = ProviderProxy::disabled(UnavailableTransport, CapturingSink::default())?;
-    proxy.activate(
-        ProxyConfig {
-            outgoing_guard_enabled: true,
-            ..ProxyConfig::default()
-        },
-        &consent(true),
-        &listener(),
-    )?;
+    proxy.activate(&ProxyConfig::default(), &consent(true), &listener())?;
     let route = proxy.route(request(&secret))?;
     let ProxyRoute::Direct { request, facts } = route else {
         return Err("transport failure did not select direct fallback".into());
     };
-    assert!(!request.body.contains(&secret));
-    assert!(!request.url.contains(&secret));
+    assert!(request.body.contains(&secret));
+    assert!(request.url.contains(&secret));
     assert_eq!(
         request.headers.get("Authorization"),
         Some(&format!("Bearer {secret}"))
@@ -288,21 +281,14 @@ fn proxy_transport_failure_falls_back_without_bypassing_enabled_guard() -> TestR
 }
 
 #[test]
-fn proxy_redacts_egress_and_traces_but_forwards_provider_credentials() -> TestResult {
+fn proxy_forwards_unchanged_payload_but_redacts_retained_traces() -> TestResult {
     let secret = synthetic_secret();
     let transport = transport();
     let requests = Arc::clone(&transport.requests);
     let sink = CapturingSink::default();
     let traces = Arc::clone(&sink.traces);
     let mut proxy = ProviderProxy::disabled(transport, sink)?;
-    proxy.activate(
-        ProxyConfig {
-            outgoing_guard_enabled: true,
-            ..ProxyConfig::default()
-        },
-        &consent(true),
-        &listener(),
-    )?;
+    proxy.activate(&ProxyConfig::default(), &consent(true), &listener())?;
 
     let route = proxy.route(request(&secret))?;
     assert!(matches!(route, ProxyRoute::Proxied { .. }));
@@ -317,8 +303,8 @@ fn proxy_redacts_egress_and_traces_but_forwards_provider_credentials() -> TestRe
         forwarded.headers.get("Authorization"),
         Some(&format!("Bearer {secret}"))
     );
-    assert!(!forwarded.body.contains(&secret));
-    assert!(!forwarded.url.contains(&secret));
+    assert!(forwarded.body.contains(&secret));
+    assert!(forwarded.url.contains(&secret));
 
     let traces = traces.lock().unwrap_or_else(PoisonError::into_inner);
     assert_eq!(traces.len(), 1);
@@ -326,35 +312,21 @@ fn proxy_redacts_egress_and_traces_but_forwards_provider_credentials() -> TestRe
     assert!(!trace_json.contains(&secret));
     assert!(!trace_json.contains("provider response content"));
     assert!(!trace_json.contains("Bearer"));
+    assert!(!trace_json.contains("findings"));
+    assert!(!trace_json.contains("outgoing_coverage"));
     Ok(())
 }
 
 #[test]
-fn proxy_enabled_guard_blocks_uninspectable_body_before_transport() -> TestResult {
-    let transport = transport();
-    let calls = Arc::clone(&transport.requests);
-    let mut proxy = ProviderProxy::disabled(transport, CapturingSink::default())?;
-    proxy.activate(
-        ProxyConfig {
-            outgoing_guard_enabled: true,
-            body_inspectable: false,
-            ..ProxyConfig::default()
-        },
-        &consent(true),
-        &listener(),
-    )?;
-    let error = proxy.route(request("provider-key")).err();
-    assert!(error.is_some());
-    if let Some(error) = error {
-        assert_eq!(error.code, ProxyErrorCode::GuardBlocked);
+fn proxy_config_rejects_removed_guard_settings() {
+    for field in ["outgoing_guard_enabled", "body_inspectable"] {
+        assert!(
+            serde_json::from_value::<ProxyConfig>(serde_json::json!({
+                "bind": "127.0.0.1:0", "allow_non_loopback": false, field: true
+            }))
+            .is_err()
+        );
     }
-    assert!(
-        calls
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .is_empty()
-    );
-    Ok(())
 }
 
 #[test]
@@ -366,7 +338,7 @@ fn proxy_trace_failure_is_fail_open_for_harness_availability() -> TestResult {
         ..CapturingSink::default()
     };
     let mut proxy = ProviderProxy::disabled(transport, sink)?;
-    proxy.activate(ProxyConfig::default(), &consent(true), &listener())?;
+    proxy.activate(&ProxyConfig::default(), &consent(true), &listener())?;
     let route = proxy.route(request("provider-key"))?;
     assert!(matches!(route, ProxyRoute::Proxied { .. }));
     assert_eq!(
@@ -379,7 +351,7 @@ fn proxy_trace_failure_is_fail_open_for_harness_availability() -> TestResult {
 #[test]
 fn proxy_runtime_failure_restores_direct_route_without_inferred_facts() -> TestResult {
     let mut proxy = ProviderProxy::disabled(transport(), CapturingSink::default())?;
-    proxy.activate(ProxyConfig::default(), &consent(true), &listener())?;
+    proxy.activate(&ProxyConfig::default(), &consent(true), &listener())?;
     proxy.mark_failed("listener unavailable")?;
     let route = proxy.route(request("provider-key"))?;
     assert!(matches!(route, ProxyRoute::Direct { .. }));

@@ -35,6 +35,10 @@ impl CutokyoReadPort for FakeReadPort {
         Ok(SessionSearchOutput {
             sessions: vec![session()],
             coverage: "synthetic attributable projection".to_owned(),
+            total: 1,
+            offset: 0,
+            limit: 50,
+            has_more: false,
         })
     }
 
@@ -94,6 +98,7 @@ fn session() -> McpSession {
         title: Some("Read only".to_owned()),
         started_at: "2026-09-20T12:00:00Z".to_owned(),
         observation_ids: vec!["obs:mcp:test".to_owned()],
+        matches: Vec::new(),
     }
 }
 
@@ -106,6 +111,56 @@ fn usage() -> UsageOutput {
         cache_write_tokens: None,
         provider_cost_micros: None,
     }
+}
+
+#[test]
+fn mcp_search_real_read_port_validates_modes_and_reports_exact_pages() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let core = crate::app::Application::new().open_local(
+        root.path().join("history.db"),
+        root.path().join("spool"),
+        crate::store::LockOwner::current("mcp-search-test", None)?,
+    )?;
+    let queries = core.queries();
+    let empty = CutokyoReadPort::search_sessions(
+        &queries,
+        &SessionSearchInput {
+            text: Some("*: ()".to_owned()),
+            offset: 600,
+            limit: 1,
+            ..SessionSearchInput::default()
+        },
+    )?;
+    assert_eq!(
+        (empty.total, empty.offset, empty.limit, empty.has_more),
+        (0, 600, 1, false)
+    );
+    for input in [
+        SessionSearchInput {
+            query_mode: Some("fts".to_owned()),
+            ..SessionSearchInput::default()
+        },
+        SessionSearchInput {
+            sort: Some("estimated".to_owned()),
+            ..SessionSearchInput::default()
+        },
+        SessionSearchInput {
+            limit: 101,
+            ..SessionSearchInput::default()
+        },
+    ] {
+        assert!(CutokyoReadPort::search_sessions(&queries, &input).is_err());
+    }
+    let accepted = CutokyoReadPort::search_sessions(
+        &queries,
+        &SessionSearchInput {
+            query_mode: Some("phrase".to_owned()),
+            sort: Some("newest".to_owned()),
+            ..SessionSearchInput::default()
+        },
+    )?;
+    assert_eq!(accepted.limit, 50);
+    Ok(())
 }
 
 #[tokio::test]

@@ -1,0 +1,15 @@
+{
+  "command": [
+    "/home/lucas/Developer/personal/cutokyo-community/target/debug/cutokyo",
+    "--config-file",
+    "/tmp/cutokyo-product-audit-20261004/config/settings.toml",
+    "--data-dir",
+    "/tmp/cutokyo-product-audit-20261004/data/cli",
+    "--json",
+    "mcp",
+    "list"
+  ],
+  "exitCode": 0,
+  "output": "{\"schema_version\":\"1.0.0\",\"command\":\"mcp.list\",\"ok\":true,\"data\":{\"central_broker\":{\"failures_are_contained\":true,\"upstreams\":[]},\"cutokyo_read_only\":{\"enabled\":true,\"tools\":[{\"boundary\":\"CutokyoReadPort\",\"description\":\"session search\",\"destructiveHint\":false,\"idempotentHint\":true,\"inputSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\"},\"name\":\"cutokyo_session_search\",\"readOnlyHint\":true},{\"boundary\":\"CutokyoReadPort\",\"description\":\"session details\",\"destructiveHint\":false,\"idempotentHint\":true,\"inputSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\"},\"name\":\"cutokyo_session_details\",\"readOnlyHint\":true},{\"boundary\":\"CutokyoReadPort\",\"description\":\"usage lookup\",\"destructiveHint\":false,\"idempotentHint\":true,\"inputSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\"},\"name\":\"cutokyo_usage\",\"readOnlyHint\":true},{\"boundary\":\"CutokyoReadPort\",\"description\":\"coverage lookup\",\"destructiveHint\":false,\"idempotentHint\":true,\"inputSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\"},\"name\":\"cutokyo_coverage\",\"readOnlyHint\":true},{\"boundary\":\"CutokyoReadPort\",\"description\":\"inventory lookup\",\"destructiveHint\":false,\"idempotentHint\":true,\"inputSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\"},\"name\":\"cutokyo_inventory\",\"readOnlyHint\":true},{\"boundary\":\"CutokyoReadPort\",\"description\":\"resume target lookup only\",\"destructiveHint\":false,\"idempotentHint\":true,\"inputSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\"},\"name\":\"cutokyo_resume_target\",\"readOnlyHint\":true}]}},\"meta\":{\"app_version\":\"0.1.0\",\"pending_crash_record\":false}}\n",
+  "existingArtifactOnly": true
+}

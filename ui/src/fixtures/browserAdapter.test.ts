@@ -1,25 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import type { SessionFilters } from "../contracts.js";
+import { DEFAULT_SESSION_FILTERS } from "../domain/sessionSearch.js";
 import { createBrowserFixtureClient } from "./browserAdapter.js";
 
-const ALL: SessionFilters = {
-  text: "",
-  harness: "all",
-  project: "",
-  branch: "",
-  dateRange: "all",
-  tool: "",
-  skill: "",
-  agent: "",
-};
+const ALL: SessionFilters = DEFAULT_SESSION_FILTERS;
 
 const JEV_CASES = [
   "onboarding-empty-history",
   "search-detail-resume",
   "retention-delete-confirmation",
-  "guard-proxy-coverage-language",
-  "analysis-preview-cancel",
+  "proxy-capture-consent",
   "degraded-health-recovery",
   "mcp-plugin-inventory",
   "visual-keyboard-consistency",
@@ -88,41 +79,64 @@ describe("isolated browser fixtures", () => {
     expect(client.fixtureAudit().sessionIds).toEqual(before);
   });
 
-  it("keeps MCP broker items while toggling one route", async () => {
+  it("edits one native MCP source without changing other installations", async () => {
     const client = createBrowserFixtureClient("mcp-plugin-inventory");
     const before = await client.getInventory();
     const target = before.items.find((item) => item.name === "docs-73A9");
     expect(target).toBeDefined();
-    const after = await client.setMcpEnabled(target!.id, false);
-    expect(after.items).toHaveLength(before.items.length);
-    expect(after.items.find((item) => item.id === target!.id)?.state).toBe(
-      "disabled",
+    const source = await client.getInventoryDocument(target!.id);
+    const content = JSON.stringify({ command: "local-docs", args: [] });
+    await client.saveInventoryDocument(target!.id, source.revision, content);
+    expect((await client.getInventoryDocument(target!.id)).content).toBe(
+      content,
     );
+    const after = await client.getInventory();
+    expect(after.items).toEqual(before.items);
+    await expect(
+      client.saveInventoryDocument(target!.id, source.revision, content),
+    ).rejects.toThrow("changed");
+  });
+
+  it("reports actual proxy inactivity before and after an unavailable activation", async () => {
+    const client = createBrowserFixtureClient("proxy-capture-consent");
+    const preview = await client.previewProxy();
+    const status = await client.getProxyStatus();
+    for (const disclosure of [
+      preview.fallbackBehavior,
+      status.detail,
+      ...status.meta.notices,
+    ]) {
+      expect(disclosure).toContain(
+        "Native capture configuration is unaffected",
+      );
+      expect(disclosure).toContain(
+        "live capture remains unknown until evidence arrives",
+      );
+      expect(disclosure).not.toMatch(
+        /Native capture remains active|active where (configured|installed)/i,
+      );
+    }
+    expect(client.fixtureAudit().proxyActive).toBe(false);
+    await expect(
+      client.setProxyEnabled(true, preview.consentToken),
+    ).rejects.toThrow("unavailable");
+    expect(client.fixtureAudit().proxyActive).toBe(
+      (await client.getProxyStatus()).proxyStatus === "active",
+    );
+    expect(client.fixtureAudit().proxyActive).toBe(false);
+  });
+
+  it("persists only appearance through the desktop preference patch", async () => {
+    const client = createBrowserFixtureClient("visual-keyboard");
+    const before = await client.getSettings();
+    expect(before.appearance).toBe("system");
+    const saved = await client.patchDesktopPreferences({ appearance: "dark" });
+    expect(saved).toEqual({ ...before, appearance: "dark" });
+    expect(await client.getSettings()).toEqual(saved);
     expect(
-      after.items.find((item) => item.id === "mcp-cutokyo-search")?.state,
-    ).toBe("enabled");
-  });
-
-  it("records no outbound request after an analysis is cancelled", async () => {
-    const client = createBrowserFixtureClient("analysis-cancel");
-    const preview = await client.previewAnalysis(["analysis-73A9"]);
-    await client.cancelAnalysis(preview.requestId);
-    await expect(client.runAnalysis(preview.previewToken)).rejects.toThrow(
-      "cancelled",
-    );
-    expect(client.fixtureAudit().outboundAnalysisRequests).toBe(0);
-  });
-
-  it("retries analysis idempotently after a bounded error", async () => {
-    const client = createBrowserFixtureClient("analysis-error");
-    const preview = await client.previewAnalysis(["analysis-73A9"]);
-    await expect(client.runAnalysis(preview.previewToken)).rejects.toThrow(
-      "timed out",
-    );
-    const first = await client.runAnalysis(preview.previewToken);
-    const second = await client.runAnalysis(preview.previewToken);
-    expect(first).toEqual(second);
-    expect(client.fixtureAudit().outboundAnalysisRequests).toBe(2);
+      (await createBrowserFixtureClient("visual-keyboard").getSettings())
+        .appearance,
+    ).toBe("system");
   });
 
   it("recovers writer lock independently of surviving quarantine", async () => {
@@ -137,4 +151,28 @@ describe("isolated browser fixtures", () => {
     expect(next.currentQuarantineCount).toBe(1);
     expect(next.firstAffectedObservationId).toBe("spool:malformed-73A9");
   });
+});
+
+it("removes guard APIs/settings while retaining explicit proxy consent", async () => {
+  const client = createBrowserFixtureClient("proxy-capture-consent");
+  expect(client).not.toHaveProperty("getGuards");
+  expect(client).not.toHaveProperty("setOutgoingGuardEnabled");
+  expect(await client.getSettings()).not.toHaveProperty(
+    "outgoing_guard_enabled",
+  );
+  await expect(client.setProxyEnabled(true, null)).rejects.toThrow(
+    "explicit consent preview",
+  );
+  const preview = await client.previewProxy();
+  expect(preview.redactionBehavior).toContain(
+    "Provider requests pass unchanged",
+  );
+  await expect(
+    client.setProxyEnabled(true, preview.consentToken),
+  ).rejects.toThrow("no provider-proxy listener");
+  expect((await client.getProxyStatus()).proxyStatus).toBe("unavailable");
+  const stopped = await client.setProxyEnabled(false, null);
+  expect(stopped.proxyStatus).toBe("unavailable");
+  expect(stopped.proxyEnabled).toBe(false);
+  expect(stopped.contextBreakdownAvailable).toBe(false);
 });

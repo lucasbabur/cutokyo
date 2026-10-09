@@ -1,13 +1,11 @@
 import type { SettingsPatch } from "../generated/settings.js";
 import type {
-  ActionReceipt,
-  AnalysisCandidate,
-  AnalysisPreview,
-  AnalysisResult,
   BootstrapResponse,
   BundlePreview,
   CommandClient,
   CompleteOnboardingRequest,
+  CaptureSetupPreview,
+  Harness,
   DeletionPreview,
   DeletionReceipt,
   DesktopSettings,
@@ -23,14 +21,16 @@ import type {
   SessionSearchResponse,
   UpdateStatus,
 } from "../contracts.js";
+import { localMidnight, sessionMatches } from "../domain/sessionSearch.js";
 import { createScenario, FIXTURE_NOW, type FixtureState } from "./scenarios.js";
+import { createInventoryFixtureManagement } from "./inventoryManagement.js";
+import { createBackupFixtureManagement } from "./backupManagement.js";
 
 const JEV_CASE_SCENARIOS: Readonly<Record<string, string>> = {
   "onboarding-empty-history": "onboarding-empty",
   "search-detail-resume": "search-resume",
   "retention-delete-confirmation": "retention-delete",
-  "guard-proxy-coverage-language": "guards-proxy",
-  "analysis-preview-cancel": "analysis-cancel",
+  "proxy-capture-consent": "proxy-capture",
   "degraded-health-recovery": "health-degraded",
   "mcp-plugin-inventory": "mcp-plugin-inventory",
   "visual-keyboard-consistency": "visual-keyboard",
@@ -39,9 +39,14 @@ const JEV_CASE_SCENARIOS: Readonly<Record<string, string>> = {
 const VALID_CASES = new Set([
   ...Object.keys(JEV_CASE_SCENARIOS),
   ...Object.values(JEV_CASE_SCENARIOS),
-  "analysis-error",
+  "search-pagination",
   "populated-dashboard",
   "empty-history",
+  "appearance-dark",
+  "appearance-dark-delayed",
+  "appearance-conflict",
+  "appearance-save-error",
+  "native-capabilities-unavailable",
 ]);
 
 const DELETION_DISCLOSURE =
@@ -70,10 +75,11 @@ function deletionPreview(
       0,
     ),
     summaries: sessions.filter((session) => session.summary !== null).length,
-    ftsRows: sessions.reduce(
-      (total, session) => total + session.timeline.length,
-      0,
-    ),
+    // Declared fixture evidence has three raw observations per session; search
+    // also stores one canonical-message document per message and one per session.
+    ftsRows:
+      sessions.length * 4 +
+      sessions.reduce((total, session) => total + session.timeline.length, 0),
     disclosure: DELETION_DISCLOSURE,
   };
 }
@@ -89,42 +95,30 @@ function receipt(preview: DeletionPreview): DeletionReceipt {
   };
 }
 
-function includesText(session: SessionRecord, needle: string): boolean {
-  const haystack = [
-    session.id,
-    session.nativeSessionKey,
-    session.nativeResumeId,
-    session.title,
-    session.summary,
-    session.project,
-    session.branch,
-    ...session.tools,
-    ...session.skills,
-    ...session.agents,
-    ...session.timeline.flatMap((entry) => [entry.title, entry.body]),
-  ]
-    .filter((value): value is string => value !== null)
-    .join(" ")
-    .toLocaleLowerCase();
-  return haystack.includes(needle.toLocaleLowerCase());
-}
-
 function search(state: FixtureState, filters: SessionFilters): SessionRecord[] {
   const fixedNow = new Date(FIXTURE_NOW).getTime();
   const rangeDays =
+    filters.dateRange === "7d"
+      ? 7
+      : filters.dateRange === "30d"
+        ? 30
+        : filters.dateRange === "90d"
+          ? 90
+          : null;
+  const since =
     filters.dateRange === "today"
-      ? 1
-      : filters.dateRange === "7d"
-        ? 7
-        : filters.dateRange === "30d"
-          ? 30
-          : filters.dateRange === "90d"
-            ? 90
-            : null;
+      ? new Date(localMidnight(new Date(FIXTURE_NOW))).getTime()
+      : rangeDays === null
+        ? null
+        : fixedNow - rangeDays * 86_400_000;
+  const scored = new Map<string, number>();
   return state.sessions
-    .filter(
-      (session) => filters.text === "" || includesText(session, filters.text),
-    )
+    .map((session) => {
+      const result = sessionMatches(session, filters);
+      scored.set(session.id, result.score);
+      return { ...session, matches: result.matches, matched: result.matched };
+    })
+    .filter((session) => session.matched)
     .filter(
       (session) =>
         filters.harness === "all" || session.harness === filters.harness,
@@ -149,15 +143,21 @@ function search(state: FixtureState, filters: SessionFilters): SessionRecord[] {
     )
     .filter(
       (session) =>
-        rangeDays === null ||
-        new Date(session.startedAt).getTime() >=
-          fixedNow - rangeDays * 86_400_000,
+        since === null || new Date(session.startedAt).getTime() >= since,
     )
-    .sort((left, right) => right.startedAt.localeCompare(left.startedAt));
+    .sort(
+      (left, right) =>
+        (filters.sort === "relevance" && filters.text.trim() !== ""
+          ? (scored.get(right.id) ?? 0) - (scored.get(left.id) ?? 0)
+          : 0) ||
+        right.startedAt.localeCompare(left.startedAt) ||
+        left.id.localeCompare(right.id),
+    )
+    .map(({ matched: _matched, ...session }) => session);
 }
 
 interface FixtureAudit {
-  readonly outboundAnalysisRequests: number;
+  readonly proxyActive: boolean;
   readonly resumeRequests: readonly string[];
   readonly bundleCreated: boolean;
   readonly sessionIds: readonly string[];
@@ -181,9 +181,11 @@ export function createBrowserFixtureClient(
   const scenarioName =
     caseName === null ? null : (JEV_CASE_SCENARIOS[caseName] ?? caseName);
   const state = createScenario(scenarioName);
+  const capturePreviews = new Map<string, CaptureSetupPreview>();
+  const installedCapture = new Set<Harness>();
+  let captureSequence = 0;
   const previews = new Map<string, DeletionPreview>();
-  const analysisPreviews = new Map<string, AnalysisPreview>();
-  const cancelledRequests = new Set<string>();
+  let holdFirstAppearanceRead = caseName === "appearance-dark-delayed";
 
   async function getInventory(): Promise<InventoryResponse> {
     await wait();
@@ -196,13 +198,25 @@ export function createBrowserFixtureClient(
   }
 
   const client: BrowserFixtureClient = {
+    async getCapabilities() {
+      await wait();
+      const unavailable = caseName === "native-capabilities-unavailable";
+      return {
+        updates: {
+          available: !unavailable,
+          reason: unavailable
+            ? "Signed updater metadata is not configured in this build. Install updates manually."
+            : null,
+        },
+      };
+    },
     async getBootstrap(): Promise<BootstrapResponse> {
       await wait();
       return {
         appVersion: "0.1.0-test",
         onboardingComplete: state.onboarding.complete,
-        localOnly: !state.guards.proxyEnabled,
-        proxyActive: state.guards.proxyStatus === "active",
+        localOnly: !state.proxy.proxyEnabled,
+        proxyActive: state.proxy.proxyStatus === "active",
         analysisEgressEnabled: false,
         writerMode: state.health.dimensions.some(
           (dimension) =>
@@ -218,16 +232,71 @@ export function createBrowserFixtureClient(
       await wait();
       return structuredClone(state.onboarding);
     },
+    async previewCaptureSetup(harness, operation) {
+      await wait();
+      const preview: CaptureSetupPreview = {
+        previewToken: `fixture-capture-${++captureSequence}`,
+        harness,
+        operation,
+        version:
+          harness === "claude_code"
+            ? "2.1.278"
+            : harness === "codex"
+              ? "0.153.4"
+              : "1.18.28",
+        targets: [
+          "Isolated browser fixture configuration. No native files are read or changed.",
+        ],
+        actions: [
+          operation === "install"
+            ? "Install owned native capture integration"
+            : operation === "uninstall"
+              ? "Remove only owned capture integration"
+              : "No interrupted intent. No changes.",
+        ],
+        issues: [],
+        verified: installedCapture.has(harness),
+        recoveryPending: false,
+        disclosure:
+          "Browser simulation only. Native installation is not proven. Configuration verification does not establish live capture or transcript coverage.",
+      };
+      capturePreviews.set(preview.previewToken, preview);
+      return structuredClone(preview);
+    },
+    async applyCaptureSetup(previewToken) {
+      await wait();
+      const preview = capturePreviews.get(previewToken);
+      if (preview === undefined)
+        throw new Error("Setup preview expired. Preview again.");
+      capturePreviews.delete(previewToken);
+      if (preview.operation === "install")
+        installedCapture.add(preview.harness);
+      if (preview.operation === "uninstall")
+        installedCapture.delete(preview.harness);
+      return {
+        harness: preview.harness,
+        operation: preview.operation,
+        changed: preview.operation !== "recover",
+        verified: installedCapture.has(preview.harness),
+        issues: [],
+        message:
+          "Browser fixture updated only. No native configuration changed. Live capture remains unknown.",
+      };
+    },
     async completeOnboarding(request: CompleteOnboardingRequest) {
       await wait(35);
+      if (!request.acknowledgedPlaintextStorage)
+        throw new Error("Acknowledge local plaintext storage.");
+      if (request.mode === "browse" && request.harnesses.length !== 0)
+        throw new Error("Browse-only cannot select capture harnesses.");
       if (
-        !request.acknowledgedPlaintextStorage ||
-        request.harnesses.length === 0
-      ) {
+        request.mode === "install" &&
+        (request.harnesses.length === 0 ||
+          request.harnesses.some((harness) => !installedCapture.has(harness)))
+      )
         throw new Error(
-          "Acknowledge local plaintext storage and select a harness.",
+          "Preview, install and verify every selected capture integration first.",
         );
-      }
       if (request.proxyEnabled || request.analysisEgressEnabled) {
         throw new Error("Onboarding cannot silently enable optional egress.");
       }
@@ -235,8 +304,7 @@ export function createBrowserFixtureClient(
       return {
         ok: true,
         status: "success",
-        message:
-          "Local-only setup is ready. Proxy capture and AI analysis remain off.",
+        message: "Local-only setup is ready. Proxy capture remains off.",
       };
     },
     async getDashboard() {
@@ -251,6 +319,8 @@ export function createBrowserFixtureClient(
     ): Promise<SessionSearchResponse> {
       await wait();
       const sessions = search(state, filters);
+      const offset = Math.max(0, Math.trunc(filters.offset));
+      const limit = Math.min(500, filters.limit || 50);
       const distinct = (values: readonly (string | null)[]) =>
         [
           ...new Set(values.filter((value): value is string => value !== null)),
@@ -265,8 +335,11 @@ export function createBrowserFixtureClient(
               ],
           generatedAt: FIXTURE_NOW,
         },
-        sessions: structuredClone(sessions),
+        sessions: structuredClone(sessions.slice(offset, offset + limit)),
         total: sessions.length,
+        offset,
+        limit,
+        hasMore: offset + limit < sessions.length,
         availableProjects: distinct(
           state.sessions.map((session) => session.project),
         ),
@@ -307,6 +380,8 @@ export function createBrowserFixtureClient(
         harnessName,
         nativeResumeId: session.nativeResumeId ?? "",
         commandDescription: `Open ${harnessName} with recorded native target ${session.nativeResumeId ?? "unavailable"}`,
+        projectDirectory: null,
+        projectContextKnown: false,
         canResume: session.nativeResumeId !== null,
         unavailableReason:
           session.nativeResumeId === null
@@ -328,7 +403,7 @@ export function createBrowserFixtureClient(
       return {
         ok: true,
         status: "success",
-        message: `${preview.harnessName} received exact native target ${preview.nativeResumeId}.`,
+        message: `Browser simulation recorded exact native target ${preview.nativeResumeId}. No terminal or harness was launched.`,
       };
     },
     async previewSessionDeletion(sessionId: string) {
@@ -396,27 +471,10 @@ export function createBrowserFixtureClient(
       return receipt(preview);
     },
     getInventory,
-    async setMcpEnabled(itemId: string, enabled: boolean) {
-      await wait();
-      const item = state.inventory.items.find(
-        (candidate) => candidate.id === itemId,
-      );
-      if (item === undefined || item.kind !== "mcp") {
-        throw new Error(`MCP server ${itemId} is unavailable.`);
-      }
-      state.inventory = {
-        ...state.inventory,
-        items: state.inventory.items.map((candidate) =>
-          candidate.id === itemId
-            ? {
-                ...candidate,
-                state: enabled ? ("enabled" as const) : ("disabled" as const),
-              }
-            : candidate,
-        ),
-      };
-      return structuredClone(state.inventory);
-    },
+    ...createInventoryFixtureManagement(state),
+    ...createBackupFixtureManagement(state, () => {
+      previews.clear();
+    }),
     async getPluginVerification(itemId: string): Promise<PluginVerification> {
       await wait();
       const item = state.inventory.items.find(
@@ -447,9 +505,9 @@ export function createBrowserFixtureClient(
           "Capabilities control data sent by Cutokyo. This verifier does not claim portable filesystem or network sandboxing where the operating system does not enforce it.",
       };
     },
-    async getGuards() {
+    async getProxyStatus() {
       await wait();
-      return structuredClone(state.guards);
+      return structuredClone(state.proxy);
     },
     async previewProxy(): Promise<ProxyPreview> {
       await wait();
@@ -465,10 +523,9 @@ export function createBrowserFixtureClient(
           "Authorization credentials",
           "Raw provider request bodies",
         ],
-        fallbackBehavior:
-          "Proxy capture is used only for facts native sources cannot establish. Instrumentation failure leaves the harness running.",
-        guardBehavior:
-          "If the outgoing guard is separately enabled, an uninspectable provider-bound channel is blocked rather than called protected.",
+        fallbackBehavior: state.proxy.detail,
+        redactionBehavior:
+          "Provider requests pass unchanged. Baseline redaction applies only to retained local trace metadata; credentials and payloads are not persisted.",
       };
     },
     async setProxyEnabled(enabled: boolean, consentToken: string | null) {
@@ -478,125 +535,15 @@ export function createBrowserFixtureClient(
           "Proxy capture requires the current explicit consent preview.",
         );
       }
-      state.guards = {
-        ...state.guards,
-        proxyEnabled: enabled,
-        proxyStatus: enabled ? "active" : "inactive",
-        contextBreakdownAvailable: enabled,
-        channels: state.guards.channels.map((channel) =>
-          channel.id === "provider"
-            ? {
-                ...channel,
-                state: enabled
-                  ? ("inspected" as const)
-                  : ("unavailable" as const),
-                findings: enabled ? 0 : null,
-              }
-            : channel,
-        ),
+      if (enabled) throw new Error(state.proxy.detail);
+      state.proxy = {
+        ...state.proxy,
+        proxyEnabled: false,
+        proxyStatus: "unavailable",
+        contextBreakdownAvailable: false,
       };
-      state.settings = { ...state.settings, proxy_enabled: enabled };
-      return structuredClone(state.guards);
-    },
-    async setOutgoingGuardEnabled(enabled: boolean) {
-      await wait();
-      state.guards = { ...state.guards, outgoingGuardEnabled: enabled };
-      state.settings = { ...state.settings, outgoing_guard_enabled: enabled };
-      return structuredClone(state.guards);
-    },
-    async getAnalysisCandidates(): Promise<readonly AnalysisCandidate[]> {
-      await wait();
-      return state.sessions.map((session) => ({
-        sessionId: session.id,
-        title: session.title ?? session.id,
-        harness: session.harness,
-        coverage: session.provenance.coverage,
-      }));
-    },
-    async previewAnalysis(
-      sessionIds: readonly string[],
-    ): Promise<AnalysisPreview> {
-      await wait();
-      if (sessionIds.length === 0)
-        throw new Error("Select at least one session to analyze.");
-      const selected = sessionIds.map((id) => {
-        const session = state.sessions.find((candidate) => candidate.id === id);
-        if (session === undefined)
-          throw new Error(`Session ${id} is unavailable.`);
-        return session;
-      });
-      const preview: AnalysisPreview = {
-        previewToken: stableToken("analysis-preview", sessionIds),
-        requestId: stableToken("analysis-request", sessionIds),
-        sourceSessionIds: [...sessionIds],
-        sourceSessionTitles: selected.map(
-          (session) => session.title ?? session.id,
-        ),
-        provider: "Synthetic local QA provider",
-        model: "fixture-summary-v1",
-        promptVersion: "summary-prompt-1",
-        payloadScope: [
-          "Selected session titles and redacted message text",
-          "Attributable tool names and completion states",
-          "Coverage and provenance labels",
-        ],
-        redactions: [
-          "Credential-like values",
-          "Full local project paths",
-          "Raw tool secrets",
-        ],
-        estimatedInputTokens: 1_240,
-        estimatedPriceMicros: null,
-        priceLabel:
-          "No authoritative price is available for this synthetic provider.",
-      };
-      analysisPreviews.set(preview.previewToken, preview);
-      return structuredClone(preview);
-    },
-    async runAnalysis(previewToken: string): Promise<AnalysisResult> {
-      const preview = analysisPreviews.get(previewToken);
-      if (preview === undefined)
-        throw new Error("Analysis preview is missing or stale.");
-      const existing = state.analysisResults.find(
-        (result) =>
-          result.idempotencyKey === `analysis:${preview.previewToken}`,
-      );
-      if (existing !== undefined) return structuredClone(existing);
-      if (cancelledRequests.has(preview.requestId)) {
-        throw new Error("Analysis was cancelled before any outbound request.");
-      }
-      state.outboundAnalysisRequests += 1;
-      await wait(420);
-      if (cancelledRequests.has(preview.requestId)) {
-        throw new Error("Analysis was cancelled before a summary was written.");
-      }
-      if (state.failNextAnalysis) {
-        state.failNextAnalysis = false;
-        throw new Error(
-          "Synthetic provider timed out. No summary was written; retry is safe.",
-        );
-      }
-      const result: AnalysisResult = {
-        summaryId: `summary:${preview.sourceSessionIds.join("+")}`,
-        text: "The selected session reconciled native evidence, preserved partial coverage, and left optional egress disabled outside this confirmed request.",
-        provider: preview.provider,
-        model: preview.model,
-        promptVersion: preview.promptVersion,
-        sourceSessionIds: [...preview.sourceSessionIds],
-        idempotencyKey: `analysis:${preview.previewToken}`,
-        createdAt: FIXTURE_NOW,
-      };
-      state.analysisResults.push(result);
-      return structuredClone(result);
-    },
-    async cancelAnalysis(requestId: string): Promise<ActionReceipt> {
-      await wait();
-      cancelledRequests.add(requestId);
-      return {
-        ok: true,
-        status: "cancelled",
-        message: "Analysis request cancelled.",
-      };
+      state.settings = { ...state.settings, proxy_enabled: false };
+      return structuredClone(state.proxy);
     },
     getHealth,
     async retryHealth(dimensionId: string) {
@@ -650,12 +597,7 @@ export function createBrowserFixtureClient(
     async previewBundle(): Promise<BundlePreview> {
       await wait();
       return {
-        files: [
-          "doctor.json",
-          "health.json",
-          "bounded-logs.jsonl",
-          "version.txt",
-        ],
+        files: ["cutokyo-diagnostic-bundle.json"],
         exclusions: [
           "Prompts",
           "Transcripts",
@@ -664,11 +606,10 @@ export function createBrowserFixtureClient(
           "API keys",
         ],
         redactions: [
-          "Home directories → <home>",
-          "Project paths → stable digest",
-          "Tokens → [REDACTED]",
+          "Only categorical health statuses and numeric counters are included",
+          "The complete report receives baseline secret redaction",
         ],
-        estimatedBytes: 48_200,
+        estimatedBytes: 16_384,
       };
     },
     async createBundle() {
@@ -678,10 +619,20 @@ export function createBrowserFixtureClient(
         ok: true,
         status: "success",
         message:
-          "Diagnostic bundle created in the application-managed exports folder.",
+          "Created local diagnostic report at App data/diagnostics/fixture-export/cutokyo-diagnostic-bundle.json.",
       };
     },
     async getSettings(): Promise<DesktopSettings> {
+      if (holdFirstAppearanceRead) {
+        holdFirstAppearanceRead = false;
+        await new Promise<void>((release) => {
+          Object.defineProperty(
+            globalThis,
+            "__CUTOKYO_FIXTURE_RELEASE_APPEARANCE__",
+            { configurable: true, value: () => release() },
+          );
+        });
+      }
       await wait();
       return structuredClone(state.settings);
     },
@@ -692,9 +643,6 @@ export function createBrowserFixtureClient(
         ...(patch.proxy_enabled === undefined
           ? {}
           : { proxy_enabled: patch.proxy_enabled }),
-        ...(patch.outgoing_guard_enabled === undefined
-          ? {}
-          : { outgoing_guard_enabled: patch.outgoing_guard_enabled }),
         ...(patch.search_mcp_enabled === undefined
           ? {}
           : { search_mcp_enabled: patch.search_mcp_enabled }),
@@ -702,9 +650,10 @@ export function createBrowserFixtureClient(
           ? {}
           : { retention_days: patch.retention_days }),
       };
-      state.guards = {
-        ...state.guards,
-        outgoingGuardEnabled: state.settings.outgoing_guard_enabled,
+      state.proxy = {
+        ...state.proxy,
+        proxyEnabled: state.settings.proxy_enabled,
+        proxyStatus: "unavailable",
       };
       state.inventory = {
         ...state.inventory,
@@ -714,6 +663,18 @@ export function createBrowserFixtureClient(
     },
     async patchDesktopPreferences(patch) {
       await wait();
+      if (patch.appearance !== undefined && state.failAppearanceSave) {
+        throw new Error("Synthetic appearance preference could not be saved.");
+      }
+      if (
+        patch.appearance !== undefined &&
+        caseName === "appearance-conflict"
+      ) {
+        state.settings = { ...state.settings, appearance: "system" };
+        throw new Error(
+          "Desktop settings changed in another window; reload before saving.",
+        );
+      }
       state.settings = { ...state.settings, ...patch };
       return structuredClone(state.settings);
     },
@@ -729,7 +690,7 @@ export function createBrowserFixtureClient(
     },
     fixtureAudit() {
       return {
-        outboundAnalysisRequests: state.outboundAnalysisRequests,
+        proxyActive: state.proxy.proxyStatus === "active",
         resumeRequests: [...state.resumeRequests],
         bundleCreated: state.bundleCreated,
         sessionIds: state.sessions.map((session) => session.id),

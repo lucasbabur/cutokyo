@@ -12,6 +12,11 @@ use crate::service::{
 };
 
 #[tauri::command]
+fn desktop_capabilities() -> Value {
+    DesktopService::capabilities()
+}
+
+#[tauri::command]
 fn contract_snapshot() -> Result<String, String> {
     serde_json::to_string(&Application::new().contract_snapshot())
         .map_err(|error| error.to_string())
@@ -22,8 +27,33 @@ fn contract_snapshot() -> Result<String, String> {
     reason = "Tauri implements `CommandArg` for `State`, not `&State`"
 )]
 #[tauri::command]
-fn desktop_bootstrap(state: tauri::State<'_, DesktopService>) -> Result<Value, String> {
+fn desktop_bootstrap(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, DesktopService>,
+) -> Result<Value, String> {
+    // Refresh and "Recheck local status" also pick up sessions created since last time.
+    spawn_history_import(&app);
     state.bootstrap()
+}
+
+/// Imports past sessions without blocking the window: short slices, each holding the
+/// core lock briefly, with a pause between them so queries stay responsive.
+fn spawn_history_import(app: &tauri::AppHandle) {
+    if !app.state::<DesktopService>().begin_history_import() {
+        return;
+    }
+    let app = app.clone();
+    std::thread::spawn(move || {
+        let service = app.state::<DesktopService>();
+        let outcome = loop {
+            match service.import_history_slice() {
+                Ok(true) => break Ok(()),
+                Ok(false) => std::thread::sleep(std::time::Duration::from_millis(150)),
+                Err(error) => break Err(error),
+            }
+        };
+        service.finish_history_import(outcome);
+    });
 }
 
 #[expect(
@@ -35,16 +65,43 @@ fn onboarding_status(state: tauri::State<'_, DesktopService>) -> Result<Value, S
     state.onboarding_status()
 }
 
-#[expect(
-    clippy::needless_pass_by_value,
-    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
-)]
 #[tauri::command]
-fn complete_onboarding(
-    state: tauri::State<'_, DesktopService>,
+async fn complete_onboarding(
+    app: tauri::AppHandle,
     request: CompleteOnboardingRequest,
 ) -> Result<Value, String> {
-    state.complete_onboarding(request)
+    tauri::async_runtime::spawn_blocking(move || {
+        app.state::<DesktopService>().complete_onboarding(request)
+    })
+    .await
+    .map_err(|error| format!("Onboarding worker failed: {error}"))?
+}
+
+#[tauri::command]
+async fn preview_capture_setup(
+    app: tauri::AppHandle,
+    harness: cutokyo_domain::Harness,
+    operation: cutokyo_core::app::CaptureSetupOperation,
+) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        app.state::<DesktopService>()
+            .preview_capture_setup(harness, operation)
+    })
+    .await
+    .map_err(|error| format!("Capture setup preview worker failed: {error}"))?
+}
+
+#[tauri::command]
+async fn apply_capture_setup(
+    app: tauri::AppHandle,
+    preview_token: String,
+) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        app.state::<DesktopService>()
+            .apply_capture_setup(&preview_token)
+    })
+    .await
+    .map_err(|error| format!("Capture setup worker failed: {error}"))?
 }
 
 #[expect(
@@ -56,16 +113,13 @@ fn dashboard_query(state: tauri::State<'_, DesktopService>) -> Result<Value, Str
     state.dashboard()
 }
 
-#[expect(
-    clippy::needless_pass_by_value,
-    reason = "Tauri `CommandArg` requires owned `State` and `SessionFilters` extractors"
-)]
 #[tauri::command]
-fn search_sessions(
-    state: tauri::State<'_, DesktopService>,
-    filters: SessionFilters,
-) -> Result<Value, String> {
-    state.search_sessions(&filters)
+async fn search_sessions(app: tauri::AppHandle, filters: SessionFilters) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        app.state::<DesktopService>().search_sessions(&filters)
+    })
+    .await
+    .map_err(|error| format!("Session search worker failed: {error}"))?
 }
 
 #[expect(
@@ -80,28 +134,22 @@ fn session_detail(
     state.session_detail(session_id)
 }
 
-#[expect(
-    clippy::needless_pass_by_value,
-    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
-)]
 #[tauri::command]
-fn preview_resume(
-    state: tauri::State<'_, DesktopService>,
-    session_id: &str,
-) -> Result<Value, String> {
-    state.preview_resume(session_id)
+async fn preview_resume(app: tauri::AppHandle, session_id: String) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        app.state::<DesktopService>().preview_resume(&session_id)
+    })
+    .await
+    .map_err(|error| format!("Resume preview worker failed: {error}"))?
 }
 
-#[expect(
-    clippy::needless_pass_by_value,
-    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
-)]
 #[tauri::command]
-fn resume_session(
-    state: tauri::State<'_, DesktopService>,
-    session_id: &str,
-) -> Result<Value, String> {
-    state.resume_session(session_id)
+async fn resume_session(app: tauri::AppHandle, session_id: String) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        app.state::<DesktopService>().resume_session(&session_id)
+    })
+    .await
+    .map_err(|error| format!("Terminal resume worker failed: {error}"))?
 }
 
 #[expect(
@@ -162,6 +210,44 @@ fn delete_all_history(
     state.delete_all(confirmation)
 }
 
+#[tauri::command]
+async fn create_backup(
+    app: tauri::AppHandle,
+    destination: Option<String>,
+) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        app.state::<DesktopService>()
+            .create_backup(destination.as_deref())
+    })
+    .await
+    .map_err(|error| format!("Backup worker failed: {error}"))?
+}
+
+#[tauri::command]
+async fn list_backups(app: tauri::AppHandle) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || app.state::<DesktopService>().list_backups())
+        .await
+        .map_err(|error| format!("Backup listing worker failed: {error}"))?
+}
+
+#[tauri::command]
+async fn preview_backup_restore(app: tauri::AppHandle, path: String) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        app.state::<DesktopService>().preview_backup_restore(&path)
+    })
+    .await
+    .map_err(|error| format!("Restore preview worker failed: {error}"))?
+}
+
+#[tauri::command]
+async fn restore_backup(app: tauri::AppHandle, preview_token: String) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        app.state::<DesktopService>().restore_backup(&preview_token)
+    })
+    .await
+    .map_err(|error| format!("Restore worker failed: {error}"))?
+}
+
 #[expect(
     clippy::needless_pass_by_value,
     reason = "Tauri implements `CommandArg` for `State`, not `&State`"
@@ -171,17 +257,45 @@ fn inventory_query(state: tauri::State<'_, DesktopService>) -> Result<Value, Str
     state.inventory()
 }
 
-#[expect(
-    clippy::needless_pass_by_value,
-    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
-)]
+#[expect(clippy::needless_pass_by_value, reason = "Tauri CommandArg owns State")]
 #[tauri::command]
-fn set_mcp_enabled(
+fn inventory_document(
     state: tauri::State<'_, DesktopService>,
     item_id: &str,
-    enabled: bool,
 ) -> Result<Value, String> {
-    state.set_mcp_enabled(item_id, enabled)
+    state.inventory_document(item_id)
+}
+
+#[expect(clippy::needless_pass_by_value, reason = "Tauri CommandArg owns State")]
+#[tauri::command]
+fn save_inventory_document(
+    state: tauri::State<'_, DesktopService>,
+    item_id: &str,
+    revision: &str,
+    content: &str,
+) -> Result<Value, String> {
+    state.save_inventory_document(item_id, revision, content)
+}
+
+#[expect(clippy::needless_pass_by_value, reason = "Tauri CommandArg owns State")]
+#[tauri::command]
+fn remove_inventory_item(
+    state: tauri::State<'_, DesktopService>,
+    item_id: &str,
+    revision: &str,
+) -> Result<Value, String> {
+    state.remove_inventory_item(item_id, revision)
+}
+
+#[expect(clippy::needless_pass_by_value, reason = "Tauri CommandArg owns State")]
+#[tauri::command]
+fn install_inventory_item(
+    state: tauri::State<'_, DesktopService>,
+    item_id: &str,
+    revision: &str,
+    harness: cutokyo_domain::Harness,
+) -> Result<Value, String> {
+    state.install_inventory_item(item_id, revision, harness)
 }
 
 #[expect(
@@ -201,8 +315,8 @@ fn plugin_verification(
     reason = "Tauri implements `CommandArg` for `State`, not `&State`"
 )]
 #[tauri::command]
-fn guard_coverage(state: tauri::State<'_, DesktopService>) -> Result<Value, String> {
-    state.guards()
+fn proxy_status(state: tauri::State<'_, DesktopService>) -> Result<Value, String> {
+    state.proxy_status()
 }
 
 #[tauri::command]
@@ -221,63 +335,6 @@ fn set_proxy_enabled(
     consent_token: Option<&str>,
 ) -> Result<Value, String> {
     state.set_proxy_enabled(enabled, consent_token)
-}
-
-#[expect(
-    clippy::needless_pass_by_value,
-    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
-)]
-#[tauri::command]
-fn set_outgoing_guard_enabled(
-    state: tauri::State<'_, DesktopService>,
-    enabled: bool,
-) -> Result<Value, String> {
-    state.set_outgoing_guard_enabled(enabled)
-}
-
-#[expect(
-    clippy::needless_pass_by_value,
-    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
-)]
-#[tauri::command]
-fn analysis_candidates(state: tauri::State<'_, DesktopService>) -> Result<Value, String> {
-    state.analysis_candidates()
-}
-
-#[expect(
-    clippy::needless_pass_by_value,
-    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
-)]
-#[tauri::command]
-fn preview_analysis(
-    state: tauri::State<'_, DesktopService>,
-    session_ids: Vec<String>,
-) -> Result<Value, String> {
-    state.preview_analysis(session_ids)
-}
-
-#[expect(
-    clippy::needless_pass_by_value,
-    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
-)]
-#[tauri::command]
-fn run_analysis(
-    state: tauri::State<'_, DesktopService>,
-    preview_token: &str,
-) -> Result<Value, String> {
-    state.run_analysis(preview_token)
-}
-
-#[expect(
-    clippy::needless_pass_by_value,
-    reason = "Tauri implements `CommandArg` for `State`, not `&State`"
-)]
-#[tauri::command]
-fn cancel_analysis(
-    state: tauri::State<'_, DesktopService>,
-    request_id: &str,
-) -> Result<Value, String> {
-    state.cancel_analysis(request_id)
 }
 
 #[expect(
@@ -403,13 +460,17 @@ pub(crate) fn run() -> Result<(), String> {
                     .map_err(io::Error::other)?;
             }
             app.manage(service);
+            spawn_history_import(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             contract_snapshot,
+            desktop_capabilities,
             desktop_bootstrap,
             onboarding_status,
             complete_onboarding,
+            preview_capture_setup,
+            apply_capture_setup,
             dashboard_query,
             search_sessions,
             session_detail,
@@ -420,17 +481,19 @@ pub(crate) fn run() -> Result<(), String> {
             preview_retention,
             apply_retention,
             delete_all_history,
+            create_backup,
+            list_backups,
+            preview_backup_restore,
+            restore_backup,
             inventory_query,
-            set_mcp_enabled,
+            inventory_document,
+            save_inventory_document,
+            remove_inventory_item,
+            install_inventory_item,
             plugin_verification,
-            guard_coverage,
+            proxy_status,
             preview_proxy_consent,
             set_proxy_enabled,
-            set_outgoing_guard_enabled,
-            analysis_candidates,
-            preview_analysis,
-            run_analysis,
-            cancel_analysis,
             health_snapshot,
             retry_health_dimension,
             run_doctor,

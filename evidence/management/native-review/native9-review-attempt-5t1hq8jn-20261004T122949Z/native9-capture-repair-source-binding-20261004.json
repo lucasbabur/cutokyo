@@ -1,0 +1,21 @@
+{
+  "scope": "Frozen independently reviewed capture repair bound to actual native9 build; local dirty source, not release proof",
+  "head": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "source_snapshot_records": 394,
+  "before_after_exact_match": true,
+  "capture_repair_sha256": {
+    "ui/src/pages/OnboardingPage.tsx": "c7267878445cdd1a368d64ea75431a398413207244e0ada81ed91b5eee27824e",
+    "ui/src/styles.css": "4f7a233a0a24299758b4a24a9dbfa88149f67bf7c1e551fcab101f1241c8ffe8",
+    "ui/src/App.test.tsx": "81e8ea87b162de4c8305cd13c58597a31c8ecf455d2c4aaeca8cb4765c641a9c",
+    "ui/src/pages/pages.test.tsx": "78e4384a926a4be939750609ce54f714ef690e2e68f07bd1893d0d8b9a2eb523",
+    "ui/src/designTokens.test.ts": "6e6709474cc20528036d810a845bf7216480e029c29df08589add7c543d774e4",
+    "ui/tests/e2e/management-visual.spec.ts": "3dd23bb9be72e66cfbc80b8ece600e5822226fc7625eb2e1deb3b0ae3db01311"
+  },
+  "supplemental_lookup_error": {
+    "exit_code": 1,
+    "error": "KeyError: 'ui/src/designTokens.test.tsx'",
+    "cause": "Prior continuation summary used .tsx instead of actual .ts suffix; no acceptance command or product source changed."
+  },
+  "corrected_supplemental_lookup_exit_code": 0,
+  "clean_release_proof": false
+}

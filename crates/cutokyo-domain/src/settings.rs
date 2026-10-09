@@ -52,8 +52,6 @@ impl Serialize for RetentionPatch {
 pub struct Settings {
     /// Whether proxy capture has separately recorded explicit consent.
     pub proxy_enabled: bool,
-    /// Whether the outgoing secret guard is enabled.
-    pub outgoing_guard_enabled: bool,
     /// Whether the read-only Cutokyo search MCP is exposed.
     pub search_mcp_enabled: bool,
     /// Optional retention duration; absence means keep until explicit deletion.
@@ -64,7 +62,6 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             proxy_enabled: false,
-            outgoing_guard_enabled: false,
             search_mcp_enabled: true,
             retention_days: None,
         }
@@ -78,9 +75,6 @@ pub struct SettingsPatch {
     /// Replacement for proxy consent state, when present.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proxy_enabled: Option<bool>,
-    /// Replacement for outgoing guard state, when present.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub outgoing_guard_enabled: Option<bool>,
     /// Replacement for search MCP state, when present.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub search_mcp_enabled: Option<bool>,
@@ -115,9 +109,6 @@ impl Settings {
         if let Some(value) = patch.proxy_enabled {
             self.proxy_enabled = value;
         }
-        if let Some(value) = patch.outgoing_guard_enabled {
-            self.outgoing_guard_enabled = value;
-        }
         if let Some(value) = patch.search_mcp_enabled {
             self.search_mcp_enabled = value;
         }
@@ -136,7 +127,7 @@ mod tests {
     #[test]
     fn omitted_patch_fields_do_not_reset_other_settings() {
         let mut settings = Settings {
-            outgoing_guard_enabled: true,
+            search_mcp_enabled: false,
             retention_days: Some(30),
             ..Settings::default()
         };
@@ -145,8 +136,7 @@ mod tests {
             ..SettingsPatch::default()
         });
         assert!(settings.proxy_enabled);
-        assert!(settings.outgoing_guard_enabled);
-        assert!(settings.search_mcp_enabled);
+        assert!(!settings.search_mcp_enabled);
         assert_eq!(settings.retention_days, Some(30));
 
         settings.apply_patch(&SettingsPatch {
@@ -199,6 +189,10 @@ mod tests {
     #[test]
     fn settings_patch_rejects_unknown_and_out_of_range_values() {
         assert!(serde_json::from_str::<SettingsPatch>(r#"{"unknown":true}"#).is_err());
+        assert!(
+            serde_json::from_str::<SettingsPatch>(r#"{"outgoing_guard_enabled":true}"#).is_err()
+        );
+        assert!(serde_json::from_str::<Settings>(r#"{"outgoing_guard_enabled":true}"#).is_err());
         assert!(
             SettingsPatch {
                 retention_days: RetentionPatch::Days(0),

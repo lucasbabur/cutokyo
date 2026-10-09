@@ -1,0 +1,22 @@
+{
+  "package_command": "pnpm --dir ui test:e2e:tauri",
+  "package_command_exit_code": 1,
+  "outer_background_notification_exit_code": 120,
+  "outer_background_output": "empty; Claude task output storage also hit EDQUOT",
+  "duration_seconds": 59.09,
+  "failure_stage": "Rust compilation before Debian package and native application execution",
+  "actual_diagnostics": [
+    "rustc-LLVM ERROR: IO failure on output stream: Disk quota exceeded",
+    "failed to build archive .../libicu_properties-1d741b519bca9d22.rlib: Disk quota exceeded (os error 122)"
+  ],
+  "original_private_root": "/tmp/cutokyo-native-test-wdio-bnogdt70",
+  "retained_private_root": "target/native-evidence/retained-roots/cutokyo-native-test-wdio-bnogdt70",
+  "original_path_retained_as_symlink": true,
+  "relocation_record": "evidence/management/checks/native-quota-relocation-20261004.json",
+  "relocation_verification": "Every file SHA256 and size, mode, directory mode, and symlink target matched before original-path relocation",
+  "native_test_cases_executed": 0,
+  "source_changed": [],
+  "git_changed": false,
+  "fresh_package_acceptance": "failed; no runtime verdict",
+  "next_attempt_storage": "private disk-backed TMPDIR, separate fresh build, no reuse of failed outputs"
+}

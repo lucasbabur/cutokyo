@@ -1,0 +1,28 @@
+{
+  "reviewer": "ad8f7bc88350024b7",
+  "verdict": "accepted semantic-completion correction, not acceptance weakening",
+  "scope": "Read-only native-desktop.spec.ts receipt-selection and ready-confirmation repair",
+  "reviewed_spec_sha256": "d5ef2e4e09b2367745c68ce26c2aa6d3068d013cad4fac7fa7ba97f38bab72c9",
+  "failed_native_log_sha256": "91415e5f441264ed7ce1e90ac4d896db66528a3316e51fc6cb89ec6b9f281bad",
+  "failed_native_log": "evidence/management/checks/native-packaged-rerun-20261004.log",
+  "actual_failure": "Generic role=status selected a prior inventory announcement in the separate sr-only live region, not a completed resume receipt",
+  "correction": [
+    "Both save and capture-history paths wait for enabled confirmation, assert it, and use a normal click",
+    "Both wait for main .success-message[role=status], which is rendered only after the actual resume command resolves"
+  ],
+  "independent_source_verification": "Inverse-transforming only the two repaired blocks restores the archived prior spec byte-for-byte",
+  "preserved_acceptance": [
+    "All receipt regexes",
+    "Native activation remains unconfirmed disclaimer",
+    "Exact native identity and argv",
+    "Private recorded project directory",
+    "stdin and stdout TTY audits",
+    "Deletion counts and removal results",
+    "Existing default 15000ms waits"
+  ],
+  "no_added_sleeps_force_clicks_skips_or_relaxed_timeouts": true,
+  "reviewer_launched_app": false,
+  "native_execution_from_failed_attempt": "unverified; retained failed root has neither resume-audit.txt nor context JSON",
+  "fresh_aggregate_still_required": true,
+  "waivers": []
+}

@@ -1,0 +1,160 @@
+{
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "workingTree": "concurrent external changes; not an immutable integrated revision",
+  "fixtureOnly": true,
+  "environment": {
+    "platform": "Linux",
+    "kernel": "7.0.0-34-generic",
+    "browser": "agent-browser Chromium via local Vite browser fixture adapter",
+    "viewport": [
+      900,
+      700
+    ],
+    "colorScheme": "dark",
+    "reducedMotion": true
+  },
+  "expected": "Closing discard confirmation returns to editor and preserves unsaved content; only explicit Discard changes discards",
+  "actual": "Close dialog closes editor, focus returns to Manage, reopening shows original source with unsavedPresent false",
+  "actions": [
+    {
+      "time": "2026-10-04T05:37:27.689950+00:00",
+      "args": [
+        "open",
+        "http://127.0.0.1:4318/?jev_case=mcp-plugin-inventory#/inventory"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=mcp-plugin-inventory#/inventory\n[agent-browser] launched browser\n"
+    },
+    {
+      "time": "2026-10-04T05:37:27.693827+00:00",
+      "args": [
+        "set",
+        "viewport",
+        "900",
+        "700"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:37:27.695506+00:00",
+      "args": [
+        "set",
+        "media",
+        "dark",
+        "reduced-motion"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:37:28.221866+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsLocal\" [ref=e1] clickable [onclick]\n  - link \"Skip to content\" [ref=e2]\n  - navigation \"Primary navigation\" [ref=e3]\n    - link \"Overview\" [ref=e6]\n    - link \"Sessions\" [ref=e7]\n    - link \"Analysis\" [ref=e8]\n    - link \"Agent tools\" [ref=e9]\n    - link \"Health\" [ref=e10]\n    - link \"Data\" [ref=e11]\n    - link \"Settings\" [ref=e12]\n  - heading \"Agent tools\" [level=1, ref=e13]\n  - button \"Refresh installations\" [ref=e14]\n  - region \"Agent tool filters\" [ref=e4]\n    - searchbox \"Search installed tools\" [ref=e23]\n    - combobox \"HARNESS\" [expanded=false, ref=e24]: All harnesses\n      - option \"All harnesses\" [selected, ref=e35]\n      - option \"Claude Code\" [ref=e36]\n      - option \"Codex\" [ref=e37]\n      - option \"OpenCode\" [ref=e38]\n  - tab \"All 8\" [selected, ref=e15]\n  - tab \"MCP servers 2\" [ref=e16]\n  - tab \"Plugins 2\" [ref=e17]\n  - tab \"Hooks 2\" [ref=e18]\n  - tab \"Skills 1\" [ref=e19]\n  - tab \"Instructions 1\" [ref=e20]\n  - button \"Manage docs-73A9\" [ref=e25]\n  - button \"Manage Cutokyo search MCP\" [ref=e26]\n  - button \"Manage fixture-processor-73A9\" [ref=e27]\n  - button \"Verification\" [ref=e28]\n  - button \"Manage release-notes-indexer\" [ref=e29]\n  - button \"Verification\" [ref=e30]\n  - button \"Manage Cutokyo SessionStart\" [ref=e31]\n  - button \"Manage AGENTS.md\" [ref=e32]\n  - button \"Manage PreToolUse project check\" [ref=e33]\n  - button \"Manage protocol-check\" [ref=e34]\n  - region \"Cutokyo search access\" [ref=e5]\n    - heading \"Cutokyo search access\" [level=2, ref=e21]\n    - link \"Manage search access in Settings\" [ref=e22]\n"
+    },
+    {
+      "time": "2026-10-04T05:37:28.290223+00:00",
+      "args": [
+        "click",
+        "@e34"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:37:28.601280+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsLocal\" [ref=e1] clickable [onclick]\n  - heading \"Manage protocol-check\" [level=2, ref=e40]\n  - button \"Close dialog\" [ref=e41]\n  - region \"Dialog content\" [ref=e39] focusable [tabindex]\n    - button \"Install in another harness\" [ref=e42]\n    - button \"Remove\" [ref=e43]\n    - textbox \"Source content\" [ref=e46]: ---\nname: protocol-check\ndescription: Verify protocol messages before release.\n---\n\n# Protocol check\n\nRun the protocol fixtures and report malformed output.\n\n  - button \"Done\" [ref=e44]\n  - button \"Save changes\" [disabled, ref=e45]\n"
+    },
+    {
+      "time": "2026-10-04T05:37:28.608971+00:00",
+      "args": [
+        "fill",
+        "@e46",
+        "# UNSAVED CLOSE-BUTTON CHECK\n\nRetain this edit when canceling confirmation."
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:37:28.612183+00:00",
+      "args": [
+        "press",
+        "Escape"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:37:28.817686+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsLocal\" [ref=e1] clickable [onclick]\n  - heading \"Discard unsaved changes?\" [level=2, ref=e40]\n  - button \"Close dialog\" [ref=e41]\n  - region \"Dialog content\" [ref=e39] focusable [tabindex]\n  - button \"Keep editing\" [ref=e44]\n  - button \"Discard changes\" [ref=e45]\n"
+    },
+    {
+      "time": "2026-10-04T05:37:28.840845+00:00",
+      "args": [
+        "click",
+        "@e41"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:37:29.043360+00:00",
+      "args": [
+        "eval",
+        "JSON.stringify({dialogs:document.querySelectorAll(\"[role=dialog]\").length,focus:document.activeElement?.getAttribute(\"aria-label\")})"
+      ],
+      "exitCode": 0,
+      "output": "\"{\\\"dialogs\\\":0,\\\"focus\\\":\\\"Manage protocol-check\\\"}\"\n"
+    },
+    {
+      "time": "2026-10-04T05:37:29.060768+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsLocal\" [ref=e1] clickable [onclick]\n  - link \"Skip to content\" [ref=e2]\n  - navigation \"Primary navigation\" [ref=e3]\n    - link \"Overview\" [ref=e6]\n    - link \"Sessions\" [ref=e7]\n    - link \"Analysis\" [ref=e8]\n    - link \"Agent tools\" [ref=e9]\n    - link \"Health\" [ref=e10]\n    - link \"Data\" [ref=e11]\n    - link \"Settings\" [ref=e12]\n  - heading \"Agent tools\" [level=1, ref=e13]\n  - button \"Refresh installations\" [ref=e14]\n  - region \"Agent tool filters\" [ref=e4]\n    - searchbox \"Search installed tools\" [ref=e23]\n    - combobox \"HARNESS\" [expanded=false, ref=e24]: All harnesses\n      - option \"All harnesses\" [selected, ref=e35]\n      - option \"Claude Code\" [ref=e36]\n      - option \"Codex\" [ref=e37]\n      - option \"OpenCode\" [ref=e38]\n  - tab \"All 8\" [selected, ref=e15]\n  - tab \"MCP servers 2\" [ref=e16]\n  - tab \"Plugins 2\" [ref=e17]\n  - tab \"Hooks 2\" [ref=e18]\n  - tab \"Skills 1\" [ref=e19]\n  - tab \"Instructions 1\" [ref=e20]\n  - button \"Manage docs-73A9\" [ref=e25]\n  - button \"Manage Cutokyo search MCP\" [ref=e26]\n  - button \"Manage fixture-processor-73A9\" [ref=e27]\n  - button \"Verification\" [ref=e28]\n  - button \"Manage release-notes-indexer\" [ref=e29]\n  - button \"Verification\" [ref=e30]\n  - button \"Manage Cutokyo SessionStart\" [ref=e31]\n  - button \"Manage AGENTS.md\" [ref=e32]\n  - button \"Manage PreToolUse project check\" [ref=e33]\n  - button \"Manage protocol-check\" [ref=e34]\n  - region \"Cutokyo search access\" [ref=e5]\n    - heading \"Cutokyo search access\" [level=2, ref=e21]\n    - link \"Manage search access in Settings\" [ref=e22]\n"
+    },
+    {
+      "time": "2026-10-04T05:37:29.102171+00:00",
+      "args": [
+        "click",
+        "@e34"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:37:29.404697+00:00",
+      "args": [
+        "eval",
+        "JSON.stringify({content:document.querySelector(\"textarea\")?.value,unsavedPresent:document.querySelector(\"textarea\")?.value.includes(\"UNSAVED CLOSE-BUTTON CHECK\")})"
+      ],
+      "exitCode": 0,
+      "output": "\"{\\\"content\\\":\\\"---\\\\nname: protocol-check\\\\ndescription: Verify protocol messages before release.\\\\n---\\\\n\\\\n# Protocol check\\\\n\\\\nRun the protocol fixtures and report malformed output.\\\\n\\\",\\\"unsavedPresent\\\":false}\"\n"
+    },
+    {
+      "time": "2026-10-04T05:37:29.429085+00:00",
+      "args": [
+        "screenshot",
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/followup-unsaved-lost-after-close-button-900x700.png"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/followup-unsaved-lost-after-close-button-900x700.png\n"
+    }
+  ]
+}

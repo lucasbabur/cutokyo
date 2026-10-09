@@ -1,0 +1,72 @@
+{
+  "results": [
+    {
+      "command": [
+        "python3",
+        "tools/fleet/cutokyo-gates.py",
+        "selftest"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.07,
+      "log": "evidence/management/checks/final8-gates-selftest-20261004.log"
+    },
+    {
+      "command": [
+        "python3",
+        "tools/fleet/cutokyo-gates.py",
+        "all",
+        "--root",
+        "."
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.04,
+      "log": "evidence/management/checks/final8-gates-all-20261004.log"
+    },
+    {
+      "command": [
+        "pnpm",
+        "--dir",
+        "ui",
+        "check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 11.44,
+      "log": "evidence/management/checks/final8-frontend-check-20261004.log"
+    },
+    {
+      "command": [
+        "pnpm",
+        "--dir",
+        "ui",
+        "build"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.84,
+      "log": "evidence/management/checks/final8-production-build-20261004.log"
+    },
+    {
+      "command": [
+        "pnpm",
+        "--dir",
+        "ui",
+        "test:e2e:web"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 43.4,
+      "log": "evidence/management/checks/final8-browser-e2e-20261004.log"
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.03,
+      "log": "evidence/management/checks/final8-diff-20261004.log"
+    }
+  ],
+  "head": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "dirty_working_tree": true,
+  "waivers": []
+}

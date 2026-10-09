@@ -1,0 +1,215 @@
+{
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "workingTree": "concurrent external edits",
+  "fixtureOnly": true,
+  "viewport": [
+    900,
+    700
+  ],
+  "correction": "Previous audit script failed on Python path-concatenation before proxy screenshots; this transcript exercises both proxy themes",
+  "expected": "Unavailable badge, disabled activation, accessible review with no enabled activation confirmation, cancellation leaves unavailable state unchanged",
+  "actions": [
+    {
+      "time": "2026-10-04T05:53:52.527798+00:00",
+      "args": [
+        "open",
+        "http://127.0.0.1:4173/?jev_case=native-capabilities-unavailable#/settings"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Cutokyo\n  http://127.0.0.1:4173/?jev_case=native-capabilities-unavailable#/settings\n"
+    },
+    {
+      "time": "2026-10-04T05:53:52.529430+00:00",
+      "args": [
+        "set",
+        "media",
+        "dark",
+        "reduced-motion"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:53:52.882123+00:00",
+      "args": [
+        "eval",
+        "JSON.stringify({proxyRow:[...document.querySelectorAll(\".settings-row\")].find(x=>x.textContent.includes(\"Proxy capture fallback\"))?.textContent,enableDisabled:[...document.querySelectorAll(\"button\")].find(x=>x.textContent===\"Enable proxy\")?.disabled})"
+      ],
+      "exitCode": 0,
+      "output": "\"{\\\"proxyRow\\\":\\\"Proxy capture fallbackOptional provider-traffic attribution. Review content, provider routing, and local redaction before enabling. Native capture remains the default.\u00b7UnavailableEnable proxyReview data handling\\\",\\\"enableDisabled\\\":true}\"\n"
+    },
+    {
+      "time": "2026-10-04T05:53:52.906498+00:00",
+      "args": [
+        "screenshot",
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final-targeted-proxy-unavailable-dark-900x700.png"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final-targeted-proxy-unavailable-dark-900x700.png\n"
+    },
+    {
+      "time": "2026-10-04T05:53:52.913659+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsLocal\" [ref=e161] clickable [onclick]\n  - link \"Skip to content\" [ref=e162]\n  - navigation \"Primary navigation\" [ref=e163]\n    - link \"Overview\" [ref=e169]\n    - link \"Sessions\" [ref=e170]\n    - link \"Analysis\" [ref=e171]\n    - link \"Agent tools\" [ref=e172]\n    - link \"Health\" [ref=e173]\n    - link \"Data\" [ref=e174]\n    - link \"Settings\" [ref=e175]\n  - heading \"Settings\" [level=1, ref=e176]\n  - region \"Appearance\" [ref=e164]\n    - heading \"Appearance\" [level=2, ref=e177]\n    - button \"Light\" [ref=e189]\n    - button \"Dark\" [ref=e190]\n    - button \"System\" [ref=e191]\n  - region \"Capture and agent access\" [ref=e165]\n    - heading \"Capture and agent access\" [level=2, ref=e178]\n    - LabelText \"Enabled\" [ref=e179] clickable [cursor:pointer]\n      - switch \"Toggle read-only Cutokyo search MCP\" [checked=true, ref=e192]\n    - button \"Enable proxy\" [disabled, ref=e180]\n    - button \"Review data handling\" [ref=e181]\n  - region \"Retention default\" [ref=e166]\n    - heading \"Retention default\" [level=2, ref=e182]\n    - combobox \"Default history retention\" [expanded=false, ref=e183]: Keep until deleted\n      - option \"Keep until deleted\" [selected, ref=e194]\n      - option \"30 days\" [ref=e195]\n      - option \"90 days\" [ref=e196]\n      - option \"1 year\" [ref=e197]\n  - region \"Updates and crash records\" [ref=e167]\n    - heading \"Updates and crash records\" [level=2, ref=e184]\n    - combobox \"Updater behavior\" [expanded=false, disabled, ref=e185]: Notify before downloading\n      - option \"Download signed updates automatically\" [disabled, ref=e198]\n      - option \"Notify before downloading\" [disabled, ref=e199]\n      - option \"Check manually\" [disabled, ref=e200]\n    - LabelText \"Disabled\" [ref=e186] clickable [cursor:pointer]\n      - switch \"Toggle bounded local crash records\" [checked=false, ref=e193]\n    - button \"Check now\" [disabled, ref=e187]\n  - region \"OS keychain only\" [ref=e168]\n    - heading \"OS keychain only\" [level=2, ref=e188]\n"
+    },
+    {
+      "time": "2026-10-04T05:53:52.940187+00:00",
+      "args": [
+        "click",
+        "@e181"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:53:53.247543+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsLocal\" [ref=e161] clickable [onclick]\n  - heading \"Proxy capture data handling\" [level=2, ref=e202]\n  - button \"Close dialog\" [ref=e203]\n  - region \"Dialog content\" [ref=e201] focusable [tabindex]\n    - heading \"Content passing through the proxy\" [level=3, ref=e206]\n    - heading \"Never persisted by the proxy\" [level=3, ref=e207]\n  - button \"Not now\" [ref=e204]\n  - button \"I understand \u2014 enable proxy\" [disabled, ref=e205]\n"
+    },
+    {
+      "time": "2026-10-04T05:53:53.249633+00:00",
+      "args": [
+        "eval",
+        "JSON.stringify({title:document.querySelector(\"[role=dialog] h2\")?.textContent,buttons:[...document.querySelectorAll(\"[role=dialog] button\")].map(x=>({text:x.textContent,label:x.getAttribute(\"aria-label\"),disabled:x.disabled})),text:document.querySelector(\"[role=dialog]\")?.textContent,horizontalOverflow:document.documentElement.scrollWidth>innerWidth})"
+      ],
+      "exitCode": 0,
+      "output": "\"{\\\"title\\\":\\\"Proxy capture data handling\\\",\\\"buttons\\\":[{\\\"text\\\":\\\"\\\",\\\"label\\\":\\\"Close dialog\\\",\\\"disabled\\\":false},{\\\"text\\\":\\\"Not now\\\",\\\"label\\\":null,\\\"disabled\\\":false},{\\\"text\\\":\\\"I understand \u2014 enable proxy\\\",\\\"label\\\":null,\\\"disabled\\\":true}],\\\"text\\\":\\\"ConfirmationProxy capture data handlingThe local listener is unavailable in this build. Review is read-only; activation is disabled.Listener127.0.0.1 (random local port)Provider routingYour harness's configured provider and model; Cutokyo does not choose a different destination.Native precedenceProxy capture is used only for facts native sources cannot establish. Instrumentation failure leaves the harness running.Local redactionProvider requests pass unchanged. Baseline redaction applies only to retained local trace metadata; credentials and payloads are not persisted.Content passing through the proxyProvider request headers and URLsPrompt and tool payload chunks needed for context attributionRate-limit response headersNever persisted by the proxyAuthorization credentialsRaw provider request bodiesContent still leaves the machine for your configured model provider. Cancel sends nothing and leaves proxy capture off. Local diagnostic redaction does not block or change provider requests.Not nowI understand \u2014 enable proxy\\\",\\\"horizontalOverflow\\\":false}\"\n"
+    },
+    {
+      "time": "2026-10-04T05:53:53.274485+00:00",
+      "args": [
+        "screenshot",
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final-targeted-proxy-data-handling-dark-900x700.png"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final-targeted-proxy-data-handling-dark-900x700.png\n"
+    },
+    {
+      "time": "2026-10-04T05:53:53.283795+00:00",
+      "args": [
+        "press",
+        "Escape"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:53:53.486124+00:00",
+      "args": [
+        "eval",
+        "JSON.stringify({dialogs:document.querySelectorAll(\"[role=dialog]\").length,proxyRow:[...document.querySelectorAll(\".settings-row\")].find(x=>x.textContent.includes(\"Proxy capture fallback\"))?.textContent,errors:[...document.querySelectorAll(\"[role=alert]\")].map(x=>x.textContent)})"
+      ],
+      "exitCode": 0,
+      "output": "\"{\\\"dialogs\\\":0,\\\"proxyRow\\\":\\\"Proxy capture fallbackOptional provider-traffic attribution. Review content, provider routing, and local redaction before enabling. Native capture remains the default.\u00b7UnavailableEnable proxyReview data handling\\\",\\\"errors\\\":[]}\"\n"
+    },
+    {
+      "time": "2026-10-04T05:53:53.490637+00:00",
+      "args": [
+        "open",
+        "http://127.0.0.1:4173/?jev_case=native-capabilities-unavailable#/settings"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Cutokyo\n  http://127.0.0.1:4173/?jev_case=native-capabilities-unavailable#/settings\n"
+    },
+    {
+      "time": "2026-10-04T05:53:53.492087+00:00",
+      "args": [
+        "set",
+        "media",
+        "light",
+        "reduced-motion"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:53:53.844997+00:00",
+      "args": [
+        "eval",
+        "JSON.stringify({proxyRow:[...document.querySelectorAll(\".settings-row\")].find(x=>x.textContent.includes(\"Proxy capture fallback\"))?.textContent,enableDisabled:[...document.querySelectorAll(\"button\")].find(x=>x.textContent===\"Enable proxy\")?.disabled})"
+      ],
+      "exitCode": 0,
+      "output": "\"{\\\"proxyRow\\\":\\\"Proxy capture fallbackOptional provider-traffic attribution. Review content, provider routing, and local redaction before enabling. Native capture remains the default.\u00b7UnavailableEnable proxyReview data handling\\\",\\\"enableDisabled\\\":true}\"\n"
+    },
+    {
+      "time": "2026-10-04T05:53:53.873935+00:00",
+      "args": [
+        "screenshot",
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final-targeted-proxy-unavailable-light-900x700.png"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final-targeted-proxy-unavailable-light-900x700.png\n"
+    },
+    {
+      "time": "2026-10-04T05:53:53.881145+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsLocal\" [ref=e208] clickable [onclick]\n  - link \"Skip to content\" [ref=e209]\n  - navigation \"Primary navigation\" [ref=e210]\n    - link \"Overview\" [ref=e216]\n    - link \"Sessions\" [ref=e217]\n    - link \"Analysis\" [ref=e218]\n    - link \"Agent tools\" [ref=e219]\n    - link \"Health\" [ref=e220]\n    - link \"Data\" [ref=e221]\n    - link \"Settings\" [ref=e222]\n  - heading \"Settings\" [level=1, ref=e223]\n  - region \"Appearance\" [ref=e211]\n    - heading \"Appearance\" [level=2, ref=e224]\n    - button \"Light\" [ref=e236]\n    - button \"Dark\" [ref=e237]\n    - button \"System\" [ref=e238]\n  - region \"Capture and agent access\" [ref=e212]\n    - heading \"Capture and agent access\" [level=2, ref=e225]\n    - LabelText \"Enabled\" [ref=e226] clickable [cursor:pointer]\n      - switch \"Toggle read-only Cutokyo search MCP\" [checked=true, ref=e239]\n    - button \"Enable proxy\" [disabled, ref=e227]\n    - button \"Review data handling\" [ref=e228]\n  - region \"Retention default\" [ref=e213]\n    - heading \"Retention default\" [level=2, ref=e229]\n    - combobox \"Default history retention\" [expanded=false, ref=e230]: Keep until deleted\n      - option \"Keep until deleted\" [selected, ref=e241]\n      - option \"30 days\" [ref=e242]\n      - option \"90 days\" [ref=e243]\n      - option \"1 year\" [ref=e244]\n  - region \"Updates and crash records\" [ref=e214]\n    - heading \"Updates and crash records\" [level=2, ref=e231]\n    - combobox \"Updater behavior\" [expanded=false, disabled, ref=e232]: Notify before downloading\n      - option \"Download signed updates automatically\" [disabled, ref=e245]\n      - option \"Notify before downloading\" [disabled, ref=e246]\n      - option \"Check manually\" [disabled, ref=e247]\n    - LabelText \"Disabled\" [ref=e233] clickable [cursor:pointer]\n      - switch \"Toggle bounded local crash records\" [checked=false, ref=e240]\n    - button \"Check now\" [disabled, ref=e234]\n  - region \"OS keychain only\" [ref=e215]\n    - heading \"OS keychain only\" [level=2, ref=e235]\n"
+    },
+    {
+      "time": "2026-10-04T05:53:53.905938+00:00",
+      "args": [
+        "click",
+        "@e228"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:53:54.213465+00:00",
+      "args": [
+        "snapshot",
+        "-i"
+      ],
+      "exitCode": 0,
+      "output": "- generic \"Skip to contentCutokyoLocal observabilityOverviewSessionsAnalysisAgent toolsHealthDataSettingsLocal\" [ref=e208] clickable [onclick]\n  - heading \"Proxy capture data handling\" [level=2, ref=e249]\n  - button \"Close dialog\" [ref=e250]\n  - region \"Dialog content\" [ref=e248] focusable [tabindex]\n    - heading \"Content passing through the proxy\" [level=3, ref=e253]\n    - heading \"Never persisted by the proxy\" [level=3, ref=e254]\n  - button \"Not now\" [ref=e251]\n  - button \"I understand \u2014 enable proxy\" [disabled, ref=e252]\n"
+    },
+    {
+      "time": "2026-10-04T05:53:54.215157+00:00",
+      "args": [
+        "eval",
+        "JSON.stringify({title:document.querySelector(\"[role=dialog] h2\")?.textContent,buttons:[...document.querySelectorAll(\"[role=dialog] button\")].map(x=>({text:x.textContent,label:x.getAttribute(\"aria-label\"),disabled:x.disabled})),text:document.querySelector(\"[role=dialog]\")?.textContent,horizontalOverflow:document.documentElement.scrollWidth>innerWidth})"
+      ],
+      "exitCode": 0,
+      "output": "\"{\\\"title\\\":\\\"Proxy capture data handling\\\",\\\"buttons\\\":[{\\\"text\\\":\\\"\\\",\\\"label\\\":\\\"Close dialog\\\",\\\"disabled\\\":false},{\\\"text\\\":\\\"Not now\\\",\\\"label\\\":null,\\\"disabled\\\":false},{\\\"text\\\":\\\"I understand \u2014 enable proxy\\\",\\\"label\\\":null,\\\"disabled\\\":true}],\\\"text\\\":\\\"ConfirmationProxy capture data handlingThe local listener is unavailable in this build. Review is read-only; activation is disabled.Listener127.0.0.1 (random local port)Provider routingYour harness's configured provider and model; Cutokyo does not choose a different destination.Native precedenceProxy capture is used only for facts native sources cannot establish. Instrumentation failure leaves the harness running.Local redactionProvider requests pass unchanged. Baseline redaction applies only to retained local trace metadata; credentials and payloads are not persisted.Content passing through the proxyProvider request headers and URLsPrompt and tool payload chunks needed for context attributionRate-limit response headersNever persisted by the proxyAuthorization credentialsRaw provider request bodiesContent still leaves the machine for your configured model provider. Cancel sends nothing and leaves proxy capture off. Local diagnostic redaction does not block or change provider requests.Not nowI understand \u2014 enable proxy\\\",\\\"horizontalOverflow\\\":false}\"\n"
+    },
+    {
+      "time": "2026-10-04T05:53:54.241526+00:00",
+      "args": [
+        "screenshot",
+        "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final-targeted-proxy-data-handling-light-900x700.png"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Screenshot saved to /home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final-targeted-proxy-data-handling-light-900x700.png\n"
+    },
+    {
+      "time": "2026-10-04T05:53:54.251770+00:00",
+      "args": [
+        "press",
+        "Escape"
+      ],
+      "exitCode": 0,
+      "output": "\u2713 Done\n"
+    },
+    {
+      "time": "2026-10-04T05:53:54.453698+00:00",
+      "args": [
+        "eval",
+        "JSON.stringify({dialogs:document.querySelectorAll(\"[role=dialog]\").length,proxyRow:[...document.querySelectorAll(\".settings-row\")].find(x=>x.textContent.includes(\"Proxy capture fallback\"))?.textContent,errors:[...document.querySelectorAll(\"[role=alert]\")].map(x=>x.textContent)})"
+      ],
+      "exitCode": 0,
+      "output": "\"{\\\"dialogs\\\":0,\\\"proxyRow\\\":\\\"Proxy capture fallbackOptional provider-traffic attribution. Review content, provider routing, and local redaction before enabling. Native capture remains the default.\u00b7UnavailableEnable proxyReview data handling\\\",\\\"errors\\\":[]}\"\n"
+    }
+  ]
+}

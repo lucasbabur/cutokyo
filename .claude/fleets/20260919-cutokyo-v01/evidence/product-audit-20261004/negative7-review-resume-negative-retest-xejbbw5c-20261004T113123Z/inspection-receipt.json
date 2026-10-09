@@ -1,0 +1,154 @@
+{
+  "scope": "Independent actual image/receipt/protocol review of separate native7-package negative replay",
+  "runtime_verdict": "PASS_BOUNDED_ONE_CASE",
+  "rendered_verdict": "PASS_BOUNDED_INLINE_ERROR_IMAGE",
+  "fresh_aggregate_acceptance": false,
+  "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+  "execution": {
+    "command": [
+      "pnpm",
+      "exec",
+      "wdio",
+      "run",
+      "./wdio.conf.ts",
+      "--spec",
+      "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest.spec.ts"
+    ],
+    "exit_code": 0,
+    "duration_seconds": 19.04,
+    "root": "/tmp/cutokyo-native-test-wdio-b08wz36k",
+    "evidence": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-xejbbw5c",
+    "fresh_aggregate_acceptance": false,
+    "source_package": "8a653612ae3b09388c3c5156226c501de27c6e52082fe7169a7486c632c8b70c",
+    "window_state": {
+      "pid": "253529",
+      "window": "0x5c07e30b89e0"
+    },
+    "owned_application_survived": false
+  },
+  "package_launch": {
+    "revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+    "source_manifest": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/package-launch.json",
+    "package": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/Cutokyo_0.1.0_amd64.deb",
+    "retained_package": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/Cutokyo_0.1.0_amd64.deb",
+    "package_sha256": "8a653612ae3b09388c3c5156226c501de27c6e52082fe7169a7486c632c8b70c",
+    "application": "/tmp/cutokyo-native-test-wdio-b08wz36k/package/usr/bin/cutokyo-desktop",
+    "application_sha256": "518eaf26d0fe4477249381faaaa00959f1732fc7bc53d99a7070c55dd6156c01",
+    "receiver": "/tmp/cutokyo-native-test-wdio-b08wz36k/bin/cutokyo",
+    "receiver_sha256": "adc6ea3981c68b9a691802afce78ca14477aeb0bc78ec3734690b6eb918518aa",
+    "synthetic_harness": "/tmp/cutokyo-native-test-wdio-b08wz36k/bin/claude",
+    "synthetic_harness_sha256": "74b0648c3b0bd21ad2f61c354e364b016a3475cbb491f9f73d20c1d49eab5536",
+    "root": "/tmp/cutokyo-native-test-wdio-b08wz36k",
+    "port": 57513,
+    "launch_origin": "extracted-debian-bundle",
+    "test_only": true,
+    "frontend_origin": "embedded in verified extracted Debian application",
+    "purpose": "separate genuine failed-launch UI retest; not full aggregate acceptance",
+    "controlled_negative_environment": "WAYLAND_DISPLAY restored with no socket in private XDG_RUNTIME_DIR"
+  },
+  "package_identity_verified_against_native7": {
+    "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/attempt-1s72vqtj/Cutokyo_0.1.0_amd64.deb",
+    "sha256": "8a653612ae3b09388c3c5156226c501de27c6e52082fe7169a7486c632c8b70c",
+    "bytes": 24183516,
+    "streamed_member": {
+      "name": "usr/bin/cutokyo-desktop",
+      "bytes": 104008528,
+      "sha256": "518eaf26d0fe4477249381faaaa00959f1732fc7bc53d99a7070c55dd6156c01"
+    },
+    "matches_launch_manifest": true,
+    "no_extraction_or_launch": true
+  },
+  "geometry": {
+    "windowSize": {
+      "height": 800,
+      "width": 1280
+    },
+    "viewport": {
+      "height": 800,
+      "width": 1280
+    }
+  },
+  "actual_assertions": {
+    "genuineLauncherFailure": "The terminal launcher exited unsuccessfully before acknowledging an interactive harness. Check its display access and configuration.",
+    "inlineDialogAlert": true,
+    "alertCount": 1,
+    "noSuccessReceipt": true,
+    "noHarnessAudit": true,
+    "retryFailedTruthfully": true,
+    "cancelAndCloseRestoreResumeFocus": true,
+    "newPreviewClearsError": true,
+    "exactNativeId": "claude-native-73A9",
+    "searchQueryRetained": true,
+    "separateNegativeJourneyNotFreshAggregate": true
+  },
+  "actual_worker_evidence": {
+    "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-xejbbw5c/resume-negative-retest.spec-0-0.log",
+    "inline_error_lines": [
+      596,
+      599
+    ],
+    "success_elements_absent_lines": [
+      612,
+      629
+    ],
+    "retry_error_line": 862,
+    "single_alert_lines": [
+      665,
+      931
+    ],
+    "focus_Resume_after_cancel_and_close_lines": [
+      989,
+      1221
+    ],
+    "retained_search_query_line": 1332
+  },
+  "actual_spec_reporter": {
+    "path": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-xejbbw5c/execution.log",
+    "one_case_pass_lines": [
+      14,
+      20
+    ]
+  },
+  "images": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-negative-retest-xejbbw5c/resume-inline-launch-failure-1280x800.png",
+      "relative": "resume-inline-launch-failure-1280x800.png",
+      "sha256": "9b1e3d8006185deb3142b7cc20ff50eb28fb2b6f58f9333b1669a1430d39db4d",
+      "bytes": 118990,
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/negative7-review-resume-negative-retest-xejbbw5c-20261004T113123Z/screens/resume-inline-launch-failure-1280x800.png",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection": "Actual inline vermilion launcher error within confirmation; exact ID and cwd remain; retry/Cancel visible; no visual success claim."
+    }
+  ],
+  "individually_read_png_count": 1,
+  "hash_verification": {
+    "artifacts": 10,
+    "images": 1,
+    "hash_mismatches": [],
+    "dimensions": {
+      "resume-inline-launch-failure-1280x800.png": [
+        1280,
+        800
+      ]
+    }
+  },
+  "limitations": [
+    "Actual controlled missing private Wayland socket, not provider failure or installed session activation.",
+    "1280x800 only; one case, not fresh aggregate acceptance.",
+    "Actual assertion receipt plus worker protocol support absence of success; filesystem audit absence asserted by executing spec, not reviewer querying destroyed private root."
+  ],
+  "reviewer_safety": {
+    "app_browser_provider_compositor_launches": 0,
+    "live_process_queries": 0,
+    "git_queries": 0,
+    "product_test_fixture_configuration_threshold_edits": 0,
+    "historical_receipt_edits": 0,
+    "writes": "Only new JSON evidence in designated review directories."
+  },
+  "manifest": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/negative7-review-resume-negative-retest-xejbbw5c-20261004T113123Z/manifest.json",
+  "raw": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/negative7-review-resume-negative-retest-xejbbw5c-20261004T113123Z"
+}

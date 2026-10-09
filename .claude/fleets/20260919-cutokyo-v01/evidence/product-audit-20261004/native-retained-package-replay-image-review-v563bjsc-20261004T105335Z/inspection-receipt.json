@@ -1,0 +1,164 @@
+{
+  "scope": "Bounded retained-package replay image, native cleanup and trusted keyboard review",
+  "completed_utc": "2026-10-04T10:53:35.393397+00:00",
+  "manifest": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/manifest.json",
+  "environment": {
+    "actual_runtime": "Linux WebKitGTK605.1.15, Tauri embedded extracted Debian app",
+    "root": "/tmp/cutokyo-native-test-wdio-ljto4gxt",
+    "viewport": [
+      1280,
+      800
+    ],
+    "package_sha256": "58d8d44446644662721bdfb06d85fcba4a9bd80853d21d4a06e26d5ce0bc0258",
+    "application_sha256_recorded": "163cc7e67716d27d0c8958eb371b0ad6e0c830d5936908332d45b40a46dc992c",
+    "recorded_revision": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+    "harness": "Credential-free synthetic Claude Code harness; not installed-provider activation"
+  },
+  "coverage": {
+    "all_supplied_pngs": 5,
+    "individual_Read_inspections": 5,
+    "execution_package_geometry_cleanup_before_and_trusted_keyboard_receipts_Read": true
+  },
+  "actual_execution": {
+    "exit_code": 0,
+    "duration_seconds": 21.45,
+    "cases_passed": 5,
+    "cases_failed": 0,
+    "fresh_aggregate_acceptance": false,
+    "passed_cases": [
+      "Exact search/detail/resume/delete",
+      "Native appearance save",
+      "Trusted keyboard skip navigation without route change",
+      "Unavailable analysis and signed-update disclosure",
+      "Diagnostic cancellation and exact previewed local export"
+    ]
+  },
+  "steps": [
+    "Inventory all15 artifacts and decode dimensions before individual Read",
+    "Read all5 actual PNG and execution/geometry/package/cleanup/keyboard receipts",
+    "Read maintained postdelete assertion sequence and actual worker acknowledgement/empty-heading events",
+    "Independently cross-check captured terminal identity, cleanup outcomes and trusted key events; no live process query or input sent",
+    "Recheck initial artifact hashes, archive to new evidence paths, verify copies"
+  ],
+  "actual_visual": {
+    "analysis": "Unavailable provider and no content sent disclosed; empty eligible-session state readable.",
+    "appearance": "Dark selected with visible focus ring; proxy unavailable; native capture unaffected and live capture unknown until evidence arrives; disclosure fits.",
+    "diagnostic_preview": "Estimated16.0KiB; localJSON output; exclusions and sanitation warning readable; modal footer fits and close focus ring visible.",
+    "diagnostic_created": "Local private destination and success status readable; Unknown dimensions distinct;0current/0lifetime quarantine is not persistence or large-history proof.",
+    "resume": "Exactclaude-native-73A9, recorded private directory, startup-not-activation caveat and readable footer; pre-confirmation only."
+  },
+  "bounded_positive_closures": [
+    {
+      "reference_key": "NQA-DELETE-01",
+      "owner": "integration",
+      "severity": "Medium",
+      "status": "RESOLVED_IN_RETAINED_PACKAGE_REPLAY_RUNTIME_ONLY",
+      "original_failed_attempt_preserved": true,
+      "expected": "Retain exact query after deletion, recover deliberately to all history, then satisfy original empty-history assertion.",
+      "actual": "Maintained test verifies retained query and filtered0results, absent deleted result, clears search/filters, verifies empty query and defaults/no stale/loading results, then finds History is empty\u2014not zero displayed. Worker1533-1592 reports foundelement and visibletrue. Test passes.",
+      "limits": "No postdelete/empty-history PNG among the5captures; no new empty-state visual verdict. Fresh native6 not established."
+    },
+    {
+      "reference_key": "NQA-KEYBOARD-02",
+      "owner": "integration",
+      "severity": "Medium",
+      "status": "RESOLVED_IN_RETAINED_PACKAGE_REPLAY_TRUSTED_INPUT_ONLY",
+      "original_failed_attempt_preserved": true,
+      "expected": "Remove only completed private resume-terminal actor, preserve app, then exercise trusted skip navigation without input/focus fallback.",
+      "actual": "Cleanup receipt matches direct private Kitty child4176705 of app4175310 and reports SIGTERM via pidfd, terminal/descendants exited, window removed, app preserved, zero keyboard dispatches and no helper focus change. Trusted keyboard receipt then records scopedTab/Return withok acknowledgements to app4175310/address0x5c07e2de5520, stable activeidentity, trustedBODY\u2192A.skip-link\u2192MAIN events and unchangedsessionsroute.",
+      "limits": "Captured receipts reviewed postmortem; reviewer sends no input. Not full keyboard-only navigation or fresh aggregate proof."
+    },
+    {
+      "reference_key": "NQA-RESUME-01",
+      "owner": "integration",
+      "severity": "Medium",
+      "status": "ACKNOWLEDGED_EXACT_NATIVE_STARTUP_REPLAY_SUBSTEP_VERIFIED",
+      "actual": "Worker868/871 reports success with exactclaude-native-73A9 and cannotverifyactivation caveat; executedtest retains exactargv/cwd/stdin/stdoutTTYassertions.",
+      "limits": "Synthetic harness; no retained raw audit files in15artifact inventory, no success-state PNG, no installednative/model activation claim."
+    }
+  ],
+  "verdict": "PASS actual scoped5-case retained-package replay and supplied5-image rendered review; not freshnative6 or Fleet aggregate PASS",
+  "findings": "No new concrete rendered defect. Earlier failed-attempt findings preserved; these are later bounded replay outcomes.",
+  "limits": [
+    "All supplied images1280x800; no native900x700/1536x960 coverage added",
+    "No new installedharness read-only/dry-run probes",
+    "No provider calls",
+    "No backup/inventory/restart aggregate phases in this5-case replay",
+    "Freshnative6 starting percoordinator; no result reviewed here"
+  ],
+  "images": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-teardown-replay-v563bjsc/analysis-unavailable-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/analysis-unavailable-1280x800.png",
+      "sha256": "e489aa6f5065cfb1e27e1480f3fcda6c219318964910c5496a8a48cf844ffeab",
+      "bytes": 90205,
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individual actual source PNG displayed through functions.Read"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-teardown-replay-v563bjsc/appearance-dark-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/appearance-dark-1280x800.png",
+      "sha256": "b3ade8cb7ea091ef08214d06d67efadc1884b7330332682adc5e30a5c5b28d1a",
+      "bytes": 115301,
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individual actual source PNG displayed through functions.Read"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-teardown-replay-v563bjsc/diagnostic-created-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/diagnostic-created-1280x800.png",
+      "sha256": "8acdfe1aa352ef299e28d96749a1ee6f51c7356f38513a51732b6566c40d8d68",
+      "bytes": 134746,
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individual actual source PNG displayed through functions.Read"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-teardown-replay-v563bjsc/diagnostic-preview-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/diagnostic-preview-1280x800.png",
+      "sha256": "cc3f01ac09280d05ac12b017d356972beabf98ccf663d65190f5f06f5eb81ff9",
+      "bytes": 109248,
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individual actual source PNG displayed through functions.Read"
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/target/native-evidence/resume-teardown-replay-v563bjsc/search-detail-resume-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/native-retained-package-replay-image-review-v563bjsc-20261004T105335Z/artifacts/search-detail-resume-1280x800.png",
+      "sha256": "2a529bee9e8e4666dd0ca396903660345d5f8f07882e3c48005f7dfc97ec568f",
+      "bytes": 114970,
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "read_inspected": true,
+      "inspection_method": "Individual actual source PNG displayed through functions.Read"
+    }
+  ],
+  "hash_checks": {
+    "all15_artifacts_match_initial_pre_Read_inventory": true,
+    "all_source_and_preserved_hashes_stable_after_archive": true,
+    "all5_png_actual_dimensions1280x800": true,
+    "same_native5_retained_package_sha256_verified": true,
+    "terminal_cleanup_captured_identity_and_exit_fields_crosschecked": true,
+    "trusted_keyboard_identity_acknowledgement_trusted_events_and_unchanged_route_crosschecked": true,
+    "original_native5_findings_and_receipts_not_edited": true,
+    "reviewer_live_app_input_compositor_process_calls": 0,
+    "reviewer_product_test_fixture_config_Git_edits": 0
+  },
+  "reviewer_product_tests_fixtures_config_Git_edits": 0,
+  "reviewer_app_provider_launches": 0
+}

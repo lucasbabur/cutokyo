@@ -1,0 +1,16 @@
+{
+  "command": [
+    "/home/lucas/Developer/personal/cutokyo-community/target/debug/cutokyo",
+    "--config-file",
+    "/tmp/cutokyo-product-audit-20261004/config/settings.toml",
+    "--data-dir",
+    "/tmp/cutokyo-product-audit-20261004/data/cli",
+    "--json",
+    "bundle",
+    "--output",
+    "/tmp/cutokyo-product-audit-20261004/diagnostics.zip"
+  ],
+  "exitCode": 0,
+  "output": "{\"schema_version\":\"1.0.0\",\"command\":\"bundle\",\"ok\":true,\"data\":{\"byte_length\":2417,\"manifest\":{\"crash_record_included\":false,\"entries\":[\"manifest.json\",\"versions.json\",\"safe-config.json\",\"doctor.json\",\"coverage.json\",\"row-counts.json\",\"logs/redacted.jsonl\"],\"excluded\":[\"prompts\",\"transcripts\",\"raw_observations\",\"raw_secrets\",\"full_project_paths\",\"database_bytes\",\"spool_payloads\"],\"schema_version\":1},\"output\":\"/tmp/cutokyo-product-audit-20261004/diagnostics.zip\",\"sha256\":\"cd31a4fd643741bcd1a0c754842f3adc561aedc368bf2e8245951d1db68457ec\"},\"meta\":{\"app_version\":\"0.1.0\",\"pending_crash_record\":false}}\n",
+  "existingArtifactOnly": true
+}

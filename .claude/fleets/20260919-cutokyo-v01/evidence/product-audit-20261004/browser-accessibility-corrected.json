@@ -1,0 +1,317 @@
+[
+  {
+    "args": [
+      "open",
+      "http://127.0.0.1:4318/?jev_case=populated-dashboard#/dashboard"
+    ],
+    "exitCode": 0,
+    "output": "[agent-browser] launched browser\n\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=populated-dashboard#/dashboard\n"
+  },
+  {
+    "args": [
+      "set",
+      "viewport",
+      "900",
+      "700"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "wait",
+      "--text",
+      "Overview"
+    ],
+    "exitCode": 0,
+    "output": "Overview\n"
+  },
+  {
+    "args": [
+      "set",
+      "media",
+      "dark",
+      "reduced-motion"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "eval",
+      "--stdin"
+    ],
+    "exitCode": 0,
+    "output": "\"{\\\"violations\\\":[],\\\"incomplete\\\":[\\\"color-contrast\\\"],\\\"passes\\\":30,\\\"viewport\\\":[900,700],\\\"overflow\\\":false,\\\"reducedMotion\\\":true,\\\"smallestText\\\":10}\"\n"
+  },
+  {
+    "args": [
+      "open",
+      "http://127.0.0.1:4318/?jev_case=search-resume#/sessions"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=search-resume#/sessions\n"
+  },
+  {
+    "args": [
+      "set",
+      "viewport",
+      "900",
+      "700"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "wait",
+      "--text",
+      "Newest first"
+    ],
+    "exitCode": 0,
+    "output": "Newest first\n"
+  },
+  {
+    "args": [
+      "set",
+      "media",
+      "dark",
+      "reduced-motion"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "eval",
+      "--stdin"
+    ],
+    "exitCode": 0,
+    "output": "\"{\\\"violations\\\":[],\\\"incomplete\\\":[\\\"color-contrast\\\"],\\\"passes\\\":24,\\\"viewport\\\":[900,700],\\\"overflow\\\":false,\\\"reducedMotion\\\":true,\\\"smallestText\\\":10}\"\n"
+  },
+  {
+    "args": [
+      "open",
+      "http://127.0.0.1:4318/?jev_case=mcp-plugin-inventory#/inventory"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=mcp-plugin-inventory#/inventory\n"
+  },
+  {
+    "args": [
+      "set",
+      "viewport",
+      "900",
+      "700"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "wait",
+      "--text",
+      "Agent tools"
+    ],
+    "exitCode": 0,
+    "output": "Agent tools\n"
+  },
+  {
+    "args": [
+      "set",
+      "media",
+      "dark",
+      "reduced-motion"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "eval",
+      "--stdin"
+    ],
+    "exitCode": 0,
+    "output": "\"{\\\"violations\\\":[],\\\"incomplete\\\":[\\\"color-contrast\\\"],\\\"passes\\\":28,\\\"viewport\\\":[900,700],\\\"overflow\\\":false,\\\"reducedMotion\\\":true,\\\"smallestText\\\":10}\"\n"
+  },
+  {
+    "args": [
+      "open",
+      "http://127.0.0.1:4318/?jev_case=retention-delete#/data"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=retention-delete#/data\n"
+  },
+  {
+    "args": [
+      "set",
+      "viewport",
+      "900",
+      "700"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "wait",
+      "--text",
+      "Data controls"
+    ],
+    "exitCode": 0,
+    "output": "Data controls\n"
+  },
+  {
+    "args": [
+      "set",
+      "media",
+      "dark",
+      "reduced-motion"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "eval",
+      "--stdin"
+    ],
+    "exitCode": 0,
+    "output": "\"{\\\"violations\\\":[],\\\"incomplete\\\":[\\\"color-contrast\\\"],\\\"passes\\\":24,\\\"viewport\\\":[900,700],\\\"overflow\\\":false,\\\"reducedMotion\\\":true,\\\"smallestText\\\":10}\"\n"
+  },
+  {
+    "args": [
+      "open",
+      "http://127.0.0.1:4318/?jev_case=health-degraded#/health"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=health-degraded#/health\n"
+  },
+  {
+    "args": [
+      "set",
+      "viewport",
+      "900",
+      "700"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "wait",
+      "--text",
+      "System health"
+    ],
+    "exitCode": 0,
+    "output": "System health\n"
+  },
+  {
+    "args": [
+      "set",
+      "media",
+      "dark",
+      "reduced-motion"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "eval",
+      "--stdin"
+    ],
+    "exitCode": 0,
+    "output": "\"{\\\"violations\\\":[],\\\"incomplete\\\":[\\\"color-contrast\\\"],\\\"passes\\\":24,\\\"viewport\\\":[900,700],\\\"overflow\\\":false,\\\"reducedMotion\\\":true,\\\"smallestText\\\":10}\"\n"
+  },
+  {
+    "args": [
+      "open",
+      "http://127.0.0.1:4318/?jev_case=analysis-error#/analysis"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=analysis-error#/analysis\n"
+  },
+  {
+    "args": [
+      "set",
+      "viewport",
+      "900",
+      "700"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "wait",
+      "--text",
+      "Sessions eligible for preview"
+    ],
+    "exitCode": 0,
+    "output": "Sessions eligible for preview\n"
+  },
+  {
+    "args": [
+      "set",
+      "media",
+      "dark",
+      "reduced-motion"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "eval",
+      "--stdin"
+    ],
+    "exitCode": 0,
+    "output": "\"{\\\"violations\\\":[],\\\"incomplete\\\":[\\\"color-contrast\\\"],\\\"passes\\\":21,\\\"viewport\\\":[900,700],\\\"overflow\\\":false,\\\"reducedMotion\\\":true,\\\"smallestText\\\":10}\"\n"
+  },
+  {
+    "args": [
+      "open",
+      "http://127.0.0.1:4318/?jev_case=appearance-dark#/settings"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Cutokyo\n  http://127.0.0.1:4318/?jev_case=appearance-dark#/settings\n"
+  },
+  {
+    "args": [
+      "set",
+      "viewport",
+      "900",
+      "700"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "wait",
+      "--text",
+      "Color theme"
+    ],
+    "exitCode": 0,
+    "output": "Color theme\n"
+  },
+  {
+    "args": [
+      "set",
+      "media",
+      "dark",
+      "reduced-motion"
+    ],
+    "exitCode": 0,
+    "output": "\u2713 Done\n"
+  },
+  {
+    "args": [
+      "eval",
+      "--stdin"
+    ],
+    "exitCode": 0,
+    "output": "\"{\\\"violations\\\":[],\\\"incomplete\\\":[\\\"color-contrast\\\"],\\\"passes\\\":25,\\\"viewport\\\":[900,700],\\\"overflow\\\":false,\\\"reducedMotion\\\":true,\\\"smallestText\\\":10}\"\n"
+  }
+]

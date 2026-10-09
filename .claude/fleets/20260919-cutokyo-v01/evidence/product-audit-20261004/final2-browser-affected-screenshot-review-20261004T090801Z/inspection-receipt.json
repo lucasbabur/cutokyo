@@ -1,0 +1,235 @@
+{
+  "scope": "Bounded final2 browser-image follow-up only; actual source PNGs individually inspected. No browser/native application launch or source/product/test/configuration change.",
+  "completed_utc": "2026-10-04T09:10:04.280698+00:00",
+  "revision": {
+    "observed_head": "8e7c6b0e2352c388b59aa4b593110445469a0c49",
+    "note": "Dirty integrated checkout; per-image SHA256 identifies reviewed pixels"
+  },
+  "environment": {
+    "review_os": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
+    "capture_runtime": "Main-owned Playwright/Vite fixture run, not native Tauri"
+  },
+  "manifest": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final2-browser-affected-screenshot-review-20261004T090801Z/manifest.json",
+  "original88_archive": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/native-review/browser-screens-pre-vqa09-20261004T090801Z",
+  "prior_findings_preserved_unchanged": true,
+  "run_log": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/checks/final2-browser-e2e-20261004.log",
+  "run_log_sha256": "bf109c3b65dd0019f4061a5b7fd6a975d45a61281113001c61dc4843f23132b6",
+  "actual_log_result": "36 passed (43.0s)",
+  "coverage": {
+    "renewed_outputs_compared_by_sha256": 88,
+    "changed_outputs": 9,
+    "actual_individual_png_Read_inspections": 12,
+    "all_changed_outputs_Read_inspected": true,
+    "fresh_native_images_inspected": 0,
+    "app_launches": 0
+  },
+  "steps": [
+    "Read actual final2 browser log",
+    "Compare all renewed PNG hashes with original88 manifest",
+    "Copy original88 archive, manifest and finding receipt into requested durable native-review archive without overwriting originals",
+    "Preserve nine changed PNGs plus three unchanged resume comparison PNGs with current SHA256/dimensions",
+    "Read all12 actual renewed source PNGs individually",
+    "Recheck all88 current hashes,12 preserved copies,88 original/archive hashes and unchanged prior finding files"
+  ],
+  "finding_dispositions": [
+    {
+      "key": "VQA-09",
+      "owner": "integration",
+      "severity": "Low",
+      "status": "CLOSED_AT_BROWSER_EVIDENCE_LEVEL",
+      "reproduction": "Read the renewed forced-colors PNG and independently decode PNG IHDR dimensions",
+      "expected": "Filename1280x800 matches actual capture dimensions and chart marks/raw values remain legible",
+      "actual": "Actual1280x800 capture verified; distinct opposing hatch directions and solid mark, harness key, raw values and Absent, not zero context disclosure remain legible",
+      "evidence": [
+        "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/dashboard-forced-colors-1280x800.png"
+      ],
+      "sha256": "8bdccfc1d91acc67d8c9e1236de13fce592cfc0a6a8c5bca3e40f0f83589a7ce",
+      "actual_dimensions": [
+        1280,
+        800
+      ]
+    },
+    {
+      "key": "VQA-10",
+      "owner": "integration",
+      "severity": "Low",
+      "status": "CLOSED_AT_VISUAL_OBSERVATION_LEVEL_ONLY",
+      "reproduction": "Read three previously dim artifacts and all three additional light/dark size counterparts",
+      "expected": "Equivalent resume confirmation captures consistently show ready-looking primary styling",
+      "actual": "The formerly dim light1536x960 and dark1280x800/1536x960 primary actions now visually match corresponding theme/size peers. Exact native ID claude-jev-73A9, Unknown recorded project directory and terminal-startup-only warning remain visible. This closes only screenshot appearance; no actual enabled semantics or native resume execution inferred. No root cause claimed.",
+      "evidence": [
+        "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/session-resume-1280x800.png",
+        "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/session-resume-1536x960.png",
+        "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/session-resume-900x700.png",
+        "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/resume-dialog-dark-1280x800.png",
+        "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/resume-dialog-dark-1536x960.png",
+        "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/resume-dialog-dark-900x700.png"
+      ]
+    }
+  ],
+  "proxy_disclosure": {
+    "status": "VISUALLY_VERIFIED_AT_LARGER_SIZES_PARTIAL_SMALL_VIEWPORT_EVIDENCE",
+    "expected": "Unavailable listener, no started proxy and distinction from native capture remain clear without activating consent",
+    "actual": "Dark1280x800 and1536x960 show full readable disclosure: no provider-proxy listener, native capture configuration unaffected, live capture unknown until evidence arrives, no proxy started. Unavailable pill, dim Enable proxy and Review data handling row fit. Dark900x700 shows beginning of explanation at lower edge; light settings-conflict900x700 shows Unavailable/action row but full explanation is below screenshot. No overflow or product scroll failure established from these stills.",
+    "evidence": [
+      "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/settings-conflict-900x700.png",
+      "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/settings-dark-1280x800.png",
+      "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/settings-dark-1536x960.png",
+      "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/settings-dark-900x700.png"
+    ],
+    "unverified": [
+      "Complete disclosure below viewport at900x700",
+      "Live keyboard/screen-reader/scroll behavior",
+      "Native proxy behavior and activation state"
+    ]
+  },
+  "additional_changed_image": {
+    "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/skill-editor-dark-900x700.png",
+    "actual": "Manage protocol-check remains legible and fits900x700, including source textarea and footer. Save changes retains unchanged-content disabled-looking state; no new concrete rendered regression."
+  },
+  "verdict": {
+    "requested_visual_closures": "VERIFIED",
+    "new_concrete_rendered_regressions": "NONE_ESTABLISHED",
+    "native_or_overall_product_acceptance": "UNVERIFIED_BY_THIS_ASSIGNMENT"
+  },
+  "hash_checks": [
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/session-resume-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final2-browser-affected-screenshot-review-20261004T090801Z/evidence/final/screens/session-resume-1280x800.png",
+      "sha256": "ca615babe55c883021125cd043677ee873f33cdc7c8c7b859a19ff5f81353de3",
+      "prior_sha256": "ca615babe55c883021125cd043677ee873f33cdc7c8c7b859a19ff5f81353de3",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "changed_pixels": false
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/session-resume-1536x960.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final2-browser-affected-screenshot-review-20261004T090801Z/evidence/final/screens/session-resume-1536x960.png",
+      "sha256": "93495644c31902962752fc3b46e47d8578dae7730e9c3b52a5091bf680cb46e9",
+      "prior_sha256": "1fb8182cabd6c7d14eb80aef1c42c5d987a6e6db29cd9e925515a1802805a9b1",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "changed_pixels": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/final/screens/session-resume-900x700.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final2-browser-affected-screenshot-review-20261004T090801Z/evidence/final/screens/session-resume-900x700.png",
+      "sha256": "506fc582411419d14b0e7c85f98a363cc6548db3aea41d85151606d1de385cf7",
+      "prior_sha256": "506fc582411419d14b0e7c85f98a363cc6548db3aea41d85151606d1de385cf7",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "changed_pixels": false
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/dashboard-forced-colors-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final2-browser-affected-screenshot-review-20261004T090801Z/evidence/theme/screens/dashboard-forced-colors-1280x800.png",
+      "sha256": "8bdccfc1d91acc67d8c9e1236de13fce592cfc0a6a8c5bca3e40f0f83589a7ce",
+      "prior_sha256": "60a4f45a4f1a5c7c6c8d5dc156404f32c67cc92f2bb6eeb958418baf4f54653c",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "changed_pixels": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/resume-dialog-dark-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final2-browser-affected-screenshot-review-20261004T090801Z/evidence/theme/screens/resume-dialog-dark-1280x800.png",
+      "sha256": "c2b7c709722c2ec04dcc941e7b2b7591be89c441dee4731397e23af7a7928152",
+      "prior_sha256": "a1bb41e848f338b2af2becea1646e3798ec6bc2e6ab64465fefeeb34d84ddca7",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "changed_pixels": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/resume-dialog-dark-1536x960.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final2-browser-affected-screenshot-review-20261004T090801Z/evidence/theme/screens/resume-dialog-dark-1536x960.png",
+      "sha256": "96ac951f3ff97181a0dfe714708b8c671d636d9667d0d3b8537ad2f886ec176f",
+      "prior_sha256": "e19bc4828b049933fac588bea2a3fd631d5e261e55e137e07b1cf5e17b7d49d3",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "changed_pixels": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/resume-dialog-dark-900x700.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final2-browser-affected-screenshot-review-20261004T090801Z/evidence/theme/screens/resume-dialog-dark-900x700.png",
+      "sha256": "f88b0d2558c3ed2e20bc5dfda7be2ee51d3b68e9a3980e9e469c0e814f0520b0",
+      "prior_sha256": "f88b0d2558c3ed2e20bc5dfda7be2ee51d3b68e9a3980e9e469c0e814f0520b0",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "changed_pixels": false
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/settings-conflict-900x700.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final2-browser-affected-screenshot-review-20261004T090801Z/evidence/theme/screens/settings-conflict-900x700.png",
+      "sha256": "e9019d258f0f4c45d98003282be27840d6180a21992a908f76764434e21bd31d",
+      "prior_sha256": "511582420c7e8a3db50a0fd70debf796bcfafcdb0855bc620990a7a70e5e138d",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "changed_pixels": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/settings-dark-1280x800.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final2-browser-affected-screenshot-review-20261004T090801Z/evidence/theme/screens/settings-dark-1280x800.png",
+      "sha256": "3c716e9c4eab060cee12242d788432a4b409e339a43bdf763b5cfe0e74293bbe",
+      "prior_sha256": "24086b94799fdde0d30a8c4c5c3451d6f21945d307e1cda04872b3be3878ea31",
+      "actual_dimensions": [
+        1280,
+        800
+      ],
+      "changed_pixels": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/settings-dark-1536x960.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final2-browser-affected-screenshot-review-20261004T090801Z/evidence/theme/screens/settings-dark-1536x960.png",
+      "sha256": "18bf35f18a659e5e930b40891a894d7bf4b72ea68d9abbfe225621fe413bdce6",
+      "prior_sha256": "ffa3389e97646dfaf2690197183ea15081e09d1c65ab208416ab0c8affae1947",
+      "actual_dimensions": [
+        1536,
+        960
+      ],
+      "changed_pixels": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/theme/screens/settings-dark-900x700.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final2-browser-affected-screenshot-review-20261004T090801Z/evidence/theme/screens/settings-dark-900x700.png",
+      "sha256": "add0d8ffebd19588092680e5d83a22715fd4ba6a6ce639e2d363a74eb5f4943b",
+      "prior_sha256": "c20e80135485a707690f54d0bd115bd79dca5bbc9e906f445001e52ce394253a",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "changed_pixels": true
+    },
+    {
+      "source": "/home/lucas/Developer/personal/cutokyo-community/evidence/management/screens/skill-editor-dark-900x700.png",
+      "preserved": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/final2-browser-affected-screenshot-review-20261004T090801Z/evidence/management/screens/skill-editor-dark-900x700.png",
+      "sha256": "506531b06e4e27f8137a6a763692a2834267be2833b48d46e653a217c5284924",
+      "prior_sha256": "3bba030eee6575cfff27332e3d1a28e24c36b13fda144e842a250d1148526540",
+      "actual_dimensions": [
+        900,
+        700
+      ],
+      "changed_pixels": true
+    }
+  ],
+  "limitations": [
+    "12actualPNGReadinspections only; other76 current PNGs were hash-compared, not newly Read in this bounded follow-up",
+    "Browser fixture captures cannot establish native behavior",
+    "Prior88 review and findings not overwritten",
+    "No app/server launch, paid provider call, source edit or operator harness change"
+  ]
+}

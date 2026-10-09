@@ -1,0 +1,10 @@
+{
+  "scope": "Final report-only handoff, product source bound to completed native9 run. Not a new Rust gate or clean release proof.",
+  "compared_product_source_records": 244,
+  "changed_product_source": [],
+  "head_matches_native9": true,
+  "diff_check_exit_code": 0,
+  "diff_check_stdout": "",
+  "diff_check_stderr": "",
+  "clean_release_proof": false
+}

@@ -1,0 +1,14 @@
+{
+  "command": [
+    "/home/lucas/Developer/personal/cutokyo-community/target/debug/cutokyo",
+    "--config-file",
+    "/tmp/cutokyo-product-audit-20261004/config/settings.toml",
+    "--data-dir",
+    "/tmp/cutokyo-product-audit-20261004/data/cli",
+    "--json",
+    "setup"
+  ],
+  "exitCode": 0,
+  "output": "{\"schema_version\":\"1.0.0\",\"command\":\"setup\",\"ok\":true,\"data\":{\"actions\":[{\"action\":\"persist_recovery_intent\",\"target\":\"setup_state\",\"would_change\":true},{\"action\":\"create_private_data_directories\",\"target\":\"data_root\",\"would_change\":false},{\"action\":\"write_default_config\",\"target\":\"user_config\",\"would_change\":true}],\"already_configured\":false,\"dry_run\":false},\"meta\":{\"app_version\":\"0.1.0\",\"pending_crash_record\":false}}\n",
+  "existingArtifactOnly": true
+}

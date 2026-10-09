@@ -1,0 +1,28 @@
+{
+  "archive": "evidence/management/native-review/native-phase-selection-independent-20261004.tar.gz",
+  "sha256": "d819652aa30c9f66349708f047d33f02751676b639ef27e7e19df39b86c84e8f",
+  "members": [
+    {
+      "path": "native-phase-selection-config-inverse-1.raw",
+      "sha256": "9184803e1dc518ed8cbe3d17a8d2fd205abe00f2a60321acb6d993e7396c1bf4"
+    },
+    {
+      "path": "native-phase-selection-delta-1.raw",
+      "sha256": "836c5d0b945b01f4b54f784f7c98b6ac20407d4d12b1a7de245f894cc0dec861"
+    },
+    {
+      "path": "native-phase-selection-tests-1.raw",
+      "sha256": "07514ab6baae0a4dc34eeb000248a598f06e9488cbb4bbbb6be6ade391bb6a8a"
+    }
+  ],
+  "actual_safe_tests": 3,
+  "registration_counts": {
+    "save": 9,
+    "reopen": 3,
+    "browse": 1,
+    "capture-setup": 2,
+    "capture-history": 1
+  },
+  "invalid_phase_cases": 8,
+  "boundary": "Independent source/registration review only. No journey callback, browser, service, app, terminal, provider or real signal. Native6 aggregate remains failed."
+}

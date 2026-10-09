@@ -1,0 +1,23 @@
+{
+  "archive": "evidence/management/native-review/native7-negative-image-review-20261004.tar.gz",
+  "sha256": "dd0676ccea04ec3610ee88ffdbb373f64cb70992a32d32a6aab66ad01ff36b07",
+  "members": [
+    {
+      "member": "inspection-receipt.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/negative7-review-resume-negative-retest-xejbbw5c-20261004T113123Z/inspection-receipt.json",
+      "sha256": "f1a47693be47dfeba1901b4f0b6e00b382c3ea0fcc1cdfa7e12c59d2801b7614"
+    },
+    {
+      "member": "manifest.json",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/negative7-review-resume-negative-retest-xejbbw5c-20261004T113123Z/manifest.json",
+      "sha256": "b6d624addc5724bde624e68f9300d808388082850174506fb56042892a0f19e5"
+    },
+    {
+      "member": "screens/resume-inline-launch-failure-1280x800.png",
+      "source": "/home/lucas/Developer/personal/cutokyo-community/.claude/fleets/20260919-cutokyo-v01/evidence/product-audit-20261004/negative7-review-resume-negative-retest-xejbbw5c-20261004T113123Z/screens/resume-inline-launch-failure-1280x800.png",
+      "sha256": "9b1e3d8006185deb3142b7cc20ff50eb28fb2b6f58f9333b1669a1430d39db4d"
+    }
+  ],
+  "historical_evidence_preserved": true,
+  "source_mutation": false
+}

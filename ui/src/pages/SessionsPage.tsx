@@ -1,4 +1,5 @@
 import {
+  Copy,
   ArrowLeft,
   CalendarDays,
   ExternalLink,
@@ -12,7 +13,6 @@ import { useEffect, useRef, useState } from "react";
 import { useCommands, useCommandResource } from "../commands/context.js";
 import type {
   DeletionPreview,
-  Harness,
   ResumePreview,
   SessionFilters,
   SessionRecord,
@@ -20,7 +20,6 @@ import type {
 import { useAnnounce } from "../components/Announcer.js";
 import {
   Button,
-  CoverageBadge,
   DefinitionList,
   Disclosure,
   EmptyState,
@@ -29,30 +28,71 @@ import {
   Modal,
   PageHeader,
   ProvenanceDetails,
-  RouteNotice,
-  StatusPill,
   SuccessMessage,
   formatDateTime,
 } from "../components/Primitives.js";
+import {
+  HARNESS_NAMES,
+  HarnessFilter,
+  HarnessLabel,
+  HarnessMark,
+} from "../components/HarnessMark.js";
+import { RouteNotice } from "../components/Notices.js";
 import { formatInteger } from "../domain/reconcile.js";
+import { DEFAULT_SESSION_FILTERS } from "../domain/sessionSearch.js";
 import { navigate, routeHref } from "../router.js";
 
-const DEFAULT_FILTERS: SessionFilters = {
-  text: "",
-  harness: "all",
-  project: "",
-  branch: "",
-  dateRange: "all",
-  tool: "",
-  skill: "",
-  agent: "",
-};
+const DEFAULT_FILTERS = DEFAULT_SESSION_FILTERS;
+const searchStorageKey = () =>
+  `cutokyo.session-search:${globalThis.location.search}`;
 
-const HARNESS_NAMES: Record<Harness, string> = {
-  claude_code: "Claude Code",
-  codex: "Codex",
-  opencode: "OpenCode",
-};
+function retainedFilters(): SessionFilters {
+  try {
+    const saved: unknown = JSON.parse(
+      sessionStorage.getItem(searchStorageKey()) ?? "null",
+    );
+    if (saved === null || typeof saved !== "object") return DEFAULT_FILTERS;
+    const fields = saved as Record<string, unknown>;
+    const values = { ...DEFAULT_FILTERS };
+    for (const name of [
+      "text",
+      "project",
+      "branch",
+      "tool",
+      "skill",
+      "agent",
+    ] as const) {
+      if (typeof fields[name] === "string") values[name] = fields[name];
+    }
+    if (
+      ["all", "claude_code", "codex", "opencode"].includes(
+        String(fields.harness),
+      )
+    )
+      values.harness = fields.harness as SessionFilters["harness"];
+    if (["all", "today", "7d", "30d", "90d"].includes(String(fields.dateRange)))
+      values.dateRange = fields.dateRange as SessionFilters["dateRange"];
+    if (fields.queryMode === "terms" || fields.queryMode === "phrase")
+      values.queryMode = fields.queryMode;
+    if (fields.sort === "relevance" || fields.sort === "newest")
+      values.sort = fields.sort;
+    if (
+      Number.isInteger(fields.offset) &&
+      Number(fields.offset) >= 0 &&
+      Number(fields.offset) <= 4_294_967_295
+    )
+      values.offset = Number(fields.offset);
+    if (
+      Number.isInteger(fields.limit) &&
+      Number(fields.limit) > 0 &&
+      Number(fields.limit) <= 500
+    )
+      values.limit = Number(fields.limit);
+    return values;
+  } catch {
+    return DEFAULT_FILTERS;
+  }
+}
 
 export function SessionsPage({
   sessionId,
@@ -69,12 +109,32 @@ export function SessionsPage({
 function SessionHistory() {
   const commands = useCommands();
   const searchRef = useRef<HTMLInputElement>(null);
-  const [filters, setFilters] = useState<SessionFilters>(DEFAULT_FILTERS);
-  const key = JSON.stringify(filters);
+  const [filters, setFilters] = useState<SessionFilters>(retainedFilters);
+  const [debouncedText, setDebouncedText] = useState(filters.text);
+  const requested = { ...filters, text: debouncedText };
+  const key = JSON.stringify(requested);
   const resource = useCommandResource(
-    () => commands.searchSessions(filters),
+    async () => ({ result: await commands.searchSessions(requested), key }),
     key,
   );
+  useEffect(() => {
+    const timer = globalThis.setTimeout(
+      () => setDebouncedText(filters.text),
+      250,
+    );
+    return () => globalThis.clearTimeout(timer);
+  }, [filters.text]);
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(searchStorageKey(), JSON.stringify(filters));
+    } catch {
+      /* Storage can be disabled by the host. */
+    }
+  }, [filters]);
+  const stale =
+    resource.data !== null && resource.data.key !== JSON.stringify(filters);
+  const pending =
+    filters.text !== debouncedText || resource.state === "loading";
 
   useEffect(() => {
     const focusSearch = (event: KeyboardEvent) => {
@@ -96,7 +156,7 @@ function SessionHistory() {
     keyName: Key,
     value: SessionFilters[Key],
   ) => {
-    setFilters((current) => ({ ...current, [keyName]: value }));
+    setFilters((current) => ({ ...current, offset: 0, [keyName]: value }));
   };
   const filtersActive = Object.entries(filters).some(
     ([keyName, value]) =>
@@ -106,9 +166,7 @@ function SessionHistory() {
   return (
     <div className="page">
       <PageHeader
-        eyebrow="Native session history"
         title="Sessions"
-        description="Search transcript text and filter attributable local history without losing exact native resume identity."
         actions={
           filtersActive ? (
             <Button
@@ -122,7 +180,10 @@ function SessionHistory() {
         }
       />
 
-      <section className="filter-bar" aria-label="Session search filters">
+      <section
+        className="toolbar toolbar--wrap"
+        aria-label="Session search filters"
+      >
         <label className="search-field">
           <span className="sr-only">Search session content</span>
           <Search aria-hidden="true" />
@@ -137,23 +198,43 @@ function SessionHistory() {
           />
           <kbd>Ctrl/⌘ K</kbd>
         </label>
-        <label>
-          <span>Harness</span>
+        <label className="inline-field">
+          <span>Match</span>
           <select
-            value={filters.harness}
+            aria-label="Match"
+            value={filters.queryMode}
             onChange={(event) =>
-              patch("harness", event.currentTarget.value as Harness | "all")
+              patch(
+                "queryMode",
+                event.currentTarget.value as SessionFilters["queryMode"],
+              )
             }
           >
-            <option value="all">All harnesses</option>
-            <option value="claude_code">Claude Code</option>
-            <option value="codex">Codex</option>
-            <option value="opencode">OpenCode</option>
+            <option value="terms">All words</option>
+            <option value="phrase">Exact phrase</option>
           </select>
         </label>
-        <label>
+        <label className="inline-field">
+          <span>Sort</span>
+          <select
+            aria-label="Sort"
+            value={filters.sort}
+            onChange={(event) =>
+              patch("sort", event.currentTarget.value as SessionFilters["sort"])
+            }
+          >
+            <option value="relevance">Most relevant</option>
+            <option value="newest">Newest first</option>
+          </select>
+        </label>
+        <HarnessFilter
+          value={filters.harness}
+          onChange={(value) => patch("harness", value)}
+        />
+        <label className="inline-field">
           <span>Date</span>
           <select
+            aria-label="Date"
             value={filters.dateRange}
             onChange={(event) =>
               patch(
@@ -169,23 +250,38 @@ function SessionHistory() {
             <option value="90d">Last 90 days</option>
           </select>
         </label>
+        <MoreFilters
+          data={resource.data?.result ?? null}
+          filters={filters}
+          patch={patch}
+        />
       </section>
 
-      {resource.state === "loading" && resource.data === null ? (
-        <LoadingState label="Searching local session index" />
-      ) : resource.state === "error" && resource.data === null ? (
+      {resource.state === "error" ? (
         <ErrorState
           title="Session search is unavailable"
           error={resource.error}
           onRetry={resource.reload}
         />
+      ) : null}
+      {stale ? (
+        <p className="search-stale" role="status">
+          Showing previous results.{" "}
+          {pending
+            ? "Search is updating…"
+            : "These results are not for the current search."}
+        </p>
+      ) : null}
+      {resource.state === "loading" && resource.data === null ? (
+        <LoadingState label="Searching local session index" />
       ) : resource.data === null ? null : (
         <SessionResults
-          data={resource.data}
+          data={resource.data.result}
           filters={filters}
           filtersActive={filtersActive}
           patch={patch}
-          refreshing={resource.state === "loading"}
+          refreshing={pending || stale}
+          clear={() => setFilters(DEFAULT_FILTERS)}
         />
       )}
     </div>
@@ -194,11 +290,12 @@ function SessionHistory() {
 
 function SessionResults({
   data,
-  filters,
   filtersActive,
   patch,
   refreshing,
+  clear,
 }: {
+  readonly clear: () => void;
   readonly data: Awaited<
     ReturnType<ReturnType<typeof useCommands>["searchSessions"]>
   >;
@@ -213,57 +310,19 @@ function SessionResults({
   return (
     <div className={refreshing ? "is-refreshing" : ""}>
       <RouteNotice meta={data.meta} />
-      <details className="advanced-filters">
-        <summary>
-          <Filter aria-hidden="true" /> More filters
-          {filtersActive ? <span className="filter-count">Active</span> : null}
-        </summary>
-        <div className="advanced-filters__grid">
-          <FilterSelect
-            label="Project"
-            value={filters.project}
-            options={data.availableProjects}
-            onChange={(value) => patch("project", value)}
-          />
-          <FilterSelect
-            label="Branch"
-            value={filters.branch}
-            options={data.availableBranches}
-            onChange={(value) => patch("branch", value)}
-          />
-          <FilterSelect
-            label="Tool"
-            value={filters.tool}
-            options={data.availableTools}
-            onChange={(value) => patch("tool", value)}
-          />
-          <FilterSelect
-            label="Skill"
-            value={filters.skill}
-            options={data.availableSkills}
-            onChange={(value) => patch("skill", value)}
-          />
-          <FilterSelect
-            label="Agent"
-            value={filters.agent}
-            options={data.availableAgents}
-            onChange={(value) => patch("agent", value)}
-          />
-        </div>
-      </details>
 
       <div className="results-heading" role="status" aria-live="polite">
         <strong>
           {data.total} {data.total === 1 ? "session" : "sessions"}
         </strong>
-        <span>{refreshing ? "Updating results…" : "Newest first"}</span>
+        {refreshing ? <span>Updating results…</span> : null}
       </div>
 
       {data.sessions.length === 0 ? (
-        data.availableProjects.length === 0 ? (
+        !filtersActive && data.total === 0 ? (
           <EmptyState
-            title="History is empty—not zero"
-            description="No local session evidence has been captured. Check native setup and system health; Cutokyo will not fabricate empty usage totals while coverage is unavailable."
+            title="No sessions yet"
+            description="Sessions from Claude Code, Codex, and OpenCode appear here."
             action={
               <a
                 className="button button--primary button--regular"
@@ -276,7 +335,18 @@ function SessionResults({
         ) : (
           <EmptyState
             title="No sessions match these filters"
-            description="The local index was searched successfully. Try a broader date range or clear project, branch, tool, skill, and agent filters."
+            description={
+              data.total > 0
+                ? "This page no longer has results. Return to the first page."
+                : "Try fewer words, All words instead of Exact phrase, or a broader date range. Your search has been kept."
+            }
+            action={
+              <Button
+                onClick={data.total > 0 ? () => patch("offset", 0) : clear}
+              >
+                {data.total > 0 ? "First page" : "Clear search and filters"}
+              </Button>
+            }
             compact
           />
         )
@@ -287,6 +357,31 @@ function SessionResults({
           ))}
         </div>
       )}
+      {data.total > 0 ? (
+        <nav className="search-pagination" aria-label="Session search pages">
+          <span>
+            {data.sessions.length === 0
+              ? "No rows on this page"
+              : `${data.offset + 1}–${data.offset + data.sessions.length} of ${data.total}`}
+          </span>
+          <Button
+            size="small"
+            disabled={refreshing || data.offset === 0}
+            onClick={() =>
+              patch("offset", Math.max(0, data.offset - data.limit))
+            }
+          >
+            Previous page
+          </Button>
+          <Button
+            size="small"
+            disabled={refreshing || !data.hasMore}
+            onClick={() => patch("offset", data.offset + data.limit)}
+          >
+            Next page
+          </Button>
+        </nav>
+      ) : null}
     </div>
   );
 }
@@ -306,10 +401,14 @@ function FilterSelect({
     <label>
       <span>{label}</span>
       <select
+        aria-label={label}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
       >
         <option value="">Any {label.toLocaleLowerCase()}</option>
+        {value !== "" && !options.includes(value) ? (
+          <option value={value}>{value} (no longer observed)</option>
+        ) : null}
         {options.map((option) => (
           <option value={option} key={option}>
             {option}
@@ -317,6 +416,27 @@ function FilterSelect({
         ))}
       </select>
     </label>
+  );
+}
+
+function MatchText({
+  text,
+  terms,
+}: {
+  readonly text: string;
+  readonly terms: readonly string[];
+}) {
+  const normalize = (word: string) =>
+    word.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase();
+  const words = new Set(terms.map(normalize));
+  return (
+    <>
+      {text
+        .split(/([\p{L}\p{N}\p{M}]+)/u)
+        .map((part, index) =>
+          words.has(normalize(part)) ? <mark key={index}>{part}</mark> : part,
+        )}
+    </>
   );
 }
 
@@ -332,19 +452,36 @@ function SessionRow({ session }: { readonly session: SessionRecord }) {
       : null;
   return (
     <article className="session-row">
-      <div className="session-row__harness" data-harness={session.harness}>
-        <span aria-hidden="true" />
-        {HARNESS_NAMES[session.harness]}
+      <div
+        className="session-row__harness"
+        data-harness={session.harness}
+        title={HARNESS_NAMES[session.harness]}
+      >
+        <HarnessMark harness={session.harness} />
+        <span className="sr-only">{HARNESS_NAMES[session.harness]}</span>
       </div>
       <div className="session-row__body">
         <div className="session-row__title">
           <a href={routeHref("/sessions", session.id)}>
             {session.title ?? "Untitled session"}
           </a>
-          <CoverageBadge coverage={session.provenance.coverage} />
         </div>
-        <p>{session.summary ?? "Transcript summary unavailable."}</p>
+        {session.matches.length > 0 ? (
+          <div className="session-matches">
+            {session.matches.map((match) => (
+              <p key={match.source}>
+                <span className="session-match-source">
+                  {match.source === "native_id" ? "Session ID" : match.source}
+                </span>{" "}
+                <MatchText text={match.text} terms={match.terms} />
+              </p>
+            ))}
+          </div>
+        ) : session.summary === null ? null : (
+          <p>{session.summary}</p>
+        )}
         <div className="session-row__meta">
+          <span>{session.project ?? "Project unknown"}</span>
           <span>
             <CalendarDays aria-hidden="true" />{" "}
             {formatDateTime(session.startedAt)}
@@ -353,7 +490,6 @@ function SessionRow({ session }: { readonly session: SessionRecord }) {
             <GitBranch aria-hidden="true" />{" "}
             {session.branch ?? "Branch unknown"}
           </span>
-          <span>{session.project ?? "Project unknown"}</span>
         </div>
       </div>
       <div
@@ -393,8 +529,16 @@ function SessionDetail({ sessionId }: { readonly sessionId: string }) {
   const [actionBusy, setActionBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<string | null>(null);
+  const resumeInFlight = useRef(false);
 
+  const closeResume = () => {
+    if (resumeInFlight.current) return;
+    setResume(null);
+    setActionError(null);
+  };
   const openResume = async () => {
+    if (resumeInFlight.current) return;
+    setReceipt(null);
     setActionError(null);
     setResume("loading");
     try {
@@ -405,15 +549,27 @@ function SessionDetail({ sessionId }: { readonly sessionId: string }) {
     }
   };
   const executeResume = async () => {
+    if (
+      resumeInFlight.current ||
+      resume === null ||
+      resume === "loading" ||
+      !resume.canResume
+    )
+      return;
+    resumeInFlight.current = true;
     setActionBusy(true);
+    setActionError(null);
+    setReceipt(null);
     try {
       const result = await commands.resumeSession(sessionId);
+      if (!result.ok) throw new Error(result.message);
       setReceipt(result.message);
       announce(result.message);
       setResume(null);
     } catch (reason) {
       setActionError(reason instanceof Error ? reason.message : String(reason));
     } finally {
+      resumeInFlight.current = false;
       setActionBusy(false);
     }
   };
@@ -448,7 +604,7 @@ function SessionDetail({ sessionId }: { readonly sessionId: string }) {
   };
 
   if (resource.state === "loading" && resource.data === null) {
-    return <LoadingState label="Loading attributable session timeline" />;
+    return <LoadingState label="Loading session" />;
   }
   if (resource.state === "error" && resource.data === null) {
     return (
@@ -468,11 +624,7 @@ function SessionDetail({ sessionId }: { readonly sessionId: string }) {
         <ArrowLeft aria-hidden="true" /> Back to sessions
       </a>
       <PageHeader
-        eyebrow={`${HARNESS_NAMES[session.harness]} · ${session.state}`}
         title={session.title ?? "Untitled session"}
-        description={
-          session.summary ?? "No local summary is available for this session."
-        }
         actions={
           <>
             <Button onClick={() => void openResume()}>
@@ -484,7 +636,7 @@ function SessionDetail({ sessionId }: { readonly sessionId: string }) {
           </>
         }
       />
-      {actionError === null ? null : (
+      {actionError === null || resume !== null ? null : (
         <p className="form-error" role="alert">
           {actionError}
         </p>
@@ -498,16 +650,14 @@ function SessionDetail({ sessionId }: { readonly sessionId: string }) {
         >
           <div className="panel__header">
             <div>
-              <p className="eyebrow">Chronological evidence</p>
               <h2 id="timeline-heading">Timeline</h2>
             </div>
-            <CoverageBadge coverage={session.provenance.coverage} />
           </div>
           {session.timeline.length === 0 ? (
             <EmptyState
               compact
-              title="Timeline content unavailable"
-              description="The native source established this session identity but did not expose attributable message or tool events."
+              title="No messages"
+              description="This session has no readable messages."
             />
           ) : (
             <ol className="timeline">
@@ -526,10 +676,6 @@ function SessionDetail({ sessionId }: { readonly sessionId: string }) {
                     </div>
                     <h3>{entry.title}</h3>
                     {entry.body === null ? null : <p>{entry.body}</p>}
-                    <ProvenanceDetails
-                      provenance={entry.provenance}
-                      label="Event provenance"
-                    />
                   </article>
                 </li>
               ))}
@@ -542,43 +688,82 @@ function SessionDetail({ sessionId }: { readonly sessionId: string }) {
           aria-labelledby="identity-heading"
         >
           <div className="panel__header">
-            <div>
-              <p className="eyebrow">Exact identity</p>
-              <h2 id="identity-heading">Native target</h2>
-            </div>
+            <h2 id="identity-heading">Session</h2>
           </div>
           <DefinitionList
             rows={[
-              { term: "Harness", value: HARNESS_NAMES[session.harness] },
               {
-                term: "Session tree",
-                value: <code>{session.nativeSessionKey}</code>,
+                term: "Harness",
+                value: <HarnessLabel harness={session.harness} />,
               },
+              { term: "Project", value: session.project ?? "—" },
+              { term: "Branch", value: session.branch ?? "—" },
               {
-                term: "Resume target",
-                value:
-                  session.nativeResumeId === null ? (
-                    <StatusPill state="unavailable">Unavailable</StatusPill>
-                  ) : (
-                    <code>{session.nativeResumeId}</code>
-                  ),
+                term: "Session ID",
+                value: (
+                  <span className="copy-row">
+                    <code
+                      title={session.nativeResumeId ?? session.id}
+                      aria-label={session.nativeResumeId ?? session.id}
+                    >
+                      {session.nativeResumeId ?? session.id}
+                    </code>
+                    <Button
+                      size="small"
+                      variant="quiet"
+                      aria-label="Copy session ID"
+                      onClick={() => {
+                        void globalThis.navigator.clipboard
+                          ?.writeText(session.nativeResumeId ?? session.id)
+                          .then(() => announce("Session ID copied"));
+                      }}
+                    >
+                      <Copy aria-hidden="true" />
+                    </Button>
+                  </span>
+                ),
               },
-              { term: "Project", value: session.project ?? "Unknown" },
-              { term: "Branch", value: session.branch ?? "Unknown" },
             ]}
           />
-          <ProvenanceDetails provenance={session.provenance} />
+          <details className="advanced">
+            <summary>Details</summary>
+            <DefinitionList
+              rows={[
+                { term: "State", value: session.state },
+                {
+                  term: "Coverage",
+                  value: `${session.provenance.coverage.state.replaceAll("_", " ")} · ${session.provenance.coverage.scope}`,
+                },
+                {
+                  term: "Session tree",
+                  value: <code>{session.nativeSessionKey}</code>,
+                },
+                {
+                  term: "Resume target",
+                  value:
+                    session.nativeResumeId === null ? (
+                      "—"
+                    ) : (
+                      <code>{session.nativeResumeId}</code>
+                    ),
+                },
+              ]}
+            />
+            <ProvenanceDetails provenance={session.provenance} label="Source" />
+          </details>
         </aside>
       </div>
 
       {resume === null ? null : (
         <Modal
-          title="Resume this exact native session?"
-          description="Cutokyo will pass only the recorded native resume target to the selected harness."
-          onClose={() => setResume(null)}
+          title={`Resume in ${resume === "loading" ? "…" : resume.harnessName}?`}
+          onClose={closeResume}
+          closeDisabled={actionBusy}
           footer={
             <>
-              <Button onClick={() => setResume(null)}>Cancel</Button>
+              <Button disabled={actionBusy} onClick={closeResume}>
+                Cancel
+              </Button>
               <Button
                 variant="primary"
                 disabled={
@@ -586,30 +771,24 @@ function SessionDetail({ sessionId }: { readonly sessionId: string }) {
                 }
                 onClick={() => void executeResume()}
               >
-                {actionBusy
-                  ? "Opening…"
-                  : `Resume in ${resume === "loading" ? "harness" : resume.harnessName}`}
+                {actionBusy ? "Opening…" : "Resume"}
               </Button>
             </>
           }
         >
+          {actionError === null ? null : (
+            <p className="form-error" role="alert">
+              {actionError}
+            </p>
+          )}
           {resume === "loading" ? (
-            <LoadingState label="Resolving exact native target" />
+            <LoadingState label="Checking" />
           ) : (
             <>
-              <DefinitionList
-                rows={[
-                  { term: "Harness", value: resume.harnessName },
-                  {
-                    term: "Native session",
-                    value: <code>{resume.nativeResumeId}</code>,
-                  },
-                  { term: "Action", value: resume.commandDescription },
-                ]}
-              />
-              {resume.canResume ? null : (
-                <Disclosure>{resume.unavailableReason}</Disclosure>
-              )}
+              <p className="dialog-line">
+                Folder: {resume.projectDirectory ?? "No folder recorded"}
+              </p>
+              {resume.canResume ? null : <p>{resume.unavailableReason}</p>}
             </>
           )}
         </Modal>
@@ -618,7 +797,6 @@ function SessionDetail({ sessionId }: { readonly sessionId: string }) {
       {deletion === null ? null : (
         <Modal
           title="Delete only this session?"
-          description="Review the exact transactional scope before removing local evidence."
           onClose={() => setDeletion(null)}
           footer={
             <>
@@ -634,16 +812,13 @@ function SessionDetail({ sessionId }: { readonly sessionId: string }) {
           }
         >
           {deletion === "loading" ? (
-            <LoadingState label="Previewing linked rows" />
+            <LoadingState label="Checking" />
           ) : (
             <>
               <DefinitionList
                 rows={[
                   { term: "Session", value: deletion.sessionTitles.join(", ") },
-                  { term: "Raw observations", value: deletion.rawObservations },
                   { term: "Messages", value: deletion.messages },
-                  { term: "Summaries", value: deletion.summaries },
-                  { term: "Search rows", value: deletion.ftsRows },
                 ]}
               />
               <Disclosure>{deletion.disclosure}</Disclosure>
@@ -652,5 +827,84 @@ function SessionDetail({ sessionId }: { readonly sessionId: string }) {
         </Modal>
       )}
     </div>
+  );
+}
+
+function MoreFilters({
+  data,
+  filters,
+  patch,
+}: {
+  readonly data: Awaited<
+    ReturnType<ReturnType<typeof useCommands>["searchSessions"]>
+  > | null;
+  readonly filters: SessionFilters;
+  readonly patch: <Key extends keyof SessionFilters>(
+    key: Key,
+    value: SessionFilters[Key],
+  ) => void;
+}) {
+  const activeConstraints = (
+    [
+      ["Project", filters.project],
+      ["Branch", filters.branch],
+      ["Tool", filters.tool],
+      ["Skill", filters.skill],
+      ["Agent", filters.agent],
+    ] as const
+  ).filter(([, value]) => value !== "");
+  return (
+    <details className="advanced-filters">
+      <summary>
+        <Filter aria-hidden="true" /> More filters
+        {activeConstraints.length > 0 ? (
+          <>
+            <span className="filter-count">Active</span>
+            <span
+              className="advanced-filters__summary"
+              aria-label="Active additional filters"
+            >
+              {activeConstraints.map(([label, value]) => (
+                <span key={label}>
+                  <strong>{label}:</strong> {value}
+                </span>
+              ))}
+            </span>
+          </>
+        ) : null}
+      </summary>
+      <div className="advanced-filters__grid">
+        <FilterSelect
+          label="Project"
+          value={filters.project}
+          options={data?.availableProjects ?? []}
+          onChange={(value) => patch("project", value)}
+        />
+        <FilterSelect
+          label="Branch"
+          value={filters.branch}
+          options={data?.availableBranches ?? []}
+          onChange={(value) => patch("branch", value)}
+        />
+        <FilterSelect
+          label="Tool"
+          value={filters.tool}
+          options={data?.availableTools ?? []}
+          onChange={(value) => patch("tool", value)}
+        />
+        <FilterSelect
+          label="Skill"
+          value={filters.skill}
+          options={data?.availableSkills ?? []}
+          onChange={(value) => patch("skill", value)}
+        />
+        <FilterSelect
+          label="Agent"
+          value={filters.agent}
+          options={data?.availableAgents ?? []}
+          onChange={(value) => patch("agent", value)}
+        />
+      </div>
+    </details>
   );
 }

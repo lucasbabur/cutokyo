@@ -1,0 +1,35 @@
+{
+  "archive": "evidence/management/native-review/resume-receipt-ui-closure-20261004.tar.gz",
+  "sha256": "705e77f00e3d4719d29d35f3603458e9c047afa51a7d3e486d7a477ce507b8f0",
+  "members": [
+    {
+      "name": "resume-receipt-corrected-ui-final-20261004.log",
+      "sha256": "e6e417264adfd02fe025e25c6a09a8b67a69de01fe784b8d7d7c986fdce37195"
+    },
+    {
+      "name": "resume-receipt-corrected-ui-final-executed-20261004.json",
+      "sha256": "327b1ba4f36f1c0a31c6599cd5fef9157be87701459f99ee3c0e41ac37e5f9eb"
+    },
+    {
+      "name": "resume-receipt-corrected-ui-20261004.log",
+      "sha256": "86091a56bd0280bd6665732d06f572d83efa8138471e6834c69aead6a9bc3977"
+    },
+    {
+      "name": "resume-receipt-corrected-ui-executed-20261004.json",
+      "sha256": "877c451c7c76a07e7fefa38571ed773f6bfaa5e554d2e6bdaf09b630977ae051"
+    },
+    {
+      "name": "native-resume-receipt-corrected.test.tsx",
+      "sha256": "48a1c99a3067364cdca87c4bc94c013f82705be3417a0a8c2834aabe59386ff3"
+    },
+    {
+      "name": "resume-corrected-review.vitest.config.mjs",
+      "sha256": "97030c32294445e7ab56fc0bb96ec3b5f506c1d3075ae08052769640b5bad43e"
+    }
+  ],
+  "reviewer": "ad9da28302928395f",
+  "final_focused_tests_passed": 54,
+  "final_actual_shaped_probe_passed": 1,
+  "initial_temporary_ambiguous_status_query_failure_preserved": true,
+  "native_aggregate_claim": false
+}

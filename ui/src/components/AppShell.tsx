@@ -1,19 +1,21 @@
 import {
-  Activity,
-  Bot,
   Boxes,
   Database,
   Gauge,
   History,
   Settings,
-  ShieldCheck,
   Stethoscope,
 } from "lucide-react";
 import { type PropsWithChildren, useEffect, useRef } from "react";
 
 import type { BootstrapResponse, RoutePath } from "../contracts.js";
 import { routeHref } from "../router.js";
-import { StatusPill } from "./Primitives.js";
+import { BrandMark } from "./BrandMark.js";
+import {
+  NoticesProvider,
+  type ShellWarning,
+  WarningsPanel,
+} from "./Notices.js";
 
 const NAV_ITEMS: readonly {
   readonly path: RoutePath;
@@ -34,26 +36,14 @@ const NAV_ITEMS: readonly {
     icon: History,
   },
   {
-    path: "/analysis",
-    label: "AI analysis",
-    shortLabel: "Analysis",
-    icon: Bot,
-  },
-  {
     path: "/inventory",
-    label: "Agent inventory",
-    shortLabel: "Inventory",
+    label: "Agent tools",
+    shortLabel: "Agent tools",
     icon: Boxes,
   },
   {
-    path: "/guards",
-    label: "Guards & capture",
-    shortLabel: "Guards",
-    icon: ShieldCheck,
-  },
-  {
     path: "/health",
-    label: "System health",
+    label: "Health",
     shortLabel: "Health",
     icon: Stethoscope,
   },
@@ -69,10 +59,14 @@ const NAV_ITEMS: readonly {
 export function AppShell({
   bootstrap,
   currentPath,
+  onRecheckStatus,
+  recheckingStatus = false,
   children,
 }: PropsWithChildren<{
   readonly bootstrap: BootstrapResponse;
   readonly currentPath: RoutePath;
+  readonly onRecheckStatus?: () => void;
+  readonly recheckingStatus?: boolean;
 }>) {
   const renderedPath = useRef(currentPath);
   useEffect(() => {
@@ -101,109 +95,121 @@ export function AppShell({
   }, [currentPath]);
 
   return (
-    <div className="app-shell">
-      <a className="skip-link" href="#main-content">
-        Skip to content
-      </a>
-      <aside className="sidebar" aria-label="Application">
-        <div className="brand">
-          <div className="brand__mark" aria-hidden="true">
-            <Activity />
-          </div>
-          <div>
-            <strong>Cutokyo</strong>
-            <span>Local observability</span>
-          </div>
-        </div>
-
-        {bootstrap.onboardingComplete ? (
-          <nav className="primary-nav" aria-label="Primary navigation">
-            {NAV_ITEMS.map((item) => {
-              const Icon = item.icon;
-              const active = item.path === currentPath;
-              return (
-                <a
-                  key={item.path}
-                  href={routeHref(item.path)}
-                  className={
-                    active ? "primary-nav__item is-active" : "primary-nav__item"
-                  }
-                  aria-current={active ? "page" : undefined}
-                  title={item.label}
-                >
-                  <Icon aria-hidden="true" />
-                  <span className="primary-nav__label">{item.shortLabel}</span>
-                </a>
-              );
-            })}
-          </nav>
-        ) : (
-          <div className="sidebar__setup">
-            <span className="sidebar__step">First run</span>
-            <strong>Choose what Cutokyo may observe.</strong>
-            <p>No proxy or model-provider request is enabled by default.</p>
-          </div>
-        )}
-
-        <div className="sidebar__footer">
-          <div className="connection-row">
-            <span
-              className={
-                bootstrap.writerMode === "owner"
-                  ? "connection-dot"
-                  : "connection-dot is-warning"
-              }
-              aria-hidden="true"
-            />
-            <span>
-              {bootstrap.writerMode === "owner"
-                ? "Local writer"
-                : "Read-only view"}
-            </span>
-          </div>
-          <StatusPill state={bootstrap.localOnly ? "enabled" : "active"}>
-            {bootstrap.localOnly ? "Local only" : "Proxy active"}
-          </StatusPill>
-          <span className="sidebar__version">v{bootstrap.appVersion}</span>
-        </div>
-      </aside>
-
-      <div className="workspace">
-        <header className="topbar">
-          <div className="topbar__scope">
-            <span>Workspace</span>
-            <strong>All local projects</strong>
-          </div>
-          <div
-            className="topbar__status"
-            role="group"
-            aria-label="Capture and egress status"
-          >
-            {bootstrap.proxyActive ? (
-              <span className="live-indicator">
-                <span aria-hidden="true" /> Proxy capture live
-              </span>
-            ) : (
-              <span className="quiet-indicator">Proxy off</span>
-            )}
-            <span className="divider" aria-hidden="true" />
-            <span className="quiet-indicator">
-              AI egress{" "}
-              {bootstrap.analysisEgressEnabled
-                ? "enabled"
-                : "on confirmation only"}
-            </span>
-          </div>
-        </header>
-        <main id="main-content" className="main-content" tabIndex={-1}>
-          {bootstrap.startupNotice === null ? null : (
-            <div className="startup-notice" role="status">
-              {bootstrap.startupNotice}
+    <NoticesProvider>
+      <div className="app-shell">
+        <a
+          className="skip-link"
+          href="#main-content"
+          onClick={(event) => {
+            event.preventDefault();
+            document.getElementById("main-content")?.focus();
+          }}
+        >
+          Skip to content
+        </a>
+        <aside className="sidebar" aria-label="Application">
+          <div className="brand">
+            <div className="brand__mark" aria-hidden="true">
+              <BrandMark />
             </div>
+            <div>
+              <strong>Cutokyo</strong>
+            </div>
+          </div>
+
+          {bootstrap.onboardingComplete ? (
+            <nav className="primary-nav" aria-label="Primary navigation">
+              {NAV_ITEMS.map((item) => {
+                const Icon = item.icon;
+                const active = item.path === currentPath;
+                return (
+                  <a
+                    key={item.path}
+                    href={routeHref(item.path)}
+                    className={
+                      active
+                        ? "primary-nav__item is-active"
+                        : "primary-nav__item"
+                    }
+                    aria-current={active ? "page" : undefined}
+                    title={item.label}
+                  >
+                    <Icon aria-hidden="true" />
+                    <span className="primary-nav__label">
+                      {item.shortLabel}
+                    </span>
+                  </a>
+                );
+              })}
+            </nav>
+          ) : (
+            <div className="sidebar__spacer" />
           )}
-          {children}
-        </main>
+
+          <div className="sidebar__footer">
+            <WarningsPanel
+              pageLabel={
+                NAV_ITEMS.find((item) => item.path === currentPath)?.label ??
+                "Setup"
+              }
+              extra={shellWarnings(bootstrap)}
+              onRecheck={onRecheckStatus}
+              rechecking={recheckingStatus}
+            />
+            <span className="sidebar__version">v{bootstrap.appVersion}</span>
+          </div>
+        </aside>
+
+        <div className="workspace">
+          <main id="main-content" className="main-content" tabIndex={-1}>
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </NoticesProvider>
   );
+}
+
+function shellWarnings(bootstrap: BootstrapResponse): readonly ShellWarning[] {
+  const warnings: ShellWarning[] = [];
+  (bootstrap.startupNotice ?? "")
+    .split("\n")
+    .filter((line) => line.trim() !== "")
+    .forEach((line, index) => {
+      warnings.push({
+        id: `startup-${index}`,
+        tone: "partial",
+        title: "Startup check",
+        detail: line,
+        source: "Startup",
+      });
+    });
+  if (bootstrap.writerMode === "read_only") {
+    warnings.push({
+      id: "writer-read-only",
+      tone: "partial",
+      title: "Writer held elsewhere",
+      source: "Startup",
+      detail:
+        "Another Cutokyo window is editing history. This one is read-only.",
+    });
+  } else if (bootstrap.writerMode === "unavailable") {
+    warnings.push({
+      id: "writer-unavailable",
+      tone: "degraded",
+      title: "Local history unavailable",
+      source: "Startup",
+      detail: "History could not be opened. See Health.",
+    });
+  }
+  if (bootstrap.proxyActive) {
+    warnings.push({
+      id: "proxy-active",
+      tone: "info",
+      title: "Proxy capture is on",
+      source: "Startup",
+      detail: "Requests pass through the local proxy.",
+    });
+  }
+  return warnings;
 }
