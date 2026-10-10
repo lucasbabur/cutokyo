@@ -1140,6 +1140,7 @@ dependencies = [
  "clap",
  "cutokyo-core",
  "cutokyo-domain",
+ "dunce",
  "flate2",
  "jsonschema",
  "serde",
@@ -1158,6 +1159,7 @@ version = "0.1.0"
 dependencies = [
  "cutokyo-domain",
  "directories",
+ "dunce",
  "fs4",
  "json5",
  "jsonc-parser",

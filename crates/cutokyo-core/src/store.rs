@@ -3045,8 +3045,9 @@ fn validate_local_database_path(path: &Path) -> Result<()> {
         ContractError::new(ErrorCode::InvalidInput, "database path has no parent")
     })?;
     fs::create_dir_all(parent).map_err(|error| io_error("create database parent", &error))?;
-    let canonical_parent = parent
-        .canonicalize()
+    // `dunce` drops Windows' `\\?\` verbatim prefix from local paths and keeps it
+    // only where it is required, so a remaining leading `\\` really is a share.
+    let canonical_parent = dunce::canonicalize(parent)
         .map_err(|error| io_error("canonicalize database parent", &error))?;
     let path_text = canonical_parent.to_string_lossy();
     if path_text.starts_with("//") || path_text.starts_with("\\\\") {
@@ -3061,6 +3062,7 @@ fn validate_local_database_path(path: &Path) -> Result<()> {
     ] {
         if let Some(root) = std::env::var_os(variable) {
             let root = PathBuf::from(root);
+            let root = dunce::canonicalize(&root).unwrap_or(root);
             if canonical_parent.starts_with(root) {
                 return Err(nonlocal_path_error("known cloud-synchronization root"));
             }

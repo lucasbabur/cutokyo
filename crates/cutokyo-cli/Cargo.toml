@@ -28,6 +28,7 @@ sha2.workspace = true
 
 [dev-dependencies]
 jsonschema.workspace = true
+dunce = "=1.0.5"
 
 [package.metadata.dist]
 dist = true
