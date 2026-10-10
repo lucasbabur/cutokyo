@@ -1,0 +1,21 @@
+[files]
+extend-exclude = [
+  # Recorded evidence holds provider IDs and hashes, not prose.
+  "evidence/",
+  # Portuguese marketing copy.
+  "landing-page/src/features/marketing-site/i18n.ts",
+]
+
+[default.extend-words]
+# flate2 / DEFLATE
+flate = "flate"
+# in-toto attestation predicate names
+intoto = "intoto"
+# NSIS CopyFiles helper name
+Cpy = "Cpy"
+# Codex thread ID prefix (`thr_...`)
+thr = "thr"
+# Prefix-search fixtures deliberately use a truncated word
+databas = "databas"
+unparseable = "unparseable"
+Instale = "Instale"
