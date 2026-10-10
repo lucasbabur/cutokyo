@@ -1262,10 +1262,24 @@ async fn load_manifest(
     Ok((manifest, root, entrypoint))
 }
 
+/// Python 3 under its platform name: `python3` on Unix; on Windows the `py -3`
+/// launcher, or `python` when the launcher is absent.
+fn python3_command() -> Command {
+    if cfg!(windows) {
+        if let Some(launcher) = crate::executables::find("py") {
+            let mut command = Command::new(launcher);
+            command.arg("-3");
+            return command;
+        }
+        return Command::new("python");
+    }
+    Command::new("python3")
+}
+
 fn build_command(manifest: &PluginManifest, entrypoint: &Path, root: &Path) -> Command {
     let mut command = match manifest.runtime {
         PluginRuntime::Python3 => {
-            let mut command = Command::new("python3");
+            let mut command = python3_command();
             command.arg("-I");
             command
         }
@@ -1275,6 +1289,13 @@ fn build_command(manifest: &PluginManifest, entrypoint: &Path, root: &Path) -> C
     command.env_clear();
     if let Some(executable_path) = executable_path {
         command.env("PATH", executable_path);
+    }
+    // Windows processes, CPython included, cannot initialise without SystemRoot.
+    #[cfg(windows)]
+    for variable in ["SystemRoot", "WINDIR"] {
+        if let Some(value) = std::env::var_os(variable) {
+            command.env(variable, value);
+        }
     }
     command
         .env("PYTHONIOENCODING", "utf-8")

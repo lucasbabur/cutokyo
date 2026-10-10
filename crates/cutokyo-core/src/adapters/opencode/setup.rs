@@ -1142,10 +1142,18 @@ fn set_mode(_path: &Path, _mode: u32) -> Result<()> {
     Ok(())
 }
 
+#[cfg(unix)]
 fn sync_directory(path: &Path) -> Result<()> {
     File::open(path)
         .and_then(|directory| directory.sync_all())
         .map_err(|error| io_error("sync setup directory", &error))
+}
+
+// Windows cannot open a directory as a file, and NTFS journals the metadata.
+#[cfg(not(unix))]
+#[expect(clippy::unnecessary_wraps, reason = "matches the Unix signature")]
+fn sync_directory(_path: &Path) -> Result<()> {
+    Ok(())
 }
 
 fn removed_status(removed: bool) -> SetupSubsystemStatus {

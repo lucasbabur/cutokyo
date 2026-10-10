@@ -1986,7 +1986,11 @@ impl WriterStore {
             .close()
             .map_err(|(_, error)| sqlite_error("close online backup source", &error))?;
         set_private_file(destination)?;
-        File::open(destination)
+        // Windows' FlushFileBuffers requires a handle with write access.
+        OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(destination)
             .and_then(|file| file.sync_all())
             .map_err(|error| io_error("flush closed online backup", &error))?;
         let (sha256, byte_length) = digest_file(destination)?;
@@ -3157,8 +3161,11 @@ fn acquire_writer_lock(path: &Path, owner: &LockOwner) -> Result<File> {
     match fs4::FileExt::try_lock(&file) {
         Ok(()) => {}
         Err(TryLockError::WouldBlock) => {
-            let existing = fs::read_to_string(path)
-                .ok()
+            // Windows locks are mandatory, so the held lock file itself is
+            // unreadable; the owner sidecar is not locked.
+            let existing = [lock_owner_path(path), path.to_path_buf()]
+                .iter()
+                .find_map(|candidate| fs::read_to_string(candidate).ok())
                 .and_then(|value| serde_json::from_str::<LockOwner>(&value).ok());
             let description = existing.map_or_else(
                 || "another core process (owner details unavailable)".to_owned(),
@@ -3187,8 +3194,19 @@ fn acquire_writer_lock(path: &Path, owner: &LockOwner) -> Result<File> {
     file.write_all(&bytes)
         .and_then(|()| file.sync_all())
         .map_err(|error| io_error("persist writer lock owner", &error))?;
+    let owner_path = lock_owner_path(path);
+    fs::write(&owner_path, &bytes)
+        .map_err(|error| io_error("persist writer lock owner sidecar", &error))?;
+    set_private_file(&owner_path)?;
     sync_parent(path)?;
     Ok(file)
+}
+
+/// Unlocked copy of the writer lock's owner metadata, readable on every OS.
+fn lock_owner_path(lock: &Path) -> PathBuf {
+    let mut name = lock.file_name().unwrap_or_default().to_os_string();
+    name.push(".owner");
+    lock.with_file_name(name)
 }
 
 // --- Ingest and projection ---------------------------------------------------------
@@ -5344,14 +5362,24 @@ fn publish_directory_noreplace(source: &Path, destination: &Path) -> Result<()> 
     }
     #[cfg(windows)]
     {
-        // MoveFileExW, used by std, refuses an existing directory even with
-        // REPLACE_EXISTING. A directory move cannot replace an existing file.
-        fs::rename(source, destination).map_err(|error| {
+        // std's Windows rename uses POSIX semantics and may replace an empty
+        // directory. Claim the destination atomically instead, so any existing
+        // entry, including a late empty directory, refuses publication, then
+        // move the staged files into the directory this process now owns.
+        fs::create_dir(destination).map_err(|error| {
             io_error(
                 "publish complete backup without replacing any destination",
                 &error,
             )
-        })
+        })?;
+        let entries =
+            fs::read_dir(source).map_err(|error| io_error("read staged backup", &error))?;
+        for entry in entries {
+            let entry = entry.map_err(|error| io_error("read staged backup", &error))?;
+            fs::rename(entry.path(), destination.join(entry.file_name()))
+                .map_err(|error| io_error("publish staged backup file", &error))?;
+        }
+        Ok(())
     }
     #[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
     {

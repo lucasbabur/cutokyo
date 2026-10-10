@@ -1741,6 +1741,14 @@ fn set_directory_private(_path: &Path) -> Result<()> {
     Ok(())
 }
 
+// Windows cannot open a directory as a file, and NTFS journals the metadata.
+#[cfg(not(unix))]
+#[expect(clippy::unnecessary_wraps, reason = "matches the Unix signature")]
+fn sync_directory(_path: &Path, _label: &str) -> Result<()> {
+    Ok(())
+}
+
+#[cfg(unix)]
 fn sync_directory(path: &Path, label: &str) -> Result<()> {
     let directory = File::open(path).map_err(|_| {
         ContractError::new(

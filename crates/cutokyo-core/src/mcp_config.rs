@@ -1245,6 +1245,10 @@ fn sync_parent(path: &Path) -> std::result::Result<(), ManagedConfigError> {
     let parent = path
         .parent()
         .ok_or_else(|| ManagedConfigError::io("parent", "parent missing"))?;
+    // Windows cannot open a directory as a file, and NTFS journals the metadata.
+    if cfg!(not(unix)) {
+        return Ok(());
+    }
     File::open(parent)
         .and_then(|directory| directory.sync_all())
         .map_err(|_| ManagedConfigError::io("parent", "sync containing directory failed"))
