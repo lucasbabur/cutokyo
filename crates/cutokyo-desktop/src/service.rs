@@ -2291,7 +2291,7 @@ mod tests {
         assert_eq!(preview["projectContextKnown"], true);
         assert_eq!(
             preview["projectDirectory"],
-            json!(directory.path().join("data/native-resume-project"))
+            json!(directory.path().join("data").join("native-resume-project"))
         );
         let receipt = service.resume_session(session_id)?;
         assert_eq!(receipt["ok"], true);

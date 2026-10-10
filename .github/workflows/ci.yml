@@ -119,6 +119,14 @@ jobs:
       - name: Install pinned CycloneDX generator for real release tests
         if: runner.os == 'Linux'
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/install-cyclonedx-source.json" -- cargo install cargo-cyclonedx --version 0.5.9 --locked
+      - name: Use a temp directory without symlinked ancestors on macOS
+        # macOS temp dirs sit under /var -> /private/var. Cutokyo refuses
+        # symlinked ancestors for its data, as it should, so tests use a real path.
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/tmp"
+          echo "TMPDIR=$(cd "$RUNNER_TEMP/tmp" && pwd -P)" >> "$GITHUB_ENV"
       - name: Build Rust workspace without tracked-source rewrites
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/build-source.json" -- cargo build --locked --workspace
       - name: Test Rust workspace without tracked-source rewrites

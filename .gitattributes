@@ -1,0 +1,4 @@
+# Check out every file byte-for-byte on every platform. Fixtures, spool lines
+# and plugin sources are hashed or parsed as LF-terminated text, and Windows
+# runners default to core.autocrlf=true.
+* -text
