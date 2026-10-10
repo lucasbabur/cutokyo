@@ -111,7 +111,7 @@ impl Application {
     /// Returns actionable absence or incompatible-CLI errors without configuration writes.
     pub fn native_hook_receiver(&self) -> Result<PathBuf> {
         use claude_code::CommandRunner as _;
-        let receiver = which::which("cutokyo").map_err(|_| unavailable("Install the matching Cutokyo CLI on PATH before capture setup, or browse without installing."))?;
+        let receiver = crate::executables::find_cutokyo_cli().ok_or_else(|| unavailable("Install the matching Cutokyo CLI beside the app or on PATH before capture setup, or browse without installing."))?;
         let output = claude_code::SystemCommandRunner.run(&receiver, &["native-hook", "--help"])?;
         if output.exit_code != Some(0) {
             return Err(unavailable(
@@ -131,7 +131,7 @@ impl Application {
             Harness::Codex => "codex",
             Harness::OpenCode => "opencode",
         };
-        which::which(name).map_err(|_| unavailable(format!("{name} is unavailable on PATH. Install it and restart Cutokyo, or browse without installing.")))
+        crate::executables::find(name).ok_or_else(|| unavailable(format!("{name} was not found on PATH or in its usual install locations. Install it and restart Cutokyo, or browse without installing.")))
     }
 
     /// Reads the selected native executable's version without mutation.
@@ -140,12 +140,7 @@ impl Application {
     /// Returns actionable executable absence, timeout or invalid version output.
     pub fn capture_harness_version(&self, harness: Harness) -> Result<String> {
         use claude_code::CommandRunner as _;
-        let executable = match harness {
-            Harness::ClaudeCode => "claude",
-            Harness::Codex => "codex",
-            Harness::OpenCode => "opencode",
-        };
-        let executable = which::which(executable).map_err(|_| unavailable(format!("{} is unavailable on PATH. Install it and restart Cutokyo, or browse without installing.", harness.as_str())))?;
+        let executable = self.capture_harness_executable(harness)?;
         let output = claude_code::SystemCommandRunner.run(&executable, &["--version"])?;
         if output.exit_code != Some(0) {
             return Err(unavailable(
@@ -229,7 +224,12 @@ impl Application {
                     Some(native) => setup.apply(native)?,
                     None => setup.uninstall()?,
                 };
-                (result.changed, setup.verify()?, result.gaps)
+                let mut issues = result.gaps;
+                let verified = setup.verify()?;
+                if native.is_some() && verified {
+                    issues.extend(trust_codex_hooks(&plan.spec));
+                }
+                (result.changed, verified, issues)
             }
             AdapterPlan::OpenCode(native) => {
                 let setup = opencode_setup(&plan.spec);
@@ -331,21 +331,19 @@ impl Application {
                 })?;
                 let mut raw = codex::capture_hook_event(payload, version, observed_at)?;
                 let mut projection = serde_json::Map::new();
-                if version == codex::SUPPORTED_CODEX_VERSION {
-                    project_native_cwd(&raw.payload, &mut projection);
-                    if raw
+                project_native_cwd(&raw.payload, &mut projection);
+                if raw
+                    .payload
+                    .get("hook_event_name")
+                    .and_then(serde_json::Value::as_str)
+                    == Some("UserPromptSubmit")
+                    && let Some(prompt) = raw
                         .payload
-                        .get("hook_event_name")
+                        .get("prompt")
                         .and_then(serde_json::Value::as_str)
-                        == Some("UserPromptSubmit")
-                        && let Some(prompt) = raw
-                            .payload
-                            .get("prompt")
-                            .and_then(serde_json::Value::as_str)
-                    {
-                        projection.insert("text".into(), prompt.into());
-                        projection.insert("role".into(), "user".into());
-                    }
+                {
+                    projection.insert("text".into(), prompt.into());
+                    projection.insert("role".into(), "user".into());
                 }
                 raw.source.parser_version.push_str("+capture-projection-v1");
                 projection.insert(
@@ -493,7 +491,13 @@ fn preview_codex(
     }
     preview
         .targets
-        .push("Codex user hooks.json (owned hook entries only; config.toml unchanged)".into());
+        .push("Codex user hooks.json (owned hook entries only)".into());
+    if preview.operation == CaptureSetupOperation::Install {
+        preview.targets.push(
+            "Codex hook trust for Cutokyo's entries only, recorded by Codex itself in config.toml"
+                .into(),
+        );
+    }
     if preview.operation == CaptureSetupOperation::Uninstall
         || (preview.operation == CaptureSetupOperation::Recover
             && phase == Some(SetupPhase::Restoring))
@@ -764,17 +768,13 @@ fn private_setup_roots(data: &Path) -> Result<()> {
 }
 
 fn validate_spec(spec: &CaptureSetupSpec) -> Result<()> {
-    let supported = match spec.harness {
-        Harness::ClaudeCode => claude_code::TESTED_CLAUDE_VERSION,
-        Harness::Codex => codex::SUPPORTED_CODEX_VERSION,
-        Harness::OpenCode => opencode::OBSERVED_OPENCODE_VERSION,
-    };
-    if spec.version != supported {
-        return Err(unavailable(format!(
-            "{} version {} is not verified for automatic capture installation. Supported version is {supported}; browse without installing or use a supported version.",
-            spec.harness.as_str(),
-            spec.version
-        )));
+    // Every harness version is installable: the hook and plugin contracts Cutokyo
+    // relies on are documented and stable across releases. The version is still
+    // probed, so a broken installation fails here instead of in a hook.
+    if spec.version.is_empty() || spec.version.len() > 64 {
+        return Err(unavailable(
+            "Native harness version could not be established. Check its installation; no configuration changed.",
+        ));
     }
     if !spec.receiver.is_absolute() || !spec.receiver.is_file() {
         return Err(unavailable(
@@ -827,11 +827,17 @@ fn validate_spec(spec: &CaptureSetupSpec) -> Result<()> {
     Ok(())
 }
 fn claude_setup(spec: &CaptureSetupSpec) -> Result<ClaudeSetup> {
-    ClaudeSetup::new(
-        spec.roots.claude.join("settings.json"),
-        spec.paths.data_dir.join("capture-setup/claude"),
-        hook_command(spec)?,
-    )
+    let settings = spec.roots.claude.join("settings.json");
+    let state = spec.paths.data_dir.join("capture-setup/claude");
+    if cfg!(windows) {
+        // Claude Code's Windows hook shell is Git Bash or PowerShell; exec form
+        // bypasses both, so paths with spaces need no shell quoting.
+        let mut argv = hook_argv(spec)?;
+        let program = argv.remove(0);
+        ClaudeSetup::new_exec(settings, state, program, argv)
+    } else {
+        ClaudeSetup::new(settings, state, hook_command(spec)?)
+    }
 }
 fn codex_setup(spec: &CaptureSetupSpec) -> Result<CodexSetup> {
     let mut native = CodexSetupSpec::for_home(
@@ -843,6 +849,24 @@ fn codex_setup(spec: &CaptureSetupSpec) -> Result<CodexSetup> {
     native.user_config_path = spec.roots.codex.join("config.toml");
     Ok(CodexSetup::new(native))
 }
+/// Current Codex releases skip user hooks until they are trusted. Trust only
+/// Cutokyo's own handlers, through the App Server calls Codex's hook review
+/// uses. Returns the issue to show when Codex still will not run them.
+fn trust_codex_hooks(spec: &CaptureSetupSpec) -> Option<String> {
+    const APPROVE: &str = "Codex has not trusted Cutokyo's hooks yet, so it will not run them. Open Codex, run /hooks and trust the Cutokyo entries; capture starts after that.";
+    let trusted = hook_command(spec).and_then(|command| {
+        let mut client = codex::CodexAppServerClient::spawn_stdio(
+            spec.native_executable.as_os_str(),
+            spec.version.clone(),
+            codex::AppServerLimits::default(),
+        )?;
+        codex::trust_owned_hooks(&mut client, &spec.roots.home, &command)
+    });
+    match trusted {
+        Ok(codex::OwnedHookTrust::NotRequired | codex::OwnedHookTrust::Trusted(_)) => None,
+        Ok(codex::OwnedHookTrust::Untrusted(_)) | Err(_) => Some(APPROVE.to_owned()),
+    }
+}
 fn opencode_setup(spec: &CaptureSetupSpec) -> OpenCodeSetup {
     OpenCodeSetup::new(
         &spec.roots.opencode,
@@ -851,40 +875,59 @@ fn opencode_setup(spec: &CaptureSetupSpec) -> OpenCodeSetup {
         &spec.receiver,
     )
 }
+/// The receiver followed by its arguments, before any quoting.
+fn hook_argv(spec: &CaptureSetupSpec) -> Result<Vec<String>> {
+    let receiver = spec
+        .receiver
+        .to_str()
+        .ok_or_else(|| unavailable("The native hook receiver path is not valid UTF-8"))?;
+    let root = spec
+        .paths
+        .data_dir
+        .to_str()
+        .ok_or_else(|| unavailable("The capture data directory is not valid UTF-8"))?;
+    let args = [
+        receiver,
+        "--data-dir",
+        root,
+        "native-hook",
+        "--harness",
+        spec.harness.as_str(),
+        "--version",
+        &spec.version,
+    ];
+    if args.iter().any(|arg| arg.chars().any(char::is_control)) {
+        return Err(unavailable(
+            "Native hook command paths contain unsupported control characters",
+        ));
+    }
+    Ok(args.into_iter().map(str::to_owned).collect())
+}
+/// A command string for the harness's hook shell: POSIX `sh` quoting on macOS
+/// and Linux, `cmd.exe` quoting on Windows (Codex runs hooks with `cmd /C`).
 fn hook_command(spec: &CaptureSetupSpec) -> Result<String> {
-    #[cfg(windows)]
-    return Err(unavailable(
-        "Automatic command-hook setup is not supported on Windows yet. Browse without installing; no configuration changed.",
-    ));
-    #[cfg(not(windows))]
-    {
-        let receiver = spec
-            .receiver
-            .to_str()
-            .ok_or_else(|| unavailable("The native hook receiver path is not valid UTF-8"))?;
-        let root = spec
-            .paths
-            .data_dir
-            .to_str()
-            .ok_or_else(|| unavailable("The capture data directory is not valid UTF-8"))?;
-        let args = [
-            receiver,
-            "--data-dir",
-            root,
-            "native-hook",
-            "--harness",
-            spec.harness.as_str(),
-            "--version",
-            &spec.version,
-        ];
-        if args.iter().any(|arg| arg.chars().any(char::is_control)) {
-            return Err(unavailable(
-                "Native hook command paths contain unsupported control characters",
-            ));
-        }
-        shlex::try_join(args)
+    let argv = hook_argv(spec)?;
+    if cfg!(windows) {
+        cmd_join(&argv)
+    } else {
+        shlex::try_join(argv.iter().map(String::as_str))
             .map_err(|_| unavailable("Native hook receiver command could not be safely quoted"))
     }
+}
+/// Quotes every argument for `cmd.exe`. Inside double quotes cmd treats `&`, `|`,
+/// `<`, `>`, `^` and spaces literally; `"` cannot be escaped and `%` still
+/// expands, so either one is refused.
+fn cmd_join(argv: &[String]) -> Result<String> {
+    if argv.iter().any(|arg| arg.contains(['"', '%'])) {
+        return Err(unavailable(
+            "Native hook paths contain a double quote or percent sign, which cmd.exe cannot pass safely. Move the Cutokyo data directory and try again.",
+        ));
+    }
+    Ok(argv
+        .iter()
+        .map(|arg| format!("\"{arg}\""))
+        .collect::<Vec<_>>()
+        .join(" "))
 }
 fn safe_ancestors(path: &Path) -> Result<()> {
     if !path.is_absolute() {

@@ -75,13 +75,17 @@ not mean live capture verified; restart the harness and wait for native evidence
 Recover follows recorded installation or cleanup intent. Removal deletes only
 unchanged Cutokyo-owned entries and retains modified user entries with an issue.
 
-Automatic capture setup is verified for Claude Code `2.1.278`, Codex `0.153.4`,
-and OpenCode `1.18.28`. Other versions, missing binaries, unsafe paths, or
-uninspectable configuration make automatic setup unavailable. Browse still works.
-Setup, recovery, and removal currently require the tested harness binary and the
-Cutokyo receiver. A removed or upgraded harness can therefore prevent recovery;
-restore the supported binary before retrying. POSIX command hooks are unavailable
-on Windows in this build.
+Automatic capture setup works on macOS, Linux and Windows, for any installed
+version of Claude Code, Codex and OpenCode. Parsers were tested on Claude Code
+`2.1.278`, Codex `0.153.4` and OpenCode `1.18.28`; those versions and newer ones
+are captured fully, and older ones are captured with unknown-version coverage.
+Missing binaries, unsafe paths or uninspectable configuration make automatic
+setup unavailable; Browse still works. Cutokyo finds harnesses on `PATH` and in
+their usual install directories, so an app started from Finder or the Start
+menu sees them too. On Windows, Claude Code hooks use exec form and Codex hooks
+are quoted for `cmd.exe`, so paths with spaces work. Current Codex releases only
+run hooks the user has trusted; setup trusts Cutokyo's own entries through the
+Codex App Server, the same way Codex's `/hooks` review does.
 
 **Agent tools** is the place to manage installed MCP servers, skills, hooks,
 plugins, and instruction files. Search by name or source, filter by harness or
@@ -100,7 +104,9 @@ are not advertised as portable.
 ordering, match excerpts, filters, and paginated results. Returning from session
 detail keeps the search and page. **Today** means the machine's local calendar
 day. Resume preserves the exact native identity and recorded project directory,
-then opens a visible interactive terminal. Missing terminal, harness, or display
+then opens a visible interactive terminal: Kitty, WezTerm, Ghostty, Alacritty,
+Foot or st when installed, otherwise Terminal.app on macOS or a new console
+window on Windows. Missing terminal, harness, or display
 access fails with a retryable explanation. Success means the native process
 acknowledged a real TTY and survived startup. It does not prove session activation;
 check the terminal for native login or session errors. Codex hook session IDs
@@ -138,7 +144,7 @@ cutokyo capture-setup --harness claude_code --uninstall
 cutokyo retention preview --days 30 --write-plan retention-plan.json
 cutokyo retention apply --plan retention-plan.json --confirm-digest DIGEST
 cutokyo sessions delete SESSION_ID --confirm-session SESSION_ID
-cutokyo sessions delete-all --confirm 'DELETE ALL CUTOKYO HISTORY'
+cutokyo sessions delete-all --confirm 'DELETE ALL LOCAL HISTORY'
 
 cutokyo config list --show-origin
 cutokyo spool status

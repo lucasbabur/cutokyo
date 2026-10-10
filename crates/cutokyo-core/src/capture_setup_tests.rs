@@ -200,10 +200,22 @@ fn capture_setup_recovery_without_intent_never_installs() -> TestResult {
 }
 
 #[test]
-fn capture_setup_unknown_versions_and_nonexecutable_receivers_are_unavailable() -> TestResult {
+fn capture_setup_accepts_any_version_but_refuses_nonexecutable_receivers() -> TestResult {
     let root = tempfile::tempdir()?;
+    for harness in [Harness::ClaudeCode, Harness::Codex, Harness::OpenCode] {
+        for version in ["0.0.1", "99.0.0"] {
+            let mut spec = spec(root.path(), harness)?;
+            spec.version = version.into();
+            assert!(
+                Application::new()
+                    .preview_capture_setup(spec, CaptureSetupOperation::Install)
+                    .is_ok(),
+                "{harness:?} {version} must be installable"
+            );
+        }
+    }
     let mut spec = spec(root.path(), Harness::ClaudeCode)?;
-    spec.version = "99.0.0".into();
+    spec.version = String::new();
     assert!(
         Application::new()
             .preview_capture_setup(spec.clone(), CaptureSetupOperation::Install)
@@ -247,5 +259,54 @@ fn capture_setup_refuses_symlink_ancestors_before_native_mutation() -> TestResul
     );
     assert_eq!(fs::read_dir(&outside)?.count(), 0);
     assert!(!spec.paths.data_dir.exists());
+    Ok(())
+}
+
+#[test]
+fn cmd_join_quotes_every_argument_and_refuses_unpassable_characters() -> TestResult {
+    let argv = [
+        r"C:\Users\Joe Smith\cutokyo.exe".to_owned(),
+        "--data-dir".to_owned(),
+        r"C:\a&b\(data)".to_owned(),
+    ];
+    assert_eq!(
+        super::cmd_join(&argv)?,
+        r#""C:\Users\Joe Smith\cutokyo.exe" "--data-dir" "C:\a&b\(data)""#
+    );
+    for bad in [r#"C:\a"b"#, r"C:\100%done"] {
+        assert!(super::cmd_join(&[bad.to_owned()]).is_err());
+    }
+    Ok(())
+}
+
+/// Runs a hook command exactly as Codex does on Windows: `cmd.exe /C` with the
+/// whole command line wrapped in one more pair of quotes.
+#[cfg(windows)]
+#[test]
+fn cmd_join_runs_under_codex_windows_hook_shell() -> TestResult {
+    use std::os::windows::process::CommandExt as _;
+    let root = tempfile::tempdir()?;
+    let folder = root.path().join("hook dir & (spaces)");
+    fs::create_dir_all(&folder)?;
+    let system = std::env::var_os("SystemRoot").ok_or("SystemRoot missing")?;
+    let program = folder.join("echo tool.exe");
+    fs::copy(
+        Path::new(&system).join("System32").join("cmd.exe"),
+        &program,
+    )?;
+    let argv = [
+        program.to_str().ok_or("utf-8")?.to_owned(),
+        "/c".to_owned(),
+        "echo".to_owned(),
+        "reached with spaces".to_owned(),
+    ];
+    let command_line = super::cmd_join(&argv)?;
+    let comspec = std::env::var_os("COMSPEC").unwrap_or_else(|| "cmd.exe".into());
+    let output = std::process::Command::new(comspec)
+        .arg("/C")
+        .raw_arg(format!("\"{command_line}\""))
+        .output()?;
+    assert!(output.status.success(), "{output:?}");
+    assert!(String::from_utf8_lossy(&output.stdout).contains("reached with spaces"));
     Ok(())
 }

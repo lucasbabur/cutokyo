@@ -1793,7 +1793,14 @@ fn spool_file_counts(root: &Path) -> (u64, u64) {
 }
 
 fn harness_version_check(id: &str, executable: &str) -> DoctorCheck {
-    match Command::new(executable).arg("--version").output() {
+    let Some(path) = crate::executables::find(executable) else {
+        return doctor_warn(
+            id,
+            "harness executable was not found on PATH or in its usual install locations",
+            "install the harness only if its sessions should be captured",
+        );
+    };
+    match Command::new(path).arg("--version").output() {
         Ok(output) if output.status.success() => {
             let version = String::from_utf8_lossy(&output.stdout);
             let bounded = version

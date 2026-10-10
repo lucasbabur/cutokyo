@@ -14,7 +14,9 @@ use serde::{Deserialize, Serialize};
 use super::TESTED_CLAUDE_VERSION;
 
 const COMMAND_OUTPUT_LIMIT: usize = 64 * 1024;
-const COMMAND_TIMEOUT: Duration = Duration::from_secs(5);
+/// Cold starts of npm-installed CLIs on Windows, with antivirus scanning a fresh
+/// executable, routinely exceed a few seconds.
+const COMMAND_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Whether a documented Claude Code capability was verified for this installation.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -66,7 +68,9 @@ pub struct ProxyCapability {
 #[must_use]
 pub fn capabilities(installed_version: Option<&str>) -> Vec<ClaudeCapability> {
     let availability = match installed_version {
-        Some(TESTED_CLAUDE_VERSION) => CapabilityAvailability::InstalledVerified,
+        Some(version) if crate::adapters::version_at_least(version, TESTED_CLAUDE_VERSION) => {
+            CapabilityAvailability::InstalledVerified
+        }
         Some(_) => CapabilityAvailability::VersionDrift,
         None => CapabilityAvailability::Documented,
     };
@@ -236,23 +240,29 @@ impl CommandRunner for SystemCommandRunner {
                 } else {
                     ErrorCode::CapabilityUnavailable
                 };
-                ContractError::new(code, "Claude Code executable could not be started")
+                ContractError::new(
+                    code,
+                    format!(
+                        "{} could not be started",
+                        crate::executables::display_name(executable)
+                    ),
+                )
             })?;
         let stdout = child.stdout.take().ok_or_else(|| {
             ContractError::new(
                 ErrorCode::Internal,
-                "Claude Code detection stdout could not be captured",
+                "Version probe stdout could not be captured",
             )
         })?;
         let stderr = child.stderr.take().ok_or_else(|| {
             ContractError::new(
                 ErrorCode::Internal,
-                "Claude Code detection stderr could not be captured",
+                "Version probe stderr could not be captured",
             )
         })?;
         let stdout_reader = thread::spawn(move || read_bounded_output(stdout));
         let stderr_reader = thread::spawn(move || read_bounded_output(stderr));
-        let status = match wait_for_exit(&mut child) {
+        let status = match wait_for_exit(&mut child, executable) {
             Ok(status) => status,
             Err(error) => {
                 let _ignored = child.kill();
@@ -267,7 +277,7 @@ impl CommandRunner for SystemCommandRunner {
         if stdout.len() > COMMAND_OUTPUT_LIMIT || stderr.len() > COMMAND_OUTPUT_LIMIT {
             return Err(ContractError::new(
                 ErrorCode::CapacityReached,
-                "Claude Code detection output exceeded 65536 bytes",
+                "Version probe output exceeded 65536 bytes",
             ));
         }
         Ok(CommandOutput {
@@ -278,7 +288,7 @@ impl CommandRunner for SystemCommandRunner {
     }
 }
 
-fn wait_for_exit(child: &mut Child) -> Result<ExitStatus> {
+fn wait_for_exit(child: &mut Child, executable: &Path) -> Result<ExitStatus> {
     let deadline = Instant::now() + COMMAND_TIMEOUT;
     loop {
         match child.try_wait() {
@@ -287,13 +297,17 @@ fn wait_for_exit(child: &mut Child) -> Result<ExitStatus> {
             Ok(None) => {
                 return Err(ContractError::new(
                     ErrorCode::CapabilityUnavailable,
-                    "Claude Code detection timed out after 5 seconds",
+                    format!(
+                        "{} did not respond within {} seconds",
+                        crate::executables::display_name(executable),
+                        COMMAND_TIMEOUT.as_secs()
+                    ),
                 ));
             }
             Err(_) => {
                 return Err(ContractError::new(
                     ErrorCode::Internal,
-                    "Claude Code detection process could not be awaited",
+                    "Version probe process could not be awaited",
                 ));
             }
         }
@@ -314,13 +328,13 @@ fn join_output_reader(reader: thread::JoinHandle<std::io::Result<Vec<u8>>>) -> R
         .map_err(|_| {
             ContractError::new(
                 ErrorCode::Internal,
-                "Claude Code detection output reader stopped unexpectedly",
+                "Version probe output reader stopped unexpectedly",
             )
         })?
         .map_err(|_| {
             ContractError::new(
                 ErrorCode::Internal,
-                "Claude Code detection output could not be read",
+                "Version probe output could not be read",
             )
         })
 }
@@ -363,7 +377,9 @@ impl<R: CommandRunner> ClaudeDetector<R> {
             .run(&self.executable, &["auth", "status", "--json"])
             .ok()
             .and_then(|output| parse_account_status(&output.stdout, output.exit_code));
-        let version_tested = version.as_deref() == Some(TESTED_CLAUDE_VERSION);
+        let version_tested = version.as_deref().is_some_and(|version| {
+            crate::adapters::version_at_least(version, TESTED_CLAUDE_VERSION)
+        });
         let mut detected_capabilities = capabilities(version.as_deref());
         if version.is_none() {
             for capability in &mut detected_capabilities {
@@ -626,7 +642,7 @@ mod tests {
         let runner = FakeRunner {
             outputs: Mutex::new(VecDeque::from([
                 Ok(CommandOutput {
-                    stdout: b"9.0.0 (Claude Code)\n".to_vec(),
+                    stdout: b"1.0.0 (Claude Code)\n".to_vec(),
                     stderr: Vec::new(),
                     exit_code: Some(0),
                 }),

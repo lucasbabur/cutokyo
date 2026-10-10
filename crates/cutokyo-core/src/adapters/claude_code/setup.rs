@@ -163,6 +163,16 @@ pub struct ClaudeSetup {
     config_path: PathBuf,
     state_dir: PathBuf,
     command_prefix: String,
+    exec: Option<ExecForm>,
+}
+
+/// Claude Code's exec form: `command` names the program and `args` holds every
+/// argument, so no shell parses paths. Native Windows needs it because the hook
+/// shell there is Git Bash or PowerShell, and they quote paths differently.
+#[derive(Clone, Debug)]
+struct ExecForm {
+    program: String,
+    base_args: Vec<String>,
 }
 
 impl ClaudeSetup {
@@ -202,7 +212,31 @@ impl ClaudeSetup {
             config_path,
             state_dir,
             command_prefix,
+            exec: None,
         })
+    }
+
+    /// Creates an installer whose hooks use exec form: `command` is `program` and
+    /// `args` is `args` plus the ownership arguments. Ownership is matched on the
+    /// program and arguments joined by single spaces.
+    ///
+    /// # Errors
+    ///
+    /// Same refusals as [`ClaudeSetup::new`], applied to the joined invocation.
+    pub fn new_exec(
+        config_path: impl Into<PathBuf>,
+        state_dir: impl Into<PathBuf>,
+        program: impl Into<String>,
+        args: Vec<String>,
+    ) -> Result<Self> {
+        let program = program.into();
+        let identity = exec_identity(&program, &args);
+        let mut setup = Self::new(config_path, state_dir, identity)?;
+        setup.exec = Some(ExecForm {
+            program,
+            base_args: args,
+        });
+        Ok(setup)
     }
 
     /// Inspects settings and recovery state without writing any file or directory.
@@ -432,7 +466,7 @@ impl ClaudeSetup {
             ));
         }
         let current_root = parse_settings_or_empty(current.bytes().unwrap_or_default())?;
-        let added = add_managed_hooks(&current_root, &state)?;
+        let added = add_managed_hooks(&current_root, &state, self.exec.as_ref())?;
         if added > 0 {
             let rendered = render_settings(&current_root);
             atomic_write_checked(
@@ -1156,7 +1190,11 @@ fn missing_event_properties(root: &CstRootNode) -> Vec<String> {
         .collect()
 }
 
-fn add_managed_hooks(root: &CstRootNode, state: &PersistedState) -> Result<usize> {
+fn add_managed_hooks(
+    root: &CstRootNode,
+    state: &PersistedState,
+    exec: Option<&ExecForm>,
+) -> Result<usize> {
     let object = root.object_value().ok_or_else(|| {
         ContractError::new(
             ErrorCode::InvalidInput,
@@ -1193,12 +1231,7 @@ fn add_managed_hooks(root: &CstRootNode, state: &PersistedState) -> Result<usize
                     commands.elements().iter().any(|command| {
                         command
                             .to_serde_value()
-                            .and_then(|value| {
-                                value
-                                    .get("command")
-                                    .and_then(serde_json::Value::as_str)
-                                    .map(str::to_owned)
-                            })
+                            .and_then(|value| hook_identity(&value))
                             .as_deref()
                             == Some(&owned.command)
                     })
@@ -1207,19 +1240,37 @@ fn add_managed_hooks(root: &CstRootNode, state: &PersistedState) -> Result<usize
         if already_present {
             continue;
         }
+        let mut handler = vec![(
+            "type".to_owned(),
+            CstInputValue::String("command".to_owned()),
+        )];
+        match exec {
+            Some(exec) => {
+                let ownership = owned
+                    .command
+                    .strip_prefix(&exec_identity(&exec.program, &exec.base_args))
+                    .unwrap_or_default()
+                    .split_whitespace()
+                    .map(str::to_owned);
+                let args = exec.base_args.iter().cloned().chain(ownership);
+                handler.push((
+                    "command".to_owned(),
+                    CstInputValue::String(exec.program.clone()),
+                ));
+                handler.push((
+                    "args".to_owned(),
+                    CstInputValue::Array(args.map(CstInputValue::String).collect()),
+                ));
+            }
+            None => handler.push((
+                "command".to_owned(),
+                CstInputValue::String(owned.command.clone()),
+            )),
+        }
+        handler.push(("timeout".to_owned(), CstInputValue::Number("10".to_owned())));
         event_array.append(CstInputValue::Object(vec![(
             "hooks".to_owned(),
-            CstInputValue::Array(vec![CstInputValue::Object(vec![
-                (
-                    "type".to_owned(),
-                    CstInputValue::String("command".to_owned()),
-                ),
-                (
-                    "command".to_owned(),
-                    CstInputValue::String(owned.command.clone()),
-                ),
-                ("timeout".to_owned(), CstInputValue::Number("10".to_owned())),
-            ])]),
+            CstInputValue::Array(vec![CstInputValue::Object(handler)]),
         )]));
         added = added.saturating_add(1);
     }
@@ -1263,10 +1314,10 @@ fn remove_managed_hooks(
                 };
                 let is_command =
                     value.get("type").and_then(serde_json::Value::as_str) == Some("command");
-                let Some(command) = value.get("command").and_then(serde_json::Value::as_str) else {
+                let Some(command) = hook_identity(&value) else {
                     continue;
                 };
-                if is_command && command_set.contains(command) {
+                if is_command && command_set.contains(command.as_str()) {
                     command_node.remove();
                     removed = removed.saturating_add(1);
                     removed_from_group = true;
@@ -1345,11 +1396,10 @@ fn find_owned_hooks(
                 };
                 let is_command =
                     value.get("type").and_then(serde_json::Value::as_str) == Some("command");
-                let Some(command_text) = value.get("command").and_then(serde_json::Value::as_str)
-                else {
+                let Some(command_text) = hook_identity(&value) else {
                     continue;
                 };
-                let Some(owned) = extract_owned_command(command_text, command_prefix) else {
+                let Some(owned) = extract_owned_command(&command_text, command_prefix) else {
                     continue;
                 };
                 if is_command
@@ -1387,6 +1437,30 @@ fn extract_owned_command(command: &str, command_prefix: &str) -> Option<FoundOwn
         command: command.to_owned(),
         install_id,
     })
+}
+
+/// Shell-form hooks are identified by `command`; exec-form hooks by `command`
+/// and `args` joined with single spaces.
+fn hook_identity(value: &serde_json::Value) -> Option<String> {
+    let command = value.get("command").and_then(serde_json::Value::as_str)?;
+    match value.get("args") {
+        None => Some(command.to_owned()),
+        Some(args) => {
+            let args = args
+                .as_array()?
+                .iter()
+                .map(|arg| arg.as_str().map(str::to_owned))
+                .collect::<Option<Vec<_>>>()?;
+            Some(exec_identity(command, &args))
+        }
+    }
+}
+
+fn exec_identity(program: &str, args: &[String]) -> String {
+    std::iter::once(program)
+        .chain(args.iter().map(String::as_str))
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 fn managed_command(prefix: &str, install_id: Uuid, event: &str) -> String {
@@ -1740,6 +1814,50 @@ mod tests {
         assert!(!restored.contains("--cutokyo-owner="));
         let repeated = setup.uninstall()?;
         assert!(!repeated.changed);
+        Ok(())
+    }
+
+    #[test]
+    fn exec_form_round_trip_keeps_paths_with_spaces_out_of_any_shell()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let temporary = tempdir()?;
+        let config = config_path(temporary.path());
+        fs::create_dir_all(config.parent().ok_or("missing parent")?)?;
+        fs::write(&config, "{}\n")?;
+        let setup = ClaudeSetup::new_exec(
+            &config,
+            temporary.path().join("home/.local/state/cutokyo/claude"),
+            r"C:\Users\Joe Smith\AppData\Local\Cutokyo\cutokyo.exe",
+            vec![
+                "--data-dir".to_owned(),
+                r"C:\Users\Joe Smith\AppData\Local\Cutokyo\data".to_owned(),
+                "native-hook".to_owned(),
+            ],
+        )?;
+        assert!(setup.apply()?.changed);
+        assert!(setup.verify()?);
+        let installed: serde_json::Value = serde_json::from_slice(&fs::read(&config)?)?;
+        let handler = &installed["hooks"]["SessionStart"][0]["hooks"][0];
+        assert_eq!(
+            handler["command"],
+            r"C:\Users\Joe Smith\AppData\Local\Cutokyo\cutokyo.exe"
+        );
+        let args = handler["args"].as_array().ok_or("exec form needs args")?;
+        assert_eq!(args[1], r"C:\Users\Joe Smith\AppData\Local\Cutokyo\data");
+        assert!(args.iter().any(|arg| {
+            arg.as_str()
+                .is_some_and(|arg| arg.starts_with("--cutokyo-owner=cutokyo-claude-v1:"))
+        }));
+        assert_eq!(
+            args.last(),
+            Some(&serde_json::json!("--event=SessionStart"))
+        );
+        assert!(
+            !setup.apply()?.changed,
+            "repeat install must find its own entries"
+        );
+        assert!(setup.uninstall()?.changed);
+        assert!(!fs::read_to_string(&config)?.contains("--cutokyo-owner="));
         Ok(())
     }
 
