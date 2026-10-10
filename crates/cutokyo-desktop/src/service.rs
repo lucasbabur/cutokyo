@@ -2815,7 +2815,6 @@ mod tests {
         let value: Value = serde_json::from_slice(&fs::read(&claude)?)?;
         assert!(value["mcpServers"].get("cutokyo-search").is_none());
         assert_eq!(value["mcpServers"]["notes"]["command"], "n");
-        // The test binary has no `cutokyo` beside it, so turning search on must say so.
         service.patch_settings(&SettingsPatch {
             search_mcp_enabled: Some(true),
             ..SettingsPatch::default()
@@ -2824,9 +2823,24 @@ mod tests {
             .search_mcp_notice
             .lock()
             .map_err(|_| "notice lock")?
-            .clone()
-            .ok_or("missing search notice")?;
-        assert!(notice.contains("not found next to the app"), "{notice}");
+            .clone();
+        // On Windows MSVC, cargo places an unhashed `cutokyo.exe` in deps beside
+        // the test binary, so registration succeeds; elsewhere it must say so.
+        let beside = std::env::current_exe()?
+            .with_file_name(if cfg!(windows) {
+                "cutokyo.exe"
+            } else {
+                "cutokyo"
+            })
+            .is_file();
+        if beside {
+            assert_eq!(notice, None);
+            let value: Value = serde_json::from_slice(&fs::read(&claude)?)?;
+            assert!(value["mcpServers"].get("cutokyo-search").is_some());
+        } else {
+            let notice = notice.ok_or("missing search notice")?;
+            assert!(notice.contains("not found next to the app"), "{notice}");
+        }
         Ok(())
     }
 

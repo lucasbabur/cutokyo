@@ -49,9 +49,10 @@ fn backup_default_is_one_private_item_and_restores_real_searchable_history() -> 
     let store = open_store(root.path())?;
     add_session(&store, "original")?;
     let backup = store.create_backup(None)?;
+    // Backup paths are canonical; on Windows a temp dir may be an 8.3 short name.
     assert_eq!(
-        backup.path.parent(),
-        Some(root.path().join("backups").as_path())
+        backup.path.parent().map(dunce::canonicalize).transpose()?,
+        Some(dunce::canonicalize(root.path().join("backups"))?)
     );
     assert!(
         backup

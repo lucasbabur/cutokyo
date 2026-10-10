@@ -69,7 +69,7 @@ fn cli_backup_default_restore_preview_and_explicit_confirmation_recover_real_his
     let path = created["data"]["path"]
         .as_str()
         .ok_or("missing backup path")?;
-    assert!(Path::new(path).starts_with(root.path().join("data/backups")));
+    assert!(Path::new(path).starts_with(root.path().join("data").join("backups")));
     assert_eq!(created["data"]["sessionCount"], 1);
     assert!(created["data"]["scope"].as_str().is_some_and(|scope| {
         scope.contains("Settings, harness configuration, and pending spool entries are excluded")

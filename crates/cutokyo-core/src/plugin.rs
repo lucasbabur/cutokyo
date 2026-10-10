@@ -1262,18 +1262,35 @@ async fn load_manifest(
     Ok((manifest, root, entrypoint))
 }
 
-/// Python 3 under its platform name: `python3` on Unix; on Windows the `py -3`
-/// launcher, or `python` when the launcher is absent.
+/// Python 3 under its platform name: `python3` on Unix. On Windows, the first
+/// real `python.exe` on `PATH` (the `WindowsApps` entry is only a Store stub), then
+/// the `py -3` launcher, which finds registry-installed Pythons only.
 fn python3_command() -> Command {
-    if cfg!(windows) {
-        if let Some(launcher) = crate::executables::find("py") {
+    if !cfg!(windows) {
+        return Command::new("python3");
+    }
+    let real_python = std::env::var_os("PATH").and_then(|path| {
+        std::env::split_paths(&path)
+            .filter(|directory| {
+                !directory
+                    .to_string_lossy()
+                    .to_ascii_lowercase()
+                    .contains("windowsapps")
+            })
+            .map(|directory| directory.join("python.exe"))
+            .find(|candidate| candidate.is_file())
+    });
+    if let Some(python) = real_python {
+        return Command::new(python);
+    }
+    match crate::executables::find("py") {
+        Some(launcher) => {
             let mut command = Command::new(launcher);
             command.arg("-3");
-            return command;
+            command
         }
-        return Command::new("python");
+        None => Command::new("python"),
     }
-    Command::new("python3")
 }
 
 fn build_command(manifest: &PluginManifest, entrypoint: &Path, root: &Path) -> Command {

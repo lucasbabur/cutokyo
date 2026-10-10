@@ -2,8 +2,7 @@
 
 use std::{
     collections::BTreeSet,
-    fs::{self, File},
-    io,
+    fs, io,
     sync::Arc,
     thread,
     time::{Duration, UNIX_EPOCH},
@@ -536,7 +535,10 @@ fn spool_replay_quarantine_caps() -> Result<(), Box<dyn std::error::Error>> {
         },
     )?;
     let crossing_receipt = crossing_spool.append_at(&event, base_now)?;
-    File::open(crossing_root.join(&crossing_receipt.entry_key))?.set_modified(base_now)?;
+    fs::OpenOptions::new()
+        .write(true)
+        .open(crossing_root.join(&crossing_receipt.entry_key))?
+        .set_modified(base_now)?;
     assert!(crossing_spool.append_at(&event, base_now).is_err());
     let crossing_entries = crossing_spool.pending_entries()?;
     assert_eq!(crossing_entries.len(), 1);
