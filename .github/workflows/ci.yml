@@ -122,7 +122,7 @@ jobs:
       - name: Build Rust workspace without tracked-source rewrites
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/build-source.json" -- cargo build --locked --workspace
       - name: Test Rust workspace without tracked-source rewrites
-        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/test-source.json" -- cargo test --locked --workspace
+        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/test-source.json" -- cargo test --locked --workspace --no-fail-fast
       - name: Build actual Tauri application without tracked-source rewrites
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/tauri-build-source.json" -- pnpm tauri build --debug --no-bundle
       - name: Exercise native Tauri journey on Linux
