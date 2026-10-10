@@ -381,8 +381,9 @@ jobs:
           set -euo pipefail
           (
             cd release-artifacts
-            find . -type f ! -name SHA256SUMS ! -name release-manifest.json ! -name latest.json -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            find . -type f ! -name SHA256SUMS ! -name release-manifest.json ! -name latest.json -print0 | sort -z | xargs -0 sha256sum > "$RUNNER_TEMP/SHA256SUMS"
           )
+          mv "$RUNNER_TEMP/SHA256SUMS" release-artifacts/SHA256SUMS
           manifest_args=(
             --artifacts release-artifacts
             --tag "${{ needs.release-contract.outputs.tag }}"
