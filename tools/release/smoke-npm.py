@@ -341,8 +341,12 @@ def enter_linux_network_boundary(args: argparse.Namespace) -> int | None:
     architecture = sysconfig.get_config_var("MULTIARCH")
     if not architecture or not (Path("/usr/lib") / architecture).is_dir():
         fail("environment-gap: Linux sandbox requires a multiarch system runtime")
-    for directory in (f"/usr/lib/{architecture}", sysconfig.get_path("stdlib"),
-                      "/usr/lib64", "/lib", "/lib64"):
+    runtime_directories = [f"/usr/lib/{architecture}", sysconfig.get_path("stdlib"),
+                           "/usr/lib64", "/lib", "/lib64"]
+    # A shared-library Python (e.g. CI toolcache builds) loads libpython from LIBDIR.
+    if sysconfig.get_config_var("Py_ENABLE_SHARED") and sysconfig.get_config_var("LIBDIR"):
+        runtime_directories.append(sysconfig.get_config_var("LIBDIR"))
+    for directory in runtime_directories:
         path = Path(directory)
         if path.is_symlink():
             command.extend(["--symlink", os.readlink(path), directory])
@@ -616,7 +620,7 @@ def main() -> int:
                     "synthetic_private_read_denied": sys.platform == "linux",
                     "host_ipc_hidden": sys.platform == "linux",
                     "launcher": "node_modules/.bin/cutokyo",
-                    "native_location": native.relative_to(project).as_posix(),
+                    "native_location": native.relative_to(project.resolve()).as_posix(),
                     "source_tree_shortcut": False,
                     "version": actual,
                     "version_exit": version.returncode,

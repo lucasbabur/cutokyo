@@ -118,7 +118,9 @@ fn backup_default_is_one_private_item_and_restores_real_searchable_history() -> 
         reopened
             .list_backups()?
             .iter()
-            .any(|backup| backup.path == recovery_directory)
+            // Listings are canonical; Windows temp dirs may be 8.3 short names.
+            .any(|backup| dunce::canonicalize(&backup.path).ok()
+                == dunce::canonicalize(recovery_directory).ok())
     );
     let prior_plan = reopened.preview_backup_restore(recovery_directory)?;
     reopened.restore_backup(&prior_plan)?;

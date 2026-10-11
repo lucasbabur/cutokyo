@@ -1180,17 +1180,17 @@ async fn read_manifest_bytes(manifest_path: &Path) -> Result<Vec<u8>, PluginVeri
 async fn load_manifest(
     plugin_directory: &Path,
 ) -> Result<(PluginManifest, PathBuf, PathBuf), PluginVerificationError> {
-    let root = tokio::fs::canonicalize(plugin_directory)
-        .await
-        .map_err(|error| {
-            manifest_error(
-                PluginDiagnosticCode::InvalidManifest,
-                "plugin_directory",
-                "existing plugin directory",
-                "unavailable path",
-                format!("plugin directory could not be opened: {error}"),
-            )
-        })?;
+    // dunce keeps Windows paths free of the \\?\ verbatim prefix, which Node's
+    // module loader cannot resolve as an entrypoint or working directory.
+    let root = dunce::canonicalize(plugin_directory).map_err(|error| {
+        manifest_error(
+            PluginDiagnosticCode::InvalidManifest,
+            "plugin_directory",
+            "existing plugin directory",
+            "unavailable path",
+            format!("plugin directory could not be opened: {error}"),
+        )
+    })?;
     let metadata = tokio::fs::symlink_metadata(&root).await.map_err(|error| {
         manifest_error(
             PluginDiagnosticCode::InvalidManifest,
@@ -1241,7 +1241,7 @@ async fn load_manifest(
             "plugin entrypoint must be a regular file",
         ));
     }
-    let entrypoint = tokio::fs::canonicalize(candidate).await.map_err(|error| {
+    let entrypoint = dunce::canonicalize(candidate).map_err(|error| {
         manifest_error(
             PluginDiagnosticCode::InvalidManifest,
             "entrypoint",
