@@ -1,0 +1,50 @@
+.scene {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  content-visibility: auto;
+  pointer-events: none;
+  mask-image: linear-gradient(transparent, #000 16%, #000 85%, transparent);
+}
+.scene svg {
+  position: absolute;
+  left: 50%;
+  width: max(100%, 900px);
+  height: 100%;
+  transform: translateX(-50%);
+}
+.route,
+.current {
+  vector-effect: non-scaling-stroke;
+}
+.route {
+  stroke: var(--border);
+  stroke-width: 0.7;
+}
+.current {
+  stroke: var(--surface-line);
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-dasharray: 5 495;
+  animation: context-flow var(--stream-duration) linear var(--stream-delay) infinite;
+}
+@keyframes context-flow {
+  to {
+    stroke-dashoffset: -1000;
+  }
+}
+@media (max-width: 700px) {
+  .route {
+    stroke-opacity: 0.7;
+  }
+  .current {
+    stroke-opacity: 0.8;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .current {
+    animation: none;
+    stroke-opacity: 0;
+  }
+}

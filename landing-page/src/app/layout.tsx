@@ -12,7 +12,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   description:
-    "Cutokyo adds governance, security redaction, and context analysis to LLM inputs while reducing token cost and latency.",
+    "Cutokyo unifies memory, security, observability, plugins and session history across your AI coding agents.",
   icons: {
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
     icon: [
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     ],
   },
   manifest: "/site.webmanifest",
-  title: "Cutokyo - Govern, Redact, and Cut Tokens",
+  title: "Cutokyo - One control plane for every AI agent",
 };
 
 export default function RootLayout({
@@ -33,7 +33,7 @@ export default function RootLayout({
 }>) {
   const content = <AppProviders>{children}</AppProviders>;
   return (
-    <html className="dark" lang="en">
+    <html className="dark" data-theme="dark" lang="en">
       <body className="bg-background text-foreground antialiased">
         {isWorkosConfigured() ? <AuthKitProvider>{content}</AuthKitProvider> : content}
       </body>

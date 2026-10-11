@@ -1,5 +1,5 @@
-import { MarketingSiteView } from "@/features/marketing-site";
+import { VariationTwoView } from "@/features/variation-two";
 
 export default function Page() {
-  return <MarketingSiteView />;
+  return <VariationTwoView />;
 }

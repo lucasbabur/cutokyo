@@ -1,0 +1,1475 @@
+.page {
+  --canvas: var(--surface-base);
+  --surface: var(--surface-card);
+  --line: var(--border);
+  --line-strong: var(--border-strong);
+  --content-max: 88rem;
+  --gutter: max(4vw, calc((100vw - var(--content-max)) / 2));
+  min-height: 100vh;
+  background: var(--canvas);
+  color: var(--text-primary);
+  font-family: var(--font-geist), Arial, sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+.page h1,
+.page h2,
+.page h3,
+.page p {
+  margin: 0;
+}
+.page h1,
+.page h2,
+.page h3 {
+  font-weight: 500;
+  text-wrap: balance;
+}
+.page button {
+  cursor: pointer;
+}
+.page :is(button, a, input):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 5px;
+}
+.page ::selection {
+  background: var(--selection);
+  color: var(--text-primary);
+}
+
+.nav {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  width: 100%;
+  height: 5.25rem;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: #050607;
+  padding-inline: var(--gutter);
+}
+.brand,
+.footerBrand a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  font-weight: 550;
+  letter-spacing: -0.055em;
+}
+.brandMark {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+  background: url("/brand/cutokyo-mark.svg") center / contain no-repeat;
+}
+.nav .brand {
+  justify-self: start;
+  font-size: 1.5rem;
+}
+.nav .brandMark {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+.navText,
+.githubStars {
+  display: inline-block;
+  transition:
+    transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 220ms ease;
+}
+.nav :is(a, button):is(:hover, :focus-visible) .navText,
+.githubLink:is(:hover, :focus-visible) .githubStars {
+  transform: translateY(-2px);
+}
+.nav .brand:is(:hover, :focus-visible) .navText {
+  color: var(--link-hover);
+}
+.navLinks {
+  display: flex;
+  gap: clamp(1rem, 2.5vw, 2.5rem);
+}
+.footerLinks a {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  transition: color 180ms ease;
+}
+.navLinks a {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  padding: 8px 0;
+  color: var(--text-strong);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+  transition: color 180ms ease;
+}
+.navLinks a:is(:hover, :focus-visible) {
+  color: var(--text-primary);
+}
+.footerLinks a:hover {
+  color: var(--link-hover);
+}
+.ctas button,
+.modal button[type="submit"] {
+  min-height: 2.7rem;
+  border: 1px solid var(--action-border);
+  border-radius: 5px;
+  background: var(--action-bg);
+  padding: 0.7rem 1.1rem;
+  color: var(--action-text);
+  font-size: 0.76rem;
+  font-weight: 500;
+  transition:
+    background 180ms ease,
+    transform 180ms ease;
+}
+.ctas button:hover,
+.modal button[type="submit"]:hover {
+  background: var(--action-hover);
+  transform: translateY(-1px);
+}
+.navActions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+}
+.githubLink {
+  display: inline-flex;
+  width: auto;
+  height: 60px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  border: 0;
+  background: transparent;
+  padding: 0 20px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 220ms ease;
+}
+.githubLink:hover {
+  color: var(--link-hover);
+}
+.githubIcon {
+  width: 28px;
+  height: 28px;
+  fill: currentColor;
+}
+.githubStars {
+  font-family: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.65;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero {
+  position: relative;
+  display: grid;
+  min-height: 100svh;
+  grid-template-areas: "copy visual";
+  grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
+  grid-template-rows: auto;
+  align-content: center;
+  column-gap: 3rem;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background: var(--canvas);
+  padding: 9rem var(--gutter) 5rem;
+  isolation: isolate;
+}
+.hero::after {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 78%, var(--canvas));
+  content: "";
+  pointer-events: none;
+}
+.heroCopy,
+.heroDetails {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 39rem;
+}
+.heroText {
+  grid-area: copy;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1.6rem;
+  align-self: center;
+}
+.kicker {
+  color: var(--text-secondary);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.62rem;
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.heroCopy h1 {
+  max-width: none;
+  margin-top: 0;
+  font-size: clamp(2.65rem, 4.2vw, 4.5rem);
+  line-height: 1.04;
+  letter-spacing: -0.065em;
+  white-space: pre-line;
+}
+.heroDetails > p {
+  max-width: 37ch;
+  color: var(--text-secondary);
+  font-size: clamp(0.95rem, 1.15vw, 1.05rem);
+  line-height: 1.85;
+}
+.heroDetails .pricingNote {
+  max-width: none;
+  margin-top: 1.4rem;
+  color: var(--text-muted);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.57rem;
+  line-height: 1.8;
+  letter-spacing: 0.06em;
+}
+.ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 2rem;
+}
+.ctas button,
+.ctas a {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 1.2rem;
+  font-size: 0.78rem;
+}
+.ctas a {
+  gap: 0.65rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  background: var(--surface-filter);
+  color: var(--text-secondary);
+  transition:
+    border-color 180ms ease,
+    color 180ms ease;
+}
+.ctas a::after {
+  content: "↗";
+}
+.ctas a:hover {
+  border-color: var(--control-hover);
+  color: var(--text-primary);
+}
+.logoBand {
+  --logo-unit: max(1rem, 1.111111vw);
+
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(
+    180deg,
+    var(--surface-card),
+    var(--surface-muted) 50%,
+    var(--surface-card)
+  );
+  padding: calc(var(--logo-unit) * 2.5) var(--gutter);
+}
+.logoGrid {
+  display: grid;
+  width: 100%;
+  max-width: var(--content-max);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.75rem, 4vw, 4rem);
+  margin-inline: auto;
+}
+.logoTile {
+  display: flex;
+  min-width: 0;
+  height: clamp(2.5rem, 7vw, 6rem);
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.35rem, 1.5vw, 1.5rem);
+  color: var(--text-secondary);
+  font-size: clamp(1rem, 4vw, 3.5rem);
+  font-weight: 450;
+  letter-spacing: -0.04em;
+}
+.logoTile img {
+  width: clamp(1.25rem, 5vw, 4.5rem);
+  height: clamp(1.25rem, 5vw, 4.5rem);
+  flex: 0 0 auto;
+  object-fit: contain;
+  filter: grayscale(1);
+  opacity: 0.8;
+}
+.logoTile .agentWordmark {
+  width: auto;
+  max-width: 100%;
+  height: clamp(1rem, 4vw, 3.5rem);
+  filter: none;
+}
+.codexWordmark {
+  font-family: "OpenAI Sans", Arial, sans-serif;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
+.steps,
+.controlPlane,
+.inside,
+.downloads {
+  position: relative;
+  border-bottom: 1px solid var(--line);
+  padding: clamp(5rem, 9vw, 8.5rem) var(--gutter);
+}
+.steps {
+  overflow: hidden;
+  isolation: isolate;
+}
+.stepsIntro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.4rem;
+  justify-items: center;
+  margin-bottom: 3.5rem;
+  text-align: center;
+}
+.stepsIntro .kicker {
+  grid-column: 1 / -1;
+}
+.stepsIntro h2,
+.sectionTitle h2,
+.downloadsIntro h2,
+.finalCta h2 {
+  max-width: 22ch;
+  font-size: clamp(2rem, 3.2vw, 3.4rem);
+  line-height: 1.15;
+  letter-spacing: -0.05em;
+}
+.stepsIntro > p:last-child,
+.finalCta p:last-child {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.9;
+}
+.stepsIntro > p:last-child {
+  max-width: 68ch;
+  font-size: clamp(0.95rem, 1.15vw, 1.05rem);
+}
+.stepsTrack {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  outline: none;
+}
+.processCard {
+  position: relative;
+  min-height: 19.5rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 1.6rem;
+  isolation: isolate;
+  transition:
+    border-color 250ms ease,
+    background 250ms ease;
+}
+.processCard::before {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  background: var(--process-image) center / cover no-repeat;
+  content: "";
+  opacity: 0.65;
+  transition: opacity 350ms ease;
+}
+.processCard::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(27 31 27 / 10%), var(--surface-card) 90%);
+  content: "";
+  transition: opacity 350ms ease;
+}
+.processCard:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+}
+.processCardCopy {
+  translate: 0 0;
+  transition:
+    translate 450ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 300ms ease;
+}
+.processCard:is(:hover, :focus-visible)::before {
+  opacity: 1;
+}
+.processCard:is(:hover, :focus-visible)::after {
+  opacity: 0;
+}
+.processCard:is(:hover, :focus-visible) .processCardCopy {
+  translate: 0 calc(100% + 3.2rem);
+  opacity: 0;
+}
+
+.stepTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4.5rem;
+}
+.stepNumber,
+.downloadNumber,
+.capabilityOptionNumber,
+.capabilityDetailMeta {
+  color: var(--text-muted);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+.stepIcon {
+  width: 1.4rem;
+  height: 1.4rem;
+  color: var(--text-secondary);
+}
+.processCard h3 {
+  margin-bottom: 0.85rem;
+  font-size: 1.15rem;
+  letter-spacing: -0.035em;
+}
+.processCard p {
+  max-width: 34ch;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.85;
+}
+.savingsCard,
+.percentValue {
+  color: var(--text-primary);
+}
+.stepSuffix {
+  color: var(--text-secondary);
+}
+
+.controlPlane {
+  overflow: hidden;
+  background: var(--surface-base);
+  isolation: isolate;
+}
+.governanceBackdropVideo {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Keep the video monochrome; screenshot reveals belong to processCard only. */
+  filter: grayscale(1) brightness(0.5);
+  opacity: 0.16;
+  pointer-events: none;
+}
+.controlPlane::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(180deg, var(--surface-base), transparent 35%, var(--surface-base));
+  content: "";
+  pointer-events: none;
+}
+.governanceIntro {
+  max-width: 48rem;
+  margin: 0 auto 3.5rem;
+  text-align: center;
+}
+.governanceIntroContent .kicker {
+  margin-bottom: 1.3rem;
+}
+.governanceIntro h2 {
+  font-size: clamp(2.25rem, 4vw, 4rem);
+  line-height: 1.13;
+  letter-spacing: -0.055em;
+}
+.governanceConsole {
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+}
+.governanceTopbar {
+  display: grid;
+  min-height: 3.5rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 1.1rem;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-muted);
+  padding: 0.75rem 1.25rem;
+  color: var(--text-secondary);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.65rem;
+}
+.governanceTopbar > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.governanceTopbar em,
+.governanceRouteStatus,
+.governanceStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-style: normal;
+}
+.governanceTopbar em i,
+.governanceStatus i,
+.governanceRouteStatus i {
+  width: 4px;
+  height: 4px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--text-strong);
+}
+.governanceTopbar em i,
+.governanceRouteStatus i {
+  background: var(--link);
+}
+.governanceStatus i {
+  background: var(--success-icon);
+}
+.windowControls {
+  display: flex;
+  gap: 0.4rem;
+}
+.windowControls span {
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+}
+.governanceGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  gap: 1rem;
+  padding: 1rem;
+}
+.governancePayload,
+.governanceSummaryCard,
+.governanceBreakdown {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface-card);
+}
+.governancePayload {
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+.governancePayload > header,
+.governanceSummaryCard > header,
+.governanceBreakdown > header > div {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.governancePayload > header {
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--line);
+  padding: 1.2rem;
+}
+.governancePayload > header > span,
+.governanceSummaryCard > header > span,
+.governanceBreakdown > header span,
+.governanceRouteIndex {
+  color: var(--text-muted);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.55rem;
+}
+.governancePayload h3,
+.governanceSummaryCard h3,
+.governanceBreakdown h3 {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 450;
+}
+.governancePayload header em {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.5rem;
+  font-style: normal;
+}
+.governancePayload pre {
+  margin: 0;
+  padding: 1.5rem;
+  color: var(--text-secondary);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.7rem;
+  line-height: 2;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.governanceInsights {
+  display: grid;
+  gap: 1rem;
+}
+.governanceSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+.governanceSummaryCard {
+  padding: 1rem;
+}
+.governanceSummaryCard > header {
+  align-items: start;
+  min-height: 2.5rem;
+}
+.governanceSummaryCard > strong {
+  display: block;
+  margin: 1rem 0 0.65rem;
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: -0.03em;
+}
+.governanceSummaryCard .governanceStatus {
+  display: flex;
+}
+.governanceSummaryCard .governanceSecurityCount {
+  font-size: 2.2rem;
+  font-weight: 400;
+  line-height: 1;
+}
+.governanceSummaryCard > p,
+.governanceSummaryCard dl {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  line-height: 1.8;
+}
+.governanceSummaryCard dl {
+  margin: 0;
+}
+.governanceSummaryCard dl div {
+  margin-top: 0.6rem;
+}
+.governanceSummaryCard dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.governanceSummaryCard code {
+  font-size: 0.58rem;
+}
+.governanceBreakdown > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1.15rem;
+}
+.governanceBreakdown > header > strong {
+  color: var(--text-muted);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.5rem;
+  font-weight: 500;
+}
+.governanceRouteList {
+  padding-inline: 1.15rem;
+}
+.governanceRouteRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: center;
+  border-top: 1px solid var(--line);
+  padding-block: 1.2rem;
+}
+.governanceRouteCopy {
+  display: grid;
+  gap: 0.35rem;
+}
+.governanceRouteCopy strong {
+  color: var(--text-strong);
+  font-size: 0.75rem;
+  font-weight: 450;
+}
+.governanceRouteCopy > span {
+  max-width: 46ch;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.7;
+}
+.governanceRouteStatus {
+  color: var(--text-secondary);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.6rem;
+}
+
+.inside {
+  overflow: hidden;
+  background: var(--canvas);
+  isolation: isolate;
+}
+.inside::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: url("/backgrounds/operating-layer-linework.svg") center / cover no-repeat;
+  opacity: 0.32;
+  mask-image: linear-gradient(transparent, #000 12%, #000 88%, transparent);
+  content: "";
+  pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .inside::before {
+    background-position: 15% center;
+    opacity: 0.25;
+  }
+}
+
+.sectionTitle {
+  max-width: 44rem;
+  margin: 0 auto 3.5rem;
+  text-align: center;
+}
+.sectionTitle .kicker {
+  margin-bottom: 1.3rem;
+}
+.sectionTitle h2 {
+  margin-inline: auto;
+}
+.capabilityExplorer {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 1.25rem;
+}
+.capabilityList {
+  display: grid;
+  gap: 0.65rem;
+}
+.capabilityOption {
+  display: grid;
+  min-width: 0;
+  min-height: 6.25rem;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-card);
+  padding: 1.3rem;
+  color: var(--text-secondary);
+  text-align: left;
+  transition:
+    background 220ms ease,
+    border-color 220ms ease,
+    color 220ms ease;
+}
+.capabilityOption[data-selected="true"] {
+  border-color: var(--border-strong);
+  background: var(--appearance-selected);
+  color: var(--text-primary);
+}
+.capabilityOption:hover {
+  border-color: var(--control-hover);
+  background: var(--surface-muted);
+  color: var(--text-primary);
+}
+.icon {
+  width: 1.6rem;
+  height: 1.6rem;
+  color: var(--text-secondary);
+}
+.capabilityOptionTitle {
+  min-width: 0;
+  font-size: 0.95rem;
+  font-weight: 450;
+  letter-spacing: -0.03em;
+}
+.capabilityOptionArrow {
+  color: var(--text-muted);
+  transition: transform 220ms ease;
+}
+.capabilityOption:hover .capabilityOptionArrow {
+  transform: translateX(3px);
+}
+.capabilityDetail {
+  position: relative;
+  min-height: 27rem;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface-muted);
+  isolation: isolate;
+}
+.capabilityDetail::before {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  background: var(--capability-image) center / cover no-repeat;
+  content: "";
+  filter: grayscale(1) brightness(0.6);
+  opacity: 0.65;
+}
+.capabilityDetail::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(27 31 27 / 12%), var(--surface-card) 95%);
+  content: "";
+}
+.capabilityDetailCopy {
+  position: relative;
+  display: flex;
+  min-height: 27rem;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 2rem;
+  animation: detail-in 380ms ease both;
+}
+.capabilityDetailMeta {
+  position: absolute;
+  top: 1.75rem;
+  left: 2rem;
+  color: var(--text-secondary);
+}
+.capabilityDetail h3 {
+  max-width: 15ch;
+  margin-bottom: 1rem;
+  font-size: clamp(2rem, 3.6vw, 3.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.055em;
+}
+.capabilityDetail p {
+  max-width: 48ch;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.9;
+}
+.capabilityDetailTransition {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: var(--surface-muted);
+  animation: detail-veil 420ms ease both;
+  pointer-events: none;
+}
+
+.downloads {
+  background: var(--surface-card);
+}
+.downloadsIntro {
+  max-width: 42rem;
+  margin-bottom: 3.5rem;
+}
+.downloadsIntro h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+}
+.downloadsIntro .brandMark {
+  width: 1em;
+  height: 1em;
+}
+.downloadList {
+  border-top: 1px solid var(--line-strong);
+}
+.downloadRow {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  gap: 1.5rem;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding: 1.6rem 0;
+}
+.downloadName h3 {
+  margin-bottom: 0.3rem;
+  font-size: 1rem;
+  letter-spacing: -0.025em;
+}
+.downloadName code {
+  color: var(--text-muted);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.58rem;
+  overflow-wrap: anywhere;
+}
+.downloadActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.downloadActions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.5rem;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+.downloadActions a:first-child {
+  width: 10.75rem;
+  min-height: 3.125rem;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: transparent;
+  padding: 0.65rem 0.75rem 0.65rem 1.15rem;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 16%);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1;
+}
+.downloadActions a:first-child svg {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  background: var(--surface-code);
+  padding: 6px;
+}
+.downloadActions a:last-child {
+  min-height: 2rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--surface-code);
+  padding: 0.45rem 0.65rem;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.03em;
+}
+.downloadActions a:first-child:is(:hover, :focus-visible) {
+  border-color: var(--control-hover);
+  background: var(--surface-muted);
+  box-shadow: 0 5px 16px rgb(0 0 0 / 24%);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+.downloadActions a:last-child:is(:hover, :focus-visible) {
+  border-color: var(--control-hover);
+  background: var(--surface-muted);
+  color: var(--text-primary);
+}
+
+.finalCta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3rem;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-muted);
+  padding: clamp(5rem, 8vw, 7rem) var(--gutter);
+}
+.finalCta > div {
+  display: grid;
+  gap: 1.5rem;
+}
+.finalCta h2 {
+  max-width: 24ch;
+}
+.finalCta > button {
+  display: none;
+  min-height: 3.5rem;
+  align-items: center;
+  gap: 3rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  background: transparent;
+  padding: 1rem 1.25rem;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: background 180ms ease;
+}
+.finalCta > button span {
+  font-size: 1.15rem;
+  transition: transform 180ms ease;
+}
+.finalCta > button:hover span {
+  transform: translate(2px, -2px);
+}
+
+.footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3rem;
+  padding: 3.5rem var(--gutter) 2rem;
+}
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: 1.6rem;
+  padding-top: 0.25rem;
+}
+.footerLinks button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--text-strong);
+  font-size: 0.78rem;
+}
+.footerMeta {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--line);
+  padding-top: 1.5rem;
+  color: var(--text-muted);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.55rem;
+  line-height: 1.8;
+}
+
+.modalBackdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  overflow-y: auto;
+  background: rgb(0 0 0 / 72%);
+  padding: 1.5rem;
+  backdrop-filter: blur(12px);
+  place-items: center;
+}
+.modal {
+  position: relative;
+  width: min(100%, 28rem);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-muted);
+  padding: 2.5rem;
+  box-shadow: var(--shadow-lg);
+  animation: detail-in 220ms ease both;
+}
+.closeButton {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1.5rem;
+}
+.modal h2 {
+  margin: 1.25rem 0;
+  font-size: 2rem;
+  line-height: 1.1;
+  letter-spacing: -0.055em;
+}
+.modalNote,
+.modalSuccess {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.8;
+}
+.modal form {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+.modal label {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+.modal input {
+  min-width: 0;
+  min-height: 3rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  background: var(--surface-card);
+  padding: 0.8rem;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+.modal button[type="submit"] {
+  margin-top: 0.5rem;
+}
+.modalSuccess {
+  margin-top: 2rem !important;
+  border-top: 1px solid var(--line);
+  padding-top: 1.5rem;
+}
+
+/* Content stays visible without JavaScript; reveal motion is progressive enhancement. */
+.page [data-visible],
+.reportMotion[data-motion-visible="true"] {
+  animation: reveal-in 700ms ease var(--reveal-delay, var(--motion-delay, 0ms)) both;
+}
+.reportMotion,
+.reportMeter {
+  opacity: 1;
+}
+@keyframes reveal-in {
+  from {
+    opacity: 0.25;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes detail-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes detail-veil {
+  from {
+    opacity: 0.8;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@media (min-width: 1800px) {
+  .hero {
+    min-height: min(100svh, 70rem);
+  }
+}
+@media (max-width: 1050px) {
+  .page {
+    --gutter: 4vw;
+  }
+  .hero {
+    column-gap: 1rem;
+  }
+  .heroCopy h1 {
+    font-size: clamp(2.4rem, 4.25vw, 3.2rem);
+  }
+  .governanceGrid {
+    grid-template-columns: 1fr;
+  }
+  .governancePayload pre {
+    min-height: 12rem;
+  }
+  .capabilityOption {
+    gap: 0.7rem;
+    padding: 1rem;
+  }
+  .capabilityOptionTitle {
+    font-size: 0.85rem;
+  }
+  .footerLinks {
+    gap: 1rem;
+  }
+}
+@media (max-width: 760px) {
+  .nav {
+    display: flex;
+    height: auto;
+    min-height: 4.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem 1rem;
+    padding-block: 0.75rem;
+  }
+  .navLinks {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    order: 3;
+  }
+  .navActions {
+    margin-left: 0;
+  }
+  .hero {
+    min-height: 100svh;
+    grid-template-areas: "copy" "visual";
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding-top: 12.5rem;
+    padding-bottom: 4.5rem;
+  }
+  .heroText {
+    gap: 1.5rem;
+  }
+  .heroCopy,
+  .heroDetails {
+    max-width: 34rem;
+    margin-inline: auto;
+    text-align: center;
+  }
+  .heroCopy h1 {
+    max-width: none;
+    margin-inline: auto;
+    font-size: clamp(2.2rem, 6.4vw, 3.2rem);
+  }
+  .heroDetails > p {
+    margin-inline: auto;
+  }
+  .heroDetails .pricingNote {
+    margin-top: 1rem;
+    font-size: 0.52rem;
+  }
+  .ctas {
+    justify-content: center;
+  }
+  .stepsIntro {
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+  }
+  .stepsIntro h2 {
+    max-width: 23ch;
+  }
+  .stepsIntro > p:last-child {
+    max-width: 52ch;
+  }
+  .stepsTrack {
+    gap: 0.65rem;
+  }
+  .processCard {
+    min-height: 20rem;
+    padding: 1rem;
+  }
+  .processCard h3 {
+    font-size: 1rem;
+  }
+  .processCard p {
+    font-size: 0.75rem;
+  }
+  .capabilityExplorer {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .capabilityOption {
+    min-height: 4.75rem;
+    gap: 1rem;
+  }
+  .capabilityOptionTitle {
+    font-size: 1rem;
+  }
+  .capabilityDetail,
+  .capabilityDetailCopy {
+    min-height: 24rem;
+  }
+  .downloadRow {
+    grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+    gap: 1rem;
+  }
+  .downloadActions {
+    gap: 0.85rem;
+  }
+  .downloadActions a:first-child {
+    gap: 0.7rem;
+    padding: 0.65rem 0.75rem 0.65rem 1rem;
+  }
+  .finalCta {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  .finalCta > button {
+    justify-self: start;
+  }
+  .footer {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  .footerLinks {
+    gap: 1.5rem;
+  }
+}
+@media (max-width: 520px) {
+  .page {
+    --gutter: 1rem;
+  }
+  .nav .brand {
+    font-size: 1.5rem;
+  }
+  .navActions {
+    gap: 0.75rem;
+  }
+  .hero {
+    padding-top: 12.5rem;
+    padding-bottom: 4rem;
+  }
+  .heroCopy h1 {
+    font-size: clamp(2.1rem, 8.2vw, 2.6rem);
+    line-height: 1.06;
+  }
+  .heroDetails > p,
+  .stepsIntro > p:last-child {
+    font-size: 0.88rem;
+    line-height: 1.85;
+  }
+  .heroDetails .pricingNote {
+    max-width: 30ch;
+    font-size: 0.52rem;
+  }
+  .ctas {
+    flex-wrap: nowrap;
+    gap: 0.6rem;
+  }
+  .ctas button,
+  .ctas a {
+    padding-inline: 0.9rem;
+    font-size: 0.73rem;
+  }
+  .steps,
+  .controlPlane,
+  .inside,
+  .downloads {
+    padding-block: 4.5rem;
+  }
+  .stepsTrack {
+    grid-template-columns: repeat(3, 86%);
+    gap: 0.8rem;
+    overflow-x: auto;
+    padding-bottom: 0.8rem;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+    scrollbar-color: var(--control-hover) transparent;
+  }
+  .processCard {
+    min-height: 18rem;
+    padding: 1.5rem;
+    scroll-snap-align: start;
+  }
+  .stepTop {
+    margin-bottom: 4rem;
+  }
+  .processCard h3 {
+    font-size: 1.1rem;
+  }
+  .governanceIntro h2 {
+    font-size: 2.25rem;
+  }
+  .governanceTopbar {
+    gap: 0.6rem;
+    padding-inline: 0.8rem;
+    font-size: 0.49rem;
+  }
+  .governanceTopbar em {
+    font-size: 0.45rem;
+  }
+  .governanceGrid {
+    gap: 0.65rem;
+    padding: 0.65rem;
+  }
+  .governancePayload pre {
+    padding: 1rem;
+    font-size: 0.62rem;
+  }
+  .governanceSummary {
+    grid-template-columns: 1fr;
+  }
+  .governanceSummaryCard {
+    padding: 1.2rem;
+  }
+  .governanceSummaryCard > header {
+    min-height: 0;
+  }
+  .governanceSummaryCard > strong {
+    font-size: 1.1rem;
+  }
+  .governanceSummaryCard > p,
+  .governanceSummaryCard dl {
+    font-size: 0.65rem;
+  }
+  .governanceSummaryCard code {
+    font-size: 0.6rem;
+  }
+  .governanceRouteRow {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .governanceRouteStatus {
+    grid-column: 2;
+  }
+  .governanceRouteCopy > span {
+    font-size: 0.64rem;
+  }
+  .capabilityDetailCopy {
+    padding: 1.5rem;
+  }
+  .capabilityDetailMeta {
+    left: 1.5rem;
+  }
+  .capabilityDetail h3 {
+    font-size: 2.5rem;
+  }
+  .downloadRow {
+    grid-template-columns: 1rem minmax(0, 1fr);
+    gap: 0.7rem 1rem;
+  }
+  .downloadActions {
+    grid-column: 2;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+  }
+  .downloadActions a:first-child {
+    width: auto;
+    min-width: 0;
+    flex: 1;
+  }
+  .downloadName code {
+    font-size: 0.52rem;
+  }
+  .modal {
+    padding: 2rem 1.5rem;
+  }
+}
+@media (max-width: 380px) {
+  .githubLink {
+    gap: 0.5rem;
+    padding: 0 0.75rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page *,
+  .page *::before,
+  .page *::after {
+    animation: none !important;
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+  .capabilityDetailTransition {
+    opacity: 0;
+  }
+  .nav :is(.navText, .githubStars) {
+    transform: none !important;
+  }
+  .downloadActions a,
+  .downloadActions svg {
+    transform: none !important;
+  }
+  .governanceBackdropVideo {
+    display: none;
+  }
+}

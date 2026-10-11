@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" fill="none">
+  <style>
+    .shape {
+      transform-box: view-box;
+      animation: float 6s ease-in-out infinite alternate;
+    }
+    .round-left {
+      transform-origin: 125px 190px;
+      animation-duration: 5.4s;
+      animation-delay: -7s;
+    }
+    .square-top {
+      transform-origin: 1280px 200px;
+      animation-name: turn;
+      animation-duration: 7.2s;
+      animation-delay: -13s;
+    }
+    .triangle-top {
+      transform-origin: 1530px 310px;
+      animation-duration: 6.6s;
+      animation-delay: -18s;
+    }
+    .bar-left {
+      transform-origin: 50px 600px;
+      animation-name: turn;
+      animation-duration: 8.4s;
+      animation-delay: -11s;
+    }
+    .triangle-bottom {
+      transform-origin: 140px 870px;
+      animation-duration: 6s;
+      animation-delay: -16s;
+    }
+    .round-bottom {
+      transform-origin: 1250px 1000px;
+      animation-duration: 7.8s;
+      animation-delay: -24s;
+    }
+    .round-right {
+      transform-origin: 1500px 675px;
+      animation-name: turn;
+      animation-duration: 6.6s;
+      animation-delay: -4s;
+    }
+    .square-bottom {
+      transform-origin: 520px 950px;
+      animation-name: turn;
+      animation-duration: 7.2s;
+      animation-delay: -20s;
+    }
+    .details {
+      animation-name: drift;
+      animation-duration: 9s;
+      animation-delay: -10s;
+    }
+    @keyframes float {
+      from {
+        transform: translate(-18px, 20px) rotate(-4deg);
+      }
+      to {
+        transform: translate(22px, -26px) rotate(4deg);
+      }
+    }
+    @keyframes turn {
+      from {
+        transform: translate(15px, -18px) rotate(-5deg);
+      }
+      to {
+        transform: translate(-20px, 24px) rotate(5deg);
+      }
+    }
+    @keyframes drift {
+      from {
+        transform: translate(-10px, 12px);
+      }
+      to {
+        transform: translate(12px, -14px);
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .shape {
+        animation: none;
+      }
+    }
+  </style>
+  <g stroke="#889a8a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+    <g class="shape round-left">
+      <path
+        d="M-38 217C-54 105 32 22 137 27C246 31 301 120 281 219C262 313 177 362 84 337C15 319-26 274-38 217Z"
+      />
+      <path
+        d="M-11 216C-21 128 46 56 129 58C219 60 266 130 254 209C242 286 170 330 97 312"
+        opacity=".5"
+      />
+    </g>
+    <g class="shape square-top">
+      <path d="M1177 34L1448 101L1380 367L1111 299Z" />
+      <path d="M1192 55L1434 114L1373 352" opacity=".4" />
+    </g>
+    <g class="shape triangle-top">
+      <path d="M1520 120L1694 405L1373 399Z" />
+    </g>
+    <g class="shape bar-left">
+      <path d="M-83 478L71 433L166 718L9 767Z" />
+      <path d="M-50 482L50 452L139 709" opacity=".45" />
+    </g>
+    <g class="shape triangle-bottom">
+      <path d="M-15 899L184 729L244 974Z" />
+      <path d="M25 894L180 758L227 952" opacity=".45" />
+    </g>
+    <g class="shape round-bottom">
+      <path d="M1040 1071C1014 921 1114 806 1254 812C1393 818 1488 925 1472 1064" />
+      <path d="M1071 1065C1048 944 1129 844 1249 845C1371 848 1453 943 1439 1054" opacity=".55" />
+    </g>
+    <g class="shape round-right">
+      <path
+        d="M1519 543C1419 535 1371 610 1380 688C1389 766 1458 810 1536 796C1604 784 1642 725 1627 658"
+      />
+    </g>
+    <g class="shape square-bottom">
+      <path d="M450 909L564 880L594 994L480 1023Z" />
+    </g>
+  </g>
+  <g class="shape details" stroke="#889a8a" stroke-width="1.2" stroke-linecap="round" opacity=".65">
+    <path d="M370 100H390M380 90V110M1062 409H1082M1072 399V419M883 902H903M893 892V912" />
+    <circle cx="962" cy="82" r="5" />
+    <circle cx="54" cy="395" r="4" />
+    <circle cx="1537" cy="463" r="6" />
+    <path d="M661 49L699 60M667 36L705 47M674 24L712 35" opacity=".55" />
+  </g>
+</svg>

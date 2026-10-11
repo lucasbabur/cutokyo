@@ -1,0 +1,1 @@
+export { VariationTwoView } from "./view";

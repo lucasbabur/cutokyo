@@ -3,6 +3,14 @@
 @import "../shared/styles/patterns.css";
 
 @font-face {
+  font-family: "OpenAI Sans";
+  src: url("/fonts/cutokyo/openai-sans-regular.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400;
+}
+
+@font-face {
   font-family: "Anybody";
   src: url("/fonts/cutokyo/anybody-latin.woff2") format("woff2");
   font-display: swap;
@@ -23,7 +31,7 @@
   src: url("/fonts/cutokyo/jetbrains-mono-latin.woff2") format("woff2");
   font-display: swap;
   font-style: normal;
-  font-weight: 500 700;
+  font-weight: 400 700;
 }
 
 :root {
@@ -44,7 +52,7 @@ html {
 
 body {
   min-height: 100vh;
-  background: #131314;
+  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist), sans-serif;
 }
@@ -62,6 +70,6 @@ textarea {
 }
 
 ::selection {
-  background: #c3f400;
-  color: #556d00;
+  background: var(--selection);
+  color: var(--text-primary);
 }

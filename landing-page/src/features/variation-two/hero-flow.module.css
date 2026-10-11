@@ -1,0 +1,691 @@
+.scene {
+  --cycle: 18s;
+  --hub-x: 50%;
+  --hub-y: 55%;
+  --terminal-width: clamp(12rem, 18vw, 17.5rem);
+  --agent-size: clamp(2.75rem, 4vw, 3.5rem);
+  --agent-name-height: 0.87rem;
+  --terminal-font-size: clamp(0.44rem, 0.6vw, 0.55rem);
+  --terminal-height: calc(var(--terminal-width) * 680 / 1310);
+  --apex-y: calc(var(--terminal-height) + 0.5rem + var(--agent-size) * 0.5);
+  position: relative;
+  z-index: 2;
+  grid-area: visual;
+  width: 100%;
+  max-width: 40rem;
+  min-width: 0;
+  align-self: center;
+  justify-self: center;
+  aspect-ratio: 1.35;
+  isolation: isolate;
+}
+.stage {
+  position: absolute;
+  inset: 0;
+}
+@media (min-width: 761px) {
+  .stage {
+    /* Center the visible triangle: its last labels end below the 84% anchors. */
+    translate: 0 calc(8% - var(--agent-size) * 0.25 - 0.225rem - var(--agent-name-height) * 0.5);
+  }
+}
+.backdrop {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  mask-image: linear-gradient(#000 78%, transparent);
+}
+.ambientFlow {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.waveField {
+  transform-box: view-box;
+  stroke: rgb(131 149 106 / 24%);
+  animation: hero-waves 18s linear infinite;
+}
+.waveField path {
+  stroke-width: 1.1;
+  vector-effect: non-scaling-stroke;
+}
+.connections {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  stroke: var(--text-muted);
+  stroke-width: 1;
+  stroke-dasharray: 4 28;
+  opacity: 0;
+  animation: context-exchange var(--cycle) linear infinite;
+}
+.agent {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+}
+.agentMotion {
+  position: absolute;
+  inset: 0;
+}
+.companion {
+  position: absolute;
+  top: var(--origin-y);
+  left: var(--origin-x);
+  width: var(--agent-size);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  animation: agents-converge var(--cycle) ease-in-out infinite;
+}
+.symbol {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 4px 12px rgb(0 0 0 / 25%));
+  animation: symbol-interaction var(--cycle) ease-in-out infinite;
+}
+.agent[data-agent="opencode"] .symbol {
+  width: 74%;
+  margin-inline: auto;
+}
+.terminal {
+  --terminal-background: #191918;
+  --terminal-text: #c4c1b9;
+  --terminal-accent: #c17b54;
+  position: absolute;
+  bottom: calc(100% - var(--origin-y) + var(--agent-size) * 0.5 + 0.5rem);
+  left: var(--origin-x);
+  width: var(--terminal-width);
+  height: var(--terminal-height);
+  translate: -50% 0;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--terminal-background);
+  color: var(--terminal-text);
+  box-shadow: 0 12px 36px rgb(0 0 0 / 24%);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: var(--terminal-font-size);
+  line-height: 1.8;
+  animation: terminal-out var(--cycle) ease infinite;
+}
+.agent[data-agent="codex"] .terminal {
+  --terminal-background: #10101c;
+  --terminal-text: #e5e5ec;
+  --terminal-accent: #2ab4c3;
+}
+.agent[data-agent="opencode"] .terminal {
+  --terminal-background: #0a0a0a;
+  --terminal-text: #dedede;
+  --terminal-accent: #598cdf;
+}
+.nativeCapture {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.terminalBody {
+  padding: 0.4rem 6% 0.55rem;
+}
+.command {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--terminal-text);
+  white-space: nowrap;
+}
+.command > span:first-child {
+  color: var(--terminal-accent);
+}
+.agent[data-agent="codex"] .command {
+  background: #262630;
+  margin-inline: -0.4rem;
+  padding-inline: 0.4rem;
+}
+/* Overlay the native prompt in each supplied capture instead of adding another input. */
+.agent[data-agent="claude"] .terminal {
+  --terminal-background: #201f1c;
+  font-size: calc(var(--terminal-width) * 26 / 1310);
+}
+.agent[data-agent="opencode"] .terminal {
+  font-size: calc(var(--terminal-width) * 20 / 928);
+}
+.agent[data-agent="claude"] .terminalBody,
+.agent[data-agent="opencode"] .terminalBody {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+}
+.agent[data-agent="claude"] .command,
+.agent[data-agent="opencode"] .command {
+  position: absolute;
+  gap: 0;
+  line-height: 1.3;
+  background: var(--terminal-background);
+}
+.agent[data-agent="claude"] .command {
+  top: 83.82%;
+  left: 3.51%;
+  width: 94%;
+  height: 7.35%;
+}
+.agent[data-agent="opencode"] .command {
+  top: 36.51%;
+  left: 5.28%;
+  width: 91%;
+  height: 5.81%;
+  background: #1e1e1e;
+}
+.agent[data-agent="claude"] .command > span:first-child,
+.agent[data-agent="opencode"] .command > span:first-child {
+  display: none;
+}
+.agent[data-agent="claude"] .terminalLogs,
+.agent[data-agent="opencode"] .terminalLogs {
+  position: absolute;
+  top: 93%;
+  left: 5.05%;
+  width: 90%;
+  margin: 0;
+}
+.typedCommand {
+  overflow: hidden;
+  width: 0;
+  animation: command-type var(--cycle) steps(28, end) infinite;
+}
+.cursor {
+  font-weight: 400;
+  animation: cursor-blink 0.8s steps(1) infinite;
+}
+.terminalLogs {
+  position: relative;
+  height: 1.8em;
+  margin-top: 0.2rem;
+}
+.logLine {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 0.45rem;
+  white-space: nowrap;
+  opacity: 0;
+  animation: activity-first var(--cycle) linear infinite;
+}
+.logLine:nth-child(2) {
+  animation-name: activity-second;
+}
+.logLine:nth-child(3) {
+  animation-name: activity-third;
+}
+.logLine > span {
+  color: var(--terminal-accent);
+}
+.logLine:last-child {
+  color: var(--terminal-text);
+}
+.agentName {
+  position: absolute;
+  top: calc(var(--origin-y) + var(--agent-size) * 0.5 + 0.45rem);
+  left: var(--origin-x);
+  width: calc(var(--agent-size) * 2);
+  translate: -50% 0;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.58rem;
+  line-height: var(--agent-name-height);
+  animation: terminal-out var(--cycle) ease infinite;
+}
+.energyCore,
+.impactFlash,
+.shockwave,
+.shockwaveEcho,
+.fragments,
+.result {
+  position: absolute;
+  top: var(--hub-y);
+  left: var(--hub-x);
+  transform: translate(-50%, -50%);
+}
+.energyCore {
+  width: 5rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #eef0ea 0, rgb(195 244 0 / 35%) 15%, transparent 65%);
+  opacity: 0;
+  animation: core-charge var(--cycle) ease infinite;
+}
+.impactFlash {
+  width: 19rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgb(245 255 220 / 80%),
+    rgb(195 244 0 / 15%) 25%,
+    transparent 65%
+  );
+  opacity: 0;
+  animation: fusion-flash var(--cycle) ease-out infinite;
+}
+.shockwave,
+.shockwaveEcho {
+  width: 10rem;
+  aspect-ratio: 1;
+  border: 1px solid #c3f400;
+  border-radius: 50%;
+  opacity: 0;
+  animation: impact-wave var(--cycle) ease-out infinite;
+}
+.shockwaveEcho {
+  animation-name: impact-echo;
+  border-color: var(--text-primary);
+}
+.fragments {
+  width: 1px;
+  height: 1px;
+}
+.fragments i {
+  position: absolute;
+  width: 16px;
+  height: 1px;
+  background: #c3f400;
+  opacity: 0;
+  animation: fusion-fragment var(--cycle) ease-out infinite;
+}
+.result {
+  z-index: 3;
+  display: flex;
+  width: 12rem;
+  max-width: 40%;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  animation: cutokyo-in var(--cycle) linear infinite;
+}
+.cutokyoMark {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.markTop {
+  transform-origin: 512px 512px;
+  animation: assemble-top var(--cycle) ease infinite;
+}
+.markBottom {
+  transform-origin: 512px 512px;
+  animation: assemble-bottom var(--cycle) ease infinite;
+}
+.markCore {
+  transform-origin: 512px 512px;
+  animation: assemble-core var(--cycle) ease infinite;
+}
+.resultNote {
+  position: absolute;
+  top: 100%;
+  margin-top: 0.6rem;
+  color: var(--text-muted);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: clamp(0.45rem, 0.7vw, 0.6rem);
+  white-space: nowrap;
+}
+.scene[data-paused="true"] * {
+  animation-play-state: paused;
+}
+/* 18s loop: 8.16s of terminal activity, 3.07s to converge, then reveal/reset. */
+/* Each agent follows a direct path from its terminal to the shared center. */
+@keyframes agents-converge {
+  0%,
+  45.33% {
+    top: var(--origin-y);
+    left: var(--origin-x);
+    transform: translate(-49.07%, -50%) scale(1);
+    opacity: 1;
+  }
+  61.99% {
+    top: calc(var(--hub-y) + (var(--origin-y) - var(--hub-y)) * 0.025);
+    left: calc(var(--hub-x) + (var(--origin-x) - var(--hub-x)) * 0.025);
+    transform: translate(-49.07%, -50%) scale(0.3);
+    opacity: 1;
+  }
+  62.4%,
+  94.67% {
+    top: var(--hub-y);
+    left: var(--hub-x);
+    transform: translate(-49.07%, -50%) scale(0);
+    opacity: 0;
+  }
+  96% {
+    top: var(--origin-y);
+    left: var(--origin-x);
+    transform: translate(-49.07%, -50%) scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    top: var(--origin-y);
+    left: var(--origin-x);
+    transform: translate(-49.07%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+@keyframes symbol-interaction {
+  0%,
+  10.67%,
+  26.67%,
+  45.33%,
+  100% {
+    transform: translateY(0);
+  }
+  16%,
+  37.33% {
+    transform: translateY(-5px);
+  }
+  21.33%,
+  41.33% {
+    transform: translateY(2px);
+  }
+  94.67% {
+    transform: translateY(0);
+  }
+}
+@keyframes terminal-out {
+  0%,
+  42.67% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  47.41%,
+  94.67% {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes command-type {
+  0%,
+  2.67%,
+  96%,
+  100% {
+    width: 0;
+  }
+  13.33%,
+  94.67% {
+    width: var(--command-length);
+  }
+}
+@keyframes activity-first {
+  0%,
+  14.67%,
+  26.67%,
+  100% {
+    opacity: 0;
+  }
+  16%,
+  25.33% {
+    opacity: 1;
+  }
+}
+@keyframes activity-second {
+  0%,
+  26.67%,
+  37.33%,
+  100% {
+    opacity: 0;
+  }
+  28%,
+  36% {
+    opacity: 1;
+  }
+}
+@keyframes activity-third {
+  0%,
+  37.33%,
+  94.67%,
+  100% {
+    opacity: 0;
+  }
+  38.67%,
+  92% {
+    opacity: 1;
+  }
+}
+@keyframes cursor-blink {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes context-exchange {
+  0%,
+  16%,
+  50.02%,
+  100% {
+    opacity: 0;
+    stroke-dashoffset: 0;
+  }
+  26.67%,
+  45.33% {
+    opacity: 0.35;
+  }
+  48.46% {
+    opacity: 0;
+    stroke-dashoffset: -320;
+  }
+}
+@keyframes core-charge {
+  0%,
+  49.08%,
+  69.06%,
+  100% {
+    opacity: 0;
+    transform: translate(-49.07%, -50%) scale(0.3);
+  }
+  56.15% {
+    opacity: 0.25;
+    transform: translate(-49.07%, -50%) scale(0.7);
+  }
+  61.99% {
+    opacity: 1;
+    transform: translate(-49.07%, -50%) scale(1.2);
+  }
+  63.73% {
+    opacity: 0;
+    transform: translate(-49.07%, -50%) scale(0);
+  }
+}
+@keyframes fusion-flash {
+  0%,
+  61.99%,
+  71.73%,
+  100% {
+    opacity: 0;
+    transform: translate(-49.07%, -50%) scale(0.3);
+  }
+  63.73% {
+    opacity: 0.9;
+    transform: translate(-49.07%, -50%) scale(1.3);
+  }
+  70.4% {
+    opacity: 0;
+    transform: translate(-49.07%, -50%) scale(2);
+  }
+}
+@keyframes impact-wave {
+  0%,
+  61.99% {
+    opacity: 0;
+    transform: translate(-49.07%, -50%) scale(0.15);
+  }
+  63.73% {
+    opacity: 0.8;
+    transform: translate(-49.07%, -50%) scale(0.5);
+  }
+  75.73%,
+  100% {
+    opacity: 0;
+    transform: translate(-49.07%, -50%) scale(3.2);
+  }
+}
+@keyframes impact-echo {
+  0%,
+  63.73% {
+    opacity: 0;
+    transform: translate(-49.07%, -50%) scale(0.15);
+  }
+  66.4% {
+    opacity: 0.5;
+    transform: translate(-49.07%, -50%) scale(0.6);
+  }
+  79.73%,
+  100% {
+    opacity: 0;
+    transform: translate(-49.07%, -50%) scale(2.7);
+  }
+}
+@keyframes fusion-fragment {
+  0%,
+  61.99% {
+    opacity: 0;
+    transform: rotate(var(--fragment-angle)) translateX(12px) scaleX(0.2);
+  }
+  65.06% {
+    opacity: 0.8;
+    transform: rotate(var(--fragment-angle)) translateX(72px) scaleX(1);
+  }
+  74.4%,
+  100% {
+    opacity: 0;
+    transform: rotate(var(--fragment-angle)) translateX(210px) scaleX(0.3);
+  }
+}
+@keyframes cutokyo-in {
+  0%,
+  62.4% {
+    opacity: 0;
+    transform: translate(-49.07%, -50%) scale(0.1);
+  }
+  66.4% {
+    opacity: 1;
+    transform: translate(-49.07%, -50%) scale(1.18);
+  }
+  71.73%,
+  92% {
+    opacity: 1;
+    transform: translate(-49.07%, -50%) scale(1);
+  }
+  97.33%,
+  100% {
+    opacity: 0;
+    transform: translate(-49.07%, -50%) scale(0.95);
+  }
+}
+@keyframes assemble-top {
+  0%,
+  62.4% {
+    transform: translate(-240px, -160px);
+  }
+  70.4%,
+  100% {
+    transform: translate(0, 0);
+  }
+}
+@keyframes assemble-bottom {
+  0%,
+  62.4% {
+    transform: translate(200px, 180px);
+  }
+  70.4%,
+  100% {
+    transform: translate(0, 0);
+  }
+}
+@keyframes assemble-core {
+  0%,
+  62.4% {
+    transform: scale(0);
+  }
+  67.73% {
+    transform: scale(1.35);
+  }
+  71.73%,
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes hero-waves {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (max-width: 1050px) {
+  .scene {
+    --terminal-width: clamp(9rem, 19vw, 12rem);
+    --terminal-font-size: 0.43rem;
+    min-height: 22rem;
+    aspect-ratio: 1.25;
+  }
+}
+@media (max-width: 760px) {
+  .ambientFlow {
+    width: 200%;
+  }
+  .waveField path:nth-child(even) {
+    display: none;
+  }
+  .scene {
+    --terminal-width: clamp(8.5rem, 38vw, 10.5rem);
+    --terminal-font-size: 0.38rem;
+    --agent-size: 2.75rem;
+    --agent-name-height: 0.63rem;
+    max-width: 31rem;
+    aspect-ratio: 1.1;
+    margin-top: 1.5rem;
+  }
+  .agentName {
+    font-size: 0.42rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene *,
+  .backdrop * {
+    animation: none !important;
+  }
+  .agent,
+  .terminal,
+  .logLine {
+    opacity: 1;
+  }
+  .typedCommand {
+    width: var(--command-length);
+  }
+  .logLine {
+    display: none;
+  }
+  .logLine:last-child {
+    display: flex;
+  }
+  .connections,
+  .impactFlash,
+  .shockwave,
+  .shockwaveEcho,
+  .fragments,
+  .energyCore {
+    display: none;
+  }
+  .result {
+    top: 94%;
+    left: 50%;
+    width: 5rem;
+    opacity: 1;
+  }
+  .resultNote {
+    font-size: 0.4rem;
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "opencode-mark.svg": {
+    "source": "https://raw.githubusercontent.com/anomalyco/opencode/dev/packages/console/app/src/asset/brand/opencode-logo-dark.svg",
+    "reference": "https://opencode.ai/brand",
+    "usage": "Unmodified official symbol; no added face or limbs."
+  },
+  "codex-terminal.png": {
+    "source": "https://raw.githubusercontent.com/openai/codex/main/.github/codex-cli-splash.png",
+    "usage": "Original CLI screenshot; viewport shows session header."
+  },
+  "claude-terminal-reference.webp": {
+    "source": "User-provided claude-no-iemen-1.webp, 2026-10-10",
+    "usage": "Original screenshot; SVG viewport shows full welcome panel and native prompt. Animated command overlays the native input."
+  },
+  "opencode-terminal-current.png": {
+    "source": "User-provided 00.png, 2026-10-10",
+    "usage": "Original capture; native input is overlaid with the animated command."
+  },
+  "claude-cli-mascot.svg": {
+    "source": "User-provided claude-no-iemen-1.webp, mascot at x492 y303, 120 by 81 pixels",
+    "usage": "Vector silhouette matching the CLI mascot proportions, narrow eyes, four short feet and orange color."
+  }
+}
