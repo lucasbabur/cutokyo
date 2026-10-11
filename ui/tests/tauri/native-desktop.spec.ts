@@ -13,6 +13,9 @@ assert.ok(nativeEvidence, "native evidence directory was not propagated");
 const evidencePath = join(nativeEvidence, "search-detail-resume-1280x800.png");
 
 async function closeCompletedResumeTerminal(project: string, nativeId: string) {
+  // Proving and closing the held terminal window queries the host Hyprland
+  // compositor; on plain X sessions (CI) the terminal ends with the display.
+  if (!process.env.HYPRLAND_INSTANCE_SIGNATURE) return;
   assert.ok(nativeEvidence, "native evidence directory was not propagated");
   const runner = fileURLToPath(
     new URL("../../scripts/native-e2e.py", import.meta.url),

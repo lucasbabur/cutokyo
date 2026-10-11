@@ -49,170 +49,180 @@ assert.ok(evidence, "native health evidence directory was not propagated");
 
 describe("Native truthful capabilities and private exports", () => {
   if (process.env.CUTOKYO_NATIVE_PHASE === "save") {
-    it("keeps trusted keyboard skip navigation on the current native route", async () => {
-      const proof: Record<string, unknown> = {
-        verdict: "FAIL",
-        dispatches: [],
-      };
-      let armed = false;
-      let failure: { error: unknown } | null = null;
-      try {
-        const keyboard = createTrustedKeyboard();
-        proof.dispatches = keyboard.dispatches;
-        // Route setup is not keyboard activation; neither skip nor main is focused here.
-        await browser.execute(() => {
-          location.hash = "#/sessions";
-        });
-        await $("h1=Sessions").waitForDisplayed();
-        await browser.execute(
-          () =>
-            new Promise<void>((resolve) => {
-              requestAnimationFrame(() =>
-                requestAnimationFrame(() => resolve()),
-              );
-            }),
-        );
-        const url = await browser.getUrl();
-        await browser.execute(() => {
-          const host = window as RecorderWindow;
-          if (host.__cutokyoTrustedKeyRecorder)
-            throw new Error("stale native keyboard recorder");
-          const events: NativeKeyEvent[] = [];
-          const listener = (event: Event) => {
-            if (!(event.target instanceof Element)) return;
-            events.push({
-              type: event.type,
-              key: event instanceof KeyboardEvent ? event.key : null,
-              isTrusted: event.isTrusted,
-              id: event.target.id,
-              tag: event.target.tagName,
-              className: event.target.getAttribute("class") ?? "",
-              time: performance.now(),
-            });
-          };
-          host.__cutokyoTrustedKeyRecorder = { events, listener };
-          for (const type of [
-            "keydown",
-            "keyup",
-            "click",
-            "focusin",
-            "focusout",
-          ])
-            document.addEventListener(type, listener, true);
-        });
-        armed = true;
-        await browser.execute(() => {
-          const previous = document.body.getAttribute("tabindex");
-          document.body.setAttribute("tabindex", "-1");
-          document.body.focus();
-          if (previous === null) document.body.removeAttribute("tabindex");
-          else document.body.setAttribute("tabindex", previous);
-        });
-        const before = await keyboardSnapshot();
-        proof.before = before;
-        assert.equal(before.tag, "BODY");
-        assert.equal(before.url, url);
-        keyboard.send("Tab");
-        await browser.waitUntil(
-          async () => {
-            const snapshot = await keyboardSnapshot();
-            return snapshot.tag === "A" && snapshot.className === "skip-link";
-          },
-          {
-            timeout: 3_000,
-            timeoutMsg: "trusted Tab did not traverse body to skip link",
-          },
-        );
-        const afterTab = await keyboardSnapshot();
-        proof.afterTab = afterTab;
-        assert.equal(afterTab.url, url);
-        assert.ok(
-          afterTab.events.some(
+    // Trusted key events are injected through the host Hyprland compositor;
+    // plain X sessions (CI) cannot produce them.
+    const withHostCompositor = process.env.HYPRLAND_INSTANCE_SIGNATURE
+      ? it
+      : it.skip;
+    withHostCompositor(
+      "keeps trusted keyboard skip navigation on the current native route",
+      async () => {
+        const proof: Record<string, unknown> = {
+          verdict: "FAIL",
+          dispatches: [],
+        };
+        let armed = false;
+        let failure: { error: unknown } | null = null;
+        try {
+          const keyboard = createTrustedKeyboard();
+          proof.dispatches = keyboard.dispatches;
+          // Route setup is not keyboard activation; neither skip nor main is focused here.
+          await browser.execute(() => {
+            location.hash = "#/sessions";
+          });
+          await $("h1=Sessions").waitForDisplayed();
+          await browser.execute(
+            () =>
+              new Promise<void>((resolve) => {
+                requestAnimationFrame(() =>
+                  requestAnimationFrame(() => resolve()),
+                );
+              }),
+          );
+          const url = await browser.getUrl();
+          await browser.execute(() => {
+            const host = window as RecorderWindow;
+            if (host.__cutokyoTrustedKeyRecorder)
+              throw new Error("stale native keyboard recorder");
+            const events: NativeKeyEvent[] = [];
+            const listener = (event: Event) => {
+              if (!(event.target instanceof Element)) return;
+              events.push({
+                type: event.type,
+                key: event instanceof KeyboardEvent ? event.key : null,
+                isTrusted: event.isTrusted,
+                id: event.target.id,
+                tag: event.target.tagName,
+                className: event.target.getAttribute("class") ?? "",
+                time: performance.now(),
+              });
+            };
+            host.__cutokyoTrustedKeyRecorder = { events, listener };
+            for (const type of [
+              "keydown",
+              "keyup",
+              "click",
+              "focusin",
+              "focusout",
+            ])
+              document.addEventListener(type, listener, true);
+          });
+          armed = true;
+          await browser.execute(() => {
+            const previous = document.body.getAttribute("tabindex");
+            document.body.setAttribute("tabindex", "-1");
+            document.body.focus();
+            if (previous === null) document.body.removeAttribute("tabindex");
+            else document.body.setAttribute("tabindex", previous);
+          });
+          const before = await keyboardSnapshot();
+          proof.before = before;
+          assert.equal(before.tag, "BODY");
+          assert.equal(before.url, url);
+          keyboard.send("Tab");
+          await browser.waitUntil(
+            async () => {
+              const snapshot = await keyboardSnapshot();
+              return snapshot.tag === "A" && snapshot.className === "skip-link";
+            },
+            {
+              timeout: 3_000,
+              timeoutMsg: "trusted Tab did not traverse body to skip link",
+            },
+          );
+          const afterTab = await keyboardSnapshot();
+          proof.afterTab = afterTab;
+          assert.equal(afterTab.url, url);
+          assert.ok(
+            afterTab.events.some(
+              (event) =>
+                event.type === "keydown" &&
+                event.key === "Tab" &&
+                event.isTrusted,
+            ),
+          );
+          keyboard.send("Return");
+          await browser.waitUntil(
+            async () => (await keyboardSnapshot()).id === "main-content",
+            {
+              timeout: 3_000,
+              timeoutMsg: "trusted Return did not activate skip navigation",
+            },
+          );
+          const afterReturn = await keyboardSnapshot();
+          proof.afterReturn = afterReturn;
+          const tab = afterReturn.events.findIndex(
             (event) =>
               event.type === "keydown" &&
               event.key === "Tab" &&
               event.isTrusted,
-          ),
-        );
-        keyboard.send("Return");
-        await browser.waitUntil(
-          async () => (await keyboardSnapshot()).id === "main-content",
+          );
+          const enter = afterReturn.events.findIndex(
+            (event) =>
+              event.type === "keydown" &&
+              event.key === "Enter" &&
+              event.isTrusted &&
+              event.className === "skip-link",
+          );
+          const activation = afterReturn.events.findIndex(
+            (event) =>
+              event.type === "click" &&
+              event.isTrusted &&
+              event.className === "skip-link",
+          );
+          assert.ok(
+            tab >= 0 && enter > tab && activation > enter,
+            "missing ordered trusted Tab/Enter/skip activation events",
+          );
+          assert.equal(afterReturn.tag, "MAIN");
+          assert.equal(afterReturn.id, "main-content");
+          assert.equal(afterReturn.url, url);
+          assert.equal(await browser.getUrl(), url);
+          await $("h1=Sessions").waitForDisplayed();
+          proof.verdict = "PASS";
+        } catch (error) {
+          proof.error = error instanceof Error ? error.message : String(error);
+          if (armed) {
+            try {
+              proof.failureSnapshot = await keyboardSnapshot();
+            } catch (snapshotError) {
+              proof.snapshotError = String(snapshotError);
+            }
+          }
+          failure = { error };
+        }
+        try {
+          if (armed)
+            await browser.execute(() => {
+              const host = window as RecorderWindow;
+              const recorder = host.__cutokyoTrustedKeyRecorder;
+              if (recorder)
+                for (const type of [
+                  "keydown",
+                  "keyup",
+                  "click",
+                  "focusin",
+                  "focusout",
+                ])
+                  document.removeEventListener(type, recorder.listener, true);
+              delete host.__cutokyoTrustedKeyRecorder;
+            });
+        } catch (error) {
+          proof.verdict = "FAIL";
+          proof.cleanupError = String(error);
+          failure ??= { error };
+        }
+        writeFileSync(
+          join(evidence, "native-keyboard-trusted.json"),
+          JSON.stringify(proof, null, 2) + "\n",
           {
-            timeout: 3_000,
-            timeoutMsg: "trusted Return did not activate skip navigation",
+            flag: "wx",
+            mode: 0o600,
           },
         );
-        const afterReturn = await keyboardSnapshot();
-        proof.afterReturn = afterReturn;
-        const tab = afterReturn.events.findIndex(
-          (event) =>
-            event.type === "keydown" && event.key === "Tab" && event.isTrusted,
-        );
-        const enter = afterReturn.events.findIndex(
-          (event) =>
-            event.type === "keydown" &&
-            event.key === "Enter" &&
-            event.isTrusted &&
-            event.className === "skip-link",
-        );
-        const activation = afterReturn.events.findIndex(
-          (event) =>
-            event.type === "click" &&
-            event.isTrusted &&
-            event.className === "skip-link",
-        );
-        assert.ok(
-          tab >= 0 && enter > tab && activation > enter,
-          "missing ordered trusted Tab/Enter/skip activation events",
-        );
-        assert.equal(afterReturn.tag, "MAIN");
-        assert.equal(afterReturn.id, "main-content");
-        assert.equal(afterReturn.url, url);
-        assert.equal(await browser.getUrl(), url);
-        await $("h1=Sessions").waitForDisplayed();
-        proof.verdict = "PASS";
-      } catch (error) {
-        proof.error = error instanceof Error ? error.message : String(error);
-        if (armed) {
-          try {
-            proof.failureSnapshot = await keyboardSnapshot();
-          } catch (snapshotError) {
-            proof.snapshotError = String(snapshotError);
-          }
-        }
-        failure = { error };
-      }
-      try {
-        if (armed)
-          await browser.execute(() => {
-            const host = window as RecorderWindow;
-            const recorder = host.__cutokyoTrustedKeyRecorder;
-            if (recorder)
-              for (const type of [
-                "keydown",
-                "keyup",
-                "click",
-                "focusin",
-                "focusout",
-              ])
-                document.removeEventListener(type, recorder.listener, true);
-            delete host.__cutokyoTrustedKeyRecorder;
-          });
-      } catch (error) {
-        proof.verdict = "FAIL";
-        proof.cleanupError = String(error);
-        failure ??= { error };
-      }
-      writeFileSync(
-        join(evidence, "native-keyboard-trusted.json"),
-        JSON.stringify(proof, null, 2) + "\n",
-        {
-          flag: "wx",
-          mode: 0o600,
-        },
-      );
-      if (failure) throw failure.error;
-    });
+        if (failure) throw failure.error;
+      },
+    );
 
     it("discloses unavailable signed updates before dead-end actions", async () => {
       const capabilities = (await browser.tauri.execute(({ core }) =>
