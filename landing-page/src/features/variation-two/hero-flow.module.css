@@ -92,6 +92,10 @@
   width: 74%;
   margin-inline: auto;
 }
+.agent[data-agent="claude"] .symbol {
+  height: 67.5%;
+  margin-block: 16.25%;
+}
 .terminal {
   --terminal-background: #191918;
   --terminal-text: #c4c1b9;
@@ -127,6 +131,14 @@
   width: 100%;
   height: auto;
 }
+.claudePromptCapture {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: auto;
+}
 .terminalBody {
   padding: 0.4rem 6% 0.55rem;
 }
@@ -147,8 +159,8 @@
 }
 /* Overlay the native prompt in each supplied capture instead of adding another input. */
 .agent[data-agent="claude"] .terminal {
-  --terminal-background: #201f1c;
-  font-size: calc(var(--terminal-width) * 26 / 1310);
+  --terminal-background: #1a1a17;
+  font-size: calc(var(--terminal-width) * 9 / 346);
 }
 .agent[data-agent="opencode"] .terminal {
   font-size: calc(var(--terminal-width) * 20 / 928);
@@ -167,10 +179,10 @@
   background: var(--terminal-background);
 }
 .agent[data-agent="claude"] .command {
-  top: 83.82%;
-  left: 3.51%;
+  bottom: calc(var(--terminal-width) * 23 / 346);
+  left: 4.34%;
   width: 94%;
-  height: 7.35%;
+  height: calc(var(--terminal-width) * 18 / 346);
 }
 .agent[data-agent="opencode"] .command {
   top: 36.51%;
@@ -190,6 +202,11 @@
   left: 5.05%;
   width: 90%;
   margin: 0;
+}
+.agent[data-agent="claude"] .terminalLogs {
+  top: calc(var(--terminal-width) * 75 / 346);
+  left: 4.34%;
+  width: 94%;
 }
 .typedCommand {
   overflow: hidden;

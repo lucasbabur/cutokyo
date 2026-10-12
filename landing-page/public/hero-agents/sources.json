@@ -8,16 +8,16 @@
     "source": "https://raw.githubusercontent.com/openai/codex/main/.github/codex-cli-splash.png",
     "usage": "Original CLI screenshot; viewport shows session header."
   },
-  "claude-terminal-reference.webp": {
-    "source": "User-provided claude-no-iemen-1.webp, 2026-10-10",
-    "usage": "Original screenshot; SVG viewport shows full welcome panel and native prompt. Animated command overlays the native input."
-  },
   "opencode-terminal-current.png": {
     "source": "User-provided 00.png, 2026-10-10",
     "usage": "Original capture; native input is overlaid with the animated command."
   },
-  "claude-cli-mascot.svg": {
-    "source": "User-provided claude-no-iemen-1.webp, mascot at x492 y303, 120 by 81 pixels",
-    "usage": "Vector silhouette matching the CLI mascot proportions, narrow eyes, four short feet and orange color."
+  "claude-terminal-current.png": {
+    "source": "User-provided Captura de tela 2026-10-11 213714.png, 2026-10-11",
+    "usage": "Original 346 by 297 pixel Claude Code terminal capture. SVG viewports retain the header, mascot, prompt and auto-mode footer in the original compact hero frame by omitting part of the empty middle. Animated typing overlays the native input."
+  },
+  "claude-terminal-mascot.png": {
+    "source": "User-provided Captura de tela 2026-10-11 215549.png, 2026-10-11",
+    "usage": "Unmodified supplied terminal mascot capture. An SVG viewport frames the original pixels and an SVG alpha filter removes the neutral background. Existing hero size, position and animation are retained."
   }
 }

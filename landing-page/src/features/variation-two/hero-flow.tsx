@@ -45,10 +45,10 @@ const agents = [
 
 const nativeTerminals = {
   claude: {
-    screenshot: "/hero-agents/claude-terminal-reference.webp",
-    viewport: "296 120 1310 680",
-    width: 1920,
-    height: 1035,
+    screenshot: "/hero-agents/claude-terminal-current.png",
+    viewport: "0 0 346 297",
+    width: 346,
+    height: 297,
     prompt: "❯",
   },
   codex: {
@@ -137,6 +137,15 @@ export function HeroFlow({ locale = "en" }: { locale?: VariationLocale }) {
                   height={nativeTerminals[agent.id].height}
                 />
               </svg>
+              {agent.id === "claude" ? (
+                <svg className={styles.claudePromptCapture} viewBox="0 252 346 45">
+                  <image
+                    href={nativeTerminals.claude.screenshot}
+                    width={nativeTerminals.claude.width}
+                    height={nativeTerminals.claude.height}
+                  />
+                </svg>
+              ) : null}
               <div className={styles.terminalBody}>
                 <div className={styles.command}>
                   <span>{nativeTerminals[agent.id].prompt}</span>
@@ -158,7 +167,6 @@ export function HeroFlow({ locale = "en" }: { locale?: VariationLocale }) {
                 <AgentSymbol agent={agent.id} />
               </div>
             </div>
-            <span className={styles.agentName}>{agent.name}</span>
           </div>
         ))}
         <div className={styles.energyCore} />
@@ -197,10 +205,10 @@ export function HeroFlow({ locale = "en" }: { locale?: VariationLocale }) {
 
 const artwork = {
   claude: {
-    viewport: "0 0 120 81",
-    height: 81,
-    width: 120,
-    source: "/hero-agents/claude-cli-mascot.svg",
+    viewport: "6 7 61 42",
+    height: 58,
+    width: 75,
+    source: "/hero-agents/claude-terminal-mascot.png",
   },
   codex: { viewport: "0 0 24 24", height: 24, width: 24, source: "/logos/codex.svg" },
   opencode: {
@@ -215,7 +223,19 @@ function AgentSymbol({ agent }: { agent: keyof typeof artwork }) {
   const symbol = artwork[agent];
   return (
     <svg className={styles.symbol} viewBox={symbol.viewport}>
-      <image height={symbol.height} href={symbol.source} width={symbol.width} />
+      {agent === "claude" ? (
+        <defs>
+          <filter id="claude-terminal-mascot-alpha" colorInterpolationFilters="sRGB">
+            <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  4 -4 0 0 0" />
+          </filter>
+        </defs>
+      ) : null}
+      <image
+        filter={agent === "claude" ? "url(#claude-terminal-mascot-alpha)" : undefined}
+        height={symbol.height}
+        href={symbol.source}
+        width={symbol.width}
+      />
     </svg>
   );
 }
