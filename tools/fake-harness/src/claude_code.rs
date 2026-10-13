@@ -324,7 +324,7 @@ mod tests {
         assert!(hook.facts.session.is_some());
         let otel = capture_otel_log(SYNTHETIC_OTEL, timestamp()?)?;
         assert_eq!(otel.facts.usage.len(), 1);
-        // Total input: 42 uncached plus 3 cache-read and 2 cache-creation tokens.
+        // Domain `input_tokens` is total input: fresh 42 plus cache read 3 and cache write 2.
         assert_eq!(otel.facts.usage[0].input_tokens, Some(47));
         Ok(())
     }

@@ -54,7 +54,7 @@ jobs:
           python3 tools/fleet/cutokyo-gates.py all --root .
       - name: cargo fmt --check
         run: cargo fmt --check
-      - name: Build production frontend for Tauri context without tracked-source rewrites
+      - name: Build production frontend for the desktop crate without tracked-source rewrites
         run: python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/frontend-build-source.json" -- pnpm --dir ui build
       - name: cargo clippy without tracked-source rewrites
         run: python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/clippy-source.json" -- cargo clippy --locked --workspace --all-targets -- -D warnings
@@ -96,8 +96,7 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             xvfb \
-            bubblewrap \
-            kitty
+            bubblewrap
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.13"
@@ -120,42 +119,12 @@ jobs:
       - name: Install pinned CycloneDX generator for real release tests
         if: runner.os == 'Linux'
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/install-cyclonedx-source.json" -- cargo install cargo-cyclonedx --version 0.5.9 --locked
-      - name: Allow unprivileged user namespaces for the offline npm smoke sandbox
-        # Ubuntu 24.04 runners restrict them through AppArmor, so bwrap cannot
-        # create the isolated network namespace the smoke test installs in.
-        if: runner.os == 'Linux'
-        shell: bash
-        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-      - name: Allow Git paths longer than 260 characters on Windows
-        # Tests clone the repository into a temp dir, and recorded evidence
-        # paths exceed MAX_PATH there.
-        if: runner.os == 'Windows'
-        shell: bash
-        run: git config --global core.longpaths true
-      - name: Use a temp directory without symlinked ancestors on macOS
-        # macOS temp dirs sit under /var -> /private/var. Cutokyo refuses
-        # symlinked ancestors for its data, as it should, so tests use a real path.
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          mkdir -p "$RUNNER_TEMP/tmp"
-          echo "TMPDIR=$(cd "$RUNNER_TEMP/tmp" && pwd -P)" >> "$GITHUB_ENV"
       - name: Build Rust workspace without tracked-source rewrites
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/build-source.json" -- cargo build --locked --workspace
       - name: Test Rust workspace without tracked-source rewrites
-        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/test-source.json" -- cargo test --locked --workspace --no-fail-fast
+        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/test-source.json" -- cargo test --locked --workspace
       - name: Build actual Tauri application without tracked-source rewrites
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/tauri-build-source.json" -- pnpm tauri build --debug --no-bundle
-      - name: Expose the pinned Tauri CLI as cargo tauri
-        # native-e2e.py runs `cargo tauri`; cargo calls cargo-tauri with
-        # "tauri" as the first argument, which the shim drops.
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          mkdir -p "$RUNNER_TEMP/cargo-tauri-bin"
-          printf '#!/bin/sh\nshift\nexec "%s/node_modules/.bin/tauri" "$@"\n' "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/cargo-tauri-bin/cargo-tauri"
-          chmod +x "$RUNNER_TEMP/cargo-tauri-bin/cargo-tauri"
-          echo "$RUNNER_TEMP/cargo-tauri-bin" >> "$GITHUB_PATH"
       - name: Exercise native Tauri journey on Linux
         if: runner.os == 'Linux'
         run: xvfb-run -a pnpm --dir ui test:e2e:tauri

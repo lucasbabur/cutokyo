@@ -8,6 +8,7 @@ pub mod analysis;
 pub mod app;
 pub mod bundle;
 pub mod config;
+pub mod crash;
 pub mod executables;
 pub mod ingest;
 pub mod inventory_management;

@@ -113,7 +113,7 @@ export interface EstimatedCost {
   readonly micros: number | null;
   readonly pricedRecords: number;
   readonly unpricedRecords: number;
-  readonly label: "estimated" | "provider_reported" | "unavailable";
+  readonly label: "estimated" | "provider_reported" | "mixed" | "unavailable";
 }
 
 export function estimateCost(
@@ -164,8 +164,33 @@ export function estimateCost(
         ? "unavailable"
         : providerReported === pricedRecords
           ? "provider_reported"
-          : "estimated",
+          : providerReported === 0
+            ? "estimated"
+            : "mixed",
   };
+}
+
+const COST_SOURCE: Record<
+  Exclude<EstimatedCost["label"], "unavailable">,
+  string
+> = {
+  provider_reported: "Reported by harness",
+  estimated: "Estimated",
+  mixed: "Reported by harness + estimated",
+};
+
+/**
+ * Says where a cost total came from and, when some usage records carry no price,
+ * how much of the view the amount covers, so a partial sum never reads as complete.
+ */
+export function costCaption(cost: EstimatedCost): string {
+  if (cost.label === "unavailable") {
+    return "No cost reported: subscription or unpriced models";
+  }
+  const source = COST_SOURCE[cost.label];
+  if (cost.unpricedRecords === 0) return source;
+  const total = cost.pricedRecords + cost.unpricedRecords;
+  return `Partial · ${cost.pricedRecords} of ${total} usage records priced · ${source}`;
 }
 
 export function quotaPercent(quota: QuotaFact): number | null {

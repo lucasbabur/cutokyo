@@ -5463,6 +5463,10 @@ fn publication_error(
 }
 
 fn refuse_symlink_components(path: &Path) -> Result<()> {
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    let current_uid = Some(rustix::process::geteuid().as_raw());
+    #[cfg(all(unix, not(any(target_os = "linux", target_os = "macos"))))]
+    let current_uid = None;
     let mut prefix = PathBuf::new();
     for component in path.components() {
         prefix.push(component.as_os_str());
@@ -5474,19 +5478,84 @@ fn refuse_symlink_components(path: &Path) -> Result<()> {
                 ));
             }
             #[cfg(unix)]
-            if metadata.is_dir() {
-                use std::os::unix::fs::PermissionsExt as _;
-                let mode = metadata.permissions().mode();
-                if mode & 0o022 != 0 && mode & 0o1000 == 0 {
-                    return Err(ContractError::new(
-                        ErrorCode::InvalidInput,
-                        "backup and restore refuse group/other-writable directory ancestors without the sticky bit",
-                    ));
+            {
+                use std::os::unix::fs::MetadataExt as _;
+                if let Some(refusal) = unsafe_backup_path_entry(
+                    metadata.is_dir(),
+                    metadata.mode(),
+                    metadata.uid(),
+                    current_uid,
+                ) {
+                    return Err(unsafe_backup_path_error(&prefix, refusal));
                 }
             }
         }
     }
     Ok(())
+}
+
+/// Why an existing backup or restore path entry cannot be trusted on Unix.
+#[cfg(unix)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum UnsafeBackupPathEntry {
+    /// A directory other users can write to without the sticky bit, so they can
+    /// rename or replace entries beneath it.
+    WritableByOthers { mode: u32 },
+    /// An entry owned by a user other than the current user or root, who can
+    /// change its permissions or contents at any time.
+    ForeignOwner { owner: u32, current: u32 },
+}
+
+/// Decides whether one existing path entry is unsafe. `current_uid` is `None`
+/// where the effective user ID is unavailable, which skips only the owner check.
+#[cfg(unix)]
+fn unsafe_backup_path_entry(
+    is_dir: bool,
+    mode: u32,
+    owner: u32,
+    current_uid: Option<u32>,
+) -> Option<UnsafeBackupPathEntry> {
+    if let Some(current) = current_uid
+        && owner != current
+        && owner != 0
+    {
+        return Some(UnsafeBackupPathEntry::ForeignOwner { owner, current });
+    }
+    if is_dir && mode & 0o022 != 0 && mode & 0o1000 == 0 {
+        return Some(UnsafeBackupPathEntry::WritableByOthers {
+            mode: mode & 0o7777,
+        });
+    }
+    None
+}
+
+#[cfg(unix)]
+fn unsafe_backup_path_error(path: &Path, refusal: UnsafeBackupPathEntry) -> ContractError {
+    let shown = path.display();
+    match refusal {
+        UnsafeBackupPathEntry::WritableByOthers { mode } => ContractError::new(
+            ErrorCode::InvalidInput,
+            format!(
+                "backup and restore refuse {shown} because other users can write to it (mode {mode:04o}, no sticky bit); run `chmod g-w,o-w {shown}` or choose a location under a private directory such as your home directory"
+            ),
+        )
+        .at_field(
+            "backup_path",
+            "directories not writable by group or others, unless sticky",
+            format!("{shown} has mode {mode:04o}"),
+        ),
+        UnsafeBackupPathEntry::ForeignOwner { owner, current } => ContractError::new(
+            ErrorCode::InvalidInput,
+            format!(
+                "backup and restore refuse {shown} because it is owned by another user (uid {owner}); choose a location under a directory you own, such as your home directory"
+            ),
+        )
+        .at_field(
+            "backup_path",
+            format!("owned by the current user (uid {current}) or root"),
+            format!("{shown} is owned by uid {owner}"),
+        ),
+    }
 }
 
 fn require_regular_file(path: &Path) -> Result<()> {

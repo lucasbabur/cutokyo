@@ -125,8 +125,11 @@ unavailable capability, unhealthy state, and internal failure.
 
 `tracing` writes bounded rotating JSONL logs. Ingest operations carry spans, but
 raw prompts, paths, credentials, and observations are not log fields. Panics
-write a bounded metadata-only record. The next launch advertises it; bundle
-inclusion and clearing require explicit flags.
+write a bounded metadata-only record through `cutokyo_core::crash`: always in the
+CLI, and in the desktop only while its Crash reports preference is on. The desktop
+installs the hook before the Tauri builder so toolkit initialization panics are
+covered. Aborts and signals are not recorded. The next launch advertises a record;
+bundle inclusion and clearing require explicit flags.
 
 `doctor` evaluates configuration, permissions, harness availability, bundled
 SQLite/FTS5 and pragmas, integrity, schema/derive versions, spool/quarantine,

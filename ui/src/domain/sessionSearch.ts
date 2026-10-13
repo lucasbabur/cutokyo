@@ -31,6 +31,11 @@ function queryTerms(text: string): string[] {
   return text.match(/[\p{L}\p{N}\p{M}]+/gu) ?? [];
 }
 
+/** The store ranks by relevance only when the query has a word to score. */
+export function rankableQuery(text: string): boolean {
+  return queryTerms(text).length > 0;
+}
+
 function normalize(text: string): string {
   return text.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase();
 }

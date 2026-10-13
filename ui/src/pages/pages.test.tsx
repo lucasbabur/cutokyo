@@ -100,6 +100,11 @@ describe("desktop route components", () => {
     });
     expect(quota.getAttribute("aria-valuenow")).toBe("72");
     expect(screen.getByText("Unknown")).toBeTruthy();
+    expect(
+      screen.getByRole("article", {
+        name: "Cost in view (USD) $0.44 Partial · 1 of 3 usage records priced · Estimated",
+      }),
+    ).toBeTruthy();
   });
 
   it("shows a useful history-empty state instead of fake zero analytics", async () => {

@@ -210,6 +210,55 @@ fn search_relevance_is_native_bm25_and_newest_is_a_different_order() -> TestResu
 }
 
 #[test]
+fn search_relevance_without_query_words_falls_back_to_newest() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let store = WriterStore::open(
+        root.path().join("history.db"),
+        LockOwner::current("search-relevance-fallback", None)?,
+    )?;
+    add(
+        &store,
+        "old",
+        "session:old",
+        json!({"title":"needle", "session_started_at":"2026-09-01T00:00:00Z", "text":"short context"}),
+    )?;
+    add(
+        &store,
+        "new",
+        "session:new",
+        json!({"title":"recent work", "session_started_at":"2026-10-04T00:00:00Z", "text":format!("{} needle", "background ".repeat(100))}),
+    )?;
+    let order = |query: &SearchQuery| -> Result<Vec<String>> {
+        Ok(store
+            .search_page(query)?
+            .sessions
+            .into_iter()
+            .map(|session| session.session_id.as_str().to_owned())
+            .collect())
+    };
+    let newest = vec!["session:new".to_owned(), "session:old".to_owned()];
+    for text in [None, Some(""), Some("   ")] {
+        let relevance = SearchQuery {
+            text: text.map(str::to_owned),
+            ..SearchQuery::default()
+        };
+        assert_eq!(relevance.sort, SearchSort::Relevance);
+        assert_eq!(order(&relevance)?, newest, "query {text:?}");
+        assert_eq!(
+            order(&SearchQuery {
+                sort: SearchSort::Newest,
+                ..relevance
+            })?,
+            newest,
+            "query {text:?}"
+        );
+    }
+    // A word in the query switches the same default sort to BM25.
+    assert_eq!(order(&query("needle"))?[0], "session:old");
+    Ok(())
+}
+
+#[test]
 fn search_facets_and_exact_filters_are_observed_across_history() -> TestResult {
     let root = tempfile::tempdir()?;
     let store = WriterStore::open(

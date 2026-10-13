@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { SessionRecord, UsageRecord } from "../contracts.js";
 import { dashboardSessions } from "../fixtures/scenarios.js";
 import {
+  costCaption,
   estimateCost,
   quotaPercent,
   reconcileUsage,
@@ -102,6 +103,95 @@ describe("usage reconciliation", () => {
       micros: 81_000,
       label: "estimated",
     });
+  });
+
+  it("counts unpriced records instead of presenting a partial sum as complete", () => {
+    const base = dashboardSessions[0];
+    if (base === undefined) throw new Error("Fixture session is missing.");
+    const price = {
+      provider: "fixture",
+      model: base.usage[0]?.model ?? "",
+      currency: "USD",
+      inputMicrosPerMillion: 1_000_000,
+      outputMicrosPerMillion: 1_000_000,
+      validFrom: "2026-09-01T00:00:00Z",
+      validUntil: null,
+      confidence: "estimated" as const,
+      label: "Fixture estimate",
+      provenance: base.provenance,
+    };
+    const cost = estimateCost(dashboardSessions, [price]);
+    expect(cost).toEqual({
+      micros: 81_000,
+      pricedRecords: 1,
+      unpricedRecords: 2,
+      label: "estimated",
+    });
+    expect(costCaption(cost)).toBe(
+      "Partial · 1 of 3 usage records priced · Estimated",
+    );
+  });
+
+  it("captions every cost source and the unavailable reason", () => {
+    const reported = usageWith(
+      { nativeUsageKey: "reported", providerCostMicros: 1_250_000 },
+      1,
+    );
+    const unpricedModel = usageWith(
+      { nativeUsageKey: "unpriced", model: null, providerCostMicros: null },
+      1,
+    );
+    const base = dashboardSessions[0];
+    if (base === undefined) throw new Error("Fixture session is missing.");
+    const price = {
+      provider: "fixture",
+      model: base.usage[0]?.model ?? "",
+      currency: "USD",
+      inputMicrosPerMillion: 1_000_000,
+      outputMicrosPerMillion: 1_000_000,
+      validFrom: "2026-09-01T00:00:00Z",
+      validUntil: null,
+      confidence: "estimated" as const,
+      label: "Fixture estimate",
+      provenance: base.provenance,
+    };
+    const estimable = usageWith({ nativeUsageKey: "estimable" }, 1);
+
+    const providerOnly = estimateCost([sessionWithUsage(reported)], []);
+    expect(providerOnly).toMatchObject({
+      micros: 1_250_000,
+      label: "provider_reported",
+    });
+    expect(costCaption(providerOnly)).toBe("Reported by harness");
+
+    const estimatedOnly = estimateCost([sessionWithUsage(estimable)], [price]);
+    expect(costCaption(estimatedOnly)).toBe("Estimated");
+
+    const mixed = estimateCost(
+      [sessionWithUsage(reported, estimable)],
+      [price],
+    );
+    expect(mixed).toMatchObject({ micros: 1_331_000, label: "mixed" });
+    expect(costCaption(mixed)).toBe("Reported by harness + estimated");
+
+    const partialReported = estimateCost(
+      [sessionWithUsage(reported, unpricedModel)],
+      [],
+    );
+    expect(costCaption(partialReported)).toBe(
+      "Partial · 1 of 2 usage records priced · Reported by harness",
+    );
+
+    const unavailable = estimateCost([sessionWithUsage(unpricedModel)], []);
+    expect(unavailable).toEqual({
+      micros: null,
+      pricedRecords: 0,
+      unpricedRecords: 1,
+      label: "unavailable",
+    });
+    expect(costCaption(unavailable)).toBe(
+      "No cost reported: subscription or unpriced models",
+    );
   });
 
   it("renders a quota meter only when limit and remaining are both established", () => {

@@ -22,7 +22,7 @@ Exact active versions are in `Cargo.lock`.
 | tempfile | 3.27.0 | MIT OR Apache-2.0 | Atomic runtime writes and isolated architecture mutation tests |
 | uuid | 1.26.1 | Apache-2.0 OR MIT | Collision-resistant temporary and spool filenames |
 | rusqlite | 0.40.2 | MIT | Bundled SQLite, FTS5, pragmas, and the online backup API |
-| rustix | 1.1.5 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | Safe no-replace directory publication on Linux/macOS; verified 2026-10-04, release 2026-09-16, 1.20B crates.io downloads; already used transitively by tempfile |
+| rustix | 1.1.5 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | Safe no-replace directory publication and the effective user ID for backup path ownership checks on Linux/macOS; verified 2026-10-04, release 2026-09-16, 1.20B crates.io downloads; already used transitively by tempfile |
 | rusqlite_migration | 2.6.0 | Apache-2.0 | Forward-only SQLite migration runner |
 | unicode-normalization | 0.1.25 | MIT OR Apache-2.0 | Unicode NFC composition before literal search tokenization; verified 2026-10-04, upstream release 2025-10-30, maintained unicode-rs crate already used transitively |
 | fs4 | 1.1.0 | MIT OR Apache-2.0 | Cross-platform database-writer and spool-publication file locks |

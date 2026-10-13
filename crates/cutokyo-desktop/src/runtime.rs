@@ -456,6 +456,17 @@ pub(crate) fn run() -> Result<(), String> {
     )
     .map_err(|error| error.to_string())?;
 
+    #[cfg(feature = "native-e2e")]
+    let paths = Application::new().runtime_paths(
+        Some(native_root.join("config/config.toml")),
+        Some(native_root.join("data")),
+    );
+    #[cfg(not(feature = "native-e2e"))]
+    let paths = Application::new().runtime_paths(None, None);
+    let paths = paths.map_err(|error| format!("Cutokyo desktop failed: {}", error.message))?;
+    // Before the builder, so a native toolkit initialization panic is recorded too.
+    crate::crash::install(&paths);
+
     let builder = tauri::Builder::default();
     #[cfg(feature = "native-e2e")]
     let builder = builder
@@ -471,14 +482,6 @@ pub(crate) fn run() -> Result<(), String> {
 
     builder
         .setup(move |app| {
-            #[cfg(feature = "native-e2e")]
-            let paths = Application::new().runtime_paths(
-                Some(native_root.join("config/config.toml")),
-                Some(native_root.join("data")),
-            );
-            #[cfg(not(feature = "native-e2e"))]
-            let paths = Application::new().runtime_paths(None, None);
-            let paths = paths.map_err(|error| io::Error::other(error.message))?;
             let service = DesktopService::open(paths).map_err(io::Error::other)?;
             #[cfg(feature = "native-e2e")]
             if let Ok(fixture) = std::env::var("CUTOKYO_DESKTOP_TEST_FIXTURE") {

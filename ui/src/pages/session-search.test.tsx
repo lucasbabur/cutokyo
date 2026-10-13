@@ -173,6 +173,62 @@ describe("session search", () => {
     expect(screen.getByText("transcript")).toBeTruthy();
   });
 
+  it("shows newest order without words to rank and restores the chosen sort when searching", async () => {
+    const { search } = setup();
+    await screen.findByText("101 sessions");
+    const sort = screen.getByLabelText("Sort") as HTMLSelectElement;
+    const field = screen.getByRole("searchbox", {
+      name: "Search session content",
+    });
+    const expectNewestOnly = () => {
+      expect(sort.disabled).toBe(true);
+      expect(sort.value).toBe("newest");
+      const hint = document.getElementById(
+        sort.getAttribute("aria-describedby") ?? "",
+      );
+      expect(hint?.textContent).toBe(
+        "Relevance ranking applies when you search",
+      );
+    };
+    expectNewestOnly();
+
+    fireEvent.change(field, { target: { value: "-- ::" } });
+    await waitFor(() => expect(search.mock.lastCall?.[0].text).toBe("-- ::"));
+    expectNewestOnly();
+
+    fireEvent.change(field, { target: { value: "needle" } });
+    await waitFor(() => expect(sort.disabled).toBe(false));
+    expect(sort.value).toBe("relevance");
+    expect(sort.hasAttribute("aria-describedby")).toBe(false);
+    expect(
+      screen.queryByText("Relevance ranking applies when you search"),
+    ).toBeNull();
+    expect(search.mock.lastCall?.[0]).toMatchObject({
+      text: "needle",
+      sort: "relevance",
+    });
+
+    fireEvent.change(sort, { target: { value: "newest" } });
+    fireEvent.change(field, { target: { value: "" } });
+    await waitFor(() => expect(sort.disabled).toBe(true));
+    expectNewestOnly();
+    fireEvent.change(field, { target: { value: "needle" } });
+    await waitFor(() => expect(sort.disabled).toBe(false));
+    expect(sort.value).toBe("newest");
+
+    fireEvent.change(sort, { target: { value: "relevance" } });
+    fireEvent.change(field, { target: { value: " " } });
+    await waitFor(() => expect(sort.disabled).toBe(true));
+    expectNewestOnly();
+    fireEvent.change(field, { target: { value: "migration" } });
+    await waitFor(() => expect(sort.disabled).toBe(false));
+    expect(sort.value).toBe("relevance");
+    expect(search.mock.lastCall?.[0]).toMatchObject({
+      text: "migration",
+      sort: "relevance",
+    });
+  });
+
   it("restores query, filters, sort and page after the exact detail/back link", async () => {
     const { view, tree, search } = setup();
     await screen.findByText("101 sessions");

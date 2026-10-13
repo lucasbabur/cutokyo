@@ -2,7 +2,8 @@
 
 use std::{
     collections::BTreeSet,
-    fs, io,
+    fs::{self, File},
+    io,
     sync::Arc,
     thread,
     time::{Duration, UNIX_EPOCH},
@@ -12,7 +13,8 @@ use cutokyo_core::{
     app::Application,
     ingest::{Spool, SpoolCapReason, SpoolLimits},
     store::{
-        CheckpointMode, DELETE_ALL_CONFIRMATION, LockOwner, SearchMode, SearchQuery, SearchSort,
+        CheckpointMode, DATABASE_SCHEMA_VERSION, DELETE_ALL_CONFIRMATION, DERIVE_VERSION,
+        LockOwner, SearchMode, SearchQuery, SearchSort,
     },
 };
 use cutokyo_domain::{
@@ -362,8 +364,8 @@ fn dashboard_reconciles() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(writer_health, query_health);
     assert_eq!(writer_health.drain_pending_count, 0);
     assert_eq!(writer_health.current_quarantine_count, 0);
-    assert_eq!(writer_health.schema_version, 5);
-    assert_eq!(writer_health.derive_version, 4);
+    assert_eq!(writer_health.schema_version, DATABASE_SCHEMA_VERSION);
+    assert_eq!(writer_health.derive_version, DERIVE_VERSION);
     assert_eq!(writer_health.dimensions.len(), 11);
     Ok(())
 }
@@ -437,7 +439,7 @@ fn sqlite_concurrency_backup_integrity() -> Result<(), Box<dyn std::error::Error
     let valid_backup = directory.path().join("valid-backup.db");
     let manifest = core.backup(&valid_backup)?;
     assert_eq!(manifest.integrity_result, "ok");
-    assert_eq!(manifest.schema_version, 5);
+    assert_eq!(manifest.schema_version, DATABASE_SCHEMA_VERSION);
     assert!(manifest.byte_length > 0);
 
     let tampered_backup = directory.path().join("tampered-backup.db");
@@ -488,11 +490,7 @@ fn spool_replay_quarantine_caps() -> Result<(), Box<dyn std::error::Error>> {
     let base_now = UNIX_EPOCH + Duration::from_secs(2_000_000_000);
     let receipt = age_spool.append_at(&event, base_now)?;
     let entry_path = age_root.join(&receipt.entry_key);
-    // Windows only changes timestamps through a handle with write access.
-    fs::OpenOptions::new()
-        .write(true)
-        .open(&entry_path)?
-        .set_modified(base_now - Duration::from_hours(720))?;
+    File::open(&entry_path)?.set_modified(base_now - Duration::from_hours(720))?;
     let exact = age_spool.status_at(base_now)?;
     assert_eq!(exact.cap_reason, None, "the 30-day boundary is inclusive");
     let over = age_spool.status_at(base_now + Duration::from_secs(1))?;
@@ -535,10 +533,7 @@ fn spool_replay_quarantine_caps() -> Result<(), Box<dyn std::error::Error>> {
         },
     )?;
     let crossing_receipt = crossing_spool.append_at(&event, base_now)?;
-    fs::OpenOptions::new()
-        .write(true)
-        .open(crossing_root.join(&crossing_receipt.entry_key))?
-        .set_modified(base_now)?;
+    File::open(crossing_root.join(&crossing_receipt.entry_key))?.set_modified(base_now)?;
     assert!(crossing_spool.append_at(&event, base_now).is_err());
     let crossing_entries = crossing_spool.pending_entries()?;
     assert_eq!(crossing_entries.len(), 1);

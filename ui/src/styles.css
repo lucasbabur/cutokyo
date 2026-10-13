@@ -2187,6 +2187,11 @@
     outline: none;
   }
 
+  .toolbar-hint {
+    color: var(--text-muted);
+    font-size: var(--font-size-xs);
+  }
+
   .segmented {
     display: inline-flex;
     align-items: stretch;
