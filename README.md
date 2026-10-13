@@ -25,6 +25,10 @@ Local history, exact resume and tool management for Claude Code, Codex and OpenC
 
 <br />
 
+> [!NOTE]
+> **Cutokyo is a `0.x` preview.** Data formats are versioned and migrate forward,
+> but expect rough edges. See [status](#status).
+
 ## Why Cutokyo
 
 You run agents all day: Claude Code in one terminal, Codex in another,
@@ -114,10 +118,11 @@ action.
 | **Codex** | App Server, hooks, OpenTelemetry | `0.153.4` |
 | **OpenCode** | Plugin, local app server | `1.18.28` |
 
-Native hooks, documented local APIs and OTel always come first. A local proxy
-exists only as an opt-in fallback that shows you what would leave the machine
-before you confirm. Other versions can still be browsed; automatic setup steps
-aside instead of guessing.
+> [!TIP]
+> Native hooks, documented local APIs and OTel always come first. A local proxy
+> exists only as an opt-in fallback that shows you what would leave the machine
+> before you confirm. Other versions can still be browsed; automatic setup steps
+> aside instead of guessing.
 
 ## Install
 
@@ -217,15 +222,15 @@ health and data controls. See [desktop workflows](docs/desktop-workflows.md).
   in, and every opt-in shows you the egress before you confirm.
 - **Platform-native storage** with owner-only permissions where the OS supports
   them. Secrets go to the OS keychain, never to TOML.
-- **Honest about encryption.** `0.x` does not encrypt the SQLite database
-  itself, so session content may sit in plaintext on disk. Use full-disk
-  encryption.
 - **Diagnostic bundles are allowlisted.** They never include prompts,
   transcripts, database bytes, secrets or full project paths. A crash record is
   added only when you pass `--include-crash`.
 
-Read [privacy and diagnostic bundles](docs/privacy.md) before enabling capture
-or sharing a bundle.
+> [!WARNING]
+> **Your history is stored unencrypted.** `0.x` does not encrypt the SQLite
+> database itself, so session content may sit in plaintext on disk. Turn on
+> full-disk encryption, and read [privacy and diagnostic bundles](docs/privacy.md)
+> before enabling capture or sharing a bundle.
 
 ## How it's built
 
