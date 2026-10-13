@@ -54,6 +54,8 @@ jobs:
           python3 tools/fleet/cutokyo-gates.py all --root .
       - name: cargo fmt --check
         run: cargo fmt --check
+      - name: Build production frontend for the desktop crate without tracked-source rewrites
+        run: python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/frontend-build-source.json" -- pnpm --dir ui build
       - name: cargo clippy without tracked-source rewrites
         run: python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/clippy-source.json" -- cargo clippy --locked --workspace --all-targets -- -D warnings
       - name: TypeScript checks
