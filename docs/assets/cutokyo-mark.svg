@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Cutokyo mark</title>
+  <desc id="desc">A hard-edged C mark with a lime inner o.</desc>
+  <rect width="1024" height="1024" rx="112" fill="#050607" />
+  <path
+    fill="#f5f4ea"
+    d="M224 200h580v204l-128 52V336H348v352h328V568l128 52v204H224V200Z"
+  />
+  <circle cx="512" cy="512" r="112" fill="#c3f400" />
+  <circle cx="512" cy="512" r="64" fill="#050607" />
+</svg>

@@ -1,128 +1,176 @@
+<div align="center">
+
+<img src="docs/assets/cutokyo-mark.svg" alt="Cutokyo" width="96" height="96" />
+
 # Cutokyo
 
-Cutokyo is a pre-1.0, local-only community observability and control surface for
-Claude Code, Codex, and OpenCode. It preserves attributable session history,
-searches it locally, resumes the exact native session, and reports capture and
-storage health. The product is one native Rust application with CLI and Tauri
-frontends. The npm package is only cargo-dist's generated installer for that
-native executable.
+**Your AI coding sessions, on your machine: searchable, attributable, resumable.**
 
-## Contents
+Local history, exact resume and tool management for Claude Code, Codex and OpenCode.
 
-- [Product boundary](#product-boundary)
-- [Clean install](#clean-install)
-- [Desktop workflows](#desktop-workflows)
-- [CLI tour](#cli-tour)
-- [Architecture](#architecture)
-- [Privacy and storage](#privacy-and-storage)
-- [Development](#development)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-c3f400?style=flat-square&labelColor=050607)](LICENSE)
+[![Status: pre-1.0](https://img.shields.io/badge/status-0.x%20preview-f5f4ea?style=flat-square&labelColor=050607)](#status)
+[![Rust 1.98](https://img.shields.io/badge/rust-1.98-f5f4ea?style=flat-square&logo=rust&labelColor=050607)](rust-toolchain.toml)
+[![Platforms](https://img.shields.io/badge/linux%20·%20macOS%20·%20windows-f5f4ea?style=flat-square&labelColor=050607)](docs/clean-install.md)
+[![Local only](https://img.shields.io/badge/telemetry-none-c3f400?style=flat-square&labelColor=050607)](docs/privacy.md)
 
-## Product boundary
+[Website](https://cutokyo.com) · [Install](#install) · [CLI](#the-cli) · [Privacy](#private-by-default) · [Docs](#documentation)
 
-Cutokyo is a local session-history, provenance, exact-resume, configuration,
-and diagnostics tool. Native hooks, documented local APIs, and OTel precede any
-proxy fallback. Proxy capture and CLI-only provider-bound analysis are opt-in and must
-preview egress before confirmation. The desktop app has no analysis feature.
+<br />
 
-Cutokyo is not a coding harness, model provider, cloud account, hosted memory
-service, telemetry collector, tenant control plane, or invisible
-man-in-the-middle. Every product feature in the specification is a community
-feature under Apache-2.0; there is no proprietary-feature placeholder.
+<img src="docs/assets/overview.png" alt="The Cutokyo desktop app showing sessions, token usage per harness, and quota windows (sample data)" width="900" />
+<br /><sub>Overview with sample data</sub>
 
-This is a `0.x` contract. App, database, derived projection, spool, plugin, and
-structured CLI surfaces have explicit independent versions. New binaries
-migrate supported old data forward; old binaries refuse a newer database.
-There is no compatibility path from an unrelated predecessor product.
+</div>
 
-## Clean install
+<br />
 
-Prerequisites for source development are Rust 1.98.1, Node 22.22.3, pnpm
-11.25.0, Python 3, and the platform's Tauri prerequisites when building the
-desktop.
+> [!NOTE]
+> **Cutokyo is a `0.x` preview.** Data formats are versioned and migrate forward,
+> but expect rough edges. See [status](#status).
 
-A released CLI may be installed with cargo-dist's generated shell, PowerShell,
-or npm installer. All three install the same Rust binary. Verify the published
-SHA-256 manifest before first launch.
+## Why Cutokyo
+
+You run agents all day: Claude Code in one terminal, Codex in another,
+OpenCode for the side project. A week later you need the session where the
+migration finally worked. Which tool was it? Which branch? Is it still
+resumable?
+
+Cutokyo answers that from your own disk. It records each session as it
+happens through the harnesses' own hooks and local APIs. It indexes them
+for full-text search and hands you back the **exact native session**, in a real
+terminal, in the folder it ran in. It never routes your traffic through a cloud
+service, and it has no account or telemetry.
+
+It ships as **one native Rust application** with two frontends: a desktop app
+and a CLI where every command also speaks JSON.
+
+## What it does
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### 🔎 Find any session
+Full-text search over every captured prompt, tool call and reply. Search by
+words or an exact phrase, filter by harness, project or date, and sort by
+relevance or recency.
+
+</td>
+<td width="50%" valign="top">
+
+### ↩️ Resume exactly where you left off
+Reopens the native session ID in a visible terminal, in the recorded project
+directory. Cutokyo doesn't rebuild the conversation; it reopens the harness's
+own session.
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+### 🧰 Manage your agent tools
+One inventory of every MCP server, skill, hook, plugin and instruction file
+across all three harnesses. Read the real source, edit or remove it with a recovery copy kept,
+or copy a skill into another harness with a preview first.
+
+</td>
+<td valign="top">
+
+### 📊 See usage across harnesses
+Token usage per harness and quota windows. When two sources report the same
+request, Cutokyo shows which one it counted and why, so nothing is counted
+twice. Cost appears only when a harness reports it. Cutokyo doesn't make up
+prices.
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+### 🩺 Know capture is healthy
+Health checks separate "configured" from "actually capturing", with scoped
+retries and a previewed diagnostic bundle that contains no prompts or
+transcripts.
+
+</td>
+<td valign="top">
+
+### 🗄️ Own your data
+Retention policies with a preview, verified backups and restores, and
+destructive actions that require you to type a confirmation for that exact
+action.
+
+</td>
+</tr>
+</table>
+
+<div align="center">
+<img src="docs/assets/sessions.png" alt="Searching sessions with highlighted matches across harnesses" width="49%" />
+<img src="docs/assets/agent-tools.png" alt="Agent tools inventory with a skill open for management" width="49%" />
+</div>
+
+## Supported harnesses
+
+| Harness | Capture | Automatic setup verified on |
+| --- | --- | --- |
+| **Claude Code** | Hooks, OpenTelemetry, transcript files | `2.1.278` |
+| **Codex** | App Server, hooks, OpenTelemetry | `0.153.4` |
+| **OpenCode** | Plugin, local app server | `1.18.28` |
+
+> [!TIP]
+> Native hooks, documented local APIs and OTel always come first. A local proxy
+> exists only as an opt-in fallback that shows you what would leave the machine
+> before you confirm. Other versions can still be browsed; automatic setup steps
+> aside instead of guessing.
+
+## Install
+
+Release builds ship as cargo-dist **shell**, **PowerShell** and **npm**
+installers, all of which install the same native binary. Verify the published
+SHA-256 manifest before first launch. See
+[clean installation](docs/clean-install.md).
+
+From source, with the toolchain from [development](docs/development.md):
 
 ```bash
-# Preview only: creates no config or data directory.
-cutokyo --json setup --dry-run
-
-# Apply Cutokyo-owned setup state.
-cutokyo setup
-
-# Separate process liveness from product readiness.
-cutokyo --json version
-cutokyo --json doctor
-
-# Repeatable removal preserves local history and user configuration.
-cutokyo uninstall
+cargo run -p cutokyo-cli -- --help
 ```
 
-Read the platform paths, package verification, no-state uninstall, and rollback
-procedure in [`docs/clean-install.md`](docs/clean-install.md).
+Then let Cutokyo set itself up. Each step can be previewed first:
 
-## Desktop workflows
+```bash
+cutokyo setup --dry-run   # preview: creates nothing
+cutokyo setup             # apply Cutokyo-owned state
+cutokyo doctor            # is it actually ready?
 
-Onboarding starts with no harness selected. **Browse without installing** saves
-that choice without changing native capture configuration. To enable capture,
-preview a harness, review its exact targets, acknowledge plaintext local storage,
-and confirm installation. Selecting a checkbox alone installs nothing. Finish
-rechecks each selected integration before saving it. Configuration verified does
-not mean live capture verified; restart the harness and wait for native evidence.
-Recover follows recorded installation or cleanup intent. Removal deletes only
-unchanged Cutokyo-owned entries and retains modified user entries with an issue.
+cutokyo capture-setup --harness claude_code --dry-run
+cutokyo capture-setup --harness claude_code
+```
 
-Automatic capture setup is verified for Claude Code `2.1.278`, Codex `0.153.4`,
-and OpenCode `1.18.28`. Other versions, missing binaries, unsafe paths, or
-uninspectable configuration make automatic setup unavailable. Browse still works.
-Setup, recovery, and removal currently require the tested harness binary and the
-Cutokyo receiver. A removed or upgraded harness can therefore prevent recovery;
-restore the supported binary before retrying. POSIX command hooks are unavailable
-on Windows in this build.
+`cutokyo uninstall` is repeatable and keeps your history and your own
+configuration.
 
-**Agent tools** is the place to manage installed MCP servers, skills, hooks,
-plugins, and instruction files. Search by name or source, filter by harness or
-kind, and choose **Manage** to read the actual source. Editable installations
-support saving changes and removal with a retained recovery copy. Cutokyo-owned
-capture and search entries explain why they cannot be edited here.
+## The CLI
 
-A skill or supported MCP server can be installed into another harness as an
-independent copy. The preview names the destination and explains unavailable
-formats or credential substitutions. Existing installations are never
-overwritten. Shared sources show every affected harness; removing one shared
-source affects all of them. Hook and plugin formats are harness-specific and
-are not advertised as portable.
+Every command prints readable output, and `--json` gives a stable envelope
+with safe error codes and distinct exit codes (`64` usage, `65` invalid
+contract, `69` unavailable, `70` internal, `78` unhealthy).
 
-**Sessions** supports literal terms and exact phrases, relevance or newest
-ordering, match excerpts, filters, and paginated results. Returning from session
-detail keeps the search and page. **Today** means the machine's local calendar
-day. Resume preserves the exact native identity and recorded project directory,
-then opens a visible interactive terminal. Missing terminal, harness, or display
-access fails with a retryable explanation. Success means the native process
-acknowledged a real TTY and survived startup. It does not prove session activation;
-check the terminal for native login or session errors. Codex hook session IDs
-alone are not verified App Server thread IDs and cannot authorize resume.
+```bash
+cutokyo sessions search --query "migration" --project my-project
+cutokyo sessions show SESSION_ID
+cutokyo sessions resume SESSION_ID --execute
 
-**Data controls** separates saving a retention policy from deleting history.
-Create a backup with one action at the default private location, then review
-and confirm a verified restore without copying a digest. Read the scope and
-recovery details in [Local backups and restore](docs/backup-and-restore.md).
+cutokyo inventory list
+cutokyo inventory install ITEM_ID --revision REVISION --harness opencode
 
-**Health** offers scoped retries and a previewed local diagnostic report.
-Unavailable updater or proxy services disclose the reason rather
-than implying a working provider or listener. The guardrails feature is not
-included; local redaction, explicit egress consent, and file/database integrity
-checks remain.
+cutokyo backup
+cutokyo doctor --json
+```
 
-## CLI tour
-
-Every command has readable terminal output and a stable `--json` envelope. JSON
-errors carry a safe error code and commands use distinct exits for usage (64),
-invalid contracts (65), unavailable capabilities (69), internal failures (70),
-and unhealthy state (78).
+<details>
+<summary><b>Full command tour</b></summary>
 
 ```bash
 cutokyo sessions search --query "migration" --project my-project --json
@@ -163,7 +211,28 @@ Destructive commands preview exact scope and require a command-specific
 confirmation. Deletion does not claim physical erasure from SSD blocks, WAL
 pages, or prior backups.
 
-## Architecture
+</details>
+
+The desktop app covers the same ground with onboarding, sessions, agent tools,
+health and data controls. See [desktop workflows](docs/desktop-workflows.md).
+
+## Private by default
+
+- **Local only.** No telemetry, no proxy and no provider egress unless you opt
+  in, and every opt-in shows you the egress before you confirm.
+- **Platform-native storage** with owner-only permissions where the OS supports
+  them. Secrets go to the OS keychain, never to TOML.
+- **Diagnostic bundles are allowlisted.** They never include prompts,
+  transcripts, database bytes, secrets or full project paths. A crash record is
+  added only when you pass `--include-crash`.
+
+> [!WARNING]
+> **Your history is stored unencrypted.** `0.x` does not encrypt the SQLite
+> database itself, so session content may sit in plaintext on disk. Turn on
+> full-disk encryption, and read [privacy and diagnostic bundles](docs/privacy.md)
+> before enabling capture or sharing a bundle.
+
+## How it's built
 
 ```text
 cutokyo-cli             cutokyo-desktop
@@ -178,82 +247,42 @@ cutokyo-cli             cutokyo-desktop
       no fs / network / SQL / process
 ```
 
-Hooks only publish one flushed spool file by atomic rename and never open
-SQLite. A CLI or desktop core owns the single writer lock. Frontends invoke
-application use cases rather than store internals. See
-[`docs/architecture.md`](docs/architecture.md).
+Harness hooks never open SQLite. They publish one flushed spool file by atomic
+rename, and a single CLI or desktop core owns the writer lock. Both frontends
+call the same application use cases. Details are in
+[architecture](docs/architecture.md).
 
-## Privacy and storage
+## Status
 
-Defaults are local-only, no telemetry, no proxy, and no provider egress.
-Configuration and data use platform-native directories. Owner-only permissions
-are enforced where supported; secret values use the OS keychain or a separately
-approved owner-only fallback and never TOML.
+Cutokyo is a `0.x` preview. The app, database, projections, spool, plugin
+protocol and structured CLI output each carry their own version. New binaries
+migrate older data forward; older binaries refuse a newer database.
 
-Cutokyo `0.x` does **not** encrypt the SQLite database at the application layer.
-Session content may be plaintext on local disk, so full-disk encryption is
-recommended. Diagnostic bundles contain an allowlist of generated diagnostics,
-not prompts, transcripts, observations, database bytes, spool payloads, raw
-secrets, or full project paths. A bounded crash record is advertised on the next
-launch and only enters a bundle after `--include-crash`.
-
-Read [`docs/privacy.md`](docs/privacy.md) before capture, analysis, deletion, or
-sharing a diagnostic bundle.
-
-## Development
-
-The verifier must pass its mutation selftest before its repository result is
-trusted. Build and package commands are run through the tracked-source snapshot
-guard.
-
-```bash
-python3 tools/fleet/cutokyo-gates.py selftest
-python3 tools/fleet/cutokyo-gates.py all --root .
-cargo fmt --check
-python3 tools/scripts/source-snapshot.py -- cargo clippy --workspace --all-targets -- -D warnings
-python3 tools/scripts/source-snapshot.py -- cargo test --workspace
-cargo deny check licenses bans
-pnpm --dir ui check
-python3 tools/scripts/source-snapshot.py -- dist plan
-```
-
-The packaged native keyboard journey in `pnpm --dir ui test:e2e:tauri` currently
-requires Linux, a running Hyprland session with XWayland, and an executable
-`hyprctl` on the host runner's `PATH`. The runner resolves that system tool to its
-absolute real path in `CUTOKYO_NATIVE_COMPOSITOR_CLI`; the test refuses a missing,
-relative, non-regular, or non-executable CLI. Keep the host
-`HYPRLAND_INSTANCE_SIGNATURE` and `XDG_RUNTIME_DIR` available to the runner. Only
-its scoped compositor subprocess uses the host runtime directory; the application
-keeps private HOME and XDG directories. Unsupported compositor/input prerequisites
-fail the journey, without skipping it or falling back to global keys or window
-focus commands. Run native GUI acceptance without another native runner in parallel.
-
-CI lints once on Linux and builds/tests on Linux, macOS, and Windows. RustSec,
-cargo-pup, cargo-machete, and Knip are visible non-gating drift reports. Release
-tests produce local or dry-run artifacts only; publishing requires an authorized
-tag and all signing credentials.
+Cutokyo is **not** a coding harness, model provider, hosted memory service,
+telemetry collector or invisible man-in-the-middle. Every feature is community
+software under Apache-2.0, and no paid tier is held back.
 
 ## Documentation
 
-- [Product contract](docs/spec/product.md)
-- [Architecture](docs/architecture.md)
-- [Privacy and diagnostic bundles](docs/privacy.md)
-- [Clean installation and uninstall](docs/clean-install.md)
-- [Local backups and restore](docs/backup-and-restore.md)
-- [Management workflow contract](docs/management-workflow-contract.md)
-- [Plugin authoring](docs/plugin-authoring.md)
-- [Release signing and notarization](docs/release/signing.md)
-- [Release recovery](docs/release/recovery.md)
-- [Support](docs/support.md)
-- [Clean-room provenance](docs/provenance/clean-room-policy.md)
-- [Independent decision ledger](docs/provenance/decision-ledger.md)
+| | |
+| --- | --- |
+| [Product contract](docs/spec/product.md) | [Desktop workflows](docs/desktop-workflows.md) |
+| [Architecture](docs/architecture.md) | [Development](docs/development.md) |
+| [Privacy and diagnostic bundles](docs/privacy.md) | [Plugin authoring](docs/plugin-authoring.md) |
+| [Clean installation and uninstall](docs/clean-install.md) | [Management workflow contract](docs/management-workflow-contract.md) |
+| [Local backups and restore](docs/backup-and-restore.md) | [Support](docs/support.md) |
+| [Release signing and notarization](docs/release/signing.md) | [Release recovery](docs/release/recovery.md) |
+| [Clean-room provenance](docs/provenance/clean-room-policy.md) | [Independent decision ledger](docs/provenance/decision-ledger.md) |
 
 ## Contributing
 
-Contributions are accepted under Apache-2.0 and Developer Certificate of Origin
-1.1. Every commit must be signed off with `git commit -s`. Read
-[`CONTRIBUTING.md`](CONTRIBUTING.md), the clean-room policy, and the decision
+Contributions are accepted under Apache-2.0 and the Developer Certificate of
+Origin 1.1, so sign off every commit with `git commit -s`. Read
+[`CONTRIBUTING.md`](CONTRIBUTING.md), the clean-room policy and the decision
 ledger before changing product or test files.
 
-Claude Code, Codex, OpenCode, OpenAI, Anthropic, Tauri, and SQLite are marks or
-names of their respective owners. See [`TRADEMARK.md`](TRADEMARK.md).
+<br />
+
+<div align="center">
+<sub>Apache-2.0 · Claude Code, Codex, OpenCode, OpenAI, Anthropic, Tauri and SQLite are marks or names of their respective owners. See <a href="TRADEMARK.md">TRADEMARK.md</a>.</sub>
+</div>
