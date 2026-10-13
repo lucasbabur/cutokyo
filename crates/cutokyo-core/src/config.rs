@@ -56,18 +56,24 @@ impl RuntimePaths {
     /// Returns capability-unavailable when the operating system exposes no user
     /// configuration/data directory.
     pub fn discover(config_file: Option<PathBuf>, data_dir: Option<PathBuf>) -> Result<Self> {
-        let project = ProjectDirs::from("", "", "cutokyo").ok_or_else(|| {
-            ContractError::new(
-                ErrorCode::CapabilityUnavailable,
-                "platform user configuration and data directories are unavailable",
-            )
-        })?;
-        let config_file = config_file
-            .or_else(|| env::var_os(CONFIG_FILE_ENV).map(PathBuf::from))
-            .unwrap_or_else(|| project.config_dir().join("config.toml"));
-        let data_dir = data_dir
-            .or_else(|| env::var_os(DATA_DIR_ENV).map(PathBuf::from))
-            .unwrap_or_else(|| project.data_local_dir().to_path_buf());
+        // Platform directories are only needed for paths nobody supplied.
+        let project = || {
+            ProjectDirs::from("", "", "cutokyo").ok_or_else(|| {
+                ContractError::new(
+                    ErrorCode::CapabilityUnavailable,
+                    "platform user configuration and data directories are unavailable",
+                )
+            })
+        };
+        let config_file =
+            match config_file.or_else(|| env::var_os(CONFIG_FILE_ENV).map(PathBuf::from)) {
+                Some(path) => path,
+                None => project()?.config_dir().join("config.toml"),
+            };
+        let data_dir = match data_dir.or_else(|| env::var_os(DATA_DIR_ENV).map(PathBuf::from)) {
+            Some(path) => path,
+            None => project()?.data_local_dir().to_path_buf(),
+        };
         Ok(Self {
             config_file,
             database_file: data_dir.join("cutokyo.db"),

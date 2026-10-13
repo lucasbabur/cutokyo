@@ -515,7 +515,8 @@ json.loads(sys.stdin.readline())
 fn plugin_protocol_bounds_cumulative_output_after_cancellation_mutation() -> TestResult {
     let plugin = copy_python_source()?;
     mutate_manifest(plugin.path(), |manifest| {
-        manifest["timeout_ms"] = json!(200);
+        // Long enough for a cold CPython start on Windows runners.
+        manifest["timeout_ms"] = json!(1000);
     })?;
     mutate_source(plugin.path(), |_| {
         r#"import json
@@ -525,7 +526,7 @@ import time
 sys.stdout.write(json.dumps({"protocol_major":1,"kind":"handshake","request_id":"handshake","payload":{"plugin_id":"example:py-source","plugin_kind":"source","capabilities":["emit_observation"],"cursor_idempotent":True}}, separators=(",", ":")) + "\n")
 sys.stdout.flush()
 json.loads(sys.stdin.readline())
-time.sleep(0.4)
+time.sleep(1.5)
 json.loads(sys.stdin.readline())
 sys.stdout.buffer.write(b"x\n" * POST_CANCEL_LINES)
 sys.stdout.buffer.flush()

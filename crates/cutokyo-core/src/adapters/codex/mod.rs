@@ -8,6 +8,7 @@
 //! explicit-consent fallback and is never enabled by this adapter.
 
 mod capture;
+mod hook_trust;
 mod setup;
 
 use std::{
@@ -27,6 +28,7 @@ pub use capture::{
     CodexHistoryCapture, CodexInventoryCapture, capture_hook_event, capture_notification,
     capture_otel_log, normalize_account,
 };
+pub use hook_trust::{OwnedHookTrust, owned_trust, trust_owned_hooks};
 pub use setup::{
     CodexSetup, CodexSetupPlan, CodexSetupSpec, SetupAction, SetupOutcome, SetupPhase,
 };
@@ -807,7 +809,9 @@ impl<'a, R: ProcessRunner> CodexDetector<'a, R> {
             });
         Ok(CodexDetection {
             installed: true,
-            protocol_recognized: version.as_deref() == Some(SUPPORTED_CODEX_VERSION),
+            protocol_recognized: version.as_deref().is_some_and(|version| {
+                crate::adapters::version_at_least(version, SUPPORTED_CODEX_VERSION)
+            }),
             version,
             account_state,
         })
@@ -919,7 +923,7 @@ pub struct SafeAccount {
 
 /// Convenience helper for timestamped App Server captures.
 pub(crate) fn source_version_recognized(version: &str) -> bool {
-    version == SUPPORTED_CODEX_VERSION
+    crate::adapters::version_at_least(version, SUPPORTED_CODEX_VERSION)
 }
 
 #[cfg(test)]

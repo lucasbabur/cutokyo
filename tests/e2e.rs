@@ -3814,7 +3814,8 @@ fn generate_dist_native_archive(
             &manifest,
             &arguments,
             &[("CARGO_TARGET_DIR", &dist_target)],
-            Duration::from_secs(600),
+            // A cold release build on a 4-core CI runner, often two at once.
+            Duration::from_mins(30),
         )?,
         "cargo-dist host native archive",
     )?;

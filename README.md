@@ -112,7 +112,7 @@ action.
 
 ## Supported harnesses
 
-| Harness | Capture | Automatic setup verified on |
+| Harness | Capture | Parsers tested on |
 | --- | --- | --- |
 | **Claude Code** | Hooks, OpenTelemetry, transcript files | `2.1.278` |
 | **Codex** | App Server, hooks, OpenTelemetry | `0.153.4` |
@@ -121,8 +121,9 @@ action.
 > [!TIP]
 > Native hooks, documented local APIs and OTel always come first. A local proxy
 > exists only as an opt-in fallback that shows you what would leave the machine
-> before you confirm. Other versions can still be browsed; automatic setup steps
-> aside instead of guessing.
+> before you confirm. Setup works with any installed version on macOS, Linux and
+> Windows: tested versions and newer are captured fully, older ones with
+> unknown-version coverage.
 
 ## Install
 
@@ -186,7 +187,7 @@ cutokyo capture-setup --harness claude_code --uninstall
 cutokyo retention preview --days 30 --write-plan retention-plan.json
 cutokyo retention apply --plan retention-plan.json --confirm-digest DIGEST
 cutokyo sessions delete SESSION_ID --confirm-session SESSION_ID
-cutokyo sessions delete-all --confirm 'DELETE ALL CUTOKYO HISTORY'
+cutokyo sessions delete-all --confirm 'DELETE ALL LOCAL HISTORY'
 
 cutokyo config list --show-origin
 cutokyo spool status

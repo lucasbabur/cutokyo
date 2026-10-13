@@ -123,9 +123,9 @@ test("retention and delete-all cancellation are previewed; one-session deletion 
   await page.getByLabel("Keep sessions for").selectOption("30");
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(
-    page.getByText(
-      /No history was deleted; review a cleanup preview separately/,
-    ),
+    page
+      .locator("#main-content")
+      .getByText(/No history was deleted; review a cleanup preview separately/),
   ).toBeVisible();
   expect((await fixtureAudit(page)).sessionIds).toEqual([
     "delete-me-73A9",

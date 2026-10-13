@@ -45,7 +45,7 @@ struct Acknowledgement {
 }
 
 pub(crate) fn availability(command: &InteractiveCommand, receiver: &Path) -> Result<()> {
-    which::which(&command.executable).map_err(|_| unavailable("The native harness is unavailable on PATH. Install it and restart Cutokyo, or run the recorded resume command in your own terminal."))?;
+    crate::executables::find_path(&command.executable).ok_or_else(|| unavailable("The native harness was not found on PATH or in its usual install locations. Install it and restart Cutokyo, or run the recorded resume command in your own terminal."))?;
     if !receiver.is_absolute() || !receiver.is_file() {
         return Err(unavailable(
             "The matching Cutokyo CLI is unavailable. Install cutokyo on PATH and restart the desktop app.",
@@ -58,7 +58,8 @@ pub(crate) fn availability(command: &InteractiveCommand, receiver: &Path) -> Res
             "The session's recorded project directory is unavailable. Restore that directory before resuming; Cutokyo will not silently use another project.",
         ));
     }
-    if termlauncher::Terminal::find_available().is_none() {
+    // macOS always has Terminal.app and Windows always has a console host.
+    if termlauncher::Terminal::find_available().is_none() && !HAS_SYSTEM_TERMINAL {
         return Err(unavailable(
             "No supported visible terminal was found. Install or expose Kitty, WezTerm, Ghostty, Alacritty, Foot or st on PATH, then restart Cutokyo. No harness was started.",
         ));
@@ -78,8 +79,8 @@ pub(crate) fn launch(
     mut command: InteractiveCommand,
 ) -> Result<TerminalLaunchReceipt> {
     availability(&command, receiver)?;
-    command.executable = which::which(&command.executable)
-        .map_err(|_| unavailable("The native harness disappeared before terminal launch"))?;
+    command.executable = crate::executables::find_path(&command.executable)
+        .ok_or_else(|| unavailable("The native harness disappeared before terminal launch"))?;
     let temporary = tempfile::Builder::new()
         .prefix("resume-launch-")
         .tempdir_in(root)
@@ -104,18 +105,32 @@ pub(crate) fn launch(
     let root_arg = root
         .to_str()
         .ok_or_else(|| unavailable("The capture data directory is not valid UTF-8"))?;
-    let mut application = termlauncher::Application::new(receiver)
-        .with_arg("--data-dir")
-        .with_arg(root_arg)
-        .with_arg("resume-terminal")
-        .with_arg("--request")
-        .with_arg(request_arg)
-        .with_title("Cutokyo native session resume")
-        .with_hold(true);
-    if let Some(directory) = &command.working_directory {
-        application = application.with_working_dir(directory);
-    }
-    let mut terminal = application.launch().map_err(|_| unavailable("The visible terminal could not launch. Check terminal installation and desktop display access; no resume was acknowledged."))?;
+    let helper_args = [
+        "--data-dir",
+        root_arg,
+        "resume-terminal",
+        "--request",
+        request_arg,
+    ];
+    let mut terminal = if termlauncher::Terminal::find_available().is_some() {
+        let mut application = termlauncher::Application::new(receiver)
+            .with_title("Cutokyo native session resume")
+            .with_hold(true);
+        for arg in helper_args {
+            application = application.with_arg(arg);
+        }
+        if let Some(directory) = &command.working_directory {
+            application = application.with_working_dir(directory);
+        }
+        application.launch().map_err(|_| unavailable("The visible terminal could not launch. Check terminal installation and desktop display access; no resume was acknowledged."))?
+    } else {
+        launch_system_terminal(
+            temporary.path(),
+            receiver,
+            &helper_args,
+            command.working_directory.as_deref(),
+        )?
+    };
     let receipt_path = request_path.with_extension("receipt.json");
     let deadline = Instant::now() + HANDSHAKE_TIMEOUT;
     loop {
@@ -282,6 +297,92 @@ fn write_private_new(path: &Path, value: &impl Serialize) -> Result<()> {
         .and_then(|()| file.sync_all())
         .map_err(|_| unavailable("Could not flush private terminal launch file"))
 }
+#[cfg(any(target_os = "macos", windows))]
+const HAS_SYSTEM_TERMINAL: bool = true;
+#[cfg(not(any(target_os = "macos", windows)))]
+const HAS_SYSTEM_TERMINAL: bool = false;
+
+/// Opens Terminal.app on a private `.command` script that execs the helper.
+#[cfg(target_os = "macos")]
+fn launch_system_terminal(
+    private_dir: &Path,
+    receiver: &str,
+    args: &[&str],
+    working_directory: Option<&Path>,
+) -> Result<Child> {
+    use std::os::unix::fs::OpenOptionsExt as _;
+    let quote = |value: &str| {
+        shlex::try_quote(value)
+            .map(std::borrow::Cow::into_owned)
+            .map_err(|_| unavailable("Terminal launch paths could not be safely quoted"))
+    };
+    let mut script = String::from("#!/bin/sh\n");
+    if let Some(directory) = working_directory {
+        let directory = directory
+            .to_str()
+            .ok_or_else(|| unavailable("The project directory is not valid UTF-8"))?;
+        script.push_str("cd ");
+        script.push_str(&quote(directory)?);
+        script.push_str(" || exit 1\n");
+    }
+    script.push_str("exec ");
+    script.push_str(&quote(receiver)?);
+    for arg in args {
+        script.push(' ');
+        script.push_str(&quote(arg)?);
+    }
+    script.push('\n');
+    let path = private_dir.join("resume.command");
+    let mut file = OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .mode(0o700)
+        .open(&path)
+        .map_err(|_| unavailable("Could not create the private terminal launch script"))?;
+    file.write_all(script.as_bytes())
+        .and_then(|()| file.sync_all())
+        .map_err(|_| unavailable("Could not write the private terminal launch script"))?;
+    drop(file);
+    Command::new("/usr/bin/open")
+        .args(["-a", "Terminal"])
+        .arg(&path)
+        .spawn()
+        .map_err(|_| unavailable("Terminal.app could not be opened; no resume was acknowledged."))
+}
+
+/// Starts the helper in a new console window, which Windows Terminal hosts when
+/// it is the default terminal application.
+#[cfg(windows)]
+fn launch_system_terminal(
+    _private_dir: &Path,
+    receiver: &str,
+    args: &[&str],
+    working_directory: Option<&Path>,
+) -> Result<Child> {
+    use std::os::windows::process::CommandExt as _;
+    const CREATE_NEW_CONSOLE: u32 = 0x0000_0010;
+    let mut process = Command::new(receiver);
+    process.args(args).creation_flags(CREATE_NEW_CONSOLE);
+    if let Some(directory) = working_directory {
+        process.current_dir(directory);
+    }
+    process.spawn().map_err(|_| {
+        unavailable("A console window could not be opened; no resume was acknowledged.")
+    })
+}
+
+#[cfg(not(any(target_os = "macos", windows)))]
+fn launch_system_terminal(
+    _private_dir: &Path,
+    _receiver: &str,
+    _args: &[&str],
+    _working_directory: Option<&Path>,
+) -> Result<Child> {
+    Err(unavailable(
+        "No supported visible terminal was found. Install or expose Kitty, WezTerm, Ghostty, Alacritty, Foot or st on PATH, then restart Cutokyo. No harness was started.",
+    ))
+}
+
 fn reap_terminal(mut terminal: Child) {
     thread::spawn(move || {
         let _ = terminal.wait();

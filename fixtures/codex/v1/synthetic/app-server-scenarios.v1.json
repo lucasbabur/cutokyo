@@ -56,7 +56,7 @@
     },
     {
       "name":"unknown_version",
-      "adapter_version":"99.0.0",
+      "adapter_version":"0.1.0",
       "steps":[
         {"step":"request","method":"initialize","params":{"clientInfo":{"name":"cutokyo","title":"Cutokyo","version":"0.1.0"}},"response":{"response_kind":"result","value":{"futureHandshake":true}}},
         {"step":"notification","method":"initialized","params":{}},

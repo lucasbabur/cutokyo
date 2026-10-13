@@ -1679,7 +1679,7 @@ impl WriterStore {
         let root = self.backup_root()?;
         refuse_symlink_components(&root)?;
         create_private_directory(&root)?;
-        if location.parent() == fs::canonicalize(&root).ok().as_deref() {
+        if location.parent() == dunce::canonicalize(&root).ok().as_deref() {
             return Ok(());
         }
         let mut locations = self.read_backup_locations()?;
@@ -1704,8 +1704,8 @@ impl WriterStore {
 
     fn backup_info(&self, path: &Path) -> Result<BackupInfo> {
         refuse_symlink_components(path)?;
-        let path =
-            fs::canonicalize(path).map_err(|error| io_error("resolve backup location", &error))?;
+        let path = dunce::canonicalize(path)
+            .map_err(|error| io_error("resolve backup location", &error))?;
         if !path.is_dir() {
             return Err(ContractError::new(
                 ErrorCode::InvalidInput,
@@ -1986,9 +1986,7 @@ impl WriterStore {
             .close()
             .map_err(|(_, error)| sqlite_error("close online backup source", &error))?;
         set_private_file(destination)?;
-        File::open(destination)
-            .and_then(|file| file.sync_all())
-            .map_err(|error| io_error("flush closed online backup", &error))?;
+        sync_file(destination).map_err(|error| io_error("flush closed online backup", &error))?;
         let (sha256, byte_length) = digest_file(destination)?;
         Ok(BackupManifest {
             manifest_version: 1,
@@ -3045,8 +3043,9 @@ fn validate_local_database_path(path: &Path) -> Result<()> {
         ContractError::new(ErrorCode::InvalidInput, "database path has no parent")
     })?;
     fs::create_dir_all(parent).map_err(|error| io_error("create database parent", &error))?;
-    let canonical_parent = parent
-        .canonicalize()
+    // `dunce` drops Windows' `\\?\` verbatim prefix from local paths and keeps it
+    // only where it is required, so a remaining leading `\\` really is a share.
+    let canonical_parent = dunce::canonicalize(parent)
         .map_err(|error| io_error("canonicalize database parent", &error))?;
     let path_text = canonical_parent.to_string_lossy();
     if path_text.starts_with("//") || path_text.starts_with("\\\\") {
@@ -3061,6 +3060,7 @@ fn validate_local_database_path(path: &Path) -> Result<()> {
     ] {
         if let Some(root) = std::env::var_os(variable) {
             let root = PathBuf::from(root);
+            let root = dunce::canonicalize(&root).unwrap_or(root);
             if canonical_parent.starts_with(root) {
                 return Err(nonlocal_path_error("known cloud-synchronization root"));
             }
@@ -3155,8 +3155,11 @@ fn acquire_writer_lock(path: &Path, owner: &LockOwner) -> Result<File> {
     match fs4::FileExt::try_lock(&file) {
         Ok(()) => {}
         Err(TryLockError::WouldBlock) => {
-            let existing = fs::read_to_string(path)
-                .ok()
+            // Windows locks are mandatory, so the held lock file itself is
+            // unreadable; the owner sidecar is not locked.
+            let existing = [lock_owner_path(path), path.to_path_buf()]
+                .iter()
+                .find_map(|candidate| fs::read_to_string(candidate).ok())
                 .and_then(|value| serde_json::from_str::<LockOwner>(&value).ok());
             let description = existing.map_or_else(
                 || "another core process (owner details unavailable)".to_owned(),
@@ -3185,8 +3188,28 @@ fn acquire_writer_lock(path: &Path, owner: &LockOwner) -> Result<File> {
     file.write_all(&bytes)
         .and_then(|()| file.sync_all())
         .map_err(|error| io_error("persist writer lock owner", &error))?;
+    let owner_path = lock_owner_path(path);
+    fs::write(&owner_path, &bytes)
+        .map_err(|error| io_error("persist writer lock owner sidecar", &error))?;
+    set_private_file(&owner_path)?;
     sync_parent(path)?;
     Ok(file)
+}
+
+/// Flushes a closed file. Windows' `FlushFileBuffers` needs a writable handle.
+fn sync_file(path: &Path) -> std::io::Result<()> {
+    OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(path)
+        .and_then(|file| file.sync_all())
+}
+
+/// Unlocked copy of the writer lock's owner metadata, readable on every OS.
+fn lock_owner_path(lock: &Path) -> PathBuf {
+    let mut name = lock.file_name().unwrap_or_default().to_os_string();
+    name.push(".owner");
+    lock.with_file_name(name)
 }
 
 // --- Ingest and projection ---------------------------------------------------------
@@ -5342,14 +5365,24 @@ fn publish_directory_noreplace(source: &Path, destination: &Path) -> Result<()> 
     }
     #[cfg(windows)]
     {
-        // MoveFileExW, used by std, refuses an existing directory even with
-        // REPLACE_EXISTING. A directory move cannot replace an existing file.
-        fs::rename(source, destination).map_err(|error| {
+        // std's Windows rename uses POSIX semantics and may replace an empty
+        // directory. Claim the destination atomically instead, so any existing
+        // entry, including a late empty directory, refuses publication, then
+        // move the staged files into the directory this process now owns.
+        fs::create_dir(destination).map_err(|error| {
             io_error(
                 "publish complete backup without replacing any destination",
                 &error,
             )
-        })
+        })?;
+        let entries =
+            fs::read_dir(source).map_err(|error| io_error("read staged backup", &error))?;
+        for entry in entries {
+            let entry = entry.map_err(|error| io_error("read staged backup", &error))?;
+            fs::rename(entry.path(), destination.join(entry.file_name()))
+                .map_err(|error| io_error("publish staged backup file", &error))?;
+        }
+        Ok(())
     }
     #[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
     {
@@ -5409,7 +5442,7 @@ fn sqlite_copy_database(source: &Path, destination: &Path) -> Result<()> {
         destination.to_path_buf(),
         PathBuf::from(format!("{}-wal", destination.to_string_lossy())),
     ] {
-        match File::open(path).and_then(|file| file.sync_all()) {
+        match sync_file(&path) {
             Ok(()) => {}
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
             Err(error) => return Err(io_error("flush restored SQLite bytes", &error)),
@@ -5541,9 +5574,9 @@ fn require_regular_file(path: &Path) -> Result<()> {
 fn refuse_live_alias(path: &Path, live: &Path) -> Result<()> {
     refuse_symlink_components(path)?;
     if path == live
-        || fs::canonicalize(path)
+        || dunce::canonicalize(path)
             .ok()
-            .zip(fs::canonicalize(live).ok())
+            .zip(dunce::canonicalize(live).ok())
             .is_some_and(|(path, live)| path == live)
     {
         return Err(ContractError::new(
@@ -5589,7 +5622,7 @@ fn prepare_restore_candidate(path: &Path) -> Result<(bool, u64)> {
 fn open_closed_backup(path: &Path) -> Result<Connection> {
     require_closed_backup(path)?;
     let absolute =
-        fs::canonicalize(path).map_err(|error| io_error("resolve closed backup", &error))?;
+        dunce::canonicalize(path).map_err(|error| io_error("resolve closed backup", &error))?;
     let mut uri = url::Url::from_file_path(absolute).map_err(|()| {
         ContractError::new(
             ErrorCode::InvalidInput,

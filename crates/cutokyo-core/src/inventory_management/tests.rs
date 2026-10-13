@@ -823,7 +823,15 @@ fn bundle_assets_are_not_listed_travel_with_the_skill_and_ignored_dirs_stay_out(
     let shared = discover(&r)?
         .items
         .into_iter()
-        .filter(|item| item.origin == temp.path().join("project/AGENTS.md").display().to_string())
+        .filter(|item| {
+            item.origin
+                == temp
+                    .path()
+                    .join("project")
+                    .join("AGENTS.md")
+                    .display()
+                    .to_string()
+        })
         .collect::<Vec<_>>();
     assert_eq!(shared.len(), 1);
     assert_eq!(shared[0].harnesses, vec![Harness::Codex, Harness::OpenCode]);

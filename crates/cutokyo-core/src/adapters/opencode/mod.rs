@@ -278,7 +278,7 @@ pub fn detect_installation(probe: &impl OpenCodeCommandProbe) -> Result<OpenCode
     Ok(OpenCodeDetection {
         installed: true,
         version: Some(version.to_owned()),
-        coverage: if version == OBSERVED_OPENCODE_VERSION {
+        coverage: if crate::adapters::version_at_least(version, OBSERVED_OPENCODE_VERSION) {
             VersionCoverage::Observed
         } else {
             VersionCoverage::UnknownVersion
@@ -1393,7 +1393,7 @@ mod tests {
         let unknown = detect_installation(&FixedProbe {
             output: Ok(ProbeOutput {
                 success: true,
-                stdout: b"9.0.0-unknown\n".to_vec(),
+                stdout: b"1.0.0-unknown\n".to_vec(),
             }),
         })?;
         assert_eq!(unknown.coverage, VersionCoverage::UnknownVersion);

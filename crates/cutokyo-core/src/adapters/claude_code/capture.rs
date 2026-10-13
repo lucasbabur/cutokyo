@@ -144,7 +144,8 @@ pub fn capture_hook(
         .get("hook_event_name")
         .and_then(Value::as_str)
         .unwrap_or("unknown");
-    let supported_version = installed_version == Some(TESTED_CLAUDE_VERSION);
+    let supported_version = installed_version
+        .is_some_and(|version| crate::adapters::version_at_least(version, TESTED_CLAUDE_VERSION));
     let known_event = is_known_hook_event(event_name);
     let coverage_state = if malformed || !known_event || !supported_version {
         CoverageState::UnknownVersion
@@ -596,7 +597,9 @@ pub fn capture_otel_log(input: &[u8], observed_at: Timestamp) -> Result<ClaudeOt
     let attributes = otel_attributes(&payload);
     let event_name = otel_event_name(&payload, &attributes);
     let supported = event_name == "claude_code.api_request"
-        && otel_app_version(&payload, &attributes) == Some(TESTED_CLAUDE_VERSION);
+        && otel_app_version(&payload, &attributes).is_some_and(|version| {
+            crate::adapters::version_at_least(version, TESTED_CLAUDE_VERSION)
+        });
     let source = otel_source(
         input,
         &payload,
@@ -911,7 +914,9 @@ impl ClaudeTranscriptReader {
         };
         let native_resume_id = main_resume_id(path, kind)?;
         let session_key = transcript_session_key(path, kind, native_resume_id.as_ref());
-        let version_known = self.installed_version.as_deref() == Some(TESTED_CLAUDE_VERSION);
+        let version_known = self.installed_version.as_deref().is_some_and(|version| {
+            crate::adapters::version_at_least(version, TESTED_CLAUDE_VERSION)
+        });
         let context = TranscriptLineContext {
             kind,
             session_key: &session_key,
@@ -1409,7 +1414,7 @@ mod tests {
     #[test]
     fn unknown_hook_version_preserves_raw_without_projection() -> cutokyo_domain::Result<()> {
         let input = br#"{"hook_event_name":"SessionStart","session_id":"11111111-1111-4111-8111-111111111111","source":"startup"}"#;
-        let capture = capture_hook(input, timestamp()?, Some("9.0.0"))?;
+        let capture = capture_hook(input, timestamp()?, Some("1.0.0"))?;
         assert_eq!(capture.disposition, ClaudeHookDisposition::RawOnlyUnknown);
         assert_eq!(
             capture.raw.source.coverage.state,

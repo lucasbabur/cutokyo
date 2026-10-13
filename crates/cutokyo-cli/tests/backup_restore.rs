@@ -8,6 +8,14 @@ use serde_json::{Value, json};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
+struct Root(std::path::PathBuf);
+
+impl Root {
+    fn path(&self) -> &Path {
+        &self.0
+    }
+}
+
 fn invoke(root: &Path, arguments: &[&str]) -> Result<Value, Box<dyn std::error::Error>> {
     let output = Command::new(env!("CARGO_BIN_EXE_cutokyo"))
         .arg("--config-file")
@@ -52,13 +60,16 @@ fn seed(root: &Path) -> TestResult {
 #[test]
 fn cli_backup_default_restore_preview_and_explicit_confirmation_recover_real_history() -> TestResult
 {
-    let root = tempfile::tempdir()?;
+    let guard = tempfile::tempdir()?;
+    // macOS temp dirs sit under /var -> /private/var, and Cutokyo refuses
+    // symlinked ancestors, so use the resolved path.
+    let root = Root(dunce::canonicalize(guard.path())?);
     seed(root.path())?;
     let created = invoke(root.path(), &["backup"])?;
     let path = created["data"]["path"]
         .as_str()
         .ok_or("missing backup path")?;
-    assert!(Path::new(path).starts_with(root.path().join("data/backups")));
+    assert!(Path::new(path).starts_with(root.path().join("data").join("backups")));
     assert_eq!(created["data"]["sessionCount"], 1);
     assert!(created["data"]["scope"].as_str().is_some_and(|scope| {
         scope.contains("Settings, harness configuration, and pending spool entries are excluded")
@@ -114,7 +125,10 @@ fn cli_backup_default_restore_preview_and_explicit_confirmation_recover_real_his
 
 #[test]
 fn cli_existing_destination_and_tampered_backup_refuse_without_overwriting_history() -> TestResult {
-    let root = tempfile::tempdir()?;
+    let guard = tempfile::tempdir()?;
+    // macOS temp dirs sit under /var -> /private/var, and Cutokyo refuses
+    // symlinked ancestors, so use the resolved path.
+    let root = Root(dunce::canonicalize(guard.path())?);
     seed(root.path())?;
     let created = invoke(root.path(), &["backup"])?;
     let path = created["data"]["path"].as_str().ok_or("missing path")?;

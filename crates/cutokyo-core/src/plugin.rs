@@ -1180,17 +1180,17 @@ async fn read_manifest_bytes(manifest_path: &Path) -> Result<Vec<u8>, PluginVeri
 async fn load_manifest(
     plugin_directory: &Path,
 ) -> Result<(PluginManifest, PathBuf, PathBuf), PluginVerificationError> {
-    let root = tokio::fs::canonicalize(plugin_directory)
-        .await
-        .map_err(|error| {
-            manifest_error(
-                PluginDiagnosticCode::InvalidManifest,
-                "plugin_directory",
-                "existing plugin directory",
-                "unavailable path",
-                format!("plugin directory could not be opened: {error}"),
-            )
-        })?;
+    // dunce keeps Windows paths free of the \\?\ verbatim prefix, which Node's
+    // module loader cannot resolve as an entrypoint or working directory.
+    let root = dunce::canonicalize(plugin_directory).map_err(|error| {
+        manifest_error(
+            PluginDiagnosticCode::InvalidManifest,
+            "plugin_directory",
+            "existing plugin directory",
+            "unavailable path",
+            format!("plugin directory could not be opened: {error}"),
+        )
+    })?;
     let metadata = tokio::fs::symlink_metadata(&root).await.map_err(|error| {
         manifest_error(
             PluginDiagnosticCode::InvalidManifest,
@@ -1241,7 +1241,7 @@ async fn load_manifest(
             "plugin entrypoint must be a regular file",
         ));
     }
-    let entrypoint = tokio::fs::canonicalize(candidate).await.map_err(|error| {
+    let entrypoint = dunce::canonicalize(candidate).map_err(|error| {
         manifest_error(
             PluginDiagnosticCode::InvalidManifest,
             "entrypoint",
@@ -1262,10 +1262,41 @@ async fn load_manifest(
     Ok((manifest, root, entrypoint))
 }
 
+/// Python 3 under its platform name: `python3` on Unix. On Windows, the first
+/// real `python.exe` on `PATH` (the `WindowsApps` entry is only a Store stub), then
+/// the `py -3` launcher, which finds registry-installed Pythons only.
+fn python3_command() -> Command {
+    if !cfg!(windows) {
+        return Command::new("python3");
+    }
+    let real_python = std::env::var_os("PATH").and_then(|path| {
+        std::env::split_paths(&path)
+            .filter(|directory| {
+                !directory
+                    .to_string_lossy()
+                    .to_ascii_lowercase()
+                    .contains("windowsapps")
+            })
+            .map(|directory| directory.join("python.exe"))
+            .find(|candidate| candidate.is_file())
+    });
+    if let Some(python) = real_python {
+        return Command::new(python);
+    }
+    match crate::executables::find("py") {
+        Some(launcher) => {
+            let mut command = Command::new(launcher);
+            command.arg("-3");
+            command
+        }
+        None => Command::new("python"),
+    }
+}
+
 fn build_command(manifest: &PluginManifest, entrypoint: &Path, root: &Path) -> Command {
     let mut command = match manifest.runtime {
         PluginRuntime::Python3 => {
-            let mut command = Command::new("python3");
+            let mut command = python3_command();
             command.arg("-I");
             command
         }
@@ -1275,6 +1306,13 @@ fn build_command(manifest: &PluginManifest, entrypoint: &Path, root: &Path) -> C
     command.env_clear();
     if let Some(executable_path) = executable_path {
         command.env("PATH", executable_path);
+    }
+    // Windows processes, CPython included, cannot initialise without SystemRoot.
+    #[cfg(windows)]
+    for variable in ["SystemRoot", "WINDIR"] {
+        if let Some(value) = std::env::var_os(variable) {
+            command.env(variable, value);
+        }
     }
     command
         .env("PYTHONIOENCODING", "utf-8")

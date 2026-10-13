@@ -2181,8 +2181,7 @@ mod tests {
             initialized_result(),
             json!({ "data": [thread()], "nextCursor": null }),
         ]);
-        let mut client =
-            CodexAppServerClient::new(transport, "99.0.0", AppServerLimits::default())?;
+        let mut client = CodexAppServerClient::new(transport, "0.1.0", AppServerLimits::default())?;
         let capture = client.list_threads(&Timestamp::parse("2026-09-20T12:00:00Z")?)?;
         assert_eq!(capture.coverage.state, CoverageState::UnknownVersion);
         assert_eq!(capture.observations.len(), 1);
@@ -2206,8 +2205,7 @@ mod tests {
                 }
             }),
         ]);
-        let mut client =
-            CodexAppServerClient::new(transport, "99.0.0", AppServerLimits::default())?;
+        let mut client = CodexAppServerClient::new(transport, "0.1.0", AppServerLimits::default())?;
         let capture = client.capture_resumed_history(
             &NativeSessionId::parse("0199-thread-exact")?,
             &Timestamp::parse("2026-09-20T12:00:00Z")?,
@@ -2355,7 +2353,7 @@ mod tests {
                 "hook_event_name": "FutureEvent",
                 "future": { "opaque": true }
             }),
-            "99.0.0",
+            "0.1.0",
             timestamp,
         )?;
         assert_eq!(drifted.source.coverage.state, CoverageState::UnknownVersion);
@@ -2400,7 +2398,7 @@ mod tests {
                 "conversation.id": "future-tree",
                 "future": { "opaque": true }
             }),
-            "99.0.0",
+            "0.1.0",
             Timestamp::parse("2026-09-20T12:00:00Z")?,
         )?;
         assert_eq!(

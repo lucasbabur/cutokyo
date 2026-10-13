@@ -105,8 +105,18 @@ fn custom_backup_and_recovery_remain_selectable_after_restore_and_restart() -> T
     let reopened = DesktopService::open(paths.clone())?;
     let available = reopened.list_backups()?;
     let available = available.as_array().ok_or("missing backup list")?;
-    assert!(available.iter().any(|backup| backup["path"] == custom));
-    assert!(available.iter().any(|backup| backup["path"] == recovery));
+    // Listings are canonical; Windows temp dirs may be 8.3 short names.
+    let listed = |expected: &str| {
+        let expected = dunce::canonicalize(expected).ok();
+        available.iter().any(|backup| {
+            backup["path"]
+                .as_str()
+                .and_then(|path| dunce::canonicalize(path).ok())
+                == expected
+        })
+    };
+    assert!(listed(custom));
+    assert!(listed(&recovery));
     assert_eq!(
         reopened.search_sessions(&SessionFilters::default())?["total"],
         1
