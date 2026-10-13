@@ -70,10 +70,17 @@ impl RuntimePaths {
                 Some(path) => path,
                 None => project()?.config_dir().join("config.toml"),
             };
-        let data_dir = match data_dir.or_else(|| env::var_os(DATA_DIR_ENV).map(PathBuf::from)) {
+        // The config directory is the owned leaf: resolve only what lies above it.
+        let config_file = match (config_file.parent(), config_file.file_name()) {
+            (Some(directory), Some(name)) => resolve_above_root(directory).join(name),
+            _ => config_file,
+        };
+        let data_dir = resolve_above_root(&match data_dir
+            .or_else(|| env::var_os(DATA_DIR_ENV).map(PathBuf::from))
+        {
             Some(path) => path,
             None => project()?.data_local_dir().to_path_buf(),
-        };
+        });
         Ok(Self {
             config_file,
             database_file: data_dir.join("cutokyo.db"),
@@ -85,6 +92,47 @@ impl RuntimePaths {
             setup_state_file: data_dir.join("setup-state.json"),
             data_dir,
         })
+    }
+}
+
+/// Resolves symlinks in an application-selected root that the user or the
+/// operating system chose, such as `HOME` or a temporary directory under macOS
+/// `/var`, which is a symlink to `/private/var`.
+///
+/// Only the longest existing prefix is canonicalized; components that do not
+/// exist yet are appended unchanged, so every later ancestor check still sees
+/// and refuses a symlink planted there. Relative paths and paths whose existing
+/// prefix cannot be resolved are returned unchanged and keep failing those
+/// checks as before. Windows paths are returned unchanged.
+#[must_use]
+pub fn resolve_trusted_root(path: &Path) -> PathBuf {
+    // Windows roots are left as given: there the refusals target junctions and
+    // links users create, and canonicalizing would only rewrite 8.3 short names.
+    if cfg!(not(unix)) || !path.is_absolute() {
+        return path.to_path_buf();
+    }
+    for ancestor in path.ancestors() {
+        match dunce::canonicalize(ancestor) {
+            Ok(resolved) => {
+                return path
+                    .strip_prefix(ancestor)
+                    .map_or_else(|_| path.to_path_buf(), |tail| resolved.join(tail));
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(_) => break,
+        }
+    }
+    path.to_path_buf()
+}
+
+/// Like [`resolve_trusted_root`], but leaves the final component unresolved, so a
+/// root Cutokyo owns or edits (a data directory, a native config directory) is
+/// still refused when it is itself a symlink.
+#[must_use]
+pub fn resolve_above_root(path: &Path) -> PathBuf {
+    match (path.parent(), path.file_name()) {
+        (Some(parent), Some(name)) => resolve_trusted_root(parent).join(name),
+        _ => path.to_path_buf(),
     }
 }
 
@@ -1116,6 +1164,48 @@ mod tests {
     }
 
     use std::path::Path;
+
+    #[cfg(unix)]
+    #[test]
+    fn trusted_root_resolution_follows_existing_symlinks_but_keeps_owned_leaf_and_missing_tail()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use super::{resolve_above_root, resolve_trusted_root};
+        let directory = tempfile::tempdir()?;
+        let base = dunce::canonicalize(directory.path())?;
+        fs::create_dir_all(base.join("real/data"))?;
+        std::os::unix::fs::symlink(base.join("real"), base.join("link"))?;
+        std::os::unix::fs::symlink(base.join("real/data"), base.join("real/owned"))?;
+
+        assert_eq!(
+            resolve_trusted_root(&base.join("link/missing/tail")),
+            base.join("real/missing/tail")
+        );
+        assert_eq!(
+            resolve_trusted_root(&base.join("link/data")),
+            base.join("real/data")
+        );
+        assert_eq!(
+            resolve_above_root(&base.join("link/data")),
+            base.join("real/data")
+        );
+        // The owned leaf stays a symlink, so later ancestor checks still refuse it.
+        assert_eq!(
+            resolve_above_root(&base.join("link/owned")),
+            base.join("real/owned")
+        );
+        assert_eq!(
+            resolve_trusted_root(Path::new("relative/link")),
+            Path::new("relative/link")
+        );
+
+        let paths = RuntimePaths::discover(
+            Some(base.join("link/config/config.toml")),
+            Some(base.join("link/data")),
+        )?;
+        assert_eq!(paths.config_file, base.join("real/config/config.toml"));
+        assert_eq!(paths.spool_dir, base.join("real/data/spool"));
+        Ok(())
+    }
 
     #[test]
     fn config_rejects_removed_guard_field_without_a_hidden_compatibility_path()
