@@ -13,7 +13,8 @@ use cutokyo_core::{
     app::Application,
     ingest::{Spool, SpoolCapReason, SpoolLimits},
     store::{
-        CheckpointMode, DELETE_ALL_CONFIRMATION, LockOwner, SearchMode, SearchQuery, SearchSort,
+        CheckpointMode, DATABASE_SCHEMA_VERSION, DELETE_ALL_CONFIRMATION, DERIVE_VERSION,
+        LockOwner, SearchMode, SearchQuery, SearchSort,
     },
 };
 use cutokyo_domain::{
@@ -363,8 +364,8 @@ fn dashboard_reconciles() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(writer_health, query_health);
     assert_eq!(writer_health.drain_pending_count, 0);
     assert_eq!(writer_health.current_quarantine_count, 0);
-    assert_eq!(writer_health.schema_version, 3);
-    assert_eq!(writer_health.derive_version, 3);
+    assert_eq!(writer_health.schema_version, DATABASE_SCHEMA_VERSION);
+    assert_eq!(writer_health.derive_version, DERIVE_VERSION);
     assert_eq!(writer_health.dimensions.len(), 11);
     Ok(())
 }
@@ -438,7 +439,7 @@ fn sqlite_concurrency_backup_integrity() -> Result<(), Box<dyn std::error::Error
     let valid_backup = directory.path().join("valid-backup.db");
     let manifest = core.backup(&valid_backup)?;
     assert_eq!(manifest.integrity_result, "ok");
-    assert_eq!(manifest.schema_version, 3);
+    assert_eq!(manifest.schema_version, DATABASE_SCHEMA_VERSION);
     assert!(manifest.byte_length > 0);
 
     let tampered_backup = directory.path().join("tampered-backup.db");
