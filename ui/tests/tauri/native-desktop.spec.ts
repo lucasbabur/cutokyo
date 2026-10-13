@@ -235,7 +235,6 @@ describe("Cutokyo native Tauri application", () => {
       assert.equal(await retainedSearch.getValue(), "");
       for (const [label, value] of [
         ["Match", "terms"],
-        ["Sort", "relevance"],
         ["Date", "all"],
         ["Project", ""],
         ["Branch", ""],
@@ -248,9 +247,14 @@ describe("Cutokyo native Tauri application", () => {
           value,
         );
       }
+      // An empty query has no words to rank, so the retained relevance sort
+      // shows as newest and stays unavailable until the next search.
+      const sortSelect = await $('select[aria-label="Sort"]');
       await browser.waitUntil(async () => {
         return (
           (await $(".results-heading strong").getText()) === "0 sessions" &&
+          (await sortSelect.getValue()) === "newest" &&
+          !(await sortSelect.isEnabled()) &&
           !(await $(".results-heading").getText()).includes(
             "Updating results",
           ) &&

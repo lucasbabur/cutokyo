@@ -8,7 +8,7 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { useCommands, useCommandResource } from "../commands/context.js";
 import type {
@@ -39,7 +39,10 @@ import {
 } from "../components/HarnessMark.js";
 import { RouteNotice } from "../components/Notices.js";
 import { formatInteger } from "../domain/reconcile.js";
-import { DEFAULT_SESSION_FILTERS } from "../domain/sessionSearch.js";
+import {
+  DEFAULT_SESSION_FILTERS,
+  rankableQuery,
+} from "../domain/sessionSearch.js";
 import { navigate, routeHref } from "../router.js";
 
 const DEFAULT_FILTERS = DEFAULT_SESSION_FILTERS;
@@ -109,6 +112,7 @@ export function SessionsPage({
 function SessionHistory() {
   const commands = useCommands();
   const searchRef = useRef<HTMLInputElement>(null);
+  const sortHintId = useId();
   const [filters, setFilters] = useState<SessionFilters>(retainedFilters);
   const [debouncedText, setDebouncedText] = useState(filters.text);
   const requested = { ...filters, text: debouncedText };
@@ -140,6 +144,9 @@ function SessionHistory() {
     resource.data !== null && resource.data.key !== JSON.stringify(filters);
   const pending =
     filters.text !== debouncedText || resource.state === "loading";
+  // Without words to rank, results are newest first whatever sort is chosen.
+  // The chosen sort is kept and applies again once the query has words.
+  const sortable = rankableQuery(debouncedText);
 
   useEffect(() => {
     const focusSearch = (event: KeyboardEvent) => {
@@ -223,7 +230,9 @@ function SessionHistory() {
           <span>Sort</span>
           <select
             aria-label="Sort"
-            value={filters.sort}
+            aria-describedby={sortable ? undefined : sortHintId}
+            disabled={!sortable}
+            value={sortable ? filters.sort : "newest"}
             onChange={(event) =>
               patch("sort", event.currentTarget.value as SessionFilters["sort"])
             }
@@ -232,6 +241,11 @@ function SessionHistory() {
             <option value="newest">Newest first</option>
           </select>
         </label>
+        {sortable ? null : (
+          <span id={sortHintId} className="toolbar-hint">
+            Relevance ranking applies when you search
+          </span>
+        )}
         <HarnessFilter
           value={filters.harness}
           onChange={(value) => patch("harness", value)}
