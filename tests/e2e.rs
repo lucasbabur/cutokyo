@@ -3274,9 +3274,18 @@ fn tracked_checkout(source: &Path, destination: &Path) -> TestResult {
         )?,
         "clone exact committed artifact source",
     )?;
-    run_git(
-        destination,
-        &["checkout", "--quiet", "--detach", revision.stdout.trim()],
+    // Materialising the whole tracked tree is clone-sized work, not a small Git
+    // fixture command: on Windows runners, with sibling release tests cloning
+    // at the same time, it can pass 30 s. Bound it like the clone.
+    checked_output(
+        run_bounded(
+            Command::new("git")
+                .args(["checkout", "--quiet", "--detach", revision.stdout.trim()])
+                .current_dir(destination),
+            Duration::from_secs(60),
+            "check out exact committed artifact source",
+        )?,
+        "check out exact committed artifact source",
     )?;
     assert_eq!(
         run_git(destination, &["rev-parse", "HEAD"])?.stdout,
