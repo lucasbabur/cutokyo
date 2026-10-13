@@ -50,20 +50,19 @@ impl InventoryRoots {
     /// # Errors
     /// Fails if the process has no identifiable home directory.
     pub fn discover(projects: Vec<PathBuf>) -> InventoryResult<Self> {
+        use crate::config::{resolve_above_root, resolve_trusted_root};
         let home = std::env::var_os("HOME")
             .or_else(|| std::env::var_os("USERPROFILE"))
-            .map(PathBuf::from)
+            .map(|home| resolve_trusted_root(Path::new(&home)))
             .ok_or("Home directory unavailable for inventory discovery")?;
-        let config =
-            std::env::var_os("XDG_CONFIG_HOME").map_or_else(|| home.join(".config"), PathBuf::from);
+        let selected =
+            |name: &str| std::env::var_os(name).map(|v| resolve_above_root(Path::new(&v)));
+        let config = selected("XDG_CONFIG_HOME").unwrap_or_else(|| home.join(".config"));
         Ok(Self {
-            claude: std::env::var_os("CLAUDE_CONFIG_DIR")
-                .map_or_else(|| home.join(".claude"), PathBuf::from),
-            codex: std::env::var_os("CODEX_HOME")
-                .map_or_else(|| home.join(".codex"), PathBuf::from),
-            opencode: std::env::var_os("OPENCODE_CONFIG_DIR")
-                .map_or_else(|| config.join("opencode"), PathBuf::from),
-            opencode_config: std::env::var_os("OPENCODE_CONFIG").map(PathBuf::from),
+            claude: selected("CLAUDE_CONFIG_DIR").unwrap_or_else(|| home.join(".claude")),
+            codex: selected("CODEX_HOME").unwrap_or_else(|| home.join(".codex")),
+            opencode: selected("OPENCODE_CONFIG_DIR").unwrap_or_else(|| config.join("opencode")),
+            opencode_config: selected("OPENCODE_CONFIG"),
             opencode_global: std::env::var_os("OPENCODE_CONFIG_DIR")
                 .map(|_| config.join("opencode")),
             home,

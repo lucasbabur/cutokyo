@@ -47,6 +47,9 @@ pnpm --dir ui test:e2e:web     # Playwright on fixtures; needs port 4173 free
   the host's Hyprland session. Ask before running it on someone's desktop. It
   calls `cargo tauri`; if that is missing, put a `cargo-tauri` shim on `PATH`
   that runs `node_modules/.bin/tauri`.
+- On macOS, run `cargo test` with `TMPDIR="$(cd "$TMPDIR" && pwd -P)"`. `/var` is
+  a symlink to `/private/var`, and tests hand temp paths straight to code that
+  refuses symlinked ancestors; production resolves its trusted roots first.
 - Commits need `git commit -s` and the trailer
   `Co-Authored-By: Claude Code <noreply@anthropic.com>`
   (`tools/scripts/check-commit-message.py`).

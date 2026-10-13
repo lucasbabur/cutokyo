@@ -121,6 +121,9 @@ jobs:
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/install-cyclonedx-source.json" -- cargo install cargo-cyclonedx --version 0.5.9 --locked
       - name: Build Rust workspace without tracked-source rewrites
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/build-source.json" -- cargo build --locked --workspace
+      - name: Resolve the macOS temporary directory for tests that build roots from it
+        if: runner.os == 'macOS'
+        run: echo "TMPDIR=$(cd "$TMPDIR" && pwd -P)" >> "$GITHUB_ENV"
       - name: Test Rust workspace without tracked-source rewrites
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/test-source.json" -- cargo test --locked --workspace
       - name: Build actual Tauri application without tracked-source rewrites

@@ -65,19 +65,19 @@ impl HistoryRoots {
     ///
     /// Fails when the process has no identifiable home directory.
     pub fn discover() -> Result<Self> {
+        use crate::config::{resolve_above_root, resolve_trusted_root};
         let home = std::env::var_os("HOME")
             .or_else(|| std::env::var_os("USERPROFILE"))
-            .map(PathBuf::from)
+            .map(|home| resolve_trusted_root(Path::new(&home)))
             .ok_or_else(|| {
                 ContractError::new(ErrorCode::Unhealthy, "home directory is unavailable")
             })?;
-        let data = std::env::var_os("XDG_DATA_HOME")
-            .map_or_else(|| home.join(".local/share"), PathBuf::from);
+        let selected =
+            |name: &str| std::env::var_os(name).map(|v| resolve_above_root(Path::new(&v)));
+        let data = selected("XDG_DATA_HOME").unwrap_or_else(|| home.join(".local/share"));
         Ok(Self {
-            claude: std::env::var_os("CLAUDE_CONFIG_DIR")
-                .map_or_else(|| home.join(".claude"), PathBuf::from),
-            codex: std::env::var_os("CODEX_HOME")
-                .map_or_else(|| home.join(".codex"), PathBuf::from),
+            claude: selected("CLAUDE_CONFIG_DIR").unwrap_or_else(|| home.join(".claude")),
+            codex: selected("CODEX_HOME").unwrap_or_else(|| home.join(".codex")),
             opencode: data.join("opencode"),
         })
     }

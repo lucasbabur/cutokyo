@@ -29,7 +29,7 @@ pub use crate::{
     config::{
         EffectiveValue, OriginCandidate, ResolvedSettings, RetentionOverride, RuntimePaths,
         SecretBackend, SecretBackendPreference, SecretReceipt, SettingsOverrides, SetupAction,
-        SetupPlan, UninstallReceipt,
+        SetupPlan, UninstallReceipt, resolve_above_root,
     },
     inventory_management::{
         InventoryDocument, InventoryReceipt, InventoryRoots, LiveInventory, LiveInventoryItem,
@@ -1298,7 +1298,8 @@ impl LocalCore {
     /// # Errors
     /// Returns publication, collision, validation, or store errors.
     pub fn create_backup(&self, destination: Option<&Path>) -> Result<BackupInfo> {
-        self.store.create_backup(destination)
+        self.store
+            .create_backup(destination.map(resolve_above_root).as_deref())
     }
 
     /// Lists complete backups in this installation's default backup directory.
@@ -1314,7 +1315,7 @@ impl LocalCore {
     /// # Errors
     /// Returns verification, unsupported schema, or path errors.
     pub fn preview_backup_restore(&self, path: &Path) -> Result<BackupRestorePlan> {
-        self.store.preview_backup_restore(path)
+        self.store.preview_backup_restore(&resolve_above_root(path))
     }
 
     /// Restores a confirmed, unchanged preview and retains a coherent recovery copy.
@@ -1331,7 +1332,7 @@ impl LocalCore {
     ///
     /// Returns path, online-backup, checkpoint, integrity, or digest errors.
     pub fn backup(&self, destination: impl AsRef<Path>) -> Result<BackupManifest> {
-        self.store.backup(destination)
+        self.store.backup(resolve_above_root(destination.as_ref()))
     }
 
     /// Restores only a digest-verified, integrity-checked backup while retaining
@@ -1341,7 +1342,7 @@ impl LocalCore {
     ///
     /// Returns verification, copy, migration, integrity, or rollback errors.
     pub fn restore(&self, backup: impl AsRef<Path>) -> Result<RestoreReceipt> {
-        self.store.restore(backup)
+        self.store.restore(resolve_above_root(backup.as_ref()))
     }
 
     /// Runs SQLite's full integrity check.

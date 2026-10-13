@@ -812,7 +812,10 @@ fn fixture_session_search(
     arguments: SearchArgs,
     command: &'static str,
 ) -> Result<CommandSuccess, ContractError> {
-    let directory = tempfile::tempdir().map_err(|_| {
+    // The system temp directory is OS-selected; macOS places it under the `/var`
+    // symlink, which the spool's ancestor checks would otherwise refuse.
+    let temporary_root = cutokyo_core::config::resolve_trusted_root(&std::env::temp_dir());
+    let directory = tempfile::tempdir_in(temporary_root).map_err(|_| {
         ContractError::new(
             ErrorCode::Internal,
             "could not create the deterministic CLI fixture world",
