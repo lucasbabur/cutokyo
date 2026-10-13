@@ -167,6 +167,15 @@ struct MutableState {
     desktop_state_notice: Option<String>,
 }
 
+impl MutableState {
+    /// Adopt saved preferences and apply the crash-report choice to the panic hook
+    /// immediately, so toggling it needs no restart.
+    fn replace_persisted(&mut self, next: PersistedDesktopState) {
+        crate::crash::set_enabled(next.crash_reports_enabled);
+        self.persisted = next;
+    }
+}
+
 enum DesktopCore {
     Owner(Arc<LocalCore>),
     ReadOnly(QueryUseCases),
@@ -499,7 +508,7 @@ impl DesktopService {
         let (latest, notice) = read_persisted_state(&self.state_path)?;
         // A failed decode must not replace the last valid preferences with defaults.
         if notice.is_none() {
-            state.persisted = latest;
+            state.replace_persisted(latest);
         }
         state.desktop_state_notice = notice;
         Ok(())
@@ -766,7 +775,7 @@ impl DesktopService {
         next.onboarding_complete = true;
         next.selected_harnesses = selected;
         self.persist(&state.persisted, &next)?;
-        state.persisted = next;
+        state.replace_persisted(next);
         Ok(action_receipt(
             match request.mode {
                 OnboardingMode::Browse => {
@@ -1555,7 +1564,7 @@ impl DesktopService {
             next.appearance = appearance;
         }
         self.persist(&state.persisted, &next)?;
-        state.persisted = next;
+        state.replace_persisted(next);
         Ok(settings_value(&state.persisted, &shared))
     }
 
@@ -1767,7 +1776,7 @@ impl DesktopService {
         next.onboarding_complete = true;
         next.selected_harnesses = vec![Harness::ClaudeCode];
         self.persist(&state.persisted, &next)?;
-        state.persisted = next;
+        state.replace_persisted(next);
         Ok(())
     }
 }
@@ -2076,6 +2085,15 @@ fn contract_error(error: cutokyo_domain::ContractError) -> String {
         Some(field) => format!("{} (field: {field})", error.message),
         None => error.message,
     }
+}
+
+/// Whether the saved Crash reports preference is on. Lenient for startup: a
+/// missing, unreadable or undecodable preferences file means off.
+pub(crate) fn crash_reports_preference(data_dir: &Path) -> bool {
+    matches!(
+        read_persisted_state(&data_dir.join(STATE_FILE)),
+        Ok((state, None)) if state.crash_reports_enabled
+    )
 }
 
 fn read_persisted_state(path: &Path) -> Result<(PersistedDesktopState, Option<String>), String> {

@@ -475,10 +475,92 @@ fn backup_refuses_nonsticky_writable_directory_ancestors_without_mutation() -> T
     fs::create_dir(&unsafe_parent)?;
     fs::set_permissions(&unsafe_parent, fs::Permissions::from_mode(0o777))?;
     let destination = unsafe_parent.join("backup");
-    assert!(store.create_backup(Some(&destination)).is_err());
+    let Err(error) = store.create_backup(Some(&destination)) else {
+        return Err("backup under a writable ancestor must be refused".into());
+    };
+    assert_eq!(error.code, ErrorCode::InvalidInput);
+    let shown = unsafe_parent.display().to_string();
+    assert!(error.message.contains(&shown), "{}", error.message);
+    assert!(error.message.contains("mode 0777"), "{}", error.message);
+    assert!(
+        error.message.contains(&format!("chmod g-w,o-w {shown}")),
+        "{}",
+        error.message
+    );
+    assert_eq!(error.field.as_deref(), Some("backup_path"));
+    assert_eq!(
+        error.actual.as_deref(),
+        Some(format!("{shown} has mode 0777").as_str())
+    );
     assert!(!destination.exists());
     assert_eq!(store.integrity_check()?, "ok");
+
+    fs::set_permissions(&unsafe_parent, fs::Permissions::from_mode(0o1777))?;
+    let sticky = store.create_backup(Some(&destination))?;
+    assert_eq!(sticky.path, destination);
     Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn backup_path_entries_require_trusted_owner_and_private_or_sticky_directories() {
+    use UnsafeBackupPathEntry::{ForeignOwner, WritableByOthers};
+    let me = Some(1000);
+    // Own home, root-owned system directories, and sticky shared temp are accepted.
+    assert_eq!(unsafe_backup_path_entry(true, 0o40755, 1000, me), None);
+    assert_eq!(unsafe_backup_path_entry(true, 0o40700, 1000, me), None);
+    assert_eq!(unsafe_backup_path_entry(true, 0o40755, 0, me), None);
+    assert_eq!(unsafe_backup_path_entry(true, 0o41777, 0, me), None);
+    assert_eq!(unsafe_backup_path_entry(false, 0o100_666, 1000, me), None);
+    // A non-writable directory created by another user under sticky /tmp is refused.
+    assert_eq!(
+        unsafe_backup_path_entry(true, 0o40755, 1001, me),
+        Some(ForeignOwner {
+            owner: 1001,
+            current: 1000
+        })
+    );
+    assert_eq!(
+        unsafe_backup_path_entry(false, 0o100_600, 1001, me),
+        Some(ForeignOwner {
+            owner: 1001,
+            current: 1000
+        })
+    );
+    // Root running Cutokyo trusts only root-owned entries.
+    assert!(unsafe_backup_path_entry(true, 0o40700, 1000, Some(0)).is_some());
+    assert_eq!(
+        unsafe_backup_path_entry(true, 0o40777, 1000, me),
+        Some(WritableByOthers { mode: 0o777 })
+    );
+    assert_eq!(
+        unsafe_backup_path_entry(true, 0o40775, 0, me),
+        Some(WritableByOthers { mode: 0o775 })
+    );
+    // Without an effective user ID only the owner check is skipped.
+    assert_eq!(unsafe_backup_path_entry(true, 0o40755, 1001, None), None);
+    assert!(unsafe_backup_path_entry(true, 0o40757, 1001, None).is_some());
+
+    let error = unsafe_backup_path_error(
+        Path::new("/tmp/planted"),
+        ForeignOwner {
+            owner: 1001,
+            current: 1000,
+        },
+    );
+    assert_eq!(error.code, ErrorCode::InvalidInput);
+    assert!(error.message.contains("/tmp/planted"), "{}", error.message);
+    assert!(error.message.contains("uid 1001"), "{}", error.message);
+    assert!(
+        error.message.contains("directory you own"),
+        "{}",
+        error.message
+    );
+    assert_eq!(error.field.as_deref(), Some("backup_path"));
+    assert_eq!(
+        error.expected.as_deref(),
+        Some("owned by the current user (uid 1000) or root")
+    );
 }
 
 #[cfg(unix)]

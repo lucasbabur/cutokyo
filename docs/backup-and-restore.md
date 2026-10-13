@@ -5,6 +5,7 @@
 - Create a backup in the desktop
 - Restore history without handling digests
 - Use the CLI
+- Refused locations
 - Understand what a backup contains
 - Recovery and verification tests
 
@@ -52,6 +53,10 @@ Restore with explicit confirmation:
 cutokyo restore /path/to/history-backup --confirm
 ```
 
+### Refused locations
+
+On Unix, Cutokyo checks every existing directory on a backup or restore path, and the target itself. It refuses a symlink anywhere on the path, a directory that group or other users can write to unless it has the sticky bit (as `/tmp` does), and anything owned by a user other than you or root. Any of these lets another account swap or read the backup while Cutokyo works on it. The error names the refused directory with its mode or owner. Fix it with `chmod g-w,o-w <dir>` on a directory you own, or choose a location under a private directory such as your home. On WSL, Windows drives under `/mnt/c` and other drvfs mounts usually report mode `0777`, so pick a Linux-side directory such as `~/cutokyo-backups` and copy the finished backup to Windows afterwards.
+
 Add `--json` for machine-readable receipts. Creation returns `path`, `createdAt`, `byteLength`, `sessionCount`, and `scope`. Restore returns `recoveryPath`, `restoredSessionCount`, and the measured `integrityResult`. No digest argument or separate verification command is required.
 
 Only the process owning Cutokyo's single-writer lock can create or restore history. A read-only second desktop window refuses these operations rather than taking the writer lock.
@@ -70,6 +75,6 @@ On Unix, backup directories use owner-only `0700` permissions and database and m
 
 The implementation and tests were written in this repository against its current contracts. No predecessor code or assets were used. The work reuses the pinned `rusqlite` online backup API, `tempfile`, and `url`. It uses maintained `rustix` no-replace directory publication on Linux and macOS. The third-party record documents its release and license. It adds no native dialog dependency; the default location works without a file picker.
 
-Regression tests cover genuine SQLite restore and reopened search, backup tampering, unmanifested WAL refusal, immutable reads without sidecars, stale confirmation, retained prior history, injected post-apply and sync failures, failed publication cleanup, late destination collisions, owner-only permissions, unsafe writable ancestors, live-path aliases, missing current search indexes, older derivation counts, and overlapping live readers. Native service and CLI tests use isolated roots. React tests cover create/list/restore, cancellation, duplicate actions, disabled dismissal, modal-local errors, and history reload. Browser fixtures remain in-memory models and are not proof of native persistence.
+Regression tests cover genuine SQLite restore and reopened search, backup tampering, unmanifested WAL refusal, immutable reads without sidecars, stale confirmation, retained prior history, injected post-apply and sync failures, failed publication cleanup, late destination collisions, owner-only permissions, unsafe writable or foreign-owned ancestors, live-path aliases, missing current search indexes, older derivation counts, and overlapping live readers. Native service and CLI tests use isolated roots. React tests cover create/list/restore, cancellation, duplicate actions, disabled dismissal, modal-local errors, and history reload. Browser fixtures remain in-memory models and are not proof of native persistence.
 
 The native package journey creates a backup, deletes history through the visible confirmation, restores through the visible dialog, checks the refreshed history list, opens the recovered session, rejects a tampered copy, and rediscovers the backup after an application restart. Core IPC assertions independently check the native session counts.

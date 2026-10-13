@@ -1,9 +1,10 @@
 import { ArrowRight, CircleDashed, ShieldAlert } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useId, useMemo } from "react";
 
 import { useCommands, useCommandResource } from "../commands/context.js";
 import type { DashboardResponse } from "../contracts.js";
 import {
+  costCaption,
   estimateCost,
   formatCompact,
   formatInteger,
@@ -70,6 +71,7 @@ function DashboardContent({
     () => estimateCost(data.sessions, data.prices),
     [data.prices, data.sessions],
   );
+  const costId = useId();
   const activeHarnessUsage = harnessUsage.filter((row) => row.sessionCount > 0);
   const knownGrandTotal = activeHarnessUsage.reduce(
     (total, row) => total + (row.totalTokens ?? 0),
@@ -139,16 +141,17 @@ function DashboardContent({
                 {formatCompact(usage.outputTokens.value)}
               </strong>
             </article>
-            <article className="stat-card">
+            <article
+              className="stat-card"
+              aria-labelledby={`${costId}-title ${costId}-value ${costId}-caption`}
+            >
               <div className="stat-card__topline">
-                <span>Cost in view</span>
+                <span id={`${costId}-title`}>Cost in view (USD)</span>
               </div>
-              <strong className="stat-card__value">
+              <strong id={`${costId}-value`} className="stat-card__value">
                 {formatMicros(estimatedCost.micros)}
               </strong>
-              <p>
-                {estimatedCost.label === "estimated" ? "Estimated" : "Unknown"}
-              </p>
+              <p id={`${costId}-caption`}>{costCaption(estimatedCost)}</p>
             </article>
           </section>
 

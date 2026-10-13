@@ -462,7 +462,7 @@ export function SettingsPage({
           </SettingsRow>
           <SettingsRow
             title="Crash reports"
-            description="Saved on this device only."
+            description="Records desktop app panics on this device only."
           >
             <label className="switch-control">
               <span>{data.crash_reports_enabled ? "Enabled" : "Disabled"}</span>

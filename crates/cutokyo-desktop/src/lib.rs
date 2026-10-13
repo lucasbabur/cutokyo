@@ -3,6 +3,8 @@
 #[cfg(all(feature = "native-e2e", not(debug_assertions)))]
 compile_error!("native-e2e is test-only and cannot be enabled in release builds");
 
+#[cfg(any(feature = "desktop-runtime", test))]
+mod crash;
 mod health_binding;
 #[cfg(any(feature = "desktop-runtime", test))]
 mod service;
