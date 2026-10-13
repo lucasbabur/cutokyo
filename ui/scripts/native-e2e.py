@@ -133,7 +133,9 @@ def runtime_environment(root: Path, evidence: Path, application: Path, port: int
     # Keep only process/display plumbing, not provider credentials, operator
     # harness locations, fixture selectors, proxy settings or loader hooks.
     allowed = {
-        "PATH", "DISPLAY", "WAYLAND_DISPLAY", "DBUS_SESSION_BUS_ADDRESS",
+        # XAUTHORITY: an X server started with -auth (xvfb-run) refuses clients
+        # without its cookie, and the private HOME has no ~/.Xauthority.
+        "PATH", "DISPLAY", "XAUTHORITY", "WAYLAND_DISPLAY", "DBUS_SESSION_BUS_ADDRESS",
         "LANG", "LC_ALL", "TZ", "GDK_BACKEND", "LIBGL_ALWAYS_SOFTWARE",
         "WEBKIT_DISABLE_COMPOSITING_MODE", "WEBKIT_DISABLE_DMABUF_RENDERER",
         "HYPRLAND_INSTANCE_SIGNATURE",

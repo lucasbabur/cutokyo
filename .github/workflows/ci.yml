@@ -144,6 +144,13 @@ jobs:
         # The resume journey opens a real Kitty window (TERMLAUNCHER=kitty), which
         # needs a 24-bit GLX visual; xvfb-run's default screen is 8-bit.
         run: xvfb-run -a -s "-screen 0 1920x1080x24" pnpm --dir ui test:e2e:tauri
+      - name: Keep native journey evidence from a failed run
+        if: failure() && runner.os == 'Linux'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-evidence
+          path: target/native-evidence
+          if-no-files-found: ignore
 
   advisory-warnings:
     name: Visible non-blocking dependency and architecture warnings

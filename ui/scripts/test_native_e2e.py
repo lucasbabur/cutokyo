@@ -68,6 +68,7 @@ class NativePackageHarness(unittest.TestCase):
         synthetic.update({
             "PATH": "/usr/bin:/bin",
             "DISPLAY": ":synthetic-real-display",
+            "XAUTHORITY": "/xvfb-run/Xauthority",
             "WAYLAND_DISPLAY": "synthetic-wayland",
             "GDK_BACKEND": "wayland",
             "HYPRLAND_INSTANCE_SIGNATURE": "synthetic-hyprland",
@@ -86,6 +87,7 @@ class NativePackageHarness(unittest.TestCase):
             resolve_cli.return_value = str(cli)
             runtime = NATIVE.runtime_environment(root, root / "evidence", root / "package/usr/bin/cutokyo-desktop", 12345)
             self.assertEqual(runtime["DISPLAY"], synthetic["DISPLAY"])
+            self.assertEqual(runtime["XAUTHORITY"], synthetic["XAUTHORITY"])
             self.assertEqual(runtime["GDK_BACKEND"], "x11")
             self.assertEqual(runtime["WEBKIT_DISABLE_DMABUF_RENDERER"], "1")
             self.assertNotIn("WAYLAND_DISPLAY", runtime)
