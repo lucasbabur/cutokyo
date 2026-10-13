@@ -623,14 +623,26 @@ impl Application {
             return Ok(());
         };
         let roots = InventoryRoots::discover(Vec::new()).map_err(unavailable)?;
-        if !path.is_absolute() || !path.starts_with(roots.claude.join("projects")) {
-            return Err(unavailable(
-                "Claude transcript must be inside its documented native projects directory",
-            ));
+        let projects = roots.claude.join("projects");
+        let outside = || {
+            unavailable("Claude transcript must be inside its documented native projects directory")
+        };
+        let (Some(parent), Some(name)) = (path.parent(), path.file_name()) else {
+            return Err(outside());
+        };
+        if !path.is_absolute() {
+            return Err(outside());
         }
-        if let Some(parent) = path.parent() {
-            safe_ancestors(parent)?;
+        safe_ancestors(&projects)?;
+        // The harness reports the path through its own, unresolved HOME. Compare real
+        // locations so a symlinked ancestor of HOME matches, while a link that leads
+        // out of the projects directory still lands outside it and is refused.
+        let real = |directory: &Path| dunce::canonicalize(directory).map_err(|_| outside());
+        let parent = real(parent)?;
+        if !parent.starts_with(real(&projects)?) {
+            return Err(outside());
         }
+        let path = parent.join(name);
         let cwd = projection
             .get("project_path")
             .and_then(serde_json::Value::as_str)

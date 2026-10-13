@@ -1445,3 +1445,64 @@ fn uninstall_is_repeatable_and_preserves_history_and_config()
     assert!(database.is_file());
     Ok(())
 }
+
+/// macOS places temporary directories under `/var`, a symlink to `/private/var`.
+/// Roots the user or OS selected may sit behind symlinks; a root Cutokyo owns may not.
+#[cfg(unix)]
+#[test]
+fn symlinked_trusted_roots_work_but_a_symlinked_data_directory_is_refused()
+-> Result<(), Box<dyn std::error::Error>> {
+    let directory = tempfile::tempdir()?;
+    let real = directory.path().join("real");
+    let skill = real.join("home/.claude/skills/linked-root-skill");
+    fs::create_dir_all(&skill)?;
+    fs::write(
+        skill.join("SKILL.md"),
+        "---\nname: linked-root-skill\ndescription: Behind a symlinked home\n---\n# Skill",
+    )?;
+    let root = directory.path().join("link");
+    std::os::unix::fs::symlink(&real, &root)?;
+
+    assert_command_succeeded(&invoke(&root, &["setup", "--json"])?);
+    assert_command_succeeded(&invoke(&root, &["drain", "--json"])?);
+    let backup = root.join("backups/linked");
+    fs::create_dir_all(root.join("backups"))?;
+    assert_command_succeeded(&invoke(
+        &root,
+        &["backup", backup.to_str().ok_or("utf8")?, "--json"],
+    )?);
+    assert!(real.join("backups/linked/history.db").is_file());
+
+    let search = Command::new(binary())
+        .env("TMPDIR", &root)
+        .arg("--config-file")
+        .arg(root.join("config/config.toml"))
+        .arg("--data-dir")
+        .arg(root.join("data"))
+        .args(["sessions", "search", "--fixture", "all", "--json"])
+        .output()?;
+    assert_command_succeeded(&search);
+    assert_eq!(decode(&search)?["ok"], true);
+
+    let list = invoke_native_inventory(&root, &["list"])?;
+    assert!(
+        list["data"]["items"]
+            .as_array()
+            .ok_or("inventory items")?
+            .iter()
+            .any(|item| item["name"] == "linked-root-skill")
+    );
+
+    let owned = directory.path().join("owned-data-link");
+    std::os::unix::fs::symlink(real.join("data"), &owned)?;
+    let refused = Command::new(binary())
+        .arg("--config-file")
+        .arg(root.join("config/config.toml"))
+        .arg("--data-dir")
+        .arg(&owned)
+        .args(["drain", "--json"])
+        .output()?;
+    assert_eq!(refused.status.code(), Some(64));
+    assert_eq!(decode(&refused)?["error"]["code"], "invalid_input");
+    Ok(())
+}
