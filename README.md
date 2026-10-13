@@ -18,7 +18,8 @@ Local history, exact resume and tool management for Claude Code, Codex and OpenC
 
 <br />
 
-<img src="docs/assets/overview.png" alt="The Cutokyo desktop app showing sessions, token usage per harness, and quota windows" width="900" />
+<img src="docs/assets/overview.png" alt="The Cutokyo desktop app showing sessions, token usage per harness, and quota windows (sample data)" width="900" />
+<br /><sub>Overview with sample data</sub>
 
 </div>
 
@@ -73,9 +74,10 @@ or copy a skill into another harness with a preview first.
 <td valign="top">
 
 ### 📊 See usage across harnesses
-Token usage and estimated cost per harness, plus quota windows. When two
-sources report the same request, Cutokyo shows which one it counted and why,
-so nothing is counted twice.
+Token usage per harness and quota windows. When two sources report the same
+request, Cutokyo shows which one it counted and why, so nothing is counted
+twice. Cost appears only when a harness reports it. Cutokyo doesn't make up
+prices.
 
 </td>
 </tr>
