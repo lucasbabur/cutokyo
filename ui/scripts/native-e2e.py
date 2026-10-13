@@ -559,7 +559,7 @@ def main() -> None:
          "-p", "fake-harness", "--bin", "fake-resume-harness"], cwd=REPOSITORY, env=env)
     run(["cargo", "build", "--locked", "--manifest-path", str(REPOSITORY / "Cargo.toml"),
          "-p", "cutokyo-cli", "--bin", "cutokyo"], cwd=REPOSITORY, env=env)
-    run(["cargo", "tauri", "build", "--debug", "--bundles", "deb", "--features", "native-e2e",
+    run(["pnpm", "exec", "tauri", "build", "--debug", "--bundles", "deb", "--features", "native-e2e",
          "--config", json.dumps(tauri_config(root))], cwd=REPOSITORY / "crates/cutokyo-desktop", env=env)
     package, application = extract_package(root, env)
     retained_package = evidence / package.name
