@@ -2,8 +2,7 @@
 
 use std::{
     collections::BTreeSet,
-    fs::{self, File},
-    io,
+    fs, io,
     sync::Arc,
     thread,
     time::{Duration, UNIX_EPOCH},
@@ -466,6 +465,14 @@ fn sqlite_concurrency_backup_integrity() -> Result<(), Box<dyn std::error::Error
     Ok(())
 }
 
+/// Windows refuses `SetFileTime` through a read-only handle, so open for write.
+fn set_modified(path: &std::path::Path, time: std::time::SystemTime) -> std::io::Result<()> {
+    fs::OpenOptions::new()
+        .write(true)
+        .open(path)?
+        .set_modified(time)
+}
+
 #[test]
 fn spool_replay_quarantine_caps() -> Result<(), Box<dyn std::error::Error>> {
     let directory = tempfile::tempdir()?;
@@ -490,7 +497,7 @@ fn spool_replay_quarantine_caps() -> Result<(), Box<dyn std::error::Error>> {
     let base_now = UNIX_EPOCH + Duration::from_secs(2_000_000_000);
     let receipt = age_spool.append_at(&event, base_now)?;
     let entry_path = age_root.join(&receipt.entry_key);
-    File::open(&entry_path)?.set_modified(base_now - Duration::from_hours(720))?;
+    set_modified(&entry_path, base_now - Duration::from_hours(720))?;
     let exact = age_spool.status_at(base_now)?;
     assert_eq!(exact.cap_reason, None, "the 30-day boundary is inclusive");
     let over = age_spool.status_at(base_now + Duration::from_secs(1))?;
@@ -533,7 +540,7 @@ fn spool_replay_quarantine_caps() -> Result<(), Box<dyn std::error::Error>> {
         },
     )?;
     let crossing_receipt = crossing_spool.append_at(&event, base_now)?;
-    File::open(crossing_root.join(&crossing_receipt.entry_key))?.set_modified(base_now)?;
+    set_modified(&crossing_root.join(&crossing_receipt.entry_key), base_now)?;
     assert!(crossing_spool.append_at(&event, base_now).is_err());
     let crossing_entries = crossing_spool.pending_entries()?;
     assert_eq!(crossing_entries.len(), 1);
