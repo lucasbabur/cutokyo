@@ -428,7 +428,9 @@ def run_native_phase(application: Path, env: dict[str, str], phase: str) -> int:
                                args=(application, done, state), daemon=True)
     watcher.start()
     try:
-        run(["pnpm", "test:e2e:tauri:runner"], cwd=UI,
+        # Call the installed runner directly: under the private HOME, pnpm sees
+        # a different store and would try to reinstall node_modules mid-journey.
+        run([str(UI / "node_modules/.bin/wdio"), "run", "./wdio.conf.ts"], cwd=UI,
             env={**env, "CUTOKYO_NATIVE_PHASE": phase})
     finally:
         done.set()
