@@ -73,7 +73,7 @@ impl BundleReceipt {
         }
         // Publication takes the same stable sidecar lock. Keep it through both
         // comparison and removal so a newer, unbundled record cannot be unlinked.
-        let _crash_lock = crate::logging::lock_crash_record(&paths.crash_file)
+        let _crash_lock = cutokyo_core::crash::lock_crash_record(&paths.crash_file)
             .map_err(|error| format!("lock crash record before receipt-bound clearing: {error}"))?;
         let current = CrashFingerprint::from_path(&paths.crash_file)
             .map_err(|error| format!("read crash record before receipt-bound clearing: {error}"))?;
@@ -496,9 +496,83 @@ std::thread_local! {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{fs, io::Write as _};
+
+    use cutokyo_core::app::RuntimePaths;
 
     use super::redacted_logs;
+
+    const REPLACEMENT_CRASH: &[u8] = br#"{"schema_version":1,"category":"panic","pid":2}"#;
+    const WRITER_PATH_ENV: &str = "CUTOKYO_UNIT_TEST_CRASH_WRITER_PATH";
+    const WRITER_EVENT_PREFIX: &str = "CUTOKYO_CRASH_WRITER:";
+
+    fn writer_event(event: &str) -> std::io::Result<()> {
+        let mut output = std::io::stdout().lock();
+        writeln!(output, "{WRITER_EVENT_PREFIX}{event}")?;
+        output.flush()
+    }
+
+    fn crash_writer_child(path: &std::path::Path) -> std::io::Result<()> {
+        use std::io::Read as _;
+
+        // The parent releases us only after the receipt fingerprint comparison.
+        std::io::stdin().read_exact(&mut [0_u8])?;
+        // Probe the shared sidecar the publisher is about to lock; the core
+        // crash tests prove publication itself waits on that lock.
+        let sidecar = fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(path.with_extension("lock"))?;
+        match sidecar.try_lock() {
+            Err(fs::TryLockError::WouldBlock) => writer_event("blocked")?,
+            Err(fs::TryLockError::Error(error)) => return Err(error),
+            Ok(()) => sidecar.unlock()?,
+        }
+        drop(sidecar);
+        cutokyo_core::crash::write_crash_atomic(path, REPLACEMENT_CRASH)?;
+        writer_event("published")
+    }
+
+    struct CrashWriter(std::process::Child);
+
+    impl CrashWriter {
+        fn finish(&mut self) -> std::io::Result<std::process::ExitStatus> {
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(15);
+            loop {
+                if let Some(status) = self.0.try_wait()? {
+                    return Ok(status);
+                }
+                if std::time::Instant::now() >= deadline {
+                    return Err(std::io::Error::other("crash writer failed to exit"));
+                }
+                // Watchdog only; the race schedule uses pipe handshakes, not sleeps.
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+        }
+    }
+
+    impl Drop for CrashWriter {
+        fn drop(&mut self) {
+            let _ignored = self.0.kill();
+            let _ignored = self.0.wait();
+        }
+    }
+
+    fn crash_receipt(
+        paths: &RuntimePaths,
+        output: &std::path::Path,
+    ) -> Result<super::BundleReceipt, Box<dyn std::error::Error>> {
+        let app = cutokyo_core::app::Application::new();
+        let overrides = cutokyo_core::app::SettingsOverrides::default();
+        Ok(super::create(
+            paths,
+            output,
+            true,
+            &app.contract_snapshot(),
+            &app.resolve_settings(paths, &overrides)?,
+            &app.doctor(paths, &overrides),
+        )?)
+    }
 
     #[test]
     fn bundle_log_projection_drops_messages_secrets_and_paths()
@@ -517,6 +591,123 @@ mod tests {
         assert!(!output.contains("SENTINEL_SECRET"));
         assert!(!output.contains("prompt"));
         assert!(!output.contains("/home/alice"));
+        Ok(())
+    }
+
+    #[test]
+    fn bundle_clear_preserves_concurrent_crash_publication()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use std::{io::BufRead as _, process::Stdio};
+
+        if let Some(path) = std::env::var_os(WRITER_PATH_ENV) {
+            return Ok(crash_writer_child(std::path::Path::new(&path))?);
+        }
+        let directory = tempfile::tempdir()?;
+        let paths = RuntimePaths::discover(
+            Some(directory.path().join("config.toml")),
+            Some(directory.path().join("data")),
+        )?;
+        cutokyo_core::crash::write_crash_atomic(
+            &paths.crash_file,
+            br#"{"category":"panic","pid":1}"#,
+        )?;
+        let receipt = crash_receipt(&paths, &directory.path().join("bundle.tar.gz"))?;
+        let mut writer = CrashWriter(
+            std::process::Command::new(std::env::current_exe()?)
+                .args([
+                    "--exact",
+                    "bundle::tests::bundle_clear_preserves_concurrent_crash_publication",
+                    "--nocapture",
+                ])
+                .env(WRITER_PATH_ENV, &paths.crash_file)
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .spawn()?,
+        );
+        let mut start = writer.0.stdin.take().ok_or("missing writer input")?;
+        let output = writer.0.stdout.take().ok_or("missing writer output")?;
+        let (send, receive) = std::sync::mpsc::channel();
+        let reader = std::thread::spawn(move || {
+            for line in std::io::BufReader::new(output)
+                .lines()
+                .map_while(Result::ok)
+            {
+                if let Some(event) = line.strip_prefix(WRITER_EVENT_PREFIX) {
+                    let _ignored = send.send(event.to_owned());
+                }
+            }
+        });
+        super::AFTER_CRASH_COMPARISON.set(Some(Box::new(move || {
+            start.write_all(b"x").map_err(|error| error.to_string())?;
+            let event = receive
+                .recv_timeout(std::time::Duration::from_secs(15))
+                .map_err(|error| format!("crash writer handshake: {error}"))?;
+            // With coordination, the writer proves it hit the held OS lock.
+            // Without it, it publishes B before we unlink: the final assertion
+            // must detect the lost unbundled record, not just a missing lock.
+            if !matches!(event.as_str(), "blocked" | "published") {
+                return Err(format!("unexpected crash writer event: {event}"));
+            }
+            Ok(())
+        })));
+        receipt.clear_included_crash(&paths)?;
+        assert!(writer.finish()?.success());
+        reader.join().map_err(|_| "writer output reader failed")?;
+        assert_eq!(
+            fs::read(&paths.crash_file).ok().as_deref(),
+            Some(REPLACEMENT_CRASH),
+            "receipt-bound clearing must preserve the unbundled replacement crash"
+        );
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt as _;
+            assert_eq!(
+                fs::metadata(paths.crash_file.with_extension("lock"))?
+                    .permissions()
+                    .mode()
+                    & 0o777,
+                0o600
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn bundle_clear_rechecks_crash_and_archive_before_removal()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let directory = tempfile::tempdir()?;
+        let paths = RuntimePaths::discover(
+            Some(directory.path().join("config.toml")),
+            Some(directory.path().join("data")),
+        )?;
+        cutokyo_core::crash::write_crash_atomic(
+            &paths.crash_file,
+            br#"{"category":"panic","pid":1}"#,
+        )?;
+        let receipt = crash_receipt(&paths, &directory.path().join("bundle.tar.gz"))?;
+        // Opposite ordering: B is already published when clearing acquires the lock.
+        cutokyo_core::crash::write_crash_atomic(&paths.crash_file, REPLACEMENT_CRASH)?;
+        assert!(
+            receipt
+                .clear_included_crash(&paths)
+                .is_err_and(|error| error.contains("pending crash record changed"))
+        );
+        assert_eq!(fs::read(&paths.crash_file)?, REPLACEMENT_CRASH);
+        let receipt = crash_receipt(&paths, &receipt.output)?;
+        fs::write(&receipt.output, b"not the receipt-bound archive")?;
+        assert!(
+            receipt
+                .clear_included_crash(&paths)
+                .is_err_and(|error| error.contains("bundle changed"))
+        );
+        assert_eq!(fs::read(&paths.crash_file)?, REPLACEMENT_CRASH);
+        let receipt = crash_receipt(&paths, &receipt.output)?;
+        receipt.clear_included_crash(&paths)?;
+        assert!(!paths.crash_file.exists());
+        assert!(paths.crash_file.with_extension("lock").is_file());
+        // Successful clearing must leave the lock usable by the next publisher.
+        cutokyo_core::crash::write_crash_atomic(&paths.crash_file, REPLACEMENT_CRASH)?;
+        assert_eq!(fs::read(&paths.crash_file)?, REPLACEMENT_CRASH);
         Ok(())
     }
 }

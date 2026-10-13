@@ -432,8 +432,14 @@ fn main() -> ExitCode {
         Ok(paths) => paths,
         Err(error) => return render_failure("startup", &error, cli.json, false),
     };
-    logging::install_panic_hook(&paths);
-    let pending_crash = logging::pending_crash(&paths);
+    // The CLI records every panic and replaces the default hook so the panic
+    // payload (which may carry prompts, paths or credentials) never reaches stderr.
+    cutokyo_core::crash::install_panic_hook(
+        paths.crash_file.clone(),
+        || true,
+        cutokyo_core::crash::PreviousHook::Replace,
+    );
+    let pending_crash = cutokyo_core::crash::pending_crash(&paths.crash_file);
     let log_guard = initialize_logging(&paths, cli.json, cli.command.as_ref());
     if run_internal_test_probe(log_guard.as_ref()) {
         return ExitCode::from(70);

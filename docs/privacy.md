@@ -77,6 +77,16 @@ advertises a pending record; Cutokyo does not upload it. Inclusion in a bundle
 requires `bundle --include-crash`, and clearing it requires a successful bundle
 plus `--clear-crash`.
 
+Both the CLI and the desktop app write the same record to `crash.json` in the data
+directory. The desktop **Crash reports** preference controls only desktop panics:
+it is off by default, takes effect without a restart, and while it is off a desktop
+panic writes nothing. The desktop still prints the standard panic message to its
+own stderr. The CLI records every panic regardless of that preference and does not
+print the panic message.
+
+Only Rust panics are recorded. A process that aborts, is killed, or dies from a
+signal (including a native crash inside the webview or toolkit) leaves no record.
+
 ## Diagnostic bundles
 
 `cutokyo bundle` first previews a manifest. The archive allowlist is:
