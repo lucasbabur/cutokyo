@@ -96,7 +96,8 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             xvfb \
-            bubblewrap
+            bubblewrap \
+            kitty
       - name: Let bubblewrap create its offline network namespace
         if: runner.os == 'Linux'
         # Ubuntu 24.04 runners restrict unprivileged user namespaces through
@@ -137,7 +138,9 @@ jobs:
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/tauri-build-source.json" -- pnpm tauri build --debug --no-bundle
       - name: Exercise native Tauri journey on Linux
         if: runner.os == 'Linux'
-        run: xvfb-run -a pnpm --dir ui test:e2e:tauri
+        # The resume journey opens a real Kitty window (TERMLAUNCHER=kitty), which
+        # needs a 24-bit GLX visual; xvfb-run's default screen is 8-bit.
+        run: xvfb-run -a -s "-screen 0 1920x1080x24" pnpm --dir ui test:e2e:tauri
 
   advisory-warnings:
     name: Visible non-blocking dependency and architecture warnings
