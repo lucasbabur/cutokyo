@@ -103,10 +103,12 @@ impl RuntimePaths {
 /// exist yet are appended unchanged, so every later ancestor check still sees
 /// and refuses a symlink planted there. Relative paths and paths whose existing
 /// prefix cannot be resolved are returned unchanged and keep failing those
-/// checks as before.
+/// checks as before. Windows paths are returned unchanged.
 #[must_use]
 pub fn resolve_trusted_root(path: &Path) -> PathBuf {
-    if !path.is_absolute() {
+    // Windows roots are left as given: there the refusals target junctions and
+    // links users create, and canonicalizing would only rewrite 8.3 short names.
+    if cfg!(not(unix)) || !path.is_absolute() {
         return path.to_path_buf();
     }
     for ancestor in path.ancestors() {
