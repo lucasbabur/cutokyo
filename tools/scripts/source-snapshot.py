@@ -173,6 +173,16 @@ def head_oid(root: Path) -> str:
     return run_git(root, ["rev-parse", "--verify", "HEAD"], "could not resolve HEAD").decode("ascii").strip()
 
 
+def observed_head_oid(root: Path) -> str | None:
+    """HEAD while the command runs; None while a ref rewrite leaves it unresolvable."""
+    completed = subprocess.run(
+        ["git", "-C", os.fspath(root), "rev-parse", "--verify", "--quiet", "HEAD"],
+        check=False,
+        capture_output=True,
+    )
+    return completed.stdout.decode("ascii").strip() if completed.returncode == 0 else None
+
+
 def index_sha256(root: Path) -> str:
     raw = run_git(root, ["ls-files", "--stage", "-z"], "could not fingerprint the Git index")
     return hashlib.sha256(raw).hexdigest()
@@ -338,7 +348,9 @@ def run_guarded_command(
         )
         now = time.monotonic()
         if now >= next_git_check:
-            current_head = head_oid(root)
+            # A command rewriting packed-refs can leave HEAD briefly unresolvable.
+            # That is movement to record, not a reason to abandon the running command.
+            current_head = observed_head_oid(root)
             current_index = index_sha256(root)
             if current_head != before.head:
                 observed_state_changes.add("HEAD")
