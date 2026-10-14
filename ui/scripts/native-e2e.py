@@ -133,7 +133,9 @@ def runtime_environment(root: Path, evidence: Path, application: Path, port: int
     # Keep only process/display plumbing, not provider credentials, operator
     # harness locations, fixture selectors, proxy settings or loader hooks.
     allowed = {
-        "PATH", "DISPLAY", "WAYLAND_DISPLAY", "DBUS_SESSION_BUS_ADDRESS",
+        # XAUTHORITY: an X server started with -auth (xvfb-run) refuses clients
+        # without its cookie, and the private HOME has no ~/.Xauthority.
+        "PATH", "DISPLAY", "XAUTHORITY", "WAYLAND_DISPLAY", "DBUS_SESSION_BUS_ADDRESS",
         "LANG", "LC_ALL", "TZ", "GDK_BACKEND", "LIBGL_ALWAYS_SOFTWARE",
         "WEBKIT_DISABLE_COMPOSITING_MODE", "WEBKIT_DISABLE_DMABUF_RENDERER",
         "HYPRLAND_INSTANCE_SIGNATURE",
@@ -428,7 +430,9 @@ def run_native_phase(application: Path, env: dict[str, str], phase: str) -> int:
                                args=(application, done, state), daemon=True)
     watcher.start()
     try:
-        run(["pnpm", "test:e2e:tauri:runner"], cwd=UI,
+        # Call the installed runner directly: under the private HOME, pnpm sees
+        # a different store and would try to reinstall node_modules mid-journey.
+        run([str(UI / "node_modules/.bin/wdio"), "run", "./wdio.conf.ts"], cwd=UI,
             env={**env, "CUTOKYO_NATIVE_PHASE": phase})
     finally:
         done.set()
@@ -559,7 +563,7 @@ def main() -> None:
          "-p", "fake-harness", "--bin", "fake-resume-harness"], cwd=REPOSITORY, env=env)
     run(["cargo", "build", "--locked", "--manifest-path", str(REPOSITORY / "Cargo.toml"),
          "-p", "cutokyo-cli", "--bin", "cutokyo"], cwd=REPOSITORY, env=env)
-    run(["cargo", "tauri", "build", "--debug", "--bundles", "deb", "--features", "native-e2e",
+    run(["pnpm", "exec", "tauri", "build", "--debug", "--bundles", "deb", "--features", "native-e2e",
          "--config", json.dumps(tauri_config(root))], cwd=REPOSITORY / "crates/cutokyo-desktop", env=env)
     package, application = extract_package(root, env)
     retained_package = evidence / package.name

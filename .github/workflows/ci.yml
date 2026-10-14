@@ -96,7 +96,18 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             xvfb \
-            bubblewrap
+            bubblewrap \
+            kitty
+      - name: Let bubblewrap create its offline network namespace
+        if: runner.os == 'Linux'
+        # Ubuntu 24.04 runners restrict unprivileged user namespaces through
+        # AppArmor, so bwrap cannot configure loopback for the offline npm smoke.
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Allow long paths in Git clones made by the tests
+        if: runner.os == 'Windows'
+        # Release tests clone the repository under %TEMP%; tracked evidence paths
+        # reach about 210 characters and exceed MAX_PATH there.
+        run: git config --global core.longpaths true
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.13"
@@ -125,12 +136,21 @@ jobs:
         if: runner.os == 'macOS'
         run: echo "TMPDIR=$(cd "$TMPDIR" && pwd -P)" >> "$GITHUB_ENV"
       - name: Test Rust workspace without tracked-source rewrites
-        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/test-source.json" -- cargo test --locked --workspace
+        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/test-source.json" -- cargo test --locked --workspace --no-fail-fast
       - name: Build actual Tauri application without tracked-source rewrites
         run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/tauri-build-source.json" -- pnpm tauri build --debug --no-bundle
       - name: Exercise native Tauri journey on Linux
         if: runner.os == 'Linux'
-        run: xvfb-run -a pnpm --dir ui test:e2e:tauri
+        # The resume journey opens a real Kitty window (TERMLAUNCHER=kitty), which
+        # needs a 24-bit GLX visual; xvfb-run's default screen is 8-bit.
+        run: xvfb-run -a -s "-screen 0 1920x1080x24" pnpm --dir ui test:e2e:tauri
+      - name: Keep native journey evidence from a failed run
+        if: failure() && runner.os == 'Linux'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-evidence
+          path: target/native-evidence
+          if-no-files-found: ignore
 
   advisory-warnings:
     name: Visible non-blocking dependency and architecture warnings

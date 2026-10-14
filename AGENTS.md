@@ -45,8 +45,7 @@ pnpm --dir ui test:e2e:web     # Playwright on fixtures; needs port 4173 free
   fail on uncommitted work. That is expected.
 - `pnpm --dir ui test:e2e:tauri` builds the real app and drives real windows on
   the host's Hyprland session. Ask before running it on someone's desktop. It
-  calls `cargo tauri`; if that is missing, put a `cargo-tauri` shim on `PATH`
-  that runs `node_modules/.bin/tauri`.
+  builds with the workspace's pinned `@tauri-apps/cli` (`pnpm exec tauri`).
 - On macOS, run `cargo test` with `TMPDIR="$(cd "$TMPDIR" && pwd -P)"`. `/var` is
   a symlink to `/private/var`, and tests hand temp paths straight to code that
   refuses symlinked ancestors; production resolves its trusted roots first.

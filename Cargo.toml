@@ -74,6 +74,30 @@ panic = "deny"
 debug = 0
 incremental = false
 
+# The secret scanner validates and compiles its detector set on every store
+# open. Unoptimised, that takes ~8 s of CPU per CLI call (`cutokyo drain`) and
+# overruns the native journey's 15 s bound on CI runners; optimised, ~1 s.
+[profile.dev.package.keyhog-core]
+opt-level = 3
+
+[profile.dev.package.keyhog-scanner]
+opt-level = 3
+
+[profile.dev.package.regex]
+opt-level = 3
+
+[profile.dev.package.regex-automata]
+opt-level = 3
+
+[profile.dev.package.regex-syntax]
+opt-level = 3
+
+[profile.dev.package.aho-corasick]
+opt-level = 3
+
+[profile.dev.package.memchr]
+opt-level = 3
+
 [profile.test]
 debug = 0
 incremental = false

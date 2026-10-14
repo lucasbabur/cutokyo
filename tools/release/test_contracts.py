@@ -109,6 +109,16 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(result.returncode, 86, result.stderr)
         self.assertIn("packed-refs", json.loads(result.stderr)["state_changes"])
 
+    def test_transiently_unresolvable_head_is_recorded_not_fatal(self):
+        self.git("pack-refs", "--all", "--prune")
+        result = self.invoke("--", sys.executable, "-c",
+                             "from pathlib import Path; import time; p=Path('.git/packed-refs'); "
+                             "b=p.read_bytes(); p.write_bytes(b''); time.sleep(0.5); p.write_bytes(b)")
+        self.assertEqual(result.returncode, 86, result.stderr)
+        receipt = json.loads(result.stderr)
+        self.assertEqual(receipt["command_exit_code"], 0)
+        self.assertIn("HEAD", receipt["state_changes"])
+
     def test_evidence_refuses_replacement_before_command(self):
         path = self.external()
         path.write_text("preserve me")
