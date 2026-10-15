@@ -5624,6 +5624,8 @@ fn prove_release_workflow_boundaries(production_root: &Path) -> TestResult {
             .is_none()
     );
     assert_eq!(release_tauri["bundle"]["createUpdaterArtifacts"], true);
+    assert_eq!(ordinary_tauri["bundle"]["macOS"]["signingIdentity"], "-");
+    assert!(release_tauri["bundle"].get("macOS").is_none());
     Ok(())
 }
 

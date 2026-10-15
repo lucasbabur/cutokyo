@@ -78,6 +78,14 @@ the signing tool partition access. Tauri receives the identity and Apple
 notarization environment variables. The release build waits for notarization and
 stapling; it does not use `--skip-stapling` in the ordinary release path.
 
+Without Apple credentials (every dry-run, and every unsigned public build) the
+bundle is ad-hoc signed through `bundle.macOS.signingIdentity: "-"`, so the
+`.app` carries a sealed signature. A linker-only signature has no sealed
+resources, and a quarantined copy then fails with "Cutokyo is damaged and can't
+be opened". The ad-hoc build instead offers *System Settings → Privacy &
+Security → Open Anyway*. `APPLE_SIGNING_IDENTITY` overrides the ad-hoc identity
+in signed tag builds.
+
 After build, verify on a clean macOS machine:
 
 ```bash
