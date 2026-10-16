@@ -232,6 +232,8 @@ pub struct FakeCodexAppServer {
 
 impl FakeCodexAppServer {
     /// Loads one named versioned scenario from the repository fixture.
+    /// The synthetic client handshake uses the current workspace version; the
+    /// fixture bytes and the modeled Codex protocol version remain unchanged.
     ///
     /// # Errors
     ///
@@ -251,7 +253,7 @@ impl FakeCodexAppServer {
                 )
             })?;
         fixture.validate()?;
-        let scenario = fixture
+        let mut scenario = fixture
             .scenarios
             .into_iter()
             .find(|scenario| scenario.name == name)
@@ -259,6 +261,19 @@ impl FakeCodexAppServer {
                 ContractError::new(ErrorCode::NotFound, "Codex fake scenario was not found")
                     .at_field("scenario", "registered scenario name", "unknown")
             })?;
+        for step in &mut scenario.steps {
+            if let CodexStep::Request { method, params, .. } = step
+                && method == "initialize"
+            {
+                let version = params.pointer_mut("/clientInfo/version").ok_or_else(|| {
+                    ContractError::new(
+                        ErrorCode::InvalidContract,
+                        "Codex fake handshake is missing its client version",
+                    )
+                })?;
+                *version = json!(env!("CARGO_PKG_VERSION"));
+            }
+        }
         Ok(Self {
             adapter_version: scenario.adapter_version,
             steps: scenario.steps.into(),
@@ -919,6 +934,38 @@ mod tests {
                 scenario.native_tree_id.as_deref(),
                 Some("thread-session-beta")
             );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn codex_handshake_rejects_wrong_client_metadata() -> cutokyo_domain::Result<()> {
+        use cutokyo_core::adapters::codex::{AppServerRequest, AppServerTransport};
+
+        for (field, wrong) in [("version", "0.0.0-invalid"), ("name", "another-client")] {
+            let mut transport = FakeCodexAppServer::scenario("paginated_history")?;
+            let mut params = json!({
+                "clientInfo": {
+                    "name": "cutokyo",
+                    "title": "Cutokyo",
+                    "version": env!("CARGO_PKG_VERSION")
+                }
+            });
+            params["clientInfo"][field] = json!(wrong);
+            let error = transport
+                .request(&AppServerRequest {
+                    id: 1,
+                    method: "initialize".to_owned(),
+                    params,
+                })
+                .err()
+                .ok_or_else(|| {
+                    cutokyo_domain::ContractError::new(
+                        ErrorCode::Internal,
+                        "wrong client metadata was accepted",
+                    )
+                })?;
+            assert_eq!(error.code, ErrorCode::InvalidContract);
         }
         Ok(())
     }
