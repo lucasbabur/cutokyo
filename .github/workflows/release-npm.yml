@@ -147,7 +147,10 @@ jobs:
         if: runner.os != 'Linux'
         shell: bash
         run: |
-          if [[ "$RUNNER_OS" == macOS ]]; then export TMPDIR="$(cd "$TMPDIR" && pwd -P)"; fi
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            TMPDIR="$(cd "$TMPDIR" && pwd -P)"
+            export TMPDIR
+          fi
           npm_package="$(find npm-installers -name 'cutokyo-*.tgz' -print -quit)"
           native_archive="$(find release-artifacts -type f \( -name '*.tar.xz' -o -name '*.zip' \) -print -quit)"
           python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/npm-native-smoke-source.json" -- python3 tools/release/smoke-npm.py --npm-package "$npm_package" --native-archive "$native_archive" --native-checksum "$native_archive.sha256" --dependency-package npm-installers/npm-dependencies/detect-libc-2.1.2.tgz --expected-version "${{ needs.release-contract.outputs.tag }}" > "release-artifacts/npm-smoke-${{ matrix.target }}.json"
