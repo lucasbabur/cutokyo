@@ -48,20 +48,19 @@ actions outside ordinary test automation.
 
 Tag builds require:
 
-| Protected value                       | Storage               | Purpose                                  |
-| ------------------------------------- | --------------------- | ---------------------------------------- |
-| `NPM_TOKEN`                           | environment secret    | npm publication with provenance          |
-| `TAURI_SIGNING_PRIVATE_KEY`           | environment secret    | updater payload signatures               |
-| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`  | environment secret    | decrypt updater signing key              |
-| `TAURI_UPDATER_PUBLIC_KEY`            | repository variable   | reviewed updater verification anchor     |
-| `APPLE_CERTIFICATE`                   | environment secret    | base64 PKCS#12 Developer ID certificate  |
-| `APPLE_CERTIFICATE_PASSWORD`          | environment secret    | import PKCS#12 into ephemeral keychain   |
-| `APPLE_SIGNING_IDENTITY`              | environment secret    | select Developer ID Application identity |
-| `APPLE_ID`                            | environment secret    | notarization account                     |
-| `APPLE_PASSWORD`                      | environment secret    | app-specific notarization password       |
-| `APPLE_TEAM_ID`                       | environment secret    | notarization team                        |
-| `WINDOWS_CERTIFICATE`                 | environment secret    | base64 PKCS#12 Authenticode certificate  |
-| `WINDOWS_CERTIFICATE_PASSWORD`        | environment secret    | import Windows certificate               |
+| Protected value                      | Storage             | Purpose                                  |
+| ------------------------------------ | ------------------- | ---------------------------------------- |
+| `TAURI_SIGNING_PRIVATE_KEY`          | environment secret  | updater payload signatures               |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | environment secret  | decrypt updater signing key              |
+| `TAURI_UPDATER_PUBLIC_KEY`           | repository variable | reviewed updater verification anchor     |
+| `APPLE_CERTIFICATE`                  | environment secret  | base64 PKCS#12 Developer ID certificate  |
+| `APPLE_CERTIFICATE_PASSWORD`         | environment secret  | import PKCS#12 into ephemeral keychain   |
+| `APPLE_SIGNING_IDENTITY`             | environment secret  | select Developer ID Application identity |
+| `APPLE_ID`                           | environment secret  | notarization account                     |
+| `APPLE_PASSWORD`                     | environment secret  | app-specific notarization password       |
+| `APPLE_TEAM_ID`                      | environment secret  | notarization team                        |
+| `WINDOWS_CERTIFICATE`                | environment secret  | base64 PKCS#12 Authenticode certificate  |
+| `WINDOWS_CERTIFICATE_PASSWORD`       | environment secret  | import Windows certificate               |
 
 Store credentials only in protected GitHub environments or repository secrets
 with least-privilege release access. The public key is deliberately not a secret,
@@ -82,8 +81,8 @@ Without Apple credentials (every dry-run, and every unsigned public build) the
 bundle is ad-hoc signed through `bundle.macOS.signingIdentity: "-"`, so the
 `.app` carries a sealed signature. A linker-only signature has no sealed
 resources, and a quarantined copy then fails with "Cutokyo is damaged and can't
-be opened". The ad-hoc build instead offers *System Settings → Privacy &
-Security → Open Anyway*. `APPLE_SIGNING_IDENTITY` overrides the ad-hoc identity
+be opened". The ad-hoc build instead offers _System Settings → Privacy &
+Security → Open Anyway_. `APPLE_SIGNING_IDENTITY` overrides the ad-hoc identity
 in signed tag builds.
 
 After build, verify on a clean macOS machine:
@@ -163,13 +162,19 @@ Release assembly emits:
 Every build and package command is wrapped by the tracked-source snapshot guard.
 Exit 86 means the command rewrote tracked source and the release must stop.
 
-Publication is draft-first. After every artifact, smoke test, signature check,
-checksum, manifest, SBOM, and provenance step succeeds, the workflow creates a
-draft GitHub release from the reviewed bytes. It then publishes the already-packed
-npm artifact with npm provenance. Only after npm succeeds does it make the GitHub
-release public. A failed npm publication therefore leaves an inspectable draft
-rather than advertising a release whose installer channel is absent; no workflow
-step rebuilds bytes between those operations.
+The desktop workflow publishes its verified GitHub release independently of npm.
+It no longer requires an npm token. The separate, manually dispatched
+[`release-npm.yml`](../../.github/workflows/release-npm.yml) builds the four CLI
+targets, tests the wrapper, and publishes through npm Trusted Publishing. It
+requires no Apple, Windows, or Tauri signing material. See the
+[npm release runbook](npm.md) for bootstrap, dry-run, and publication commands.
+
+Native GitHub downloads must be public and match the tested bytes **before** npm
+publication: the generated postinstall needs those URLs immediately. Existing
+assets are compared by digest and never replaced. Both workflows serialize on
+the same tag. The Linux release smoke applies the same ephemeral-runner AppArmor
+setting as CI before creating bubblewrap's isolated network namespace; the
+filesystem allowlist and native egress-denial probe remain enabled.
 
 ## Local production Linux package
 

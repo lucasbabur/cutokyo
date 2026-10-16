@@ -5581,10 +5581,11 @@ fn prove_release_workflow_boundaries(production_root: &Path) -> TestResult {
             .contains("actions/attest-build-provenance@96b4a1ef7235a096b17240c259729fdd70c83d45")
     );
     assert!(workflow.contains("id-token: write"));
+    assert!(!workflow.contains("NPM_TOKEN"));
+    assert!(!workflow.contains("npm publish"));
     assert!(workflow.contains("Release refused: required signing/publication secrets are absent"));
     assert!(workflow.contains("exit 78"));
     for secret in [
-        "NPM_TOKEN",
         "TAURI_SIGNING_PRIVATE_KEY",
         "APPLE_CERTIFICATE",
         "APPLE_ID",

@@ -44,33 +44,28 @@ new patch version when consumers could have observed the tag.
 
 ## Partial publication
 
-The workflow creates a draft GitHub release from the final, attested artifact set,
-publishes the already-packed npm tarball, and only then makes the draft public.
-It never rebuilds between these steps.
+The desktop workflow owns its signed release. The independent npm workflow adds
+CLI assets to an existing public release, verifies their anonymous download hashes,
+and only then publishes the already-tested npm tarball. npm failure does not hide
+or replace a desktop release.
 
-If draft creation fails, npm publication has not started. Preserve the exact
-artifact set and diagnose GitHub permissions before an authorized retry.
+If asset upload or verification fails, npm publication has not started. Preserve
+`verified-npm-release`, including its checksums and SBOMs. Determine which assets
+were uploaded before retrying the failed job with the same artifact set. Existing
+identical assets are accepted; different bytes with the same name are refused.
+Do not rerun build jobs to replace a published archive.
 
-If npm publication fails, keep the GitHub release as a draft and stop automated
-retries. Determine whether npm accepted the version despite the reported failure.
-If it did not, an authorized retry may publish the exact same tarball digest. If
-npm accepted it, treat the version as immutable and follow the completion path
-below.
+If npm publication fails, first determine whether the registry accepted the version.
+If absent, correct the Trusted Publisher/account configuration and retry only the
+publication job with the original artifacts. If accepted, compare the registry
+tarball with the attested package, then verify installation from the public registry.
+Never unpublish or overwrite a version to make a retry pass. Fix incorrect published
+bytes with a new patch version and deprecate the affected version when appropriate.
 
-If npm succeeds but making the GitHub draft public fails:
-
-1. stop all automated retries;
-2. verify the registry tarball digest against the locally attested artifact;
-3. verify the draft still contains the exact checksummed release set;
-4. do not overwrite or unpublish npm merely to reuse the version;
-5. after human authorization, publish that existing draft without rebuilding or
-   replacing any asset;
-6. if exact completion is impossible, deprecate the npm version with a clear
-   message and release a new patch version;
-7. record which channels observed the partial state.
-
-Never point an immutable npm version or an existing draft at newly rebuilt bytes
-with different hashes.
+The initial `publish-assets` bootstrap intentionally stops before npm publication;
+finish it using the account-owner steps in [npm.md](npm.md). The workflow never
+moves tags or creates releases. Never point an immutable npm version at newly
+rebuilt native bytes with different hashes.
 
 ## Bad but uncompromised release
 
@@ -91,7 +86,7 @@ Treat platform and updater keys separately:
 
 - revoke a compromised Apple Developer ID certificate through Apple;
 - revoke/replace the Windows code-signing certificate with its issuer;
-- rotate npm automation tokens and review registry audit history;
+- revoke affected npm Trusted Publishers or account tokens and review registry audit history;
 - rotate the Tauri updater private key only with an explicit public-key migration
   plan for existing installations;
 - invalidate leaked GitHub credentials and review release/audit events.

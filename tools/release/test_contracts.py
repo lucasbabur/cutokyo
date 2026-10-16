@@ -2,6 +2,9 @@
 """Fast mutation tests for release validators; never artifact acceptance evidence."""
 from __future__ import annotations
 
+import io
+import tarfile
+from unittest.mock import patch
 import importlib.util
 import json
 import os
@@ -22,6 +25,8 @@ def module(name: str, relative: str):
     spec.loader.exec_module(loaded)
     return loaded
 
+
+publisher = module("cli_publisher", "tools/release/publish-cli-assets.py")
 
 manifest = module("release_manifest", "tools/release/create-manifest.py")
 snapshot = module("source_snapshot", "tools/scripts/source-snapshot.py")
@@ -187,6 +192,120 @@ class SbomTests(unittest.TestCase):
                 with self.assertRaises(SystemExit) as failure:
                     self.validate()
                 self.assertEqual(failure.exception.code, 1)
+
+
+class CliPublicationTests(unittest.TestCase):
+    """Synthetic release bytes; never a claim of native installer acceptance."""
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.tag = "v1.2.3"
+        self.repo = "lucasbabur/cutokyo"
+        self.remote = {}
+        self.uploaded = []
+        self.draft = False
+        self.metadata = {
+            "name": "cutokyo", "version": "1.2.3",
+            "repository": f"https://github.com/{self.repo}",
+            "artifactDownloadUrls": [f"https://github.com/{self.repo}/releases/download/{self.tag}"],
+            "supportedPlatforms": {},
+        }
+        for target, extension in publisher.TARGETS.items():
+            name = f"cutokyo-cli-{target}{extension}"
+            native = self.root / f"cli-{target}" / name
+            native.parent.mkdir()
+            native.write_bytes(f"SYNTHETIC-{target}".encode())
+            native.with_name(name + ".sha256").write_text(publisher.digest(native) + " *" + name)
+            self.metadata["supportedPlatforms"][target] = {"artifactName": name}
+        (self.root / "global-installers").mkdir()
+        self.pack()
+
+    def pack(self):
+        content = json.dumps(self.metadata).encode()
+        with tarfile.open(self.root / "global-installers/cutokyo-1.2.3.tgz", "w:gz") as archive:
+            info = tarfile.TarInfo("package/package.json")
+            info.size = len(content)
+            archive.addfile(info, io.BytesIO(content))
+
+    def gh(self, *args):
+        action = args[1]
+        if action == "view":
+            return json.dumps({"isDraft": self.draft, "tagName": self.tag,
+                               "assets": [{"name": name} for name in self.remote]})
+        if action == "download":
+            name = args[args.index("--pattern") + 1]
+            directory = args[args.index("--dir") + 1]
+            (Path(directory) / name).write_bytes(self.remote[name])
+        elif action == "upload":
+            self.assertNotIn("--clobber", args)
+            for value in args[5:]:
+                path = Path(value)
+                self.assertNotIn(path.name, self.remote)
+                self.remote[path.name] = path.read_bytes()
+                self.uploaded.append(path.name)
+        else:
+            self.fail(f"unexpected gh action: {action}")
+        return ""
+
+    def publish(self, public=None):
+        if public is None:
+            public = lambda url, **kwargs: io.BytesIO(self.remote[url.rsplit("/", 1)[1]])
+        with patch.object(publisher, "gh", side_effect=self.gh), \
+                patch.object(publisher.urllib.request, "urlopen", side_effect=public):
+            publisher.publish(self.root, self.tag, self.repo)
+
+    def test_publish_all_four_targets_and_retry_identical_bytes(self):
+        self.publish()
+        self.assertEqual(len(self.uploaded), 9)
+        self.uploaded.clear()
+        self.publish()
+        self.assertEqual(self.uploaded, [])
+
+    def test_changed_existing_asset_refused_before_any_upload(self):
+        name = "cutokyo-cli-x86_64-pc-windows-msvc.zip"
+        self.remote[name] = b"DIFFERENT-SYNTHETIC-BYTES"
+        with self.assertRaisesRegex(ValueError, "refusing to replace"):
+            self.publish()
+        self.assertEqual(self.uploaded, [])
+
+    def test_missing_native_platform_refused(self):
+        next(self.root.glob("cli-*/*.zip")).unlink()
+        with self.assertRaises(FileNotFoundError):
+            self.publish()
+        self.assertEqual(self.uploaded, [])
+
+    def test_corrupt_archive_refused(self):
+        next(self.root.glob("cli-*/*.zip")).write_bytes(b"CORRUPT")
+        with self.assertRaisesRegex(ValueError, "checksum mismatch"):
+            self.publish()
+        self.assertEqual(self.uploaded, [])
+
+    def test_wrong_npm_identity_and_downloads_refused(self):
+        for key in ("name", "version", "repository", "artifactDownloadUrls"):
+            original = self.metadata[key]
+            self.metadata[key] = "wrong"
+            self.pack()
+            with self.assertRaisesRegex(ValueError, "do not match"):
+                self.publish()
+            self.metadata[key] = original
+        self.assertEqual(self.uploaded, [])
+
+    def test_draft_release_refused(self):
+        self.draft = True
+        with self.assertRaisesRegex(ValueError, "public release"):
+            self.publish()
+        self.assertEqual(self.uploaded, [])
+
+    def test_anonymous_download_must_match_tested_bytes(self):
+        with self.assertRaisesRegex(ValueError, "public download differs"):
+            self.publish(public=lambda *args, **kwargs: io.BytesIO(b"WRONG-PUBLIC-BYTES"))
+
+    def test_fork_and_nonstable_tag_refused(self):
+        for tag, repo in ((self.tag, "example/fork"), ("v1.2.3-rc.1", self.repo)):
+            with self.assertRaisesRegex(ValueError, "only stable tags"):
+                publisher.candidates(self.root, tag, repo)
 
 
 if __name__ == "__main__":

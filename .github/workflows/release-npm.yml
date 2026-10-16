@@ -1,0 +1,287 @@
+name: CLI and npm release
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Dry-run, publish CLI assets for bootstrap, or publish assets and npm
+        required: true
+        default: dry-run
+        type: choice
+        options: [dry-run, publish-assets, publish-npm]
+
+permissions:
+  contents: read
+
+# Serialize with the desktop release for the same immutable tag.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_DIST_VERSION: "0.32.0"
+  CARGO_CYCLONEDX_VERSION: "0.5.9"
+
+jobs:
+  release-contract:
+    name: Plan CLI release and CycloneDX SBOM
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      publish: ${{ steps.release.outputs.publish }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Select immutable release mode
+        id: release
+        env:
+          RELEASE_MODE: ${{ inputs.mode }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          version="$(cargo metadata --locked --no-deps --format-version 1 | jq -er '.packages[] | select(.name == "cutokyo-cli") | .version')"
+          tauri_version="$(jq -er '.version' crates/cutokyo-desktop/tauri.conf.json)"
+          workspace_version="$(jq -er '.version' package.json)"
+          ui_version="$(jq -er '.version' ui/package.json)"
+          if [[ "$tauri_version" != "$version" || "$workspace_version" != "$version" || "$ui_version" != "$version" ]]; then
+            printf 'Release refused: Cargo (%s), Tauri (%s), workspace (%s), and UI (%s) versions must match.\n' \
+              "$version" "$tauri_version" "$workspace_version" "$ui_version" >&2
+            exit 65
+          fi
+          if [[ "$RELEASE_MODE" != dry-run ]]; then
+            [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+            test "$GITHUB_REPOSITORY" = lucasbabur/cutokyo
+            test "$GITHUB_REF" = "refs/tags/v$version"
+            test "$(git rev-parse HEAD)" = "$(git rev-parse "refs/tags/v$version^{commit}")"
+            # Never publish a wrapper that downloads from a private/draft release.
+            gh release view "v$version" --json isDraft --jq '.isDraft == false' | grep -qx true
+            printf 'publish=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'publish=false\n' >> "$GITHUB_OUTPUT"
+          fi
+          printf 'tag=v%s\n' "$version" >> "$GITHUB_OUTPUT"
+      - name: Install pinned cargo-dist without source rewrites
+        run: python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/install-dist-source.json" -- cargo install cargo-dist --version "$CARGO_DIST_VERSION" --locked
+      - name: Validate and preserve cargo-dist plan without source rewrites
+        run: python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/dist-plan-source.json" -- dist plan --tag="${{ steps.release.outputs.tag }}" --output-format=json > cargo-dist-plan.json
+      - name: Generate CycloneDX SBOM without source rewrites
+        run: |
+          python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/install-cyclonedx-source.json" -- cargo install cargo-cyclonedx --version "$CARGO_CYCLONEDX_VERSION" --locked
+          mkdir -p release-contract/sbom
+          python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/cyclonedx-source.json" -- cargo cyclonedx --all --format json
+          find . -name '*.cdx.json' -not -path './target/*' -not -path './release-contract/*' -exec cp {} release-contract/sbom/ \;
+          test -n "$(find release-contract/sbom -type f -name '*.cdx.json' -print -quit)"
+      - name: Create contract checksums
+        run: |
+          cp cargo-dist-plan.json release-contract/
+          find release-contract -type f ! -name RELEASE-CONTRACT-SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > release-contract/RELEASE-CONTRACT-SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-contract
+          path: release-contract
+          if-no-files-found: error
+
+  cli-artifacts:
+    name: cargo-dist native CLI (${{ matrix.target }})
+    needs: [release-contract, global-installers]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - os: macos-14
+            target: aarch64-apple-darwin
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+          - os: windows-2022
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.13"
+      - name: Install pinned cargo-dist
+        run: python tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "${{ runner.temp }}/install-dist-source.json" -- cargo install cargo-dist --version "${{ env.CARGO_DIST_VERSION }}" --locked
+        if: runner.os == 'Windows' && inputs.mode != 'publish-npm'
+      - name: Install pinned cargo-dist
+        run: python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/install-dist-source.json" -- cargo install cargo-dist --version "$CARGO_DIST_VERSION" --locked
+        if: runner.os != 'Windows' && inputs.mode != 'publish-npm'
+      - name: Build target-native cargo-dist artifacts without source rewrites
+        if: inputs.mode != 'publish-npm'
+        shell: bash
+        run: python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/dist-build-source.json" -- dist build --tag="${{ needs.release-contract.outputs.tag }}" --artifacts=local --target="${{ matrix.target }}" --output-format=json
+      - name: Reuse published native bytes for npm publication
+        if: inputs.mode == 'publish-npm'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.release-contract.outputs.tag }}
+          RELEASE_TARGET: ${{ matrix.target }}
+        run: gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "*$RELEASE_TARGET*" --dir release-artifacts
+      - name: Copy cargo-dist output and smoke the packaged executable
+        env:
+          RELEASE_MODE: ${{ inputs.mode }}
+        shell: bash
+        run: |
+          mkdir -p release-artifacts
+          if [[ "$RELEASE_MODE" != publish-npm ]]; then
+            find target/distrib -maxdepth 1 -type f -name "*${{ matrix.target }}*" -exec cp {} release-artifacts/ \;
+          fi
+          test -n "$(find release-artifacts -type f -name "*${{ matrix.target }}*" -print -quit)"
+          python3 tools/release/smoke-dist.py --artifacts release-artifacts --target "${{ matrix.target }}" --expected-version "${{ needs.release-contract.outputs.tag }}"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        if: runner.os != 'Linux'
+        with:
+          node-version: "22.22.3"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        if: runner.os != 'Linux'
+        with:
+          name: global-installers
+          path: npm-installers
+      - name: Install npm wrapper on macOS and Windows
+        if: runner.os != 'Linux'
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == macOS ]]; then export TMPDIR="$(cd "$TMPDIR" && pwd -P)"; fi
+          npm_package="$(find npm-installers -name 'cutokyo-*.tgz' -print -quit)"
+          native_archive="$(find release-artifacts -type f \( -name '*.tar.xz' -o -name '*.zip' \) -print -quit)"
+          python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/npm-native-smoke-source.json" -- python3 tools/release/smoke-npm.py --npm-package "$npm_package" --native-archive "$native_archive" --native-checksum "$native_archive.sha256" --dependency-package npm-installers/npm-dependencies/detect-libc-2.1.2.tgz --expected-version "${{ needs.release-contract.outputs.tag }}" > "release-artifacts/npm-smoke-${{ matrix.target }}.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cli-${{ matrix.target }}
+          path: release-artifacts
+          if-no-files-found: error
+
+  global-installers:
+    name: cargo-dist shell, PowerShell, and npm installers
+    needs: release-contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Install pinned cargo-dist
+        if: inputs.mode != 'publish-npm'
+        run: python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/install-dist-source.json" -- cargo install cargo-dist --version "$CARGO_DIST_VERSION" --locked
+      - name: Build global installers without source rewrites
+        if: inputs.mode != 'publish-npm'
+        run: python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/dist-global-source.json" -- dist build --tag="${{ needs.release-contract.outputs.tag }}" --artifacts=global --output-format=json
+      - name: Locally pack the generated npm installer without source rewrites
+        if: inputs.mode != 'publish-npm'
+        run: |
+          npm_source="$(find target/distrib -type f -name '*npm-package.tar.gz' -print -quit)"
+          test -n "$npm_source"
+          rm -rf target/npm-wrapper
+          mkdir -p target/npm-wrapper global-installers
+          tar --extract --gzip --file "$npm_source" --directory target/npm-wrapper
+          npm_directory="$(dirname "$(find target/npm-wrapper -type f -name package.json -print -quit)")"
+          test -n "$npm_directory"
+          python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/npm-pack-source.json" -- npm pack "./$npm_directory" --pack-destination ./global-installers
+          mkdir -p global-installers/npm-dependencies
+          cp tests/fixtures/release/detect-libc-2.1.2.tgz global-installers/npm-dependencies/
+          cp target/distrib/*installer* global-installers/
+          test -n "$(find global-installers -type f -name 'cutokyo-*.tgz' -print -quit)"
+          test -n "$(find global-installers/npm-dependencies -type f -name 'detect-libc-2.1.2.tgz' -print -quit)"
+      - name: Reuse the published npm tarball without repacking
+        if: inputs.mode == 'publish-npm'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.release-contract.outputs.tag }}
+        run: |
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'cutokyo-*.tgz' --dir global-installers
+          mkdir -p global-installers/npm-dependencies
+          cp tests/fixtures/release/detect-libc-2.1.2.tgz global-installers/npm-dependencies/
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: global-installers
+          path: global-installers
+          if-no-files-found: error
+
+  npm-release:
+    name: Test CLI installer and publish reviewed bytes
+    needs: [release-contract, cli-artifacts, global-installers]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22.22.3"
+      - name: Install npm with Trusted Publishing support
+        run: npm install --global npm@11.5.1 --ignore-scripts
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: cli-*
+          path: release-artifacts
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: global-installers
+          path: release-artifacts/global-installers
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-contract
+          path: release-artifacts/release-contract
+      - name: Install the Linux network-namespace boundary
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap
+      - name: Let bubblewrap create its offline network namespace
+        # Match CI on Ubuntu 24.04; retain the smoke's filesystem/network sandbox.
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Install and launch the locally packed npm artifact
+        run: |
+          npm_package="$(find release-artifacts -type f -name 'cutokyo-*.tgz' -print -quit)"
+          dependency_package="$(find release-artifacts -type f -name 'detect-libc-2.1.2.tgz' -print -quit)"
+          native_archive="$(find release-artifacts -type f -name '*x86_64-unknown-linux-gnu.tar.xz' -print -quit)"
+          native_checksum="$(find release-artifacts -type f -name '*x86_64-unknown-linux-gnu.tar.xz.sha256' -print -quit)"
+          test -n "$npm_package" && test -n "$dependency_package"
+          test -n "$native_archive" && test -n "$native_checksum"
+          python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/npm-smoke-source.json" -- python3 tools/release/smoke-npm.py --npm-package "$npm_package" --native-archive "$native_archive" --native-checksum "$native_checksum" --dependency-package "$dependency_package" --expected-version "${{ needs.release-contract.outputs.tag }}" > release-artifacts/npm-smoke.json
+          rm -f "$dependency_package"
+      - name: Create meaningful local in-toto artifact inventory
+        run: |
+          python3 tools/scripts/source-snapshot.py \
+            --root "${{ github.workspace }}" \
+            --manifest "$RUNNER_TEMP/provenance-source.json" \
+            -- python3 tools/release/create-provenance.py \
+              --artifacts release-artifacts \
+              --output release-artifacts/release-contract/release-build.intoto.jsonl \
+              --repository "${{ github.repository }}" \
+              --revision "${{ github.sha }}" \
+              --tag "${{ needs.release-contract.outputs.tag }}" \
+              --workflow-ref "${{ github.workflow_ref }}" \
+              --invocation-id "${{ github.run_id }}/${{ github.run_attempt }}"
+      - name: Inventory CLI release bytes
+        run: |
+          cd release-artifacts
+          find . -type f ! -name CLI-SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > "$RUNNER_TEMP/CLI-SHA256SUMS"
+          mv "$RUNNER_TEMP/CLI-SHA256SUMS" CLI-SHA256SUMS
+      - uses: actions/attest-build-provenance@96b4a1ef7235a096b17240c259729fdd70c83d45 # v2
+        with:
+          subject-path: release-artifacts/**
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: verified-npm-release
+          path: release-artifacts
+          if-no-files-found: error
+      - name: Make native download URLs available before npm publication
+        if: needs.release-contract.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.release-contract.outputs.tag }}
+        run: |
+          python3 tools/release/publish-cli-assets.py --artifacts release-artifacts --tag "$RELEASE_TAG" --repository "$GITHUB_REPOSITORY"
+      - name: Publish npm through the configured Trusted Publisher
+        if: needs.release-contract.outputs.publish == 'true' && inputs.mode == 'publish-npm'
+        run: |
+          npm_package="$(find release-artifacts/global-installers -maxdepth 1 -name 'cutokyo-*.tgz' -print -quit)"
+          test -n "$npm_package"
+          python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/npm-publish-source.json" -- npm publish "$npm_package" --access public --provenance
