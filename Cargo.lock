@@ -1135,7 +1135,7 @@ dependencies = [
 
 [[package]]
 name = "cutokyo-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "clap",
  "cutokyo-core",
@@ -1155,7 +1155,7 @@ dependencies = [
 
 [[package]]
 name = "cutokyo-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cutokyo-domain",
  "directories",
@@ -1195,7 +1195,7 @@ dependencies = [
 
 [[package]]
 name = "cutokyo-desktop"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cutokyo-core",
  "cutokyo-domain",
@@ -1214,7 +1214,7 @@ dependencies = [
 
 [[package]]
 name = "cutokyo-domain"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -1223,7 +1223,7 @@ dependencies = [
 
 [[package]]
 name = "cutokyo-integration-tests"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "base64 0.22.1",
  "clap",
@@ -1251,7 +1251,7 @@ dependencies = [
 
 [[package]]
 name = "cutokyo-updater-signature-verifier"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "base64 0.22.1",
  "minisign",
@@ -1727,7 +1727,7 @@ dependencies = [
 
 [[package]]
 name = "fake-harness"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cutokyo-core",
  "cutokyo-domain",
