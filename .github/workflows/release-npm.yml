@@ -1,6 +1,8 @@
 name: CLI and npm release
 
 on:
+  push:
+    branches: [ci/npm-premerge-validation]
   workflow_dispatch:
     inputs:
       mode:
@@ -36,7 +38,7 @@ jobs:
       - name: Select immutable release mode
         id: release
         env:
-          RELEASE_MODE: ${{ inputs.mode }}
+          RELEASE_MODE: ${{ inputs.mode || 'dry-run' }}
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
@@ -125,7 +127,7 @@ jobs:
         run: gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "*$RELEASE_TARGET*" --dir release-artifacts
       - name: Copy cargo-dist output and smoke the packaged executable
         env:
-          RELEASE_MODE: ${{ inputs.mode }}
+          RELEASE_MODE: ${{ inputs.mode || 'dry-run' }}
         shell: bash
         run: |
           mkdir -p release-artifacts
