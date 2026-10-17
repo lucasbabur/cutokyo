@@ -52,6 +52,7 @@ and a CLI where every command also speaks JSON.
 <td width="50%" valign="top">
 
 ### 🔎 Find any session
+
 Full-text search over every captured prompt, tool call and reply. Search by
 words or an exact phrase, filter by harness, project or date, and sort by
 relevance or recency.
@@ -60,6 +61,7 @@ relevance or recency.
 <td width="50%" valign="top">
 
 ### ↩️ Resume exactly where you left off
+
 Reopens the native session ID in a visible terminal, in the recorded project
 directory. Cutokyo doesn't rebuild the conversation; it reopens the harness's
 own session.
@@ -70,6 +72,7 @@ own session.
 <td valign="top">
 
 ### 🧰 Manage your agent tools
+
 One inventory of every MCP server, skill, hook, plugin and instruction file
 across all three harnesses. Read the real source, edit or remove it with a recovery copy kept,
 or copy a skill into another harness with a preview first.
@@ -78,6 +81,7 @@ or copy a skill into another harness with a preview first.
 <td valign="top">
 
 ### 📊 See usage across harnesses
+
 Token usage per harness and quota windows. When two sources report the same
 request, Cutokyo shows which one it counted and why, so nothing is counted
 twice. Cost appears only when a harness reports it. Cutokyo doesn't make up
@@ -89,6 +93,7 @@ prices.
 <td valign="top">
 
 ### 🩺 Know capture is healthy
+
 Health checks separate "configured" from "actually capturing", with scoped
 retries and a previewed diagnostic bundle that contains no prompts or
 transcripts.
@@ -97,6 +102,7 @@ transcripts.
 <td valign="top">
 
 ### 🗄️ Own your data
+
 Retention policies with a preview, verified backups and restores, and
 destructive actions that require you to type a confirmation for that exact
 action.
@@ -112,11 +118,11 @@ action.
 
 ## Supported harnesses
 
-| Harness | Capture | Parsers tested on |
-| --- | --- | --- |
-| **Claude Code** | Hooks, OpenTelemetry, transcript files | `2.1.278` |
-| **Codex** | App Server, hooks, OpenTelemetry | `0.153.4` |
-| **OpenCode** | Plugin, local app server | `1.18.28` |
+| Harness         | Capture                                | Parsers tested on |
+| --------------- | -------------------------------------- | ----------------- |
+| **Claude Code** | Hooks, OpenTelemetry, transcript files | `2.1.278`         |
+| **Codex**       | App Server, hooks, OpenTelemetry       | `0.153.4`         |
+| **OpenCode**    | Plugin, local app server               | `1.18.28`         |
 
 > [!TIP]
 > Native hooks, documented local APIs and OTel always come first. A local proxy
@@ -130,7 +136,8 @@ action.
 Release builds ship as cargo-dist **shell**, **PowerShell** and **npm**
 installers, all of which install the same native binary. Verify the published
 SHA-256 manifest before first launch. See
-[clean installation](docs/clean-install.md).
+[clean installation](docs/clean-install.md). Maintainers can use the
+[npm release runbook](docs/release/npm.md) to bootstrap and publish the CLI channel.
 
 From source, with the toolchain from [development](docs/development.md):
 
@@ -265,15 +272,15 @@ software under Apache-2.0, and no paid tier is held back.
 
 ## Documentation
 
-| | |
-| --- | --- |
-| [Product contract](docs/spec/product.md) | [Desktop workflows](docs/desktop-workflows.md) |
-| [Architecture](docs/architecture.md) | [Development](docs/development.md) |
-| [Privacy and diagnostic bundles](docs/privacy.md) | [Plugin authoring](docs/plugin-authoring.md) |
-| [Clean installation and uninstall](docs/clean-install.md) | [Management workflow contract](docs/management-workflow-contract.md) |
-| [Local backups and restore](docs/backup-and-restore.md) | [Support](docs/support.md) |
-| [Release signing and notarization](docs/release/signing.md) | [Release recovery](docs/release/recovery.md) |
-| [Clean-room provenance](docs/provenance/clean-room-policy.md) | [Independent decision ledger](docs/provenance/decision-ledger.md) |
+|                                                               |                                                                      |
+| ------------------------------------------------------------- | -------------------------------------------------------------------- |
+| [Product contract](docs/spec/product.md)                      | [Desktop workflows](docs/desktop-workflows.md)                       |
+| [Architecture](docs/architecture.md)                          | [Development](docs/development.md)                                   |
+| [Privacy and diagnostic bundles](docs/privacy.md)             | [Plugin authoring](docs/plugin-authoring.md)                         |
+| [Clean installation and uninstall](docs/clean-install.md)     | [Management workflow contract](docs/management-workflow-contract.md) |
+| [Local backups and restore](docs/backup-and-restore.md)       | [Support](docs/support.md)                                           |
+| [Release signing and notarization](docs/release/signing.md)   | [Release recovery](docs/release/recovery.md)                         |
+| [Clean-room provenance](docs/provenance/clean-room-policy.md) | [Independent decision ledger](docs/provenance/decision-ledger.md)    |
 
 ## Contributing
 

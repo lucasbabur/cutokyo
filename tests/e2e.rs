@@ -3670,7 +3670,7 @@ fn native_binary_name() -> &'static str {
 fn create_native_archive(binary: &Path, archive: &Path) -> TestResult {
     let archive_parent = archive.parent().ok_or("native archive has no parent")?;
     fs::create_dir_all(archive_parent)?;
-    let archive_path = format!("cutokyo-cli-0.1.0/{}", native_binary_name());
+    let archive_path = format!("cutokyo-cli-0.1.1/{}", native_binary_name());
     let script = r"
 import pathlib
 import sys
@@ -3743,7 +3743,7 @@ fn run_npm_smoke(inputs: &NpmSmokeInputs<'_>) -> TestResult<BoundedCommandOutput
         OsString::from("--dependency-package"),
         inputs.dependency_package.as_os_str().to_owned(),
         OsString::from("--expected-version"),
-        OsString::from("v0.1.0"),
+        OsString::from("v0.1.1"),
     ];
     source_guard_command(
         inputs.checkout,
@@ -3770,7 +3770,7 @@ fn generate_npm_wrapper(checkout: &Path, artifacts: &Path) -> TestResult<PathBuf
     let arguments = command_args(&[
         "dist",
         "build",
-        "--tag=v0.1.0",
+        "--tag=v0.1.1",
         "--artifacts=global",
         "--output-format=json",
     ]);
@@ -3791,7 +3791,7 @@ fn generate_npm_wrapper(checkout: &Path, artifacts: &Path) -> TestResult<PathBuf
     let wrapper = extract_generated_npm_package(&generated, &artifacts.join("generated-wrapper"))?;
     let metadata = json_file(&wrapper.join("package.json"))?;
     assert_eq!(metadata["name"], "cutokyo");
-    assert_eq!(metadata["version"], "0.1.0");
+    assert_eq!(metadata["version"], "0.1.1");
     assert_eq!(metadata["bin"]["cutokyo"], "run-cutokyo.js");
     assert_eq!(
         metadata["supportedPlatforms"][host_dist_target()?]["artifactName"],
@@ -3811,7 +3811,7 @@ fn generate_dist_native_archive(
     let arguments = vec![
         OsString::from("dist"),
         OsString::from("build"),
-        OsString::from("--tag=v0.1.0"),
+        OsString::from("--tag=v0.1.1"),
         OsString::from("--artifacts=local"),
         OsString::from(format!("--target={}", host_dist_target()?)),
         OsString::from("--output-format=json"),
@@ -3873,7 +3873,7 @@ fn pack_npm_wrapper(checkout: &Path, artifacts: &Path, wrapper: &Path) -> TestRe
         )?,
         "locally pack cargo-dist npm wrapper",
     )?;
-    let package = directory.join("cutokyo-0.1.0.tgz");
+    let package = directory.join("cutokyo-0.1.1.tgz");
     assert!(package.is_file());
     Ok(package)
 }
@@ -3923,7 +3923,7 @@ fn prove_npm_package_launches(
         "offline installed npm wrapper smoke",
     )?;
     let receipt: Value = serde_json::from_str(smoke.stdout.trim())?;
-    assert_eq!(receipt["version"], "0.1.0");
+    assert_eq!(receipt["version"], "0.1.1");
     assert_eq!(receipt["launcher"], "node_modules/.bin/cutokyo");
     assert_eq!(receipt["source_tree_shortcut"], false);
     assert_eq!(
@@ -4097,7 +4097,7 @@ fn npm_wrapper_install() -> TestResult {
 #[cfg(target_os = "linux")]
 fn generate_dist_plan(checkout: &Path, artifacts: &Path) -> TestResult<PathBuf> {
     let manifest = artifacts.join("dist-plan-source.json");
-    let arguments = command_args(&["dist", "plan", "--tag=v0.1.0", "--output-format=json"]);
+    let arguments = command_args(&["dist", "plan", "--tag=v0.1.1", "--output-format=json"]);
     let output = checked_output(
         source_guard_command(
             checkout,
@@ -4111,7 +4111,7 @@ fn generate_dist_plan(checkout: &Path, artifacts: &Path) -> TestResult<PathBuf> 
     )?;
     let plan: Value = serde_json::from_str(&output.stdout)?;
     assert_eq!(plan["dist_version"], "0.32.0");
-    assert_eq!(plan["announcement_tag"], "v0.1.0");
+    assert_eq!(plan["announcement_tag"], "v0.1.1");
     let path = artifacts.join("cargo-dist-plan.json");
     fs::write(&path, serde_json::to_vec(&plan)?)?;
     Ok(path)
@@ -4204,7 +4204,7 @@ fn prove_host_tauri_linux_package(
                 .arg(checkout.join("tools/release/smoke-tauri-linux.py"))
                 .arg("--artifacts")
                 .arg(&packages)
-                .args(["--expected-version", "v0.1.0"]),
+                .args(["--expected-version", "v0.1.1"]),
             Duration::from_secs(240),
             "install and probe actual host-built Debian package",
         )?,
@@ -4331,7 +4331,7 @@ fn prove_packaged_tauri_in_container(
                 "--artifacts",
                 "/artifacts",
                 "--expected-version",
-                "v0.1.0",
+                "v0.1.1",
             ]),
             Duration::from_secs(240),
             "install, probe, and uninstall real Tauri Debian package",
@@ -4438,17 +4438,17 @@ fn create_release_fixture(root: &Path) -> TestResult {
     write_release_file(root, "installers/cutokyo-cli-installer.ps1", b"exit 0\r\n")?;
     write_release_file(
         root,
-        "npm/cutokyo-0.1.0.tgz",
+        "npm/cutokyo-0.1.1.tgz",
         b"cargo-dist generated npm installer dry-run bytes\n",
     )?;
     write_release_file(
         root,
-        "tauri-linux/Cutokyo_0.1.0_amd64.deb",
+        "tauri-linux/Cutokyo_0.1.1_amd64.deb",
         b"Tauri Debian package dry-run bytes\n",
     )?;
     write_release_file(
         root,
-        "tauri-linux/Cutokyo_0.1.0_x86_64.AppImage",
+        "tauri-linux/Cutokyo_0.1.1_x86_64.AppImage",
         b"Linux updater dry-run payload\n",
     )?;
     write_release_file(
@@ -4458,13 +4458,13 @@ fn create_release_fixture(root: &Path) -> TestResult {
     )?;
     write_release_file(
         root,
-        "tauri-windows/Cutokyo_0.1.0_x64.msi",
+        "tauri-windows/Cutokyo_0.1.1_x64.msi",
         b"Windows updater dry-run payload\n",
     )?;
     write_release_file(
         root,
         "release-contract/cargo-dist-plan.json",
-        b"{\"dist_version\":\"0.32.0\",\"announcement_tag\":\"v0.1.0\",\"releases\":[{\"app_name\":\"cutokyo-cli\",\"app_version\":\"0.1.0\"}]}\n",
+        b"{\"dist_version\":\"0.32.0\",\"announcement_tag\":\"v0.1.1\",\"releases\":[{\"app_name\":\"cutokyo-cli\",\"app_version\":\"0.1.1\"}]}\n",
     )?;
     write_release_file(
         root,
@@ -4478,17 +4478,17 @@ fn create_release_fixture(root: &Path) -> TestResult {
                 "component": {
                     "type": "application",
                     "name": "cutokyo-cli",
-                    "version": "0.1.0",
-                    "bom-ref": "pkg:cargo/cutokyo-cli@0.1.0"
+                    "version": "0.1.1",
+                    "bom-ref": "pkg:cargo/cutokyo-cli@0.1.1"
                 }
             },
             "components": [{
                 "type": "library",
                 "name": "cutokyo-core",
-                "version": "0.1.0",
-                "bom-ref": "pkg:cargo/cutokyo-core@0.1.0"
+                "version": "0.1.1",
+                "bom-ref": "pkg:cargo/cutokyo-core@0.1.1"
             }],
-            "dependencies": [{"ref": "pkg:cargo/cutokyo-cli@0.1.0", "dependsOn": ["pkg:cargo/cutokyo-core@0.1.0"]}]
+            "dependencies": [{"ref": "pkg:cargo/cutokyo-cli@0.1.1", "dependsOn": ["pkg:cargo/cutokyo-core@0.1.1"]}]
         }))?,
     )?;
     write_release_file(
@@ -4499,8 +4499,8 @@ fn create_release_fixture(root: &Path) -> TestResult {
             "gui_activated": false,
             "liveness_exit": 0,
             "process_liveness": true,
-            "package": "Cutokyo_0.1.0_amd64.deb",
-            "package_sha256": sha256_path(&root.join("tauri-linux/Cutokyo_0.1.0_amd64.deb"))?,
+            "package": "Cutokyo_0.1.1_amd64.deb",
+            "package_sha256": sha256_path(&root.join("tauri-linux/Cutokyo_0.1.1_amd64.deb"))?,
             "installed_executable_sha256": sha256_path(&native)?,
             "product_readiness": false,
             "product_readiness_exit": 69,
@@ -4508,7 +4508,7 @@ fn create_release_fixture(root: &Path) -> TestResult {
             "repeat_uninstall_exit": 0,
             "no_state_restore_exits": [0, 0],
             "source_tree_shortcut": false,
-            "version": "0.1.0"
+            "version": "0.1.1"
         }))?,
     )?;
     create_fixture_provenance(root)
@@ -4531,7 +4531,7 @@ fn create_fixture_provenance(root: &Path) -> TestResult {
                     "--revision",
                     revision.trim(),
                     "--tag",
-                    "v0.1.0",
+                    "v0.1.1",
                     "--workflow-ref",
                     "lucasbabur/cutokyo/.github/workflows/release.yml@synthetic-test",
                     "--invocation-id",
@@ -5012,7 +5012,7 @@ fn create_actual_release_fixture(
         OsString::from("--revision"),
         OsString::from(revision.trim()),
         OsString::from("--tag"),
-        OsString::from("v0.1.0"),
+        OsString::from("v0.1.1"),
         OsString::from("--workflow-ref"),
         OsString::from("lucasbabur/cutokyo/.github/workflows/release.yml@refs/heads/c19-test"),
         OsString::from("--invocation-id"),
@@ -5033,9 +5033,9 @@ fn create_actual_release_fixture(
 }
 
 const UPDATER_TARGETS_X64: [(&str, &str); 3] = [
-    ("linux-x86_64", "tauri-linux/Cutokyo_0.1.0_x86_64.AppImage"),
+    ("linux-x86_64", "tauri-linux/Cutokyo_0.1.1_x86_64.AppImage"),
     ("darwin-x86_64", "tauri-macos/Cutokyo.app.tar.gz"),
-    ("windows-x86_64", "tauri-windows/Cutokyo_0.1.0_x64.msi"),
+    ("windows-x86_64", "tauri-windows/Cutokyo_0.1.1_x64.msi"),
 ];
 
 struct UpdaterSigningFixture {
@@ -5059,7 +5059,7 @@ fn tauri_signature(payload: &Path, secret_key: &SecretKey) -> TestResult<String>
         None,
         secret_key,
         Cursor::new(fs::read(payload)?),
-        Some("timestamp:1789920000\tversion:0.1.0"),
+        Some("timestamp:1789920000\tversion:0.1.1"),
         Some("signature from Cutokyo C19 test key"),
     )?;
     Ok(BASE64_STANDARD.encode(signature.into_string()))
@@ -5135,7 +5135,7 @@ fn release_manifest_command_with_options(
         .arg("--artifacts")
         .arg(artifacts)
         .arg("--tag")
-        .arg("v0.1.0")
+        .arg("v0.1.1")
         .arg("--repository")
         .arg("lucasbabur/cutokyo")
         .arg("--output")
@@ -5301,9 +5301,9 @@ fn prove_unsigned_release_manifest(production_root: &Path, parent: &Path) -> Tes
 
 fn prove_release_integrity_rejections(production_root: &Path, parent: &Path) -> TestResult {
     let duplicate = fresh_release_fixture(parent, "duplicate")?;
-    let target = duplicate.join("collision/cutokyo-0.1.0.tgz");
+    let target = duplicate.join("collision/cutokyo-0.1.1.tgz");
     fs::create_dir_all(target.parent().ok_or("duplicate target has no parent")?)?;
-    fs::copy(duplicate.join("npm/cutokyo-0.1.0.tgz"), target)?;
+    fs::copy(duplicate.join("npm/cutokyo-0.1.1.tgz"), target)?;
     refresh_release_checksums(&duplicate)?;
     let duplicate_result = release_manifest_command(production_root, &duplicate)?;
     assert!(!duplicate_result.status.success());
@@ -5406,7 +5406,7 @@ fn prove_release_health_contract(production_root: &Path, parent: &Path) -> TestR
         &serde_json::to_vec(&json!({
             "liveness_exit": 0,
             "process_liveness": true,
-            "package": "cutokyo-desktop_0.1.0_amd64.deb",
+            "package": "cutokyo-desktop_0.1.1_amd64.deb",
             "product_readiness": true,
             "product_readiness_exit": 0,
             "source_tree_shortcut": false
@@ -5444,7 +5444,7 @@ fn prove_invalid_updater_signatures(
         &non_base64_key.secret_key,
     )?;
     fs::write(
-        non_base64.join("tauri-linux/Cutokyo_0.1.0_x86_64.AppImage.sig"),
+        non_base64.join("tauri-linux/Cutokyo_0.1.1_x86_64.AppImage.sig"),
         "%%%not-base64%%%",
     )?;
     refresh_release_checksums(&non_base64)?;
@@ -5457,8 +5457,8 @@ fn prove_invalid_updater_signatures(
     let corrupt = fresh_release_fixture(parent, "signature-corrupt")?;
     let corrupt_key = updater_signing_fixture(parent, "signature-corrupt")?;
     add_updater_signatures(&corrupt, &UPDATER_TARGETS_X64, &corrupt_key.secret_key)?;
-    let corrupt_payload = corrupt.join("tauri-linux/Cutokyo_0.1.0_x86_64.AppImage");
-    let corrupt_signature = corrupt_payload.with_file_name("Cutokyo_0.1.0_x86_64.AppImage.sig");
+    let corrupt_payload = corrupt.join("tauri-linux/Cutokyo_0.1.1_x86_64.AppImage");
+    let corrupt_signature = corrupt_payload.with_file_name("Cutokyo_0.1.1_x86_64.AppImage.sig");
     let mut decoded = BASE64_STANDARD.decode(fs::read_to_string(&corrupt_signature)?)?;
     let byte = decoded
         .iter_mut()
@@ -5477,7 +5477,7 @@ fn prove_invalid_updater_signatures(
     let wrong_payload = fresh_release_fixture(parent, "signature-wrong-payload")?;
     let wrong_key = updater_signing_fixture(parent, "signature-wrong-payload")?;
     add_updater_signatures(&wrong_payload, &UPDATER_TARGETS_X64, &wrong_key.secret_key)?;
-    let linux_signature = wrong_payload.join("tauri-linux/Cutokyo_0.1.0_x86_64.AppImage.sig");
+    let linux_signature = wrong_payload.join("tauri-linux/Cutokyo_0.1.1_x86_64.AppImage.sig");
     fs::copy(
         wrong_payload.join("tauri-macos/Cutokyo.app.tar.gz.sig"),
         &linux_signature,
@@ -5501,9 +5501,9 @@ fn prove_release_signature_contract(
     verifier: &Path,
 ) -> TestResult {
     const ARM_TARGETS: [(&str, &str); 3] = [
-        ("linux-x86_64", "tauri-linux/Cutokyo_0.1.0_x86_64.AppImage"),
+        ("linux-x86_64", "tauri-linux/Cutokyo_0.1.1_x86_64.AppImage"),
         ("darwin-aarch64", "tauri-macos/Cutokyo.app.tar.gz"),
-        ("windows-x86_64", "tauri-windows/Cutokyo_0.1.0_x64.msi"),
+        ("windows-x86_64", "tauri-windows/Cutokyo_0.1.1_x64.msi"),
     ];
     let missing = fresh_release_fixture(parent, "missing-signatures")?;
     let missing_key = updater_signing_fixture(parent, "missing-signatures")?;
@@ -5546,7 +5546,7 @@ fn prove_release_signature_contract(
             .as_str()
             .is_some_and(|signature| BASE64_STANDARD.decode(signature).is_ok())
             && value["url"].as_str().is_some_and(|url| {
-                url.starts_with("https://github.com/lucasbabur/cutokyo/releases/download/v0.1.0/")
+                url.starts_with("https://github.com/lucasbabur/cutokyo/releases/download/v0.1.1/")
             })
     }));
 
@@ -5581,10 +5581,11 @@ fn prove_release_workflow_boundaries(production_root: &Path) -> TestResult {
             .contains("actions/attest-build-provenance@96b4a1ef7235a096b17240c259729fdd70c83d45")
     );
     assert!(workflow.contains("id-token: write"));
+    assert!(!workflow.contains("NPM_TOKEN"));
+    assert!(!workflow.contains("npm publish"));
     assert!(workflow.contains("Release refused: required signing/publication secrets are absent"));
     assert!(workflow.contains("exit 78"));
     for secret in [
-        "NPM_TOKEN",
         "TAURI_SIGNING_PRIVATE_KEY",
         "APPLE_CERTIFICATE",
         "APPLE_ID",

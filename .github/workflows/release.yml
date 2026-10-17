@@ -64,7 +64,6 @@ jobs:
         if: steps.release.outputs.publish == 'true'
         shell: bash
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
@@ -78,7 +77,7 @@ jobs:
           WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         run: |
           missing=()
-          for name in NPM_TOKEN TAURI_SIGNING_PRIVATE_KEY TAURI_SIGNING_PRIVATE_KEY_PASSWORD TAURI_UPDATER_PUBLIC_KEY APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID WINDOWS_CERTIFICATE WINDOWS_CERTIFICATE_PASSWORD; do
+          for name in TAURI_SIGNING_PRIVATE_KEY TAURI_SIGNING_PRIVATE_KEY_PASSWORD TAURI_UPDATER_PUBLIC_KEY APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID WINDOWS_CERTIFICATE WINDOWS_CERTIFICATE_PASSWORD; do
             if [[ -z "${!name}" ]]; then missing+=("$name"); fi
           done
           if (( ${#missing[@]} )); then
@@ -347,6 +346,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y bubblewrap
+      - name: Let bubblewrap create its offline network namespace
+        # Match CI on Ubuntu 24.04; retain the smoke's filesystem/network sandbox.
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - name: Install and launch the locally packed npm artifact
         run: |
           npm_package="$(find release-artifacts -type f -name 'cutokyo-*.tgz' -print -quit)"
@@ -426,16 +428,12 @@ jobs:
           name: complete-release-manifest
           path: release-artifacts
           if-no-files-found: error
-      - name: Publish npm and GitHub release only for an authorized tag
+      - name: Publish GitHub release only for an authorized tag
         if: needs.release-contract.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          npm_package="$(find release-artifacts -type f -name '*.tgz' -print -quit)"
-          test -n "$npm_package"
           mapfile -d '' files < <(find release-artifacts -type f -print0)
           gh release create "${{ needs.release-contract.outputs.tag }}" "${files[@]}" \
             --verify-tag --generate-notes --draft
-          python3 tools/scripts/source-snapshot.py --root "${{ github.workspace }}" --manifest "$RUNNER_TEMP/npm-publish-source.json" -- npm publish "$npm_package" --access public --provenance
           gh release edit "${{ needs.release-contract.outputs.tag }}" --draft=false

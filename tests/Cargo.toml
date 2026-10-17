@@ -11,8 +11,8 @@ publish = false
 [dependencies]
 cutokyo-core.workspace = true
 cutokyo-domain.workspace = true
-cutokyo-desktop = { path = "../crates/cutokyo-desktop", version = "0.1.0", default-features = false }
-fake-harness = { path = "../tools/fake-harness", version = "0.1.0" }
+cutokyo-desktop = { path = "../crates/cutokyo-desktop", version = "0.1.1", default-features = false }
+fake-harness = { path = "../tools/fake-harness", version = "0.1.1" }
 clap.workspace = true
 flate2.workspace = true
 jsonschema.workspace = true
