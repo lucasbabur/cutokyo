@@ -75,7 +75,8 @@ own session.
 
 One inventory of every MCP server, skill, hook, plugin and instruction file
 across all three harnesses. Read the real source, edit or remove it with a recovery copy kept,
-or copy a skill into another harness with a preview first.
+or copy a skill into another harness with a preview first. `cutokyo sync` copies every
+MCP server, skill and instruction file each harness is missing in one command.
 
 </td>
 <td valign="top">
@@ -172,6 +173,7 @@ cutokyo sessions resume SESSION_ID --execute
 
 cutokyo inventory list
 cutokyo inventory install ITEM_ID --revision REVISION --harness opencode
+cutokyo sync --from claude_code --apply
 
 cutokyo backup
 cutokyo doctor --json
@@ -213,6 +215,11 @@ cutokyo inventory show ITEM_ID --json
 cutokyo inventory edit ITEM_ID --revision REVISION --content-file edited-source.json
 cutokyo inventory install ITEM_ID --revision REVISION --harness opencode
 cutokyo inventory remove ITEM_ID --revision REVISION --confirm-item ITEM_ID
+
+cutokyo sync                              # preview what each harness is missing
+cutokyo sync --from claude_code           # Claude Code's copy wins where copies differ
+cutokyo sync --from claude_code --apply   # write it, keeping recovery copies
+cutokyo sync --project ./my-project       # include that project's native files
 ```
 
 Destructive commands preview exact scope and require a command-specific
