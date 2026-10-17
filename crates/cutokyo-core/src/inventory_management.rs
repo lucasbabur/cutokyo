@@ -18,6 +18,9 @@ use toml_edit::{DocumentMut, Item};
 
 mod describe;
 mod mcp_convert;
+mod sync;
+pub use sync::{SyncAction, SyncConflict, SyncPlan, SyncSkip};
+pub(crate) use sync::{apply as sync_apply, preview as sync_preview};
 
 const MAX_BYTES: u64 = 16 * 1024 * 1024;
 const MAX_FILES: usize = 2048;
@@ -1330,11 +1333,12 @@ pub(crate) fn document(roots: &InventoryRoots, id: &str) -> InventoryResult<Inve
         .clone()
         .or_else(|| linked_edit_refusal(roots, &e));
     let remove_reason = owned_reason;
+    let known = discover_entries(roots)?.0;
     let install_targets = [Harness::ClaudeCode, Harness::Codex, Harness::OpenCode]
         .into_iter()
         .map(|h| {
             let (path, _, _) = destination(roots, &e, h);
-            let result = install_plan(roots, &e, &s, h);
+            let result = install_plan(roots, &known, &e, &s, h);
             let (dropped_fields, conversions) = result
                 .as_ref()
                 .map(|plan| (plan.dropped.clone(), plan.notes.clone()))
@@ -1529,7 +1533,15 @@ fn mutate_node(
         }
         let key = keys.last().ok_or("Missing configuration key")?;
         if let Some(v) = replacement {
-            table.insert(key, toml_item(v)?);
+            let mut item = toml_item(v)?;
+            // A replaced table keeps the comments written around it and its place.
+            if let (Some(old), Some(new)) =
+                (table.get(key).and_then(Item::as_table), item.as_table_mut())
+            {
+                new.decor_mut().clone_from(old.decor());
+                new.set_position(old.position());
+            }
+            table.insert(key, item);
         } else {
             table.remove(key);
         }
@@ -2046,31 +2058,36 @@ pub(crate) fn remove(
         fs::rename(&e.path, &tombstone).map_err(|_| "Cannot remove native inventory source")?;
         sync_directory(parent)?;
         if matches!(e.source, Source::Bundle) {
-            for (relative, original) in &s.directories {
-                let path = tombstone.join(relative);
-                safe_path(&path)?;
-                let mut permissions = original.clone();
-                #[cfg(unix)]
-                {
-                    use std::os::unix::fs::PermissionsExt;
-                    permissions.set_mode(permissions.mode() | 0o700);
-                }
-                #[cfg(not(unix))]
-                permissions.set_readonly(false);
-                fs::set_permissions(&path, permissions).map_err(
-                    |_| "Source removed; recovery retained, cannot prepare temporary cleanup",
-                )?;
-            }
-            fs::remove_dir_all(&tombstone)
+            discard_bundle(&tombstone, &s)?;
         } else {
             fs::remove_file(&tombstone)
+                .map_err(|_| "Source removed; recovery retained, temporary cleanup failed")?;
         }
-        .map_err(|_| "Source removed; recovery retained, temporary cleanup failed")?;
     }
     sync_directory(&dir)?;
     Ok(receipt(
         "Removed native entry. A private recovery copy was retained.",
     ))
+}
+/// Deletes a bundle already moved out of the native namespace, including read-only
+/// directories; its files were copied into recovery storage beforehand.
+fn discard_bundle(tombstone: &Path, s: &Snapshot) -> InventoryResult<()> {
+    for (relative, original) in &s.directories {
+        let path = tombstone.join(relative);
+        safe_path(&path)?;
+        let mut permissions = original.clone();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            permissions.set_mode(permissions.mode() | 0o700);
+        }
+        #[cfg(not(unix))]
+        permissions.set_readonly(false);
+        fs::set_permissions(&path, permissions)
+            .map_err(|_| "Source removed; recovery retained, cannot prepare temporary cleanup")?;
+    }
+    fs::remove_dir_all(tombstone)
+        .map_err(|_| "Source removed; recovery retained, temporary cleanup failed".into())
 }
 fn destination(
     roots: &InventoryRoots,
@@ -2080,8 +2097,9 @@ fn destination(
     let root = roots.root(h, e.project.as_ref());
     match e.item.kind.as_str() {
         "skill" => (root.join("skills").join(&e.name), vec![], None),
+        // Project instructions live at the project root, where every harness reads them.
         "instruction" => (
-            root.join(match h {
+            e.project.clone().unwrap_or(root).join(match h {
                 Harness::ClaudeCode => "CLAUDE.md",
                 _ => "AGENTS.md",
             }),
@@ -2124,6 +2142,25 @@ fn destination(
         _ => (root, vec![], None),
     }
 }
+/// Converts an MCP entry for `target`. A server Claude Code turns off through
+/// `deniedMcpServers` stays off wherever it is copied.
+fn convert_mcp(
+    e: &Entry,
+    s: &Snapshot,
+    target: Harness,
+) -> InventoryResult<mcp_convert::Converted> {
+    let mut converted = mcp_convert::convert(e.harness, target, &source_value(e, s)?)?;
+    if e.harness == Harness::ClaudeCode
+        && target != Harness::ClaudeCode
+        && e.item.state == "disabled"
+    {
+        converted.value["enabled"] = Value::Bool(false);
+        converted
+            .notes
+            .push("Turned off in Claude Code's settings, so it is copied turned off.".into());
+    }
+    Ok(converted)
+}
 struct InstallPlan {
     path: PathBuf,
     bytes: Vec<u8>,
@@ -2158,6 +2195,7 @@ fn file_plan_notes(e: &Entry, s: &Snapshot) -> (Vec<String>, Vec<String>) {
 }
 fn install_plan(
     roots: &InventoryRoots,
+    known: &[Entry],
     e: &Entry,
     s: &Snapshot,
     h: Harness,
@@ -2195,8 +2233,7 @@ fn install_plan(
     let (path, keys, index) = destination(roots, e, h);
     safe_path(&path)?;
     if e.item.kind == "mcp" {
-        let source = source_value(e, s)?;
-        let converted = mcp_convert::convert(e.harness, h, &source)?;
+        let converted = convert_mcp(e, s, h)?;
         let previous = match fs::symlink_metadata(&path) {
             Ok(_) => Some(read_file(&path)?),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
@@ -2214,7 +2251,7 @@ fn install_plan(
             return Err("Destination already contains this MCP name; overwrite refused".into());
         }
         // A same-name declaration in another config layer is also a collision.
-        if discover_entries(roots)?.0.iter().any(|other| {
+        if known.iter().any(|other| {
             other.item.harnesses.contains(&h)
                 && other.project == e.project
                 && other.item.kind == "mcp"
@@ -2234,7 +2271,7 @@ fn install_plan(
         if fs::symlink_metadata(&path).is_ok() {
             return Err("Destination already exists; overwrite refused".into());
         }
-        if discover_entries(roots)?.0.iter().any(|other| {
+        if known.iter().any(|other| {
             other.item.harnesses.contains(&h)
                 && other.project == e.project
                 && other.item.kind == e.item.kind
@@ -2261,8 +2298,19 @@ pub(crate) fn install(
 ) -> InventoryResult<InventoryReceipt> {
     let _lock = mutation_lock(recovery)?;
     let (e, s) = checked(roots, id, revision)?;
-    let plan = install_plan(roots, &e, &s, h)?;
-    let dir = prepare_recovery(recovery, &e, &s, "install")?;
+    install_checked(roots, &discover_entries(roots)?.0, recovery, &e, &s, h)
+}
+/// Installs a revision-checked entry; the caller holds the mutation lock.
+fn install_checked(
+    roots: &InventoryRoots,
+    known: &[Entry],
+    recovery: &Path,
+    e: &Entry,
+    s: &Snapshot,
+    h: Harness,
+) -> InventoryResult<InventoryReceipt> {
+    let plan = install_plan(roots, known, e, s, h)?;
+    let dir = prepare_recovery(recovery, e, s, "install")?;
     let destination_intent = json!({"version":1,"destination":plan.path,"existed":plan.previous.is_some(),"previousDigest":plan.previous.as_deref().map(digest),"plannedDigest":digest(&plan.bytes),"originalMode":fs::symlink_metadata(&plan.path).ok().map(|m|mode(&m.permissions()))});
     backup_file(
         &dir.join("destination-intent.json"),
@@ -2273,7 +2321,7 @@ pub(crate) fn install(
         backup_file(&dir.join("destination"), bytes)?;
     }
     sync_directory(&dir)?;
-    recheck(&e, &s)?;
+    recheck(e, s)?;
     if matches!(e.source, Source::Bundle) {
         let parent = plan
             .path
@@ -2282,30 +2330,8 @@ pub(crate) fn install(
         safe_path(&plan.path)?;
         fs::create_dir_all(parent).map_err(|_| "Cannot create skills destination")?;
         safe_path(&plan.path)?;
-        let stage = tempfile::Builder::new()
-            .prefix(".cutokyo-install-")
-            .tempdir_in(parent)
-            .map_err(|_| "Cannot stage skill bundle")?;
-        for (path, bytes, permissions) in &s.files {
-            let target = stage.path().join(path);
-            if let Some(parent) = target.parent() {
-                fs::create_dir_all(parent).map_err(|_| "Cannot stage skill assets")?;
-            }
-            let mut file = fs::File::create(&target).map_err(|_| "Cannot stage skill asset")?;
-            file.write_all(bytes)
-                .map_err(|_| "Cannot copy skill asset")?;
-            file.set_permissions(permissions.clone())
-                .map_err(|_| "Cannot preserve skill asset permissions")?;
-            file.sync_all().map_err(|_| "Cannot flush skill asset")?;
-        }
-        for (path, permissions) in s.directories.iter().rev() {
-            let directory = stage.path().join(path);
-            fs::create_dir_all(&directory).map_err(|_| "Cannot stage empty skill directory")?;
-            fs::set_permissions(&directory, permissions.clone())
-                .map_err(|_| "Cannot preserve skill directory permissions")?;
-            sync_directory(&directory)?;
-        }
-        recheck(&e, &s)?;
+        let stage = stage_bundle(parent, s)?;
+        recheck(e, s)?;
         safe_path(&plan.path)?;
         // A create-new lock marker reserves the destination without ever replacing
         // an existing directory. rename inside that reserved directory is atomic.
@@ -2327,6 +2353,33 @@ pub(crate) fn install(
         let _ = write!(message, " Not carried over: {}.", plan.dropped.join("; "));
     }
     Ok(receipt(&message))
+}
+/// Copies a bundle snapshot into a private temporary directory beside its destination.
+fn stage_bundle(parent: &Path, s: &Snapshot) -> InventoryResult<tempfile::TempDir> {
+    let stage = tempfile::Builder::new()
+        .prefix(".cutokyo-install-")
+        .tempdir_in(parent)
+        .map_err(|_| "Cannot stage skill bundle")?;
+    for (path, bytes, permissions) in &s.files {
+        let target = stage.path().join(path);
+        if let Some(parent) = target.parent() {
+            fs::create_dir_all(parent).map_err(|_| "Cannot stage skill assets")?;
+        }
+        let mut file = fs::File::create(&target).map_err(|_| "Cannot stage skill asset")?;
+        file.write_all(bytes)
+            .map_err(|_| "Cannot copy skill asset")?;
+        file.set_permissions(permissions.clone())
+            .map_err(|_| "Cannot preserve skill asset permissions")?;
+        file.sync_all().map_err(|_| "Cannot flush skill asset")?;
+    }
+    for (path, permissions) in s.directories.iter().rev() {
+        let directory = stage.path().join(path);
+        fs::create_dir_all(&directory).map_err(|_| "Cannot stage empty skill directory")?;
+        fs::set_permissions(&directory, permissions.clone())
+            .map_err(|_| "Cannot preserve skill directory permissions")?;
+        sync_directory(&directory)?;
+    }
+    Ok(stage)
 }
 fn string_array(value: &Value) -> InventoryResult<Vec<String>> {
     let values = value

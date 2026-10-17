@@ -33,6 +33,7 @@ pub use crate::{
     },
     inventory_management::{
         InventoryDocument, InventoryReceipt, InventoryRoots, LiveInventory, LiveInventoryItem,
+        SyncAction, SyncConflict, SyncPlan, SyncSkip,
     },
     store::{
         BackupInfo, BackupManifest, BackupRestorePlan, CheckpointMode, CheckpointResult,
@@ -445,6 +446,26 @@ impl Application {
         harness: Harness,
     ) -> std::result::Result<InventoryReceipt, String> {
         crate::inventory_management::install(roots, recovery, item_id, revision, harness)
+    }
+
+    /// Previews, or with `apply` writes, the copies that make MCP servers, skill bundles
+    /// and instruction files match across harnesses. `source` wins when copies differ.
+    ///
+    /// # Errors
+    /// Fails when discovery or the mutation lock is unavailable; individual copy
+    /// failures are reported per action instead.
+    pub fn sync_inventory(
+        &self,
+        roots: &InventoryRoots,
+        recovery: &Path,
+        source: Option<Harness>,
+        apply: bool,
+    ) -> std::result::Result<SyncPlan, String> {
+        if apply {
+            crate::inventory_management::sync_apply(roots, recovery, source)
+        } else {
+            crate::inventory_management::sync_preview(roots, source)
+        }
     }
 
     /// Turns an MCP server on or off, keeping its configuration.

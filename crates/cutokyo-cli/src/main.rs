@@ -4,6 +4,7 @@
 mod bundle;
 mod inventory;
 mod logging;
+mod sync;
 
 use std::{
     fs,
@@ -89,6 +90,18 @@ enum CliCommand {
         project: Option<PathBuf>,
         #[command(subcommand)]
         command: inventory::InventoryCommand,
+    },
+    /// Make MCP servers, skills and instruction files match across all harnesses.
+    Sync {
+        /// Harness whose copy wins when copies differ.
+        #[arg(long, value_parser = ["claude_code", "codex", "opencode"])]
+        from: Option<String>,
+        /// Also sync this project's native files, not only user-level ones.
+        #[arg(long)]
+        project: Option<PathBuf>,
+        /// Write the previewed changes, keeping private recovery copies.
+        #[arg(long)]
+        apply: bool,
     },
     /// Preview or apply a stable retention plan.
     Retention {
@@ -609,6 +622,11 @@ fn run(
         Some(CliCommand::Uninstall) => json_success("uninstall", &app.uninstall(paths)?),
         Some(CliCommand::Sessions { command }) => sessions(app, paths, command),
         Some(CliCommand::History { command }) => history(app, paths, command),
+        Some(CliCommand::Sync {
+            from,
+            project,
+            apply,
+        }) => sync::run(app, paths, from.as_deref(), project.as_ref(), apply),
         Some(CliCommand::Inventory { project, command }) => {
             inventory::run(app, paths, project.as_ref(), command)
         }
@@ -1734,6 +1752,10 @@ fn render_human(success: &CommandSuccess) {
         }
         return;
     }
+    if success.command == "sync" {
+        sync::render(&success.data);
+        return;
+    }
     println!("{}", success.command.replace('.', " "));
     match serde_json::to_string_pretty(&success.data) {
         Ok(value) => println!("{value}"),
@@ -1801,6 +1823,7 @@ fn command_name(command: Option<&CliCommand>) -> &'static str {
         Some(CliCommand::Sessions { .. }) => "sessions",
         Some(CliCommand::History { .. }) => "history",
         Some(CliCommand::Inventory { .. }) => "inventory",
+        Some(CliCommand::Sync { .. }) => "sync",
         Some(CliCommand::Retention { .. }) => "retention",
         Some(CliCommand::Config { .. }) => "config",
         Some(CliCommand::CaptureSetup { .. }) => "capture-setup",
@@ -1845,6 +1868,17 @@ mod tests {
         assert!(Cli::try_parse_from(["cutokyo", "--json", "version"]).is_ok());
         assert!(Cli::try_parse_from(["cutokyo", "version", "--json"]).is_ok());
         assert!(Cli::try_parse_from(["cutokyo", "sessions", "search", "--json"]).is_ok());
+    }
+
+    #[test]
+    fn sync_previews_by_default_and_names_its_source_harness() {
+        assert!(Cli::try_parse_from(["cutokyo", "sync"]).is_ok());
+        assert!(
+            Cli::try_parse_from(["cutokyo", "sync", "--from", "codex", "--apply", "--json"])
+                .is_ok()
+        );
+        assert!(Cli::try_parse_from(["cutokyo", "sync", "--from", "cursor"]).is_err());
+        assert!(Cli::try_parse_from(["cutokyo", "sync", "--project"]).is_err());
     }
 
     #[test]
