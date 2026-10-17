@@ -80,8 +80,8 @@ fn missing_copies_are_added_once_and_a_second_run_finds_everything_in_sync() -> 
     assert_eq!(
         planned,
         vec![
+            // OpenCode reads CLAUDE.md while it has no AGENTS.md of its own.
             ("add instruction AGENTS.md".into(), vec![Harness::Codex]),
-            ("add instruction AGENTS.md".into(), vec![Harness::OpenCode]),
             ("add mcp notes".into(), vec![Harness::Codex]),
             ("add mcp notes".into(), vec![Harness::OpenCode]),
             ("add mcp search".into(), vec![Harness::ClaudeCode]),
@@ -121,7 +121,7 @@ fn missing_copies_are_added_once_and_a_second_run_finds_everything_in_sync() -> 
     );
     assert!(!r.opencode.join("skills/research").exists());
     assert_eq!(fs::read(r.codex.join("AGENTS.md"))?, b"# Rules\n");
-    assert_eq!(fs::read(r.opencode.join("AGENTS.md"))?, b"# Rules\n");
+    assert!(!r.opencode.join("AGENTS.md").exists());
 
     let again = preview(&r, None)?;
     assert!(again.actions.is_empty(), "{:?}", again.actions);
@@ -272,5 +272,168 @@ fn disabled_and_cutokyo_owned_servers_are_never_silently_changed() -> TestResult
         && s.reason.contains("disabled")));
     let claude = json_value(&fs::read(r.home.join(".claude.json"))?)?;
     assert!(claude["mcpServers"].get("paused").is_none());
+    Ok(())
+}
+
+#[test]
+fn fields_one_format_cannot_hold_are_not_differences_in_either_direction() -> TestResult {
+    let temp = tempfile::tempdir()?;
+    let r = roots(temp.path());
+    let recovery = temp.path().join("recovery");
+    // Several names so both hash orders of the Claude and Codex copies occur.
+    let names = ["s1", "s2", "s3", "s4", "s5", "s6"];
+    let claude: serde_json::Map<String, serde_json::Value> = names
+        .iter()
+        .map(|n| ((*n).to_owned(), json!({"command":"node","args":["x.js"]})))
+        .collect();
+    write(
+        &r.home.join(".claude.json"),
+        json!({ "mcpServers": claude }).to_string().as_bytes(),
+    )?;
+    let mut codex = String::new();
+    for n in names {
+        writeln!(codex, "[mcp_servers.{n}]")?;
+        writeln!(
+            codex,
+            "command = \"node\"\nargs = [\"x.js\"]\nenabled = true"
+        )?;
+        writeln!(codex, "cwd = \"/srv/{n}\"")?;
+    }
+    write(&r.codex.join("config.toml"), codex.as_bytes())?;
+    write(&r.opencode.join("opencode.json"), b"{}")?;
+    for source in [None, Some(Harness::ClaudeCode), Some(Harness::Codex)] {
+        let plan = preview(&r, source)?;
+        assert!(
+            plan.conflicts.is_empty(),
+            "{source:?}: {:?}",
+            plan.conflicts
+        );
+        assert!(
+            plan.actions.iter().all(|a| a.operation == "add"),
+            "{source:?}: {:?}",
+            plan.actions
+        );
+    }
+    apply(&r, &recovery, None)?;
+    let codex_after = fs::read_to_string(r.codex.join("config.toml"))?;
+    assert_eq!(
+        codex_after, codex,
+        "Codex keeps cwd, which Claude cannot hold"
+    );
+    Ok(())
+}
+
+#[test]
+fn a_server_turned_off_in_claude_settings_is_copied_turned_off() -> TestResult {
+    let temp = tempfile::tempdir()?;
+    let r = roots(temp.path());
+    write(
+        &r.home.join(".claude.json"),
+        br#"{"mcpServers":{"paused":{"command":"paused-mcp"}}}"#,
+    )?;
+    write(
+        &r.claude.join("settings.json"),
+        br#"{"deniedMcpServers":[{"serverName":"paused"}]}"#,
+    )?;
+    fs::create_dir_all(&r.codex)?;
+    fs::create_dir_all(&r.opencode)?;
+    let report = apply(&r, &temp.path().join("recovery"), None)?;
+    assert!(report.actions.iter().all(|a| a.status == "applied"));
+    let codex = config_value(
+        &r.codex.join("config.toml"),
+        &fs::read(r.codex.join("config.toml"))?,
+    )?;
+    assert_eq!(codex["mcp_servers"]["paused"]["enabled"], json!(false));
+    let opencode = json_value(&fs::read(r.opencode.join("opencode.json"))?)?;
+    assert_eq!(opencode["mcp"]["paused"]["enabled"], json!(false));
+    assert!(preview(&r, None)?.actions.is_empty());
+    Ok(())
+}
+
+#[test]
+fn a_replace_names_the_fields_it_removes_from_the_replaced_copy() -> TestResult {
+    let temp = tempfile::tempdir()?;
+    let r = roots(temp.path());
+    write(
+        &r.home.join(".claude.json"),
+        br#"{"mcpServers":{"notes":{"command":"node","args":["new.js"]}}}"#,
+    )?;
+    write(
+        &r.codex.join("config.toml"),
+        b"[mcp_servers.notes]\ncommand = \"node\"\nargs = [\"old.js\"]\nenabled_tools = [\"read\"]\n",
+    )?;
+    write(&r.opencode.join("opencode.json"), b"{}")?;
+    let plan = preview(&r, Some(Harness::ClaudeCode))?;
+    let replace = plan
+        .actions
+        .iter()
+        .find(|a| a.operation == "replace")
+        .ok_or("replace planned")?;
+    assert!(
+        replace
+            .dropped_fields
+            .iter()
+            .any(|f| f.starts_with("enabled_tools: only in the replaced copy")),
+        "{:?}",
+        replace.dropped_fields
+    );
+    Ok(())
+}
+
+#[test]
+fn a_source_harness_with_two_different_copies_settles_nothing() -> TestResult {
+    let temp = tempfile::tempdir()?;
+    let r = roots(temp.path());
+    write(
+        &r.home.join(".claude.json"),
+        br#"{"mcpServers":{"dup":{"command":"one"}}}"#,
+    )?;
+    write(
+        &r.claude.join("mcp.json"),
+        br#"{"mcpServers":{"dup":{"command":"two"}}}"#,
+    )?;
+    fs::create_dir_all(&r.codex)?;
+    let plan = preview(&r, Some(Harness::ClaudeCode))?;
+    assert!(plan.actions.is_empty(), "{:?}", plan.actions);
+    assert_eq!(plan.conflicts.len(), 1);
+    assert!(
+        plan.conflicts[0]
+            .reason
+            .contains("more than one different copy")
+    );
+    Ok(())
+}
+
+#[test]
+fn project_instructions_sync_through_the_root_files_every_harness_reads() -> TestResult {
+    let temp = tempfile::tempdir()?;
+    let project = temp.path().join("project");
+    let mut r = roots(temp.path());
+    r.projects = vec![project.clone()];
+    write(&project.join("CLAUDE.md"), b"# Project rules\n")?;
+    // Claude's separate .claude/CLAUDE.md layer is its own file, not a copy.
+    write(&project.join(".claude/CLAUDE.md"), b"# Local layer\n")?;
+    fs::create_dir_all(&r.claude)?;
+    let plan = preview(&r, None)?;
+    let instructions: Vec<_> = plan
+        .actions
+        .iter()
+        .filter(|a| a.kind == "instruction")
+        .collect();
+    assert_eq!(instructions.len(), 1, "{:?}", plan.actions);
+    assert_eq!(instructions[0].to, vec![Harness::Codex, Harness::OpenCode]);
+    assert_eq!(
+        Path::new(&instructions[0].destination),
+        project.join("AGENTS.md")
+    );
+    assert!(plan.conflicts.is_empty(), "{:?}", plan.conflicts);
+    apply(&r, &temp.path().join("recovery"), None)?;
+    assert_eq!(fs::read(project.join("AGENTS.md"))?, b"# Project rules\n");
+    assert!(!project.join(".codex").exists() && !project.join(".opencode").exists());
+    assert_eq!(
+        fs::read(project.join(".claude/CLAUDE.md"))?,
+        b"# Local layer\n"
+    );
+    assert!(preview(&r, None)?.actions.is_empty());
     Ok(())
 }

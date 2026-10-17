@@ -1,5 +1,5 @@
 //! `cutokyo sync`: one command that makes MCP servers, skills and instruction files
-//! match across Claude Code, Codex and OpenCode, using the inventory use case.
+//! match across Claude Code, Codex and `OpenCode`, using the inventory use case.
 use crate::{CommandSuccess, parse_harness, to_value};
 use cutokyo_core::app::{Application, InventoryRoots, RuntimePaths};
 use cutokyo_domain::{ContractError, ErrorCode};
@@ -22,7 +22,9 @@ pub(crate) fn run(
     let projects = project
         .map(|project| {
             fs::canonicalize(project)
-                .map_err(|_| error("Sync project directory is unavailable".into()))
+                .ok()
+                .filter(|path| path.is_dir())
+                .ok_or_else(|| error("Sync project must be an existing directory".into()))
         })
         .transpose()?
         .into_iter()

@@ -2097,8 +2097,9 @@ fn destination(
     let root = roots.root(h, e.project.as_ref());
     match e.item.kind.as_str() {
         "skill" => (root.join("skills").join(&e.name), vec![], None),
+        // Project instructions live at the project root, where every harness reads them.
         "instruction" => (
-            root.join(match h {
+            e.project.clone().unwrap_or(root).join(match h {
                 Harness::ClaudeCode => "CLAUDE.md",
                 _ => "AGENTS.md",
             }),
@@ -2140,6 +2141,25 @@ fn destination(
         }
         _ => (root, vec![], None),
     }
+}
+/// Converts an MCP entry for `target`. A server Claude Code turns off through
+/// `deniedMcpServers` stays off wherever it is copied.
+fn convert_mcp(
+    e: &Entry,
+    s: &Snapshot,
+    target: Harness,
+) -> InventoryResult<mcp_convert::Converted> {
+    let mut converted = mcp_convert::convert(e.harness, target, &source_value(e, s)?)?;
+    if e.harness == Harness::ClaudeCode
+        && target != Harness::ClaudeCode
+        && e.item.state == "disabled"
+    {
+        converted.value["enabled"] = Value::Bool(false);
+        converted
+            .notes
+            .push("Turned off in Claude Code's settings, so it is copied turned off.".into());
+    }
+    Ok(converted)
 }
 struct InstallPlan {
     path: PathBuf,
@@ -2213,8 +2233,7 @@ fn install_plan(
     let (path, keys, index) = destination(roots, e, h);
     safe_path(&path)?;
     if e.item.kind == "mcp" {
-        let source = source_value(e, s)?;
-        let converted = mcp_convert::convert(e.harness, h, &source)?;
+        let converted = convert_mcp(e, s, h)?;
         let previous = match fs::symlink_metadata(&path) {
             Ok(_) => Some(read_file(&path)?),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
