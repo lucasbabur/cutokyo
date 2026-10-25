@@ -10,6 +10,7 @@ import type {
   OnboardingResponse,
   Provenance,
   SessionRecord,
+  ToolCallSample,
 } from "../contracts.js";
 
 export const FIXTURE_NOW = "2026-09-19T16:42:00Z";
@@ -567,10 +568,102 @@ const baseSettings: DesktopSettings = {
   appearance: "system",
 };
 
+interface FixtureToolCall {
+  readonly toolName: string;
+  readonly sample: ToolCallSample;
+}
+
+/** Deterministic calls spread over the fixture sessions, newest first. */
+function fixtureToolCalls(): FixtureToolCall[] {
+  const plans: readonly {
+    readonly tool: string;
+    readonly session: number;
+    readonly count: number;
+    readonly failEvery: number;
+    readonly input: (index: number) => unknown;
+    readonly output: (index: number, failed: boolean) => unknown;
+  }[] = [
+    {
+      tool: "Bash",
+      session: 0,
+      count: 40,
+      failEvery: 7,
+      input: (index) => ({
+        command: index % 2 === 0 ? "cargo test --workspace" : "pnpm check",
+        description: "Run checks",
+      }),
+      output: (index, failed) =>
+        failed
+          ? `error: test store::tool_calls::case_${index} failed\nexit code 101`
+          : "test result: ok. 312 passed; 0 failed",
+    },
+    {
+      tool: "Read",
+      session: 0,
+      count: 18,
+      failEvery: 9,
+      input: (index) => ({ file_path: `/repo/src/module_${index}.rs` }),
+      output: (_index, failed) =>
+        failed ? "File does not exist." : "//! Module documentation\n",
+    },
+    {
+      tool: "shell",
+      session: 1,
+      count: 12,
+      failEvery: 3,
+      input: (index) => ({
+        command: ["/bin/bash", "-lc", `rg needle crates/${index}`],
+      }),
+      output: (_index, failed) =>
+        failed
+          ? "rg: crates: No such file or directory"
+          : "crates/a.rs:1:needle",
+    },
+    {
+      tool: "mcp__cutokyo__cutokyo_sql_query",
+      session: 2,
+      count: 4,
+      failEvery: 0,
+      input: () => ({ sql: "SELECT tool_name, count(*) FROM tool_calls" }),
+      output: () => ({
+        columns: ["tool_name", "count(*)"],
+        rows: [["Bash", 40]],
+      }),
+    },
+  ];
+  const calls: FixtureToolCall[] = [];
+  for (const plan of plans) {
+    const session = dashboardSessions[plan.session]!;
+    for (let index = 0; index < plan.count; index += 1) {
+      const failed = plan.failEvery > 0 && index % plan.failEvery === 1;
+      const started =
+        Date.parse(FIXTURE_NOW) - (index * 37 + plan.session) * 60_000;
+      calls.push({
+        toolName: plan.tool,
+        sample: {
+          id: `tool:${plan.tool}:${index}`,
+          sessionId: session.id,
+          sessionTitle: session.title,
+          harness: session.harness,
+          state: failed ? "failed" : "succeeded",
+          startedAt: new Date(started).toISOString(),
+          endedAt: new Date(started + 1_400 + index * 90).toISOString(),
+          input: plan.input(index),
+          output: plan.output(index, failed),
+        },
+      });
+    }
+  }
+  return calls.sort((left, right) =>
+    right.sample.startedAt.localeCompare(left.sample.startedAt),
+  );
+}
+
 export interface FixtureState {
   onboarding: OnboardingResponse;
   dashboard: DashboardResponse;
   sessions: SessionRecord[];
+  toolCalls: FixtureToolCall[];
   inventory: InventoryResponse;
   proxy: ProxyStatus;
   health: HealthResponse;
@@ -782,6 +875,10 @@ export function createScenario(caseName: string | null): FixtureState {
     onboarding,
     dashboard,
     sessions,
+    toolCalls:
+      caseName === "onboarding-empty" || caseName === "empty-history"
+        ? []
+        : fixtureToolCalls(),
     inventory:
       caseName === "large-inventory"
         ? largeInventory()

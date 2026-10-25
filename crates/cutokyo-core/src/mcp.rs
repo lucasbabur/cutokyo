@@ -46,14 +46,15 @@ use crate::{
     store::{SearchQuery, SearchResult, UsageTotals},
 };
 
-/// Stable names of the six read-only tools exposed by Cutokyo itself.
-pub const CUTOKYO_MCP_TOOL_NAMES: [&str; 6] = [
+/// Stable names of the seven read-only tools exposed by Cutokyo itself.
+pub const CUTOKYO_MCP_TOOL_NAMES: [&str; 7] = [
     "cutokyo_session_search",
     "cutokyo_session_details",
     "cutokyo_usage",
     "cutokyo_coverage",
     "cutokyo_inventory",
     "cutokyo_resume_target",
+    "cutokyo_sql_query",
 ];
 /// Maximum search results returned through the agent surface.
 pub const MAX_MCP_SEARCH_RESULTS: u32 = 100;
@@ -118,6 +119,29 @@ pub struct SessionIdInput {
 pub struct InventoryInput {
     /// Optional exact harness (`claude_code`, `codex`, or `opencode`).
     pub harness: Option<String>,
+}
+
+/// One read-only SQL statement over Cutokyo's derived projection tables.
+#[derive(Clone, Debug, Default, Deserialize, JsonSchema, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct SqlQueryInput {
+    /// A single SQLite `SELECT` (or `WITH ... SELECT`).
+    pub sql: String,
+    /// Maximum rows returned. Zero uses 100; values above 500 are rejected.
+    #[serde(default)]
+    pub max_rows: u32,
+}
+
+/// Rows returned by `cutokyo_sql_query`.
+#[derive(Clone, Debug, Deserialize, JsonSchema, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct SqlQueryOutput {
+    /// Result column names.
+    pub columns: Vec<String>,
+    /// Rows as arrays in column order.
+    pub rows: Vec<Vec<Value>>,
+    /// True when the row cap, byte budget or a cell cap cut the result.
+    pub truncated: bool,
 }
 
 /// Read-only session projection returned by the MCP tools.
@@ -345,9 +369,29 @@ pub trait CutokyoReadPort: Send + Sync {
     ///
     /// Returns a contract or read-port error for invalid identity or unavailable data.
     fn resume_target(&self, input: &SessionIdInput) -> DomainResult<ResumeTargetOutput>;
+    /// Run one bounded read-only SQL statement over derived projection tables.
+    ///
+    /// # Errors
+    ///
+    /// Returns invalid input for rejected, failing, or over-budget SQL.
+    fn sql_query(&self, input: &SqlQueryInput) -> DomainResult<SqlQueryOutput>;
 }
 
 impl CutokyoReadPort for QueryUseCases {
+    fn sql_query(&self, input: &SqlQueryInput) -> DomainResult<SqlQueryOutput> {
+        let max_rows = if input.max_rows == 0 {
+            100
+        } else {
+            input.max_rows
+        };
+        let result = QueryUseCases::sql_query(self, &input.sql, max_rows)?;
+        Ok(SqlQueryOutput {
+            columns: result.columns,
+            rows: result.rows,
+            truncated: result.truncated,
+        })
+    }
+
     fn search_sessions(&self, input: &SessionSearchInput) -> DomainResult<SessionSearchOutput> {
         let query = search_query(input)?;
         let page = self.search_page(&query)?;
@@ -782,6 +826,25 @@ impl CutokyoMcpServer {
         let port = Arc::clone(&self.port);
         read_port_call(move || port.resume_target(&input)).await
     }
+
+    #[tool(
+        name = "cutokyo_sql_query",
+        description = "Run one read-only SQLite SELECT over local Cutokyo history for ad-hoc analysis. Readable tables: sessions, projects, turns, messages, tool_calls, agent_runs, usage_values, summaries, summary_sessions, price_snapshots, quota_windows, context_breakdowns. Discover columns with SELECT sql FROM sqlite_schema WHERE name='tool_calls' or pragma_table_info('tool_calls'). tool_calls has tool_name, state (succeeded/failed/running/cancelled/unknown), input_json, output_json, started_at_epoch and session_id; sessions has harness (claude_code/codex/opencode), title, project_id and branch. Rows are capped at 500, text cells at 4000 characters, and queries at 10 seconds.",
+        annotations(
+            title = "Query Cutokyo history with SQL",
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn sql_query(
+        &self,
+        Parameters(input): Parameters<SqlQueryInput>,
+    ) -> std::result::Result<Json<SqlQueryOutput>, McpError> {
+        let port = Arc::clone(&self.port);
+        read_port_call(move || port.sql_query(&input)).await
+    }
 }
 
 #[tool_handler(router = self.tool_router)]
@@ -793,7 +856,7 @@ impl ServerHandler for CutokyoMcpServer {
                 env!("CARGO_PKG_VERSION"),
             ))
             .with_instructions(
-                "Read-only local Cutokyo session search, details, usage, coverage, inventory, and resume-target lookup. No setup, configuration, plugin execution, or database mutation tools exist on this surface.",
+                "Read-only local Cutokyo session search, details, usage, coverage, inventory, resume-target lookup, and read-only SQL over derived history tables. No setup, configuration, plugin execution, or database mutation tools exist on this surface.",
             )
     }
 

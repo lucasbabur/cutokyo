@@ -14,7 +14,8 @@ use crate::{
         CoverageOutput, CutokyoMcpServer, CutokyoReadPort, InventoryInput, InventoryOutput,
         MAX_BROKER_TOOLS_PER_SERVER, McpBroker, McpSession, McpUpstreamConfig,
         McpUpstreamConnector, McpUpstreamTransport, ResumeTargetOutput, SessionDetailsOutput,
-        SessionIdInput, SessionSearchInput, SessionSearchOutput, UsageOutput,
+        SessionIdInput, SessionSearchInput, SessionSearchOutput, SqlQueryInput, SqlQueryOutput,
+        UsageOutput,
     },
     mcp_config::{
         BrokerCommand, HarnessConfigTarget, MANAGED_BROKER_NODE, ManagedConfigErrorCode,
@@ -73,6 +74,14 @@ impl CutokyoReadPort for FakeReadPort {
         Ok(InventoryOutput {
             snapshots: vec![json!({"harness":"claude_code","items":[]})],
             unavailable_harnesses: vec!["codex".to_owned(), "opencode".to_owned()],
+        })
+    }
+
+    fn sql_query(&self, input: &SqlQueryInput) -> cutokyo_domain::Result<SqlQueryOutput> {
+        Ok(SqlQueryOutput {
+            columns: vec!["sql".to_owned()],
+            rows: vec![vec![json!(input.sql)]],
+            truncated: false,
         })
     }
 

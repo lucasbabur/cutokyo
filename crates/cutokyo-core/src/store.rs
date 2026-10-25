@@ -6316,6 +6316,13 @@ fn internal_error(action: &str, error: &impl std::fmt::Display) -> ContractError
     ContractError::new(ErrorCode::Internal, format!("failed to {action}: {error}"))
 }
 
+#[path = "store_tool_calls.rs"]
+mod tool_calls;
+pub use tool_calls::{
+    MAX_SQL_ROWS, MAX_TOOL_CALL_SAMPLES, SQL_READABLE_TABLES, SqlQueryResult, ToolCallFilter,
+    ToolCallOutcome, ToolCallSample, ToolCallSamplePage, ToolCallSampleQuery, ToolCallStat,
+};
+
 #[path = "store_history.rs"]
 mod history;
 pub use history::{

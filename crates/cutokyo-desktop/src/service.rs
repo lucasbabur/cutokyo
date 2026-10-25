@@ -11,7 +11,8 @@ use cutokyo_core::{
         Application, DELETE_ALL_CONFIRMATION, DeletionReceipt, HealthSnapshot, HealthStatus,
         HistoryImportOptions, HistoryImportReport, HistoryRoots, LocalCore, LockOwner,
         QueryUseCases, RetentionPlan, SearchMode, SearchPage, SearchQuery, SearchResult,
-        SearchSort, SessionDetail, UsageTotals,
+        SearchSort, SessionDetail, ToolCallFilter, ToolCallOutcome, ToolCallSampleQuery,
+        UsageTotals,
     },
     config::{RuntimePaths, SettingsOverrides},
 };
@@ -46,6 +47,26 @@ pub(crate) struct CompleteOnboardingRequest {
 pub(crate) enum OnboardingMode {
     Install,
     Browse,
+}
+
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct ToolCallFilters {
+    #[serde(default)]
+    pub(crate) harness: Option<String>,
+    #[serde(default)]
+    pub(crate) date_range: String,
+    pub(crate) today_start: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct ToolCallSampleRequest {
+    pub(crate) tool_name: String,
+    pub(crate) outcome: ToolCallOutcome,
+    pub(crate) filters: ToolCallFilters,
+    pub(crate) offset: u32,
+    pub(crate) limit: u32,
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
@@ -183,6 +204,15 @@ enum DesktopCore {
 }
 
 impl DesktopCore {
+    /// A query façade that outlives the core lock, so slow reads never block it.
+    fn queries(&self) -> Result<QueryUseCases, String> {
+        match self {
+            Self::Owner(core) => Ok(core.queries()),
+            Self::ReadOnly(core) => Ok(core.clone()),
+            Self::Unavailable(message) => Err(message.clone()),
+        }
+    }
+
     const fn writer_mode(&self) -> &'static str {
         match self {
             Self::Owner(_) => "owner",
@@ -1578,14 +1608,79 @@ impl DesktopService {
         }))
     }
 
-    fn search_query(filters: &SessionFilters) -> Result<SearchQuery, String> {
-        let harness = match filters.harness.as_deref() {
-            None | Some("" | "all") => None,
-            Some("claude_code") => Some(Harness::ClaudeCode),
-            Some("codex") => Some(Harness::Codex),
-            Some("opencode") => Some(Harness::OpenCode),
-            Some(value) => return Err(format!("Unsupported harness filter: {value}")),
+    pub(crate) fn tool_call_stats(&self, filters: &ToolCallFilters) -> Result<Value, String> {
+        let filter = Self::tool_call_filter(filters)?;
+        let queries = self.core()?.queries()?;
+        let stats = queries.tool_call_stats(&filter).map_err(contract_error)?;
+        let tools = stats
+            .iter()
+            .map(|stat| {
+                json!({
+                    "toolName": stat.tool_name,
+                    "harnesses": stat.harnesses,
+                    "total": stat.total,
+                    "succeeded": stat.succeeded,
+                    "failed": stat.failed,
+                    "other": stat.other,
+                    "lastCalledAt": stat.last_called_at,
+                })
+            })
+            .collect::<Vec<_>>();
+        Ok(json!({ "meta": route_meta("complete", &[])?, "tools": tools }))
+    }
+
+    pub(crate) fn tool_call_samples(
+        &self,
+        request: &ToolCallSampleRequest,
+    ) -> Result<Value, String> {
+        let query = ToolCallSampleQuery {
+            tool_name: request.tool_name.clone(),
+            outcome: request.outcome,
+            filter: Self::tool_call_filter(&request.filters)?,
+            offset: request.offset,
+            limit: request.limit,
         };
+        let queries = self.core()?.queries()?;
+        let page = queries.tool_call_samples(&query).map_err(contract_error)?;
+        let samples = page
+            .samples
+            .iter()
+            .map(|sample| {
+                json!({
+                    "id": sample.tool_call_id,
+                    "sessionId": sample.session_id,
+                    "sessionTitle": sample.session_title,
+                    "harness": sample.harness,
+                    "state": sample.state,
+                    "startedAt": sample.started_at,
+                    "endedAt": sample.ended_at,
+                    "input": sample.input,
+                    "output": sample.output,
+                })
+            })
+            .collect::<Vec<_>>();
+        Ok(json!({
+            "total": page.total,
+            "offset": request.offset,
+            "limit": request.limit,
+            "hasMore": page.has_more,
+            "samples": samples,
+        }))
+    }
+
+    fn tool_call_filter(filters: &ToolCallFilters) -> Result<ToolCallFilter, String> {
+        Ok(ToolCallFilter {
+            harness: harness_filter(filters.harness.as_deref())?,
+            from: date_filter_start(
+                &filters.date_range,
+                filters.today_start.as_deref(),
+                OffsetDateTime::now_utc(),
+            )?,
+        })
+    }
+
+    fn search_query(filters: &SessionFilters) -> Result<SearchQuery, String> {
+        let harness = harness_filter(filters.harness.as_deref())?;
         let from = date_filter_start(
             &filters.date_range,
             filters.today_start.as_deref(),
@@ -2024,6 +2119,16 @@ const fn coverage_state(state: CoverageState) -> &'static str {
     }
 }
 
+fn harness_filter(value: Option<&str>) -> Result<Option<Harness>, String> {
+    match value {
+        None | Some("" | "all") => Ok(None),
+        Some("claude_code") => Ok(Some(Harness::ClaudeCode)),
+        Some("codex") => Ok(Some(Harness::Codex)),
+        Some("opencode") => Ok(Some(Harness::OpenCode)),
+        Some(value) => Err(format!("Unsupported harness filter: {value}")),
+    }
+}
+
 fn date_filter_start(
     value: &str,
     today_start: Option<&str>,
@@ -2438,6 +2543,60 @@ mod tests {
         assert!(date_filter_start("today", Some("invalid"), tokyo_now).is_err());
         assert!(date_filter_start("today", Some("2026-10-01T15:00:00Z"), tokyo_now).is_err());
         assert!(date_filter_start("today", Some("2026-10-04T15:00:00Z"), tokyo_now).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn tool_call_routes_report_rates_and_outcome_samples() -> Result<(), String> {
+        let directory = tempfile::tempdir().map_err(|error| error.to_string())?;
+        let service = DesktopService::open(test_paths(directory.path())?)?;
+        service.seed_native_test_fixture("search-resume")?;
+        for (index, state) in ["succeeded", "failed", "succeeded"].iter().enumerate() {
+            let mut event = synthetic_native_observation()?;
+            event.observation_id =
+                cutokyo_domain::ObservationId::parse(format!("obs:tool-call:{index}"))
+                    .map_err(contract_error)?;
+            event.source.native.event_id = Some(format!("event:tool-call:{index}"));
+            event.payload["message_id"] = json!(format!("message:tool-call:{index}"));
+            event.payload["tool_name"] = json!("Bash");
+            event.payload["tool_call_id"] = json!(format!("tool:desktop:{index}"));
+            event.payload["tool_state"] = json!(state);
+            event.payload["tool_input"] = json!({"command": format!("step {index}")});
+            match &*service.core()? {
+                DesktopCore::Owner(core) => {
+                    core.capture(&event).map_err(contract_error)?;
+                    core.drain().map_err(contract_error)?;
+                }
+                _ => return Err("tool-call test requires writer".to_owned()),
+            }
+        }
+        let stats = service.tool_call_stats(&ToolCallFilters::default())?;
+        let bash = stats["tools"]
+            .as_array()
+            .and_then(|tools| tools.iter().find(|tool| tool["toolName"] == "Bash"))
+            .ok_or("missing Bash statistics")?;
+        assert_eq!(
+            (&bash["total"], &bash["succeeded"], &bash["failed"]),
+            (&json!(3), &json!(2), &json!(1))
+        );
+        let failed = service.tool_call_samples(&ToolCallSampleRequest {
+            tool_name: "Bash".to_owned(),
+            outcome: ToolCallOutcome::Failed,
+            filters: ToolCallFilters::default(),
+            offset: 0,
+            limit: 25,
+        })?;
+        assert_eq!(failed["total"], 1);
+        assert_eq!(failed["samples"][0]["state"], "failed");
+        assert_eq!(failed["samples"][0]["input"], json!({"command": "step 1"}));
+        assert!(
+            service
+                .tool_call_stats(&ToolCallFilters {
+                    harness: Some("unknown".to_owned()),
+                    ..ToolCallFilters::default()
+                })
+                .is_err()
+        );
         Ok(())
     }
 

@@ -148,6 +148,62 @@ export interface SessionRecord {
   readonly provenance: Provenance;
 }
 
+export type ToolCallDateRange = "all" | "today" | "7d" | "30d" | "90d";
+
+export interface ToolCallFilters {
+  readonly harness: Harness | "all";
+  readonly dateRange: ToolCallDateRange;
+  /** Local calendar midnight for Today, supplied by the command client. */
+  readonly todayStart: string | null;
+}
+
+export interface ToolCallStat {
+  readonly toolName: string;
+  readonly harnesses: readonly Harness[];
+  readonly total: number;
+  readonly succeeded: number;
+  readonly failed: number;
+  /** Running, cancelled or unknown calls. */
+  readonly other: number;
+  readonly lastCalledAt: string;
+}
+
+export interface ToolCallStatsResponse {
+  readonly meta: RouteMeta;
+  readonly tools: readonly ToolCallStat[];
+}
+
+export type ToolCallOutcome = "all" | "succeeded" | "failed";
+
+export interface ToolCallSampleRequest {
+  readonly toolName: string;
+  readonly outcome: ToolCallOutcome;
+  readonly filters: ToolCallFilters;
+  readonly offset: number;
+  readonly limit: number;
+}
+
+export interface ToolCallSample {
+  readonly id: string;
+  readonly sessionId: string;
+  readonly sessionTitle: string | null;
+  readonly harness: Harness;
+  readonly state: "succeeded" | "failed" | "running" | "cancelled" | "unknown";
+  readonly startedAt: string;
+  readonly endedAt: string | null;
+  /** Native JSON exactly as stored; null when the harness did not expose it. */
+  readonly input: unknown;
+  readonly output: unknown;
+}
+
+export interface ToolCallSamplesResponse {
+  readonly total: number;
+  readonly offset: number;
+  readonly limit: number;
+  readonly hasMore: boolean;
+  readonly samples: readonly ToolCallSample[];
+}
+
 export interface PriceFact {
   readonly provider: string;
   readonly model: string;
@@ -447,6 +503,7 @@ export type RoutePath =
   | "/onboarding"
   | "/dashboard"
   | "/sessions"
+  | "/tools"
   | "/inventory"
   | "/health"
   | "/data"
@@ -475,6 +532,10 @@ export interface CommandClient {
   getDashboard(): Promise<DashboardResponse>;
   searchSessions(filters: SessionFilters): Promise<SessionSearchResponse>;
   getSession(sessionId: string): Promise<SessionRecord>;
+  getToolCallStats(filters: ToolCallFilters): Promise<ToolCallStatsResponse>;
+  getToolCallSamples(
+    request: ToolCallSampleRequest,
+  ): Promise<ToolCallSamplesResponse>;
   previewResume(sessionId: string): Promise<ResumePreview>;
   resumeSession(sessionId: string): Promise<ActionReceipt>;
   previewSessionDeletion(sessionId: string): Promise<DeletionPreview>;

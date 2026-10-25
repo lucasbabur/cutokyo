@@ -31,6 +31,10 @@ import type {
   SessionFilters,
   SessionRecord,
   SessionSearchResponse,
+  ToolCallFilters,
+  ToolCallSampleRequest,
+  ToolCallSamplesResponse,
+  ToolCallStatsResponse,
   UpdateStatus,
 } from "../contracts.js";
 
@@ -38,6 +42,14 @@ import { localMidnight } from "../domain/sessionSearch.js";
 
 function command<T>(name: string, args?: Record<string, unknown>): Promise<T> {
   return invoke<T>(name, args);
+}
+
+function withTodayStart(filters: ToolCallFilters): ToolCallFilters {
+  return {
+    ...filters,
+    todayStart:
+      filters.dateRange === "today" ? localMidnight(new Date()) : null,
+  };
 }
 
 /** The production adapter exposes only named application use cases over Tauri IPC. */
@@ -66,6 +78,14 @@ export function createTauriCommandClient(): CommandClient {
       }),
     getSession: (sessionId: string) =>
       command<SessionRecord>("session_detail", { sessionId }),
+    getToolCallStats: (filters: ToolCallFilters) =>
+      command<ToolCallStatsResponse>("tool_call_stats", {
+        filters: withTodayStart(filters),
+      }),
+    getToolCallSamples: (request: ToolCallSampleRequest) =>
+      command<ToolCallSamplesResponse>("tool_call_samples", {
+        request: { ...request, filters: withTodayStart(request.filters) },
+      }),
     previewResume: (sessionId: string) =>
       command<ResumePreview>("preview_resume", { sessionId }),
     resumeSession: (sessionId: string) =>

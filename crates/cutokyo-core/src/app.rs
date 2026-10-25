@@ -40,7 +40,8 @@ pub use crate::{
         ConnectionEvidence, DELETE_ALL_CONFIRMATION, DELETION_DISCLOSURE, DeletionReceipt,
         DiagnosticRowCounts, HealthSnapshot, HealthStatus, LockOwner, RestoreReceipt,
         RetentionPlan, SearchMode, SearchPage, SearchQuery, SearchResult, SearchSort,
-        SessionDetail, UsageTotals,
+        SessionDetail, SqlQueryResult, ToolCallFilter, ToolCallOutcome, ToolCallSample,
+        ToolCallSamplePage, ToolCallSampleQuery, ToolCallStat, UsageTotals,
     },
 };
 
@@ -812,6 +813,30 @@ impl QueryUseCases {
     /// Returns invalid input or a store read error.
     pub fn search_page(&self, query: &SearchQuery) -> Result<SearchPage> {
         self.store.search_page(query)
+    }
+
+    /// Counts tool-call outcomes per native tool name, most-called first.
+    ///
+    /// # Errors
+    /// Returns a store read error.
+    pub fn tool_call_stats(&self, filter: &ToolCallFilter) -> Result<Vec<ToolCallStat>> {
+        self.store.tool_call_stats(filter)
+    }
+
+    /// Lists one tool's calls, newest first, with stored input and output.
+    ///
+    /// # Errors
+    /// Returns invalid input for a bad page or a store read error.
+    pub fn tool_call_samples(&self, query: &ToolCallSampleQuery) -> Result<ToolCallSamplePage> {
+        self.store.tool_call_samples(query)
+    }
+
+    /// Runs one bounded read-only `SELECT` over the derived projection tables.
+    ///
+    /// # Errors
+    /// Returns invalid input for rejected, failing, or over-budget SQL.
+    pub fn sql_query(&self, sql: &str, max_rows: u32) -> Result<SqlQueryResult> {
+        self.store.sql_query(sql, max_rows)
     }
 
     /// Searches from stable frontend strings after parsing at the app boundary.
