@@ -19,6 +19,8 @@ import type {
   SessionFilters,
   SessionRecord,
   SessionSearchResponse,
+  ToolCallFilters,
+  ToolCallStat,
   UpdateStatus,
 } from "../contracts.js";
 import { localMidnight, sessionMatches } from "../domain/sessionSearch.js";
@@ -191,6 +193,22 @@ export function createBrowserFixtureClient(
   const historyListeners = new Set<() => void>();
   let holdFirstAppearanceRead = caseName === "appearance-dark-delayed";
 
+  function toolCalls(filters: ToolCallFilters) {
+    const now = Date.parse(FIXTURE_NOW);
+    const days = { "7d": 7, "30d": 30, "90d": 90 } as const;
+    const from =
+      filters.dateRange === "all"
+        ? null
+        : filters.dateRange === "today"
+          ? Date.parse(localMidnight(new Date(now)))
+          : now - days[filters.dateRange] * 86_400_000;
+    return state.toolCalls.filter(
+      ({ sample }) =>
+        (filters.harness === "all" || sample.harness === filters.harness) &&
+        (from === null || Date.parse(sample.startedAt) >= from),
+    );
+  }
+
   async function getInventory(): Promise<InventoryResponse> {
     await wait();
     return structuredClone(state.inventory);
@@ -358,6 +376,64 @@ export function createBrowserFixtureClient(
         ),
         availableAgents: distinct(
           state.sessions.flatMap((session) => session.agents),
+        ),
+      };
+    },
+    async getToolCallStats(filters) {
+      await wait();
+      const tools = new Map<string, ToolCallStat>();
+      for (const call of toolCalls(filters)) {
+        const stat = tools.get(call.toolName) ?? {
+          toolName: call.toolName,
+          harnesses: [],
+          total: 0,
+          succeeded: 0,
+          failed: 0,
+          other: 0,
+          lastCalledAt: call.sample.startedAt,
+        };
+        tools.set(call.toolName, {
+          ...stat,
+          harnesses: [...new Set([...stat.harnesses, call.sample.harness])],
+          total: stat.total + 1,
+          succeeded: stat.succeeded + Number(call.sample.state === "succeeded"),
+          failed: stat.failed + Number(call.sample.state === "failed"),
+          other:
+            stat.other +
+            Number(
+              call.sample.state !== "succeeded" &&
+                call.sample.state !== "failed",
+            ),
+        });
+      }
+      return {
+        meta: { freshness: "complete", notices: [], generatedAt: FIXTURE_NOW },
+        tools: [...tools.values()].sort(
+          (left, right) =>
+            right.total - left.total ||
+            left.toolName.localeCompare(right.toolName),
+        ),
+      };
+    },
+    async getToolCallSamples(request) {
+      await wait();
+      if (request.limit < 1 || request.limit > 50)
+        throw new Error("sample limit must be 1 to 50");
+      const matching = toolCalls(request.filters)
+        .filter(
+          (call) =>
+            call.toolName === request.toolName &&
+            (request.outcome === "all" ||
+              call.sample.state === request.outcome),
+        )
+        .map((call) => call.sample);
+      return {
+        total: matching.length,
+        offset: request.offset,
+        limit: request.limit,
+        hasMore: request.offset + request.limit < matching.length,
+        samples: structuredClone(
+          matching.slice(request.offset, request.offset + request.limit),
         ),
       };
     },

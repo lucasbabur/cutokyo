@@ -10,6 +10,7 @@ import { InventoryPage } from "./pages/InventoryPage.js";
 import { OnboardingPage } from "./pages/OnboardingPage.js";
 import { SessionsPage } from "./pages/SessionsPage.js";
 import { SettingsPage } from "./pages/SettingsPage.js";
+import { ToolCallsPage } from "./pages/ToolCallsPage.js";
 import { navigate, useAppLocation } from "./router.js";
 import { BrandMark } from "./components/BrandMark.js";
 
@@ -99,6 +100,8 @@ export function App() {
         <DashboardPage />
       ) : effectivePage === "/sessions" ? (
         <SessionsPage sessionId={location.sessionId} />
+      ) : effectivePage === "/tools" ? (
+        <ToolCallsPage toolName={location.toolName} />
       ) : effectivePage === "/inventory" ? (
         <InventoryPage />
       ) : effectivePage === "/health" ? (

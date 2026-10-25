@@ -21,6 +21,12 @@ are quoted for `cmd.exe`, so paths with spaces work. Current Codex releases only
 run hooks the user has trusted; setup trusts Cutokyo's own entries through the
 Codex App Server, the same way Codex's `/hooks` review does.
 
+**Tool calls** lists every tool your agents called, with harnesses, call count,
+success rate, failures and last use. Filter by name, harness or date and sort by
+calls, failures or success rate. Open a tool to read its calls newest first,
+starting with failures when there are any, each with its native input, output,
+duration and session.
+
 **Agent tools** is the place to manage installed MCP servers, skills, hooks,
 plugins, and instruction files. Search by name or source, filter by harness or
 kind, and choose **Manage** to read the actual source. Editable installations

@@ -9,6 +9,7 @@ use tauri::{Emitter as _, Manager as _};
 
 use crate::service::{
     CompleteOnboardingRequest, DesktopPreferencesPatch, DesktopService, SessionFilters,
+    ToolCallFilters, ToolCallSampleRequest,
 };
 
 #[tauri::command]
@@ -136,6 +137,27 @@ async fn search_sessions(app: tauri::AppHandle, filters: SessionFilters) -> Resu
     })
     .await
     .map_err(|error| format!("Session search worker failed: {error}"))?
+}
+
+#[tauri::command]
+async fn tool_call_stats(app: tauri::AppHandle, filters: ToolCallFilters) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        app.state::<DesktopService>().tool_call_stats(&filters)
+    })
+    .await
+    .map_err(|error| format!("Tool-call statistics worker failed: {error}"))?
+}
+
+#[tauri::command]
+async fn tool_call_samples(
+    app: tauri::AppHandle,
+    request: ToolCallSampleRequest,
+) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        app.state::<DesktopService>().tool_call_samples(&request)
+    })
+    .await
+    .map_err(|error| format!("Tool-call samples worker failed: {error}"))?
 }
 
 #[expect(
@@ -521,6 +543,8 @@ pub(crate) fn run() -> Result<(), String> {
             dashboard_query,
             search_sessions,
             session_detail,
+            tool_call_stats,
+            tool_call_samples,
             preview_resume,
             resume_session,
             preview_session_deletion,

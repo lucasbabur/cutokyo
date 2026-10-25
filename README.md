@@ -228,8 +228,20 @@ pages, or prior backups.
 
 </details>
 
-The desktop app covers the same ground with onboarding, sessions, agent tools,
+The desktop app covers the same ground with onboarding, sessions, tool calls, agent tools,
 health and data controls. See [desktop workflows](docs/desktop-workflows.md).
+
+## Let your agents use it
+
+`cutokyo mcp serve` gives Claude Code, Codex and OpenCode read-only tools over
+your history: session search and details, usage, coverage, inventory, resume
+targets, and `cutokyo_sql_query` for ad-hoc SQL over sessions, messages and tool
+calls. The [`cutokyo` agent skill](skills/cutokyo/SKILL.md) teaches an agent when
+and how to use them:
+
+```bash
+npx skills add lucasbabur/cutokyo --skill cutokyo
+```
 
 ## Private by default
 

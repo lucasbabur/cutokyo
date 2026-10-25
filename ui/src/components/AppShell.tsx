@@ -5,6 +5,7 @@ import {
   History,
   Settings,
   Stethoscope,
+  Wrench,
 } from "lucide-react";
 import { type PropsWithChildren, useEffect, useRef } from "react";
 
@@ -34,6 +35,12 @@ const NAV_ITEMS: readonly {
     label: "Sessions",
     shortLabel: "Sessions",
     icon: History,
+  },
+  {
+    path: "/tools",
+    label: "Tool calls",
+    shortLabel: "Tool calls",
+    icon: Wrench,
   },
   {
     path: "/inventory",
