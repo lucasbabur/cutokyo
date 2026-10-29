@@ -675,11 +675,12 @@ fn forked_world()
 fn forked_copies_refusals_and_output_errors_are_counted_apart() -> TestResult {
     let (_root, store) = forked_world()?;
     let metrics = store.reader().setup_metrics(&october()?)?;
+    // The output error is reported but is not an agent failure; only `ls nope` is.
     let curve = WarmupCurve {
         warmup_calls: 3,
-        warmup_failures: 2,
+        warmup_failures: 1,
         first_use_calls: 3,
-        first_use_failures: 2,
+        first_use_failures: 1,
         ..WarmupCurve::default()
     };
     assert_eq!(
@@ -742,10 +743,33 @@ fn warmup_ends_after_ten_calls_and_programs_are_new_once() -> TestResult {
     // gamma has no usage, so it is not a listed project; its calls still shape the harness curve.
     assert!(gamma.is_none());
     let curve = &metrics.harnesses[0].warmup;
-    assert_eq!((curve.warmup_calls, curve.warmup_failures), (13, 2));
+    assert_eq!((curve.warmup_calls, curve.warmup_failures), (13, 1));
     assert_eq!((curve.settled_calls, curve.settled_failures), (2, 1));
-    assert_eq!((curve.first_use_calls, curve.first_use_failures), (5, 2));
+    assert_eq!((curve.first_use_calls, curve.first_use_failures), (5, 1));
     assert_eq!((curve.later_use_calls, curve.later_use_failures), (10, 1));
+    Ok(())
+}
+
+#[test]
+fn harness_blocked_commands_are_refusals() -> TestResult {
+    let (_root, store) = forked_world()?;
+    native_tool(
+        &store,
+        "y",
+        "t4",
+        "failed",
+        "sleep 300 && date",
+        "<tool_use_error>Blocked: sleep 300 followed by: date</tool_use_error>",
+        "2026-10-20T11:00:20Z",
+        "beta",
+    )?;
+    let metrics = store.reader().setup_metrics(&october()?)?;
+    let claude = &metrics.harnesses[0];
+    assert_eq!(
+        (claude.failed_tool_calls, claude.blocked_tool_calls),
+        (3, 2)
+    );
+    assert_eq!(claude.warmup.warmup_failures, 1);
     Ok(())
 }
 

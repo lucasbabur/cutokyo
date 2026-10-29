@@ -54,16 +54,19 @@ const MACHINE_PREFIXES: [&str; 15] = [
 ];
 /// Failed-call outputs written when a rule, hook, the person or worktree isolation
 /// refused the call, so the agent made no mistake.
-const BLOCKED_PREFIXES: [&str; 6] = [
+const BLOCKED_PREFIXES: [&str; 7] = [
     "The user doesn't want to proceed with this tool use",
     "Permission for this tool use was denied",
     "Permission for this command was denied",
     "Skill execution blocked by permission rules",
     "This session is isolated in the worktree",
     "PreToolUse:",
+    "<tool_use_error>Blocked:",
 ];
-/// Phrases that show a shell command failed even though it exited zero. Generic
-/// `error:` is left out because source code and logs print it on success.
+/// Phrases that suggest a shell command failed even though it exited zero. Generic
+/// `error:` is left out because source code and logs print it on success. A hand
+/// audit found these phrases also appear in probes and printed logs, so the count is
+/// reported beside agent failures and never added to them.
 const OUTPUT_ERROR_PHRASES: [&str; 7] = [
     "command not found",
     "No such file or directory",
@@ -129,7 +132,7 @@ pub struct HarnessMetrics {
     pub failed_tool_calls: u64,
     /// Failed calls that a rule, hook, the person or worktree isolation refused.
     pub blocked_tool_calls: u64,
-    /// Shell calls that succeeded but printed a clear error.
+    /// Shell calls that succeeded but printed an error phrase; not agent failures.
     pub output_error_calls: u64,
     /// Agent failures early in sessions and on first use of a program.
     pub warmup: WarmupCurve,
@@ -149,7 +152,7 @@ pub struct HarnessMetrics {
     pub median_autonomy_seconds: Option<u64>,
 }
 
-/// Agent failures (failed calls that were not blocked, plus output errors) split by
+/// Agent failures (failed calls that were not blocked) split by
 /// how far into a session, and how new to it, each call was.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -657,7 +660,7 @@ fn read_calls(
                 .entry(tool)
                 .or_default() += 1;
         }
-        let failure = (failed && !blocked) || output_error;
+        let failure = failed && !blocked;
         let early = position < WARMUP_CALLS;
         position += 1;
         let entry = harnesses.entry(harness).or_default();
