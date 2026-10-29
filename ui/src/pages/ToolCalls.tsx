@@ -28,10 +28,10 @@ import { formatInteger } from "../domain/reconcile.js";
 import { routeHref } from "../router.js";
 
 const SAMPLE_PAGE = 25;
-const FILTERS_KEY = "cutokyo.tool-call-filters";
+const FILTERS_KEY = "cutokyo.metrics-filters";
 const DEFAULT_FILTERS: ToolCallFilters = {
   harness: "all",
-  dateRange: "all",
+  dateRange: "7d",
   todayStart: null,
 };
 const DATE_RANGES: readonly ToolCallDateRange[] = [
@@ -60,15 +60,15 @@ function retainedFilters(): ToolCallFilters {
         : "all",
       dateRange: DATE_RANGES.includes(fields.dateRange as ToolCallDateRange)
         ? (fields.dateRange as ToolCallDateRange)
-        : "all",
+        : DEFAULT_FILTERS.dateRange,
     };
   } catch {
     return DEFAULT_FILTERS;
   }
 }
 
-/** Harness and date filters survive moving between the list and a tool. */
-function useToolCallFilters() {
+/** Harness and date filters survive moving between metrics and a tool. */
+export function useToolCallFilters() {
   const [filters, setFilters] = useState(retainedFilters);
   useEffect(() => {
     try {
@@ -104,7 +104,7 @@ export function percent(part: number, total: number): string {
   return `${value.toFixed(1)}%`;
 }
 
-function FilterBar({
+export function FilterBar({
   filters,
   onChange,
 }: {
@@ -157,30 +157,11 @@ function OutcomeBar({ stat }: { readonly stat: ToolCallStat }) {
   );
 }
 
-export function ToolCallsPage({
-  toolName,
-}: {
-  readonly toolName: string | null;
-}) {
-  const [filters, setFilters] = useToolCallFilters();
-  return toolName === null ? (
-    <ToolCallList filters={filters} onFiltersChange={setFilters} />
-  ) : (
-    <ToolCallDetail
-      key={toolName}
-      toolName={toolName}
-      filters={filters}
-      onFiltersChange={setFilters}
-    />
-  );
-}
-
-function ToolCallList({
+/** Every tool with its outcomes, searchable and sortable, inside the metrics page. */
+export function ToolCallsPanel({
   filters,
-  onFiltersChange,
 }: {
   readonly filters: ToolCallFilters;
-  readonly onFiltersChange: (next: ToolCallFilters) => void;
 }) {
   const resource = useToolCallStats(filters);
   const [query, setQuery] = useState("");
@@ -212,9 +193,23 @@ function ToolCallList({
   );
 
   return (
-    <div className="page">
-      <PageHeader title="Tool calls" />
-      <section className="toolbar toolbar--wrap" aria-label="Tool call filters">
+    <section
+      className="panel panel--span-2"
+      aria-labelledby="tool-table-heading"
+    >
+      <div className="panel__header">
+        <div>
+          <h2 id="tool-table-heading">Tool calls</h2>
+          {resource.data === null ? null : (
+            <p>
+              {formatInteger(totals.total)} calls ·{" "}
+              {percent(totals.succeeded, totals.total)} succeeded ·{" "}
+              {formatInteger(totals.failed)} failed
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="toolbar toolbar--wrap" aria-label="Tool call search">
         <label className="search-field">
           <span className="sr-only">Filter tools by name</span>
           <Search aria-hidden="true" />
@@ -226,7 +221,6 @@ function ToolCallList({
             placeholder="Filter tools…"
           />
         </label>
-        <FilterBar filters={filters} onChange={onFiltersChange} />
         <label className="inline-field">
           <span>Sort</span>
           <select
@@ -240,8 +234,7 @@ function ToolCallList({
             <option value="name">Name</option>
           </select>
         </label>
-      </section>
-
+      </div>
       {resource.state === "error" ? (
         <ErrorState
           title="Tool calls are unavailable"
@@ -253,64 +246,49 @@ function ToolCallList({
         resource.state === "loading" ? (
           <LoadingState label="Counting tool calls" />
         ) : null
+      ) : resource.data.tools.length === 0 ? (
+        <EmptyState
+          compact
+          title="No tool calls"
+          description="No captured tool calls match these filters."
+        />
+      ) : tools.length === 0 ? (
+        <EmptyState
+          compact
+          title="No matching tools"
+          description={`No tool name contains “${query.trim()}”.`}
+        />
       ) : (
-        <>
-          <RouteNotice meta={resource.data.meta} />
-          {resource.data.tools.length === 0 ? (
-            <EmptyState
-              title="No tool calls"
-              description="No captured tool calls match these filters."
-            />
-          ) : (
-            <section className="panel" aria-labelledby="tool-table-heading">
-              <div className="panel__header">
-                <h2 id="tool-table-heading">
-                  {formatInteger(totals.total)} calls ·{" "}
-                  {percent(totals.succeeded, totals.total)} succeeded ·{" "}
-                  {formatInteger(totals.failed)} failed
-                </h2>
-              </div>
-              {tools.length === 0 ? (
-                <EmptyState
-                  compact
-                  title="No matching tools"
-                  description={`No tool name contains “${query.trim()}”.`}
-                />
-              ) : (
-                <div className="tool-table-scroll">
-                  <table className="data-table tool-table">
-                    <thead>
-                      <tr>
-                        <th scope="col">Tool</th>
-                        <th scope="col">Harness</th>
-                        <th scope="col" className="numeric">
-                          Calls
-                        </th>
-                        <th scope="col">Success</th>
-                        <th scope="col" className="numeric">
-                          Failed
-                        </th>
-                        <th scope="col">Last called</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tools.map((tool) => (
-                        <ToolRow key={tool.toolName} tool={tool} />
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
-          )}
-        </>
+        <div className="tool-table-scroll">
+          <table className="data-table tool-table">
+            <thead>
+              <tr>
+                <th scope="col">Tool</th>
+                <th scope="col">Harness</th>
+                <th scope="col" className="numeric">
+                  Calls
+                </th>
+                <th scope="col">Success</th>
+                <th scope="col" className="numeric">
+                  Failed
+                </th>
+                <th scope="col">Last called</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tools.map((tool) => (
+                <ToolRow key={tool.toolName} tool={tool} />
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-    </div>
+    </section>
   );
 }
 
 function ToolRow({ tool }: { readonly tool: ToolCallStat }) {
-  const href = routeHref("/tools", tool.toolName);
+  const href = routeHref("/metrics", tool.toolName);
   return (
     <tr
       className="tool-table__row"
@@ -355,7 +333,7 @@ function ToolRow({ tool }: { readonly tool: ToolCallStat }) {
   );
 }
 
-function ToolCallDetail({
+export function ToolCallDetail({
   toolName,
   filters,
   onFiltersChange,
@@ -376,8 +354,8 @@ function ToolCallDetail({
 
   return (
     <div className="page">
-      <a className="back-link" href={routeHref("/tools")}>
-        <ArrowLeft aria-hidden="true" /> Back to tool calls
+      <a className="back-link" href={routeHref("/metrics")}>
+        <ArrowLeft aria-hidden="true" /> Back to metrics
       </a>
       <PageHeader title={toolName} />
       <section className="toolbar toolbar--wrap" aria-label="Tool call filters">

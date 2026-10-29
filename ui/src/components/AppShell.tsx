@@ -1,11 +1,11 @@
 import {
+  Activity,
   Boxes,
   Database,
   Gauge,
   History,
   Settings,
   Stethoscope,
-  Wrench,
 } from "lucide-react";
 import { type PropsWithChildren, useEffect, useRef } from "react";
 
@@ -37,10 +37,10 @@ const NAV_ITEMS: readonly {
     icon: History,
   },
   {
-    path: "/tools",
-    label: "Tool calls",
-    shortLabel: "Tool calls",
-    icon: Wrench,
+    path: "/metrics",
+    label: "Metrics",
+    shortLabel: "Metrics",
+    icon: Activity,
   },
   {
     path: "/inventory",

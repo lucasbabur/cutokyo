@@ -38,10 +38,12 @@ pub use crate::{
     store::{
         BackupInfo, BackupManifest, BackupRestorePlan, CheckpointMode, CheckpointResult,
         ConnectionEvidence, DELETE_ALL_CONFIRMATION, DELETION_DISCLOSURE, DeletionReceipt,
-        DiagnosticRowCounts, HealthSnapshot, HealthStatus, LockOwner, ModelUsage, RestoreReceipt,
+        DiagnosticRowCounts, HarnessMetrics, HealthSnapshot, HealthStatus, LockOwner,
+        McpServerMetrics, MetricsWindow, ModelUsage, ProjectUsage, RepeatFailure, RestoreReceipt,
         RetentionPlan, SearchMode, SearchPage, SearchQuery, SearchResult, SearchSort,
-        SessionDetail, SqlQueryResult, ToolCallFilter, ToolCallOutcome, ToolCallSample,
-        ToolCallSamplePage, ToolCallSampleQuery, ToolCallStat, UsageTotals,
+        SessionDetail, SetupMetrics, SqlQueryResult, ToolCallFilter, ToolCallOutcome,
+        ToolCallSample, ToolCallSamplePage, ToolCallSampleQuery, ToolCallStat, UsageTotals,
+        unused_names,
     },
 };
 
@@ -829,6 +831,14 @@ impl QueryUseCases {
     /// Returns invalid input for a bad page or a store read error.
     pub fn tool_call_samples(&self, query: &ToolCallSampleQuery) -> Result<ToolCallSamplePage> {
         self.store.tool_call_samples(query)
+    }
+
+    /// Reads the stored setup metrics for one window.
+    ///
+    /// # Errors
+    /// Returns invalid input for an inverted window or a store read error.
+    pub fn setup_metrics(&self, window: &MetricsWindow) -> Result<SetupMetrics> {
+        self.store.setup_metrics(window)
     }
 
     /// Runs one bounded read-only `SELECT` over the derived projection tables.

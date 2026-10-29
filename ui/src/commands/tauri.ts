@@ -35,6 +35,7 @@ import type {
   ToolCallSampleRequest,
   ToolCallSamplesResponse,
   ToolCallStatsResponse,
+  SetupMetricsResponse,
   UpdateStatus,
 } from "../contracts.js";
 
@@ -80,6 +81,10 @@ export function createTauriCommandClient(): CommandClient {
       command<SessionRecord>("session_detail", { sessionId }),
     getToolCallStats: (filters: ToolCallFilters) =>
       command<ToolCallStatsResponse>("tool_call_stats", {
+        filters: withTodayStart(filters),
+      }),
+    getSetupMetrics: (filters: ToolCallFilters) =>
+      command<SetupMetricsResponse>("setup_metrics", {
         filters: withTodayStart(filters),
       }),
     getToolCallSamples: (request: ToolCallSampleRequest) =>

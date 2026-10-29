@@ -19,12 +19,18 @@ import type {
   SessionFilters,
   SessionRecord,
   SessionSearchResponse,
+  SetupMetrics,
   ToolCallFilters,
   ToolCallStat,
   UpdateStatus,
 } from "../contracts.js";
 import { localMidnight, sessionMatches } from "../domain/sessionSearch.js";
-import { createScenario, FIXTURE_NOW, type FixtureState } from "./scenarios.js";
+import {
+  createScenario,
+  FIXTURE_NOW,
+  fixtureSetupMetrics,
+  type FixtureState,
+} from "./scenarios.js";
 import { createInventoryFixtureManagement } from "./inventoryManagement.js";
 import { createBackupFixtureManagement } from "./backupManagement.js";
 
@@ -412,6 +418,48 @@ export function createBrowserFixtureClient(
           (left, right) =>
             right.total - left.total ||
             left.toolName.localeCompare(right.toolName),
+        ),
+      };
+    },
+    async getSetupMetrics(filters) {
+      await wait();
+      const empty: SetupMetrics = {
+        harnesses: [],
+        repeatFailures: [],
+        mcpServers: [],
+        projects: [],
+        skillsUsed: {},
+      };
+      const scoped = (metrics: SetupMetrics): SetupMetrics =>
+        state.sessions.length === 0
+          ? empty
+          : {
+              ...metrics,
+              harnesses: metrics.harnesses.filter(
+                (row) =>
+                  filters.harness === "all" || row.harness === filters.harness,
+              ),
+            };
+      const current = scoped(fixtureSetupMetrics.current);
+      const unused = (kind: "skill" | "mcp", used: readonly string[]) =>
+        [
+          ...new Set(
+            state.inventory.items
+              .filter((item) => item.kind === kind && !used.includes(item.name))
+              .map((item) => item.name),
+          ),
+        ].sort();
+      return {
+        meta: { freshness: "complete", notices: [], generatedAt: FIXTURE_NOW },
+        current,
+        previous:
+          filters.dateRange === "all"
+            ? null
+            : scoped(fixtureSetupMetrics.previous),
+        unusedSkills: unused("skill", Object.keys(current.skillsUsed)),
+        unusedMcpServers: unused(
+          "mcp",
+          current.mcpServers.map((row) => row.server),
         ),
       };
     },

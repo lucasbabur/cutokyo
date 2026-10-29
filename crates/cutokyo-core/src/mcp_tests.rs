@@ -12,10 +12,10 @@ use crate::{
     mcp::{
         BrokerError, BrokerErrorCode, BrokerFuture, BrokerMcpServer, CUTOKYO_MCP_TOOL_NAMES,
         CoverageOutput, CutokyoMcpServer, CutokyoReadPort, InventoryInput, InventoryOutput,
-        MAX_BROKER_TOOLS_PER_SERVER, McpBroker, McpSession, McpUpstreamConfig,
+        MAX_BROKER_TOOLS_PER_SERVER, MAX_METRICS_DAYS, McpBroker, McpSession, McpUpstreamConfig,
         McpUpstreamConnector, McpUpstreamTransport, ResumeTargetOutput, SessionDetailsOutput,
-        SessionIdInput, SessionSearchInput, SessionSearchOutput, SqlQueryInput, SqlQueryOutput,
-        UsageOutput,
+        SessionIdInput, SessionSearchInput, SessionSearchOutput, SetupMetricsInput,
+        SetupMetricsOutput, SqlQueryInput, SqlQueryOutput, UsageOutput,
     },
     mcp_config::{
         BrokerCommand, HarnessConfigTarget, MANAGED_BROKER_NODE, ManagedConfigErrorCode,
@@ -77,6 +77,17 @@ impl CutokyoReadPort for FakeReadPort {
         })
     }
 
+    fn setup_metrics(
+        &self,
+        input: &SetupMetricsInput,
+    ) -> cutokyo_domain::Result<SetupMetricsOutput> {
+        Ok(SetupMetricsOutput {
+            days: input.days.unwrap_or(7),
+            current: json!({"harnesses": []}),
+            previous: None,
+        })
+    }
+
     fn sql_query(&self, input: &SqlQueryInput) -> cutokyo_domain::Result<SqlQueryOutput> {
         Ok(SqlQueryOutput {
             columns: vec!["sql".to_owned()],
@@ -121,6 +132,42 @@ fn usage() -> UsageOutput {
         cache_write_tokens: None,
         provider_cost_micros: None,
     }
+}
+
+#[test]
+fn mcp_agent_metrics_real_read_port_bounds_windows() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let core = crate::app::Application::new().open_local(
+        root.path().join("history.db"),
+        root.path().join("spool"),
+        crate::store::LockOwner::current("mcp-metrics-test", None)?,
+    )?;
+    let queries = core.queries();
+    let week = CutokyoReadPort::setup_metrics(&queries, &SetupMetricsInput::default())?;
+    assert_eq!(week.days, 7);
+    assert_eq!(week.current["harnesses"], json!([]));
+    assert!(week.previous.is_some());
+    let all = CutokyoReadPort::setup_metrics(
+        &queries,
+        &SetupMetricsInput {
+            days: Some(0),
+            harness: Some("codex".to_owned()),
+        },
+    )?;
+    assert!(all.previous.is_none());
+    for input in [
+        SetupMetricsInput {
+            days: Some(MAX_METRICS_DAYS + 1),
+            harness: None,
+        },
+        SetupMetricsInput {
+            days: None,
+            harness: Some("cursor".to_owned()),
+        },
+    ] {
+        assert!(CutokyoReadPort::setup_metrics(&queries, &input).is_err());
+    }
+    Ok(())
 }
 
 #[test]
@@ -174,7 +221,7 @@ fn mcp_search_real_read_port_validates_modes_and_reports_exact_pages() -> TestRe
 }
 
 #[tokio::test]
-async fn mcp_own_server_lists_only_six_read_only_tools_and_serves_read_port() -> TestResult {
+async fn mcp_own_server_lists_only_read_only_tools_and_serves_read_port() -> TestResult {
     let (server_transport, client_transport) = tokio::io::duplex(64 * 1024);
     let server = CutokyoMcpServer::new(Arc::new(FakeReadPort));
     let server_handle = tokio::spawn(async move {

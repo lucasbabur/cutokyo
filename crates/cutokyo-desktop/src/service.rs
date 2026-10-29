@@ -9,9 +9,10 @@ use std::{
 use cutokyo_core::{
     app::{
         Application, DELETE_ALL_CONFIRMATION, DeletionReceipt, HealthSnapshot, HealthStatus,
-        HistoryImportOptions, HistoryImportReport, HistoryRoots, LocalCore, LockOwner, ModelUsage,
-        QueryUseCases, RetentionPlan, SearchMode, SearchPage, SearchQuery, SearchResult,
-        SearchSort, SessionDetail, ToolCallFilter, ToolCallOutcome, ToolCallSampleQuery,
+        HistoryImportOptions, HistoryImportReport, HistoryRoots, LocalCore, LockOwner,
+        MetricsWindow, ModelUsage, QueryUseCases, RetentionPlan, SearchMode, SearchPage,
+        SearchQuery, SearchResult, SearchSort, SessionDetail, ToolCallFilter, ToolCallOutcome,
+        ToolCallSampleQuery, unused_names,
     },
     config::{RuntimePaths, SettingsOverrides},
 };
@@ -1658,6 +1659,81 @@ impl DesktopService {
         }))
     }
 
+    /// Reads setup metrics for the filtered window and the equal-length window before it,
+    /// plus the installed skills and MCP servers that no call used.
+    pub(crate) fn setup_metrics(&self, filters: &ToolCallFilters) -> Result<Value, String> {
+        let now = OffsetDateTime::now_utc();
+        let harness = harness_filter(filters.harness.as_deref())?;
+        let from = date_filter_start(&filters.date_range, filters.today_start.as_deref(), now)?;
+        let queries = self.core()?.queries()?;
+        let current = queries
+            .setup_metrics(&MetricsWindow {
+                from: from.clone(),
+                to: None,
+                harness,
+            })
+            .map_err(contract_error)?;
+        let previous = match &from {
+            Some(start) => {
+                let length = now.unix_timestamp() - start.unix_timestamp();
+                let earlier = epoch_timestamp(start.unix_timestamp() - length)?;
+                Some(
+                    queries
+                        .setup_metrics(&MetricsWindow {
+                            from: Some(earlier),
+                            to: Some(start.clone()),
+                            harness,
+                        })
+                        .map_err(contract_error)?,
+                )
+            }
+            None => None,
+        };
+        let mut notices = Vec::new();
+        let (unused_skills, unused_mcp_servers) = match self
+            .application
+            .discover_inventory(&self.inventory_roots()?)
+        {
+            Ok(live) => {
+                notices.extend(live.notices);
+                let installed = |kind: &str| {
+                    live.items
+                        .iter()
+                        .filter(|item| {
+                            item.kind == kind
+                                && item.state != "disabled"
+                                && harness.is_none_or(|h| item.harnesses.contains(&h))
+                        })
+                        .map(|item| item.name.as_str())
+                        .collect::<Vec<_>>()
+                };
+                let used_skills = current.skills_used.keys().cloned().collect();
+                let used_servers = current
+                    .mcp_servers
+                    .iter()
+                    .map(|row| row.server.clone())
+                    .collect();
+                (
+                    Some(unused_names(installed("skill"), &used_skills)),
+                    Some(unused_names(installed("mcp"), &used_servers)),
+                )
+            }
+            Err(error) => {
+                notices.push(format!(
+                    "Installed skills and MCP servers are unavailable: {error}"
+                ));
+                (None, None)
+            }
+        };
+        Ok(json!({
+            "meta": route_meta(if notices.is_empty() { "complete" } else { "partial" }, &notices)?,
+            "current": current,
+            "previous": previous,
+            "unusedSkills": unused_skills,
+            "unusedMcpServers": unused_mcp_servers,
+        }))
+    }
+
     fn tool_call_filter(filters: &ToolCallFilters) -> Result<ToolCallFilter, String> {
         Ok(ToolCallFilter {
             harness: harness_filter(filters.harness.as_deref())?,
@@ -2166,6 +2242,14 @@ fn date_filter_start(
         .map_err(contract_error)
 }
 
+fn epoch_timestamp(epoch: i64) -> Result<Timestamp, String> {
+    let formatted = OffsetDateTime::from_unix_timestamp(epoch)
+        .map_err(|error| format!("Could not build metrics window: {error}"))?
+        .format(&Rfc3339)
+        .map_err(|error| format!("Could not format metrics window: {error}"))?;
+    Timestamp::parse(formatted).map_err(contract_error)
+}
+
 fn nonempty(value: &str) -> Option<String> {
     let trimmed = value.trim();
     (!trimmed.is_empty()).then(|| trimmed.to_owned())
@@ -2597,6 +2681,82 @@ mod tests {
             service
                 .tool_call_stats(&ToolCallFilters {
                     harness: Some("unknown".to_owned()),
+                    ..ToolCallFilters::default()
+                })
+                .is_err()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn setup_metrics_route_compares_windows_and_lists_unused_infrastructure()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let directory = tempfile::tempdir()?;
+        let service = DesktopService::open(test_paths(directory.path())?)?;
+        let home = directory.path().join("home");
+        let roots = cutokyo_core::app::InventoryRoots {
+            claude: home.join(".claude"),
+            codex: home.join(".codex"),
+            opencode: home.join(".config/opencode"),
+            opencode_config: None,
+            opencode_global: None,
+            projects: Vec::new(),
+            home,
+        };
+        for skill in ["unslop", "fleet"] {
+            let folder = roots.claude.join("skills").join(skill);
+            fs::create_dir_all(&folder)?;
+            fs::write(
+                folder.join("SKILL.md"),
+                format!("---\nname: {skill}\ndescription: {skill} skill\n---\nBody\n"),
+            )?;
+        }
+        fs::write(
+            roots.home.join(".claude.json"),
+            r#"{"mcpServers":{"ephra-tools":{"command":"e"},"notes":{"command":"n"}}}"#,
+        )?;
+        *service
+            .inventory_test_roots
+            .lock()
+            .map_err(|_| "fixture lock")? = Some(roots);
+        for (index, (tool, skill)) in [("mcp__ephra-tools__query", None), ("Skill", Some("unslop"))]
+            .into_iter()
+            .enumerate()
+        {
+            let mut event = synthetic_native_observation()?;
+            event.observation_id =
+                cutokyo_domain::ObservationId::parse(format!("obs:metrics:{index}"))?;
+            event.source.native.event_id = Some(format!("event:metrics:{index}"));
+            event.payload["message_id"] = json!(format!("message:metrics:{index}"));
+            event.payload["tool_name"] = json!(tool);
+            event.payload["tool_call_id"] = json!(format!("tool:metrics:{index}"));
+            event.payload["tool_state"] = json!("succeeded");
+            if let Some(skill) = skill {
+                event.payload["skill_name"] = json!(skill);
+            }
+            match &*service.core()? {
+                DesktopCore::Owner(core) => {
+                    core.capture(&event)?;
+                    core.drain()?;
+                }
+                _ => return Err("metrics test requires writer".into()),
+            }
+        }
+        let all = service.setup_metrics(&ToolCallFilters::default())?;
+        assert_eq!(all["previous"], Value::Null);
+        assert_eq!(all["current"]["harnesses"][0]["harness"], "claude_code");
+        assert_eq!(all["current"]["mcpServers"][0]["server"], "ephra-tools");
+        assert_eq!(all["unusedSkills"], json!(["fleet"]));
+        assert_eq!(all["unusedMcpServers"], json!(["notes"]));
+        let week = service.setup_metrics(&ToolCallFilters {
+            date_range: "7d".to_owned(),
+            ..ToolCallFilters::default()
+        })?;
+        assert!(week["previous"]["harnesses"].is_array());
+        assert!(
+            service
+                .setup_metrics(&ToolCallFilters {
+                    date_range: "1y".to_owned(),
                     ..ToolCallFilters::default()
                 })
                 .is_err()

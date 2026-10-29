@@ -43,11 +43,11 @@ use tokio::process::Command;
 
 use crate::{
     app::QueryUseCases,
-    store::{SearchQuery, SearchResult, UsageTotals},
+    store::{MetricsWindow, SearchQuery, SearchResult, UsageTotals},
 };
 
-/// Stable names of the seven read-only tools exposed by Cutokyo itself.
-pub const CUTOKYO_MCP_TOOL_NAMES: [&str; 7] = [
+/// Stable names of the eight read-only tools exposed by Cutokyo itself.
+pub const CUTOKYO_MCP_TOOL_NAMES: [&str; 8] = [
     "cutokyo_session_search",
     "cutokyo_session_details",
     "cutokyo_usage",
@@ -55,7 +55,10 @@ pub const CUTOKYO_MCP_TOOL_NAMES: [&str; 7] = [
     "cutokyo_inventory",
     "cutokyo_resume_target",
     "cutokyo_sql_query",
+    "cutokyo_agent_metrics",
 ];
+/// Longest window, in days, one setup-metrics read accepts.
+pub const MAX_METRICS_DAYS: u32 = 3_650;
 /// Maximum search results returned through the agent surface.
 pub const MAX_MCP_SEARCH_RESULTS: u32 = 100;
 /// Maximum serialized upstream tool arguments or result accepted by the broker.
@@ -119,6 +122,32 @@ pub struct SessionIdInput {
 pub struct InventoryInput {
     /// Optional exact harness (`claude_code`, `codex`, or `opencode`).
     pub harness: Option<String>,
+}
+
+/// Window and harness for the setup metrics.
+#[derive(Clone, Debug, Default, Deserialize, JsonSchema, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct SetupMetricsInput {
+    /// Optional exact harness (`claude_code`, `codex`, or `opencode`).
+    pub harness: Option<String>,
+    /// Window length in days ending now. Omitted uses 7; zero reads all history.
+    pub days: Option<u32>,
+}
+
+/// Setup metrics for a window and the equal-length window before it.
+#[derive(Clone, Debug, Deserialize, JsonSchema, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct SetupMetricsOutput {
+    /// Window length in days; zero means all history.
+    pub days: u32,
+    /// Metrics for the window: per-harness `harnesses` (sessions, finishedToolCalls,
+    /// failedToolCalls, humanMessages, interrupts, corrections, compactions,
+    /// cacheInputTokens, cacheReadTokens, medianAutonomySeconds; null means the
+    /// harness does not record it), `repeatFailures`, `mcpServers`, `projects` and
+    /// `skillsUsed`.
+    pub current: Value,
+    /// The same metrics for the window before; null for all history.
+    pub previous: Option<Value>,
 }
 
 /// One read-only SQL statement over Cutokyo's derived projection tables.
@@ -375,9 +404,73 @@ pub trait CutokyoReadPort: Send + Sync {
     ///
     /// Returns invalid input for rejected, failing, or over-budget SQL.
     fn sql_query(&self, input: &SqlQueryInput) -> DomainResult<SqlQueryOutput>;
+    /// Return setup metrics for a window and the window before it.
+    ///
+    /// # Errors
+    ///
+    /// Returns invalid input for an unknown harness or oversized window, or a read error.
+    fn setup_metrics(&self, input: &SetupMetricsInput) -> DomainResult<SetupMetricsOutput>;
 }
 
 impl CutokyoReadPort for QueryUseCases {
+    fn setup_metrics(&self, input: &SetupMetricsInput) -> DomainResult<SetupMetricsOutput> {
+        let days = input.days.unwrap_or(7);
+        if days > MAX_METRICS_DAYS {
+            return Err(ContractError::new(
+                DomainErrorCode::InvalidInput,
+                format!("days must be at most {MAX_METRICS_DAYS}"),
+            ));
+        }
+        let harness = input.harness.as_deref().map(parse_harness).transpose()?;
+        let to_value = |metrics| {
+            serde_json::to_value(metrics).map_err(|error| {
+                ContractError::new(
+                    DomainErrorCode::InvalidContract,
+                    format!("failed to encode setup metrics: {error}"),
+                )
+            })
+        };
+        if days == 0 {
+            let current = QueryUseCases::setup_metrics(
+                self,
+                &MetricsWindow {
+                    from: None,
+                    to: None,
+                    harness,
+                },
+            )?;
+            return Ok(SetupMetricsOutput {
+                days,
+                current: to_value(current)?,
+                previous: None,
+            });
+        }
+        let now = time::OffsetDateTime::now_utc().unix_timestamp();
+        let length = i64::from(days) * 86_400;
+        let start = epoch_timestamp(now - length)?;
+        let current = QueryUseCases::setup_metrics(
+            self,
+            &MetricsWindow {
+                from: Some(start.clone()),
+                to: None,
+                harness,
+            },
+        )?;
+        let previous = QueryUseCases::setup_metrics(
+            self,
+            &MetricsWindow {
+                from: Some(epoch_timestamp(now - 2 * length)?),
+                to: Some(start),
+                harness,
+            },
+        )?;
+        Ok(SetupMetricsOutput {
+            days,
+            current: to_value(current)?,
+            previous: Some(to_value(previous)?),
+        })
+    }
+
     fn sql_query(&self, input: &SqlQueryInput) -> DomainResult<SqlQueryOutput> {
         let max_rows = if input.max_rows == 0 {
             100
@@ -581,6 +674,23 @@ fn search_query(input: &SessionSearchInput) -> DomainResult<SearchQuery> {
 
 fn parse_session_input(input: &SessionIdInput) -> DomainResult<SessionId> {
     SessionId::parse(input.session_id.clone())
+}
+
+fn epoch_timestamp(epoch: i64) -> DomainResult<Timestamp> {
+    let formatted = time::OffsetDateTime::from_unix_timestamp(epoch)
+        .ok()
+        .and_then(|moment| {
+            moment
+                .format(&time::format_description::well_known::Rfc3339)
+                .ok()
+        })
+        .ok_or_else(|| {
+            ContractError::new(
+                DomainErrorCode::InvalidInput,
+                "metrics window is out of range",
+            )
+        })?;
+    Timestamp::parse(formatted)
 }
 
 fn parse_harness(value: &str) -> DomainResult<Harness> {
@@ -845,6 +955,25 @@ impl CutokyoMcpServer {
         let port = Arc::clone(&self.port);
         read_port_call(move || port.sql_query(&input)).await
     }
+
+    #[tool(
+        name = "cutokyo_agent_metrics",
+        description = "Measure how well the local agent setup works over the last N days (default 7, 0 for all history) and the N days before, optionally for one harness: tool error rate inputs, interrupts and corrections per human message, context compactions, cache reads within total input, median seconds the agent keeps working after each human message, shell programs failing three or more times, MCP server call and failure counts, token use per project, and skills invoked. Interrupts and compactions are null for harnesses that do not record them.",
+        annotations(
+            title = "Measure the agent setup",
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn setup_metrics(
+        &self,
+        Parameters(input): Parameters<SetupMetricsInput>,
+    ) -> std::result::Result<Json<SetupMetricsOutput>, McpError> {
+        let port = Arc::clone(&self.port);
+        read_port_call(move || port.setup_metrics(&input)).await
+    }
 }
 
 #[tool_handler(router = self.tool_router)]
@@ -856,7 +985,7 @@ impl ServerHandler for CutokyoMcpServer {
                 env!("CARGO_PKG_VERSION"),
             ))
             .with_instructions(
-                "Read-only local Cutokyo session search, details, usage, coverage, inventory, resume-target lookup, and read-only SQL over derived history tables. No setup, configuration, plugin execution, or database mutation tools exist on this surface.",
+                "Read-only local Cutokyo session search, details, usage, coverage, inventory, resume-target lookup, setup metrics, and read-only SQL over derived history tables. No setup, configuration, plugin execution, or database mutation tools exist on this surface.",
             )
     }
 
@@ -1851,6 +1980,8 @@ pub fn surface_manifest() -> McpSurfaceManifest {
         ("cutokyo_coverage", "coverage lookup"),
         ("cutokyo_inventory", "inventory lookup"),
         ("cutokyo_resume_target", "resume target lookup only"),
+        ("cutokyo_sql_query", "read-only SQL over derived history"),
+        ("cutokyo_agent_metrics", "agent setup metrics"),
     ];
     McpSurfaceManifest {
         app_version: env!("CARGO_PKG_VERSION").to_owned(),

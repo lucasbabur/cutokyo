@@ -6331,6 +6331,13 @@ pub use tool_calls::{
     ToolCallOutcome, ToolCallSample, ToolCallSamplePage, ToolCallSampleQuery, ToolCallStat,
 };
 
+#[path = "store_metrics.rs"]
+mod metrics;
+pub use metrics::{
+    HarnessMetrics, McpServerMetrics, MetricsWindow, ProjectUsage, RepeatFailure, SetupMetrics,
+    command_program, mcp_server, unused_names,
+};
+
 #[path = "store_history.rs"]
 mod history;
 pub use history::{
