@@ -9,10 +9,9 @@ use std::{
 use cutokyo_core::{
     app::{
         Application, DELETE_ALL_CONFIRMATION, DeletionReceipt, HealthSnapshot, HealthStatus,
-        HistoryImportOptions, HistoryImportReport, HistoryRoots, LocalCore, LockOwner,
+        HistoryImportOptions, HistoryImportReport, HistoryRoots, LocalCore, LockOwner, ModelUsage,
         QueryUseCases, RetentionPlan, SearchMode, SearchPage, SearchQuery, SearchResult,
         SearchSort, SessionDetail, ToolCallFilter, ToolCallOutcome, ToolCallSampleQuery,
-        UsageTotals,
     },
     config::{RuntimePaths, SettingsOverrides},
 };
@@ -264,21 +263,13 @@ impl DesktopCore {
         }
     }
 
-    fn usage_for(
+    fn model_usage_for(
         &self,
         session_ids: &[SessionId],
-    ) -> Result<std::collections::BTreeMap<SessionId, UsageTotals>, String> {
+    ) -> Result<std::collections::BTreeMap<SessionId, Vec<ModelUsage>>, String> {
         match self {
-            Self::Owner(core) => core.usage_for(session_ids).map_err(contract_error),
-            Self::ReadOnly(core) => core.usage_for(session_ids).map_err(contract_error),
-            Self::Unavailable(message) => Err(message.clone()),
-        }
-    }
-
-    fn usage(&self, session_id: &SessionId) -> Result<UsageTotals, String> {
-        match self {
-            Self::Owner(core) => core.usage(session_id).map_err(contract_error),
-            Self::ReadOnly(core) => core.usage(session_id).map_err(contract_error),
+            Self::Owner(core) => core.model_usage_for(session_ids).map_err(contract_error),
+            Self::ReadOnly(core) => core.model_usage_for(session_ids).map_err(contract_error),
             Self::Unavailable(message) => Err(message.clone()),
         }
     }
@@ -858,7 +849,6 @@ impl DesktopService {
         Ok(json!({
             "meta": route_meta("partial", &notices)?,
             "sessions": sessions,
-            "prices": [],
             "quotas": [],
             "contextBreakdown": Value::Null,
             "conflicts": conflicts,
@@ -1717,7 +1707,7 @@ impl DesktopService {
             .map(|result| result.session_id.clone())
             .collect::<Vec<_>>();
         // One read for the whole page instead of one connection per row.
-        let usage = self.core()?.usage_for(&ids)?;
+        let usage = self.core()?.model_usage_for(&ids)?;
         results
             .iter()
             .map(|result| {
@@ -1730,28 +1720,42 @@ impl DesktopService {
     }
 
     fn session_value(&self, result: &SearchResult) -> Result<Value, String> {
-        let usage = self.core()?.usage(&result.session_id)?;
+        let usage = self
+            .core()?
+            .model_usage_for(std::slice::from_ref(&result.session_id))?
+            .remove(&result.session_id)
+            .unwrap_or_default();
         Ok(Self::session_json(result, &usage))
     }
 
-    fn session_json(result: &SearchResult, usage: &UsageTotals) -> Value {
+    fn session_json(result: &SearchResult, usage: &[ModelUsage]) -> Value {
         let provenance = provenance_value(
             &result.provenance,
             &result.observation_ids,
             result.observation_count,
         );
-        let usage_value = json!({
-            "nativeUsageKey": format!("aggregate:{}", result.session_id),
-            "harness": harness_key(result.harness),
-            "model": Value::Null,
-            "inputTokens": usage.input_tokens,
-            "outputTokens": usage.output_tokens,
-            "cacheReadTokens": usage.cache_read_tokens,
-            "cacheWriteTokens": usage.cache_write_tokens,
-            "providerCostMicros": usage.provider_cost_micros,
-            "billingBasis": if usage.provider_cost_micros.is_some() { "provider_reported" } else { "unknown" },
-            "provenance": provenance.clone(),
-        });
+        let usage_values = usage
+            .iter()
+            .map(|model_usage| {
+                let totals = &model_usage.totals;
+                json!({
+                    "nativeUsageKey": format!(
+                        "aggregate:{}:{}",
+                        result.session_id,
+                        model_usage.model.as_deref().unwrap_or("")
+                    ),
+                    "harness": harness_key(result.harness),
+                    "model": model_usage.model,
+                    "inputTokens": totals.input_tokens,
+                    "outputTokens": totals.output_tokens,
+                    "cacheReadTokens": totals.cache_read_tokens,
+                    "cacheWriteTokens": totals.cache_write_tokens,
+                    "providerCostMicros": totals.provider_cost_micros,
+                    "billingBasis": if totals.provider_cost_micros.is_some() { "provider_reported" } else { "unknown" },
+                    "provenance": provenance.clone(),
+                })
+            })
+            .collect::<Vec<_>>();
         json!({
             "id": result.session_id.as_str(),
             "harness": harness_key(result.harness),
@@ -1768,7 +1772,7 @@ impl DesktopService {
             "tools": [],
             "skills": [],
             "agents": [],
-            "usage": [usage_value],
+            "usage": usage_values,
             "timeline": [],
             "provenance": provenance,
         })

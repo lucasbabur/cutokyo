@@ -204,19 +204,6 @@ export interface ToolCallSamplesResponse {
   readonly samples: readonly ToolCallSample[];
 }
 
-export interface PriceFact {
-  readonly provider: string;
-  readonly model: string;
-  readonly currency: string;
-  readonly inputMicrosPerMillion: number | null;
-  readonly outputMicrosPerMillion: number | null;
-  readonly validFrom: string;
-  readonly validUntil: string | null;
-  readonly confidence: Confidence;
-  readonly label: string;
-  readonly provenance: Provenance;
-}
-
 export interface QuotaFact {
   readonly name: string;
   readonly limit: number | null;
@@ -238,7 +225,6 @@ interface SourceConflict {
 export interface DashboardResponse {
   readonly meta: RouteMeta;
   readonly sessions: readonly SessionRecord[];
-  readonly prices: readonly PriceFact[];
   readonly quotas: readonly QuotaFact[];
   readonly contextBreakdown: {
     readonly instructionsTokens: number | null;

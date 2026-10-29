@@ -102,7 +102,7 @@ describe("desktop route components", () => {
     expect(screen.getByText("Unknown")).toBeTruthy();
     expect(
       screen.getByRole("article", {
-        name: "Cost in view (USD) $0.44 Partial · 1 of 3 usage records priced · Estimated",
+        name: "Cost in view (USD) $0.63",
       }),
     ).toBeTruthy();
   });

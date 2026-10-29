@@ -277,36 +277,6 @@ const baseDashboard: DashboardResponse = {
     generatedAt: FIXTURE_NOW,
   },
   sessions: dashboardSessions,
-  prices: [
-    {
-      provider: "Anthropic",
-      model: "claude-sonnet-4-5",
-      currency: "USD",
-      inputMicrosPerMillion: 3_000_000,
-      outputMicrosPerMillion: 15_000_000,
-      validFrom: "2026-09-01T00:00:00Z",
-      validUntil: "2026-10-01T00:00:00Z",
-      confidence: "estimated",
-      label:
-        "Estimate from a validity-bounded local price snapshot; not a provider invoice.",
-      provenance: provenance("claude_code", "provider_usage_api"),
-    },
-    {
-      provider: "Operator declaration",
-      model: "gpt-5-codex",
-      currency: "USD",
-      inputMicrosPerMillion: null,
-      outputMicrosPerMillion: null,
-      validFrom: "2026-09-01T00:00:00Z",
-      validUntil: null,
-      confidence: "user_declared",
-      label: "User-declared subscription; no per-request charge is claimed.",
-      provenance: {
-        ...provenance("codex", "user_declaration"),
-        confidence: "user_declared",
-      },
-    },
-  ],
   quotas: [
     {
       name: "Claude 5-hour window",

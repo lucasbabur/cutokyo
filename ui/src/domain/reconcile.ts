@@ -1,6 +1,7 @@
+import { calcPrice } from "@pydantic/genai-prices";
+
 import type {
   Harness,
-  PriceFact,
   QuotaFact,
   SessionRecord,
   UsageRecord,
@@ -109,88 +110,34 @@ export function usageByHarness(
   });
 }
 
-export interface EstimatedCost {
-  readonly micros: number | null;
-  readonly pricedRecords: number;
-  readonly unpricedRecords: number;
-  readonly label: "estimated" | "provider_reported" | "mixed" | "unavailable";
-}
-
-export function estimateCost(
-  sessions: readonly SessionRecord[],
-  prices: readonly PriceFact[],
-): EstimatedCost {
-  const usage = reconcileUsage(sessions).records;
-  let micros = 0;
-  let pricedRecords = 0;
-  let providerReported = 0;
-  for (const record of usage) {
-    if (record.providerCostMicros !== null) {
-      micros += record.providerCostMicros;
-      pricedRecords += 1;
-      providerReported += 1;
-      continue;
-    }
-    const session = sessions.find((candidate) =>
-      candidate.usage.includes(record),
+function apiCostMicros(record: UsageRecord): number | null {
+  if (record.model === null) return null;
+  try {
+    const price = calcPrice(
+      {
+        input_tokens: record.inputTokens ?? 0,
+        output_tokens: record.outputTokens ?? 0,
+        cache_read_tokens: record.cacheReadTokens ?? 0,
+        cache_write_tokens: record.cacheWriteTokens ?? 0,
+      },
+      record.model,
     );
-    const occurredAt = session?.startedAt;
-    const price = prices.find(
-      (candidate) =>
-        candidate.model === record.model &&
-        occurredAt !== undefined &&
-        candidate.validFrom <= occurredAt &&
-        (candidate.validUntil === null || occurredAt < candidate.validUntil),
-    );
-    if (price === undefined) continue;
-    let established = false;
-    if (record.inputTokens !== null && price.inputMicrosPerMillion !== null) {
-      micros += (record.inputTokens * price.inputMicrosPerMillion) / 1_000_000;
-      established = true;
-    }
-    if (record.outputTokens !== null && price.outputMicrosPerMillion !== null) {
-      micros +=
-        (record.outputTokens * price.outputMicrosPerMillion) / 1_000_000;
-      established = true;
-    }
-    if (established) pricedRecords += 1;
+    return price === null ? null : price.total_price * 1_000_000;
+  } catch {
+    return null;
   }
-  return {
-    micros: pricedRecords === 0 ? null : Math.round(micros),
-    pricedRecords,
-    unpricedRecords: usage.length - pricedRecords,
-    label:
-      pricedRecords === 0
-        ? "unavailable"
-        : providerReported === pricedRecords
-          ? "provider_reported"
-          : providerReported === 0
-            ? "estimated"
-            : "mixed",
-  };
 }
-
-const COST_SOURCE: Record<
-  Exclude<EstimatedCost["label"], "unavailable">,
-  string
-> = {
-  provider_reported: "Reported by harness",
-  estimated: "Estimated",
-  mixed: "Reported by harness + estimated",
-};
 
 /**
- * Says where a cost total came from and, when some usage records carry no price,
- * how much of the view the amount covers, so a partial sum never reads as complete.
+ * Approximates what the view would cost at public API list prices. Records whose
+ * model has no list price fall back to the harness-reported cost, if any.
  */
-export function costCaption(cost: EstimatedCost): string {
-  if (cost.label === "unavailable") {
-    return "No cost reported: subscription or unpriced models";
+export function estimateCost(sessions: readonly SessionRecord[]): number {
+  let micros = 0;
+  for (const record of reconcileUsage(sessions).records) {
+    micros += apiCostMicros(record) ?? record.providerCostMicros ?? 0;
   }
-  const source = COST_SOURCE[cost.label];
-  if (cost.unpricedRecords === 0) return source;
-  const total = cost.pricedRecords + cost.unpricedRecords;
-  return `Partial · ${cost.pricedRecords} of ${total} usage records priced · ${source}`;
+  return Math.round(micros);
 }
 
 export function quotaPercent(quota: QuotaFact): number | null {

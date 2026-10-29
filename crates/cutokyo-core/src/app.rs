@@ -38,7 +38,7 @@ pub use crate::{
     store::{
         BackupInfo, BackupManifest, BackupRestorePlan, CheckpointMode, CheckpointResult,
         ConnectionEvidence, DELETE_ALL_CONFIRMATION, DELETION_DISCLOSURE, DeletionReceipt,
-        DiagnosticRowCounts, HealthSnapshot, HealthStatus, LockOwner, RestoreReceipt,
+        DiagnosticRowCounts, HealthSnapshot, HealthStatus, LockOwner, ModelUsage, RestoreReceipt,
         RetentionPlan, SearchMode, SearchPage, SearchQuery, SearchResult, SearchSort,
         SessionDetail, SqlQueryResult, ToolCallFilter, ToolCallOutcome, ToolCallSample,
         ToolCallSamplePage, ToolCallSampleQuery, ToolCallStat, UsageTotals,
@@ -898,16 +898,16 @@ impl QueryUseCases {
         self.store.usage_totals(session_id)
     }
 
-    /// Returns usage for a page of sessions in one read.
+    /// Returns per-model usage for a page of sessions in one read.
     ///
     /// # Errors
     ///
     /// Returns a store error if usage cannot be read.
-    pub fn usage_for(
+    pub fn model_usage_for(
         &self,
         session_ids: &[SessionId],
-    ) -> Result<std::collections::BTreeMap<SessionId, UsageTotals>> {
-        self.store.usage_totals_for(session_ids)
+    ) -> Result<std::collections::BTreeMap<SessionId, Vec<ModelUsage>>> {
+        self.store.model_usage_for(session_ids)
     }
 
     /// Reads a quota window without converting unknown values to zero.
@@ -1213,16 +1213,16 @@ impl LocalCore {
         self.store.usage_totals(session_id)
     }
 
-    /// Returns usage for a page of sessions in one read.
+    /// Returns per-model usage for a page of sessions in one read.
     ///
     /// # Errors
     ///
     /// Returns a store error if usage cannot be read.
-    pub fn usage_for(
+    pub fn model_usage_for(
         &self,
         session_ids: &[SessionId],
-    ) -> Result<std::collections::BTreeMap<SessionId, UsageTotals>> {
-        self.store.usage_totals_for(session_ids)
+    ) -> Result<std::collections::BTreeMap<SessionId, Vec<ModelUsage>>> {
+        self.store.model_usage_for(session_ids)
     }
 
     /// Resolves pricing through its half-open validity interval and source precedence.
