@@ -235,8 +235,9 @@ health and data controls. See [desktop workflows](docs/desktop-workflows.md).
 
 `cutokyo mcp serve` gives Claude Code, Codex and OpenCode read-only tools over
 your history: session search and details, usage, coverage, inventory, resume
-targets, `cutokyo_agent_metrics` for the same numbers as the Metrics page, and
-`cutokyo_sql_query` for ad-hoc SQL over sessions, messages and tool
+targets, `cutokyo_agent_metrics` for the same numbers as the Metrics page,
+`cutokyo_inline_programs` for the throwaway scripts agents write into shell
+commands, and `cutokyo_sql_query` for ad-hoc SQL over sessions, messages and tool
 calls. The [`cutokyo` agent skill](skills/cutokyo/SKILL.md) teaches an agent when
 and how to use them:
 

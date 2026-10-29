@@ -43,11 +43,11 @@ use tokio::process::Command;
 
 use crate::{
     app::QueryUseCases,
-    store::{MetricsWindow, SearchQuery, SearchResult, UsageTotals},
+    store::{InlineProgramQuery, MetricsWindow, SearchQuery, SearchResult, UsageTotals},
 };
 
 /// Stable names of the eight read-only tools exposed by Cutokyo itself.
-pub const CUTOKYO_MCP_TOOL_NAMES: [&str; 8] = [
+pub const CUTOKYO_MCP_TOOL_NAMES: [&str; 9] = [
     "cutokyo_session_search",
     "cutokyo_session_details",
     "cutokyo_usage",
@@ -56,6 +56,7 @@ pub const CUTOKYO_MCP_TOOL_NAMES: [&str; 8] = [
     "cutokyo_resume_target",
     "cutokyo_sql_query",
     "cutokyo_agent_metrics",
+    "cutokyo_inline_programs",
 ];
 /// Longest window, in days, one setup-metrics read accepts.
 pub const MAX_METRICS_DAYS: u32 = 3_650;
@@ -148,6 +149,38 @@ pub struct SetupMetricsOutput {
     pub current: Value,
     /// The same metrics for the window before; null for all history.
     pub previous: Option<Value>,
+}
+
+/// Filters for the inline programs agents wrote into shell commands.
+#[derive(Clone, Debug, Default, Deserialize, JsonSchema, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct InlineProgramsInput {
+    /// Window length in days ending now. Omitted uses 7; zero reads all history.
+    pub days: Option<u32>,
+    /// Optional exact harness (`claude_code`, `codex`, or `opencode`).
+    pub harness: Option<String>,
+    /// Optional exact project identity, name, or path.
+    pub project: Option<String>,
+    /// Optional interpreter: `python`, `node`, `bun`, `deno`, `ruby`, or `perl`.
+    pub interpreter: Option<String>,
+    /// Optional case-insensitive text the program must contain.
+    pub text: Option<String>,
+    /// Programs listed. Zero uses 20 and values above 50 are rejected.
+    #[serde(default)]
+    pub limit: u32,
+}
+
+/// Inline programs returned by `cutokyo_inline_programs`.
+#[derive(Clone, Debug, Deserialize, JsonSchema, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct InlineProgramsOutput {
+    /// Window length in days; zero means all history.
+    pub days: u32,
+    /// `matched` (every matching program), `programs` (newest first: sessionId,
+    /// toolCallId, harness, project, startedAt, interpreter, failed, libraries, body,
+    /// truncated) and `libraries` (interpreter, library, programs, failed, sessions;
+    /// most-imported first).
+    pub page: Value,
 }
 
 /// One read-only SQL statement over Cutokyo's derived projection tables.
@@ -410,9 +443,53 @@ pub trait CutokyoReadPort: Send + Sync {
     ///
     /// Returns invalid input for an unknown harness or oversized window, or a read error.
     fn setup_metrics(&self, input: &SetupMetricsInput) -> DomainResult<SetupMetricsOutput>;
+    /// Return inline programs from shell commands and the libraries they share.
+    ///
+    /// # Errors
+    ///
+    /// Returns invalid input for an unknown harness or interpreter, an oversized window
+    /// or limit, or a read error.
+    fn inline_programs(&self, input: &InlineProgramsInput) -> DomainResult<InlineProgramsOutput>;
 }
 
 impl CutokyoReadPort for QueryUseCases {
+    fn inline_programs(&self, input: &InlineProgramsInput) -> DomainResult<InlineProgramsOutput> {
+        let days = input.days.unwrap_or(7);
+        if days > MAX_METRICS_DAYS {
+            return Err(ContractError::new(
+                DomainErrorCode::InvalidInput,
+                format!("days must be at most {MAX_METRICS_DAYS}"),
+            ));
+        }
+        let from = (days > 0)
+            .then(|| {
+                epoch_timestamp(
+                    time::OffsetDateTime::now_utc().unix_timestamp() - i64::from(days) * 86_400,
+                )
+            })
+            .transpose()?;
+        let page = QueryUseCases::inline_programs(
+            self,
+            &InlineProgramQuery {
+                from,
+                harness: input.harness.as_deref().map(parse_harness).transpose()?,
+                project: input.project.clone(),
+                interpreter: input.interpreter.clone(),
+                text: input.text.clone(),
+                limit: input.limit,
+            },
+        )?;
+        Ok(InlineProgramsOutput {
+            days,
+            page: serde_json::to_value(page).map_err(|error| {
+                ContractError::new(
+                    DomainErrorCode::InvalidContract,
+                    format!("failed to encode inline programs: {error}"),
+                )
+            })?,
+        })
+    }
+
     fn setup_metrics(&self, input: &SetupMetricsInput) -> DomainResult<SetupMetricsOutput> {
         let days = input.days.unwrap_or(7);
         if days > MAX_METRICS_DAYS {
@@ -958,7 +1035,7 @@ impl CutokyoMcpServer {
 
     #[tool(
         name = "cutokyo_agent_metrics",
-        description = "Measure how well the local agent setup works over the last N days (default 7, 0 for all history) and the N days before, optionally for one harness: tool error rate inputs, interrupts and corrections per human message, context compactions, cache reads within total input, median seconds the agent keeps working after each human message, shell programs failing three or more times, MCP server call and failure counts, token use per project, and skills invoked. Interrupts and compactions are null for harnesses that do not record them.",
+        description = "Measure how well the local agent setup works over the last N days (default 7, 0 for all history) and the N days before, optionally for one harness: tool error rate inputs, interrupts and corrections per human message, context compactions, cache reads within total input, median seconds the agent keeps working after each human message, shell programs failing three or more times, MCP server call and failure counts, token use per project, and skills invoked. Facts a forked Claude session copied from its parent count once. True agent failures are failedToolCalls minus blockedToolCalls (refused by a rule, hook, the person or worktree isolation) plus outputErrorCalls (shell calls that exited zero but printed a clear error). `warmup`, per harness and per project, splits those failures between each session's first ten calls and the rest, and between a program's first run in a session and later runs; a project failing far more while warming up lacks context the agent keeps rediscovering. Interrupts and compactions are null for harnesses that do not record them.",
         annotations(
             title = "Measure the agent setup",
             read_only_hint = true,
@@ -974,6 +1051,25 @@ impl CutokyoMcpServer {
         let port = Arc::clone(&self.port);
         read_port_call(move || port.setup_metrics(&input)).await
     }
+
+    #[tool(
+        name = "cutokyo_inline_programs",
+        description = "List the throwaway programs agents wrote inside shell commands (python, node, bun, deno, ruby or perl heredocs and -c/-e arguments) over the last N days (default 7, 0 for all history), newest first, with interpreter, project, whether the call failed, imported libraries and the body (cut at 4000 characters). Filter by harness, project, interpreter or case-insensitive text. `libraries` groups every match by imported top-level library with program, failure and session counts, so repeated scripts that deserve a real tool stand out. No model is involved; read the bodies to judge them. Commands captured before inputs up to 32 KB were kept return a truncated start.",
+        annotations(
+            title = "List inline programs",
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn inline_programs(
+        &self,
+        Parameters(input): Parameters<InlineProgramsInput>,
+    ) -> std::result::Result<Json<InlineProgramsOutput>, McpError> {
+        let port = Arc::clone(&self.port);
+        read_port_call(move || port.inline_programs(&input)).await
+    }
 }
 
 #[tool_handler(router = self.tool_router)]
@@ -985,7 +1081,7 @@ impl ServerHandler for CutokyoMcpServer {
                 env!("CARGO_PKG_VERSION"),
             ))
             .with_instructions(
-                "Read-only local Cutokyo session search, details, usage, coverage, inventory, resume-target lookup, setup metrics, and read-only SQL over derived history tables. No setup, configuration, plugin execution, or database mutation tools exist on this surface.",
+                "Read-only local Cutokyo session search, details, usage, coverage, inventory, resume-target lookup, setup metrics, inline programs, and read-only SQL over derived history tables. No setup, configuration, plugin execution, or database mutation tools exist on this surface.",
             )
     }
 
@@ -1982,6 +2078,10 @@ pub fn surface_manifest() -> McpSurfaceManifest {
         ("cutokyo_resume_target", "resume target lookup only"),
         ("cutokyo_sql_query", "read-only SQL over derived history"),
         ("cutokyo_agent_metrics", "agent setup metrics"),
+        (
+            "cutokyo_inline_programs",
+            "inline programs from shell commands",
+        ),
     ];
     McpSurfaceManifest {
         app_version: env!("CARGO_PKG_VERSION").to_owned(),

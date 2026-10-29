@@ -209,6 +209,11 @@ export interface HarnessMetrics {
   readonly sessions: number;
   readonly finishedToolCalls: number;
   readonly failedToolCalls: number;
+  /** Failed calls a rule, hook, the person or worktree isolation refused. */
+  readonly blockedToolCalls: number;
+  /** Shell calls that succeeded but printed a clear error. */
+  readonly outputErrorCalls: number;
+  readonly warmup: WarmupCurve;
   readonly humanMessages: number;
   /** Null when the harness does not record interrupts. */
   readonly interrupts: number | null;
@@ -227,6 +232,18 @@ interface RepeatFailure {
   readonly failures: number;
 }
 
+/** Agent failures in each session's first ten calls and on a program's first run. */
+interface WarmupCurve {
+  readonly warmupCalls: number;
+  readonly warmupFailures: number;
+  readonly settledCalls: number;
+  readonly settledFailures: number;
+  readonly firstUseCalls: number;
+  readonly firstUseFailures: number;
+  readonly laterUseCalls: number;
+  readonly laterUseFailures: number;
+}
+
 interface McpServerMetrics {
   readonly server: string;
   readonly calls: number;
@@ -239,6 +256,7 @@ interface ProjectUsage {
   readonly inputTokens: number;
   readonly outputTokens: number;
   readonly providerCostMicros: number | null;
+  readonly warmup: WarmupCurve;
 }
 
 export interface SetupMetrics {

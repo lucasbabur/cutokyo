@@ -2,9 +2,10 @@
 //!
 //! Every query starts from `sessions` and seeks each fact table through its
 //! `(session_id, time)` index, because the fact tables have no time-only index.
-//! Facts a harness does not record stay unknown instead of becoming zero.
+//! Facts a harness does not record stay unknown instead of becoming zero. Readers walk
+//! sessions in start order so [`Forks`] can drop what a forked session copied.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use serde::{Deserialize, Serialize};
 
@@ -18,11 +19,13 @@ const MAX_REPEAT_FAILURES: usize = 10;
 /// Fewest failures before a program counts as a repeat failure.
 const REPEAT_FAILURE_THRESHOLD: u64 = 3;
 /// Most projects returned.
-const MAX_PROJECTS: u32 = 10;
+const MAX_PROJECTS: usize = 10;
 /// Characters of a user message read to classify it.
 const MESSAGE_PREFIX_CHARS: u32 = 120;
-/// Characters of a failed shell command read to name its program.
+/// Characters of a shell command read to name its program.
 const COMMAND_PREFIX_CHARS: u32 = 1_000;
+/// Finished calls at the start of each session that count as its warm-up.
+const WARMUP_CALLS: usize = 10;
 
 /// Native names of shell-execution tools.
 const SHELL_TOOLS: [&str; 3] = ["Bash", "shell", "bash"];
@@ -32,7 +35,7 @@ const CLAUDE_INTERRUPT_PREFIX: &str = "[Request interrupted by user";
 const CLAUDE_COMPACTION_PREFIX: &str =
     "This session is being continued from a previous conversation";
 /// User-role messages that the harness, not the person, wrote.
-const MACHINE_PREFIXES: [&str; 12] = [
+const MACHINE_PREFIXES: [&str; 15] = [
     CLAUDE_INTERRUPT_PREFIX,
     CLAUDE_COMPACTION_PREFIX,
     "<task-notification>",
@@ -45,7 +48,42 @@ const MACHINE_PREFIXES: [&str; 12] = [
     "Caveat: The messages below",
     "Base directory for this skill:",
     "Stop hook feedback:",
+    "<bash-stdout>",
+    "<bash-stderr>",
+    "<artifact-content-authored-by-others/>",
 ];
+/// Failed-call outputs written when a rule, hook, the person or worktree isolation
+/// refused the call, so the agent made no mistake.
+const BLOCKED_PREFIXES: [&str; 6] = [
+    "The user doesn't want to proceed with this tool use",
+    "Permission for this tool use was denied",
+    "Permission for this command was denied",
+    "Skill execution blocked by permission rules",
+    "This session is isolated in the worktree",
+    "PreToolUse:",
+];
+/// Phrases that show a shell command failed even though it exited zero. Generic
+/// `error:` is left out because source code and logs print it on success.
+const OUTPUT_ERROR_PHRASES: [&str; 7] = [
+    "command not found",
+    "No such file or directory",
+    "Traceback (most recent call last)",
+    "fatal:",
+    "Permission denied",
+    "cannot access",
+    "Unknown option",
+];
+/// Claude Code native IDs are global, so a forked session's copied history repeats
+/// them. Other harnesses key facts by file offset or digest, which repeat by chance.
+const FORKING_HARNESS: &str = "claude_code";
+/// A tool call's output as stored: a JSON string, so its text starts at the second
+/// character. Matching the encoded text skips a JSON parse per check, and is exact
+/// because no blocked prefix or error phrase holds a character JSON escapes.
+const OUTPUT_SQL: &str = "coalesce(t.output_json, '')";
+/// The command a shell tool call ran.
+pub(super) const COMMAND_SQL: &str = "CASE json_type(t.input_json, '$.command')
+    WHEN 'array' THEN json_extract(t.input_json, '$.command[#-1]')
+    ELSE json_extract(t.input_json, '$.command') END";
 /// Openings of a person correcting the agent, lowercased, in English and Portuguese.
 const CORRECTION_PREFIXES: [&str; 16] = [
     "no,",
@@ -89,6 +127,12 @@ pub struct HarnessMetrics {
     pub finished_tool_calls: u64,
     /// Tool calls that failed.
     pub failed_tool_calls: u64,
+    /// Failed calls that a rule, hook, the person or worktree isolation refused.
+    pub blocked_tool_calls: u64,
+    /// Shell calls that succeeded but printed a clear error.
+    pub output_error_calls: u64,
+    /// Agent failures early in sessions and on first use of a program.
+    pub warmup: WarmupCurve,
     /// Messages the person wrote.
     pub human_messages: u64,
     /// Interrupted turns, when the harness records them.
@@ -103,6 +147,29 @@ pub struct HarnessMetrics {
     pub cache_read_tokens: Option<u64>,
     /// Median seconds from a human message to the agent's last reply or tool call before the next one.
     pub median_autonomy_seconds: Option<u64>,
+}
+
+/// Agent failures (failed calls that were not blocked, plus output errors) split by
+/// how far into a session, and how new to it, each call was.
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct WarmupCurve {
+    /// Finished calls among the first ten of each session.
+    pub warmup_calls: u64,
+    /// Agent failures among them.
+    pub warmup_failures: u64,
+    /// Finished calls after the first ten.
+    pub settled_calls: u64,
+    /// Agent failures among them.
+    pub settled_failures: u64,
+    /// Shell calls running a program for the first time in their session.
+    pub first_use_calls: u64,
+    /// Agent failures among them.
+    pub first_use_failures: u64,
+    /// Shell calls running a program the session already ran.
+    pub later_use_calls: u64,
+    /// Agent failures among them.
+    pub later_use_failures: u64,
 }
 
 /// One program whose shell commands keep failing.
@@ -143,6 +210,8 @@ pub struct ProjectUsage {
     pub output_tokens: u64,
     /// Provider-reported cost, when any request reported one.
     pub provider_cost_micros: Option<u64>,
+    /// Agent failures early in sessions and on first use of a program.
+    pub warmup: WarmupCurve,
 }
 
 /// Every stored setup metric for one window.
@@ -161,14 +230,14 @@ pub struct SetupMetrics {
     pub skills_used: BTreeMap<String, u64>,
 }
 
-struct Bounds {
+pub(super) struct Bounds {
     from: i64,
     to: i64,
     harness: Option<String>,
 }
 
 impl Bounds {
-    fn new(window: &MetricsWindow) -> Self {
+    pub(super) fn new(window: &MetricsWindow) -> Self {
         Self {
             from: window
                 .from
@@ -182,7 +251,7 @@ impl Bounds {
         }
     }
 
-    fn params(&self) -> [&dyn rusqlite::ToSql; 3] {
+    pub(super) fn params(&self) -> [&dyn rusqlite::ToSql; 3] {
         [&self.from, &self.to, &self.harness]
     }
 }
@@ -192,6 +261,9 @@ struct HarnessAccumulator {
     sessions: u64,
     finished_tool_calls: u64,
     failed_tool_calls: u64,
+    blocked_tool_calls: u64,
+    output_error_calls: u64,
+    warmup: WarmupCurve,
     human_messages: u64,
     interrupts: u64,
     corrections: u64,
@@ -200,7 +272,7 @@ struct HarnessAccumulator {
     spans: Vec<u64>,
 }
 
-fn decode_harness(value: &str) -> Result<Harness> {
+pub(super) fn decode_harness(value: &str) -> Result<Harness> {
     serde_json::from_value(serde_json::Value::String(value.to_owned())).map_err(|_| {
         ContractError::new(
             ErrorCode::InvalidContract,
@@ -209,7 +281,7 @@ fn decode_harness(value: &str) -> Result<Harness> {
     })
 }
 
-fn count(value: i64) -> u64 {
+pub(super) fn count(value: i64) -> u64 {
     u64::try_from(value).unwrap_or(0)
 }
 
@@ -323,16 +395,6 @@ pub fn mcp_server(tool_name: &str) -> Option<&str> {
     (!server.is_empty()).then_some(server)
 }
 
-/// Converts a `total()` sum, which SQLite returns as a float, to whole tokens.
-#[expect(
-    clippy::cast_possible_truncation,
-    clippy::cast_sign_loss,
-    reason = "token totals are non-negative and far below 2^53"
-)]
-fn tokens(value: f64) -> u64 {
-    value as u64
-}
-
 fn median(values: &mut [u64]) -> Option<u64> {
     if values.is_empty() {
         return None;
@@ -344,6 +406,75 @@ fn median(values: &mut [u64]) -> Option<u64> {
     } else {
         values[middle]
     })
+}
+
+/// Keeps one copy of each fact a forked session repeated under the same native ID: the
+/// copy in the first session seen. Readers that walk sessions in start order keep the
+/// original.
+#[derive(Default)]
+pub(super) struct Forks(HashMap<String, String>);
+
+impl Forks {
+    /// Whether this row is the kept copy.
+    pub(super) fn keeps(&mut self, harness: &str, session: &str, native: Option<String>) -> bool {
+        let Some(native) = native.filter(|_| harness == FORKING_HARNESS) else {
+            return true;
+        };
+        self.0.entry(native).or_insert_with(|| session.to_owned()) == session
+    }
+}
+
+pub(super) fn shell_tools_sql() -> String {
+    SHELL_TOOLS.map(|tool| format!("'{tool}'")).join(", ")
+}
+
+/// Whether a failed call was refused rather than attempted.
+fn blocked_sql() -> String {
+    let prefixes = BLOCKED_PREFIXES
+        .map(|prefix| {
+            format!(
+                "substr({OUTPUT_SQL}, 2, {}) = '{}'",
+                prefix.chars().count(),
+                prefix.replace('\'', "''")
+            )
+        })
+        .join(" OR ");
+    format!("(t.state = 'failed' AND ({prefixes}))")
+}
+
+/// Whether a successful shell call printed a clear error.
+fn output_error_sql() -> String {
+    let phrases = OUTPUT_ERROR_PHRASES
+        .map(|phrase| format!("instr({OUTPUT_SQL}, '{phrase}') > 0"))
+        .join(" OR ");
+    format!(
+        "(t.state = 'succeeded' AND t.tool_name IN ({}) AND ({phrases}))",
+        shell_tools_sql()
+    )
+}
+
+impl WarmupCurve {
+    fn record(&mut self, early: bool, first_use: Option<bool>, failure: bool) {
+        let failure = u64::from(failure);
+        if early {
+            self.warmup_calls += 1;
+            self.warmup_failures += failure;
+        } else {
+            self.settled_calls += 1;
+            self.settled_failures += failure;
+        }
+        match first_use {
+            Some(true) => {
+                self.first_use_calls += 1;
+                self.first_use_failures += failure;
+            }
+            Some(false) => {
+                self.later_use_calls += 1;
+                self.later_use_failures += failure;
+            }
+            None => {}
+        }
+    }
 }
 
 impl ReadStore {
@@ -368,14 +499,20 @@ impl ReadStore {
         let bounds = Bounds::new(window);
         let mut harnesses = BTreeMap::<String, HarnessAccumulator>::new();
         read_sessions(&transaction, &bounds, &mut harnesses)?;
-        read_tool_outcomes(&transaction, &bounds, &mut harnesses)?;
+        let calls = read_calls(&transaction, &bounds, &mut harnesses)?;
         read_messages(&transaction, &bounds, &mut harnesses)?;
-        read_cache(&transaction, &bounds, &mut harnesses)?;
+        let mut projects = read_usage(&transaction, &bounds, &mut harnesses)?;
+        for (id, project) in &mut projects {
+            if let Some(curve) = calls.projects.get(id) {
+                project.warmup = curve.clone();
+            }
+        }
+        let projects = projects.into_iter().map(|(_, project)| project).collect();
         let metrics = SetupMetrics {
-            repeat_failures: read_repeat_failures(&transaction, &bounds)?,
-            mcp_servers: read_mcp_servers(&transaction, &bounds)?,
-            projects: read_projects(&transaction, &bounds)?,
-            skills_used: read_skills(&transaction, &bounds)?,
+            repeat_failures: repeat_failures(calls.failing_programs),
+            mcp_servers: mcp_servers(calls.servers),
+            projects,
+            skills_used: calls.skills,
             harnesses: harnesses
                 .into_iter()
                 .map(|(name, mut acc)| {
@@ -386,6 +523,9 @@ impl ReadStore {
                         sessions: acc.sessions,
                         finished_tool_calls: acc.finished_tool_calls,
                         failed_tool_calls: acc.failed_tool_calls,
+                        blocked_tool_calls: acc.blocked_tool_calls,
+                        output_error_calls: acc.output_error_calls,
+                        warmup: acc.warmup,
                         human_messages: acc.human_messages,
                         interrupts: markers.then_some(acc.interrupts),
                         corrections: acc.corrections,
@@ -428,37 +568,111 @@ fn read_sessions(
     Ok(())
 }
 
-fn read_tool_outcomes(
+/// Per-call facts gathered in one pass over the window's calls.
+#[derive(Default)]
+struct CallTally {
+    /// Warm-up curve per project identity.
+    projects: BTreeMap<Option<String>, WarmupCurve>,
+    /// Agent failures per shell program, by native tool name.
+    failing_programs: BTreeMap<String, BTreeMap<String, u64>>,
+    /// Calls and failures per MCP server.
+    servers: BTreeMap<String, (u64, u64)>,
+    /// Calls per skill.
+    skills: BTreeMap<String, u64>,
+}
+
+/// Walks every call in session order: outcome counts and the warm-up curve per
+/// harness, plus the per-project, per-program, per-server and per-skill tallies.
+fn read_calls(
     transaction: &Tx<'_>,
     bounds: &Bounds,
     harnesses: &mut BTreeMap<String, HarnessAccumulator>,
-) -> Result<()> {
+) -> Result<CallTally> {
     let mut statement = transaction
-        .prepare(
-            "SELECT s.harness, sum(t.state IN ('succeeded', 'failed')), sum(t.state = 'failed')
+        .prepare(&format!(
+            "SELECT s.harness, s.session_id, s.project_id, t.native_tool_call_id, t.tool_name,
+                    t.skill_name, t.state, {blocked}, {output_error},
+                    CASE WHEN t.tool_name IN ({shell}) THEN substr({COMMAND_SQL}, 1, {COMMAND_PREFIX_CHARS}) END
              FROM sessions s CROSS JOIN tool_calls t
              WHERE t.session_id = s.session_id AND t.started_at_epoch >= ?1 AND t.started_at_epoch < ?2
                AND (?3 IS NULL OR s.harness = ?3)
-             GROUP BY s.harness",
-        )
-        .map_err(|error| sqlite_error("prepare metrics tool outcomes", &error))?;
-    let rows = statement
-        .query_map(bounds.params(), |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, i64>(1)?,
-                row.get::<_, i64>(2)?,
-            ))
-        })
-        .map_err(|error| sqlite_error("query metrics tool outcomes", &error))?;
-    for row in rows {
-        let (harness, finished, failed) =
-            row.map_err(|error| sqlite_error("read metrics tool outcomes", &error))?;
+             ORDER BY s.started_at_epoch, s.session_id, t.started_at_epoch, t.tool_call_id",
+            blocked = blocked_sql(),
+            output_error = output_error_sql(),
+            shell = shell_tools_sql(),
+        ))
+        .map_err(|error| sqlite_error("prepare metrics calls", &error))?;
+    let mut rows = statement
+        .query(bounds.params())
+        .map_err(|error| sqlite_error("query metrics calls", &error))?;
+    let mut tally = CallTally::default();
+    let mut forks = Forks::default();
+    let mut session = String::new();
+    let mut position = 0_usize;
+    let mut programs = BTreeSet::<String>::new();
+    while let Some(row) = rows
+        .next()
+        .map_err(|error| sqlite_error("read metrics calls", &error))?
+    {
+        let field = |error| sqlite_error("read metrics call field", &error);
+        let harness = row.get::<_, String>(0).map_err(field)?;
+        let session_id = row.get::<_, String>(1).map_err(field)?;
+        let project = row.get::<_, Option<String>>(2).map_err(field)?;
+        if !forks.keeps(&harness, &session_id, row.get(3).map_err(field)?) {
+            continue;
+        }
+        let tool = row.get::<_, String>(4).map_err(field)?;
+        let skill = row.get::<_, Option<String>>(5).map_err(field)?;
+        let state = row.get::<_, String>(6).map_err(field)?;
+        let blocked = row.get::<_, bool>(7).map_err(field)?;
+        let output_error = row.get::<_, bool>(8).map_err(field)?;
+        let command = row.get::<_, Option<String>>(9).map_err(field)?;
+        let failed = state == "failed";
+        if let Some(skill) = skill {
+            *tally.skills.entry(skill).or_default() += 1;
+        }
+        if let Some(server) = mcp_server(&tool) {
+            let entry = tally.servers.entry(server.to_owned()).or_default();
+            entry.0 += 1;
+            entry.1 += u64::from(failed);
+        }
+        if !failed && state != "succeeded" {
+            continue;
+        }
+        if session_id != session {
+            session = session_id;
+            position = 0;
+            programs.clear();
+        }
+        let program = command.as_deref().and_then(command_program);
+        let first_use = program.clone().map(|program| programs.insert(program));
+        if let Some(program) = program
+            && failed
+            && !blocked
+        {
+            *tally
+                .failing_programs
+                .entry(program)
+                .or_default()
+                .entry(tool)
+                .or_default() += 1;
+        }
+        let failure = (failed && !blocked) || output_error;
+        let early = position < WARMUP_CALLS;
+        position += 1;
         let entry = harnesses.entry(harness).or_default();
-        entry.finished_tool_calls = count(finished);
-        entry.failed_tool_calls = count(failed);
+        entry.finished_tool_calls += 1;
+        entry.failed_tool_calls += u64::from(failed);
+        entry.blocked_tool_calls += u64::from(blocked);
+        entry.output_error_calls += u64::from(output_error);
+        entry.warmup.record(early, first_use, failure);
+        tally
+            .projects
+            .entry(project)
+            .or_default()
+            .record(early, first_use, failure);
     }
-    Ok(())
+    Ok(tally)
 }
 
 /// Classifies user messages and measures how long the agent keeps replying or calling
@@ -471,18 +685,20 @@ fn read_messages(
     let mut statement = transaction
         .prepare(&format!(
             "SELECT s.session_id, s.harness, m.role, m.created_at_epoch,
-                    CASE WHEN m.role = 'user' THEN substr(m.text, 1, {MESSAGE_PREFIX_CHARS}) END
+                    CASE WHEN m.role = 'user' THEN substr(m.text, 1, {MESSAGE_PREFIX_CHARS}) END,
+                    'message ' || m.native_message_id, s.started_at_epoch
              FROM sessions s CROSS JOIN messages m
              WHERE m.session_id = s.session_id AND m.role IN ('user', 'assistant')
                AND m.created_at_epoch >= ?1 AND m.created_at_epoch < ?2
                AND (?3 IS NULL OR s.harness = ?3)
              UNION ALL
-             SELECT s.session_id, s.harness, 'tool', coalesce(t.ended_at_epoch, t.started_at_epoch), NULL
+             SELECT s.session_id, s.harness, 'tool', coalesce(t.ended_at_epoch, t.started_at_epoch), NULL,
+                    'tool ' || t.native_tool_call_id, s.started_at_epoch
              FROM sessions s CROSS JOIN tool_calls t
              WHERE t.session_id = s.session_id
                AND t.started_at_epoch >= ?1 AND t.started_at_epoch < ?2
                AND (?3 IS NULL OR s.harness = ?3)
-             ORDER BY 1, 4"
+             ORDER BY 7, 1, 4"
         ))
         .map_err(|error| sqlite_error("prepare metrics messages", &error))?;
     let rows = statement
@@ -493,9 +709,11 @@ fn read_messages(
                 row.get::<_, String>(2)?,
                 row.get::<_, i64>(3)?,
                 row.get::<_, Option<String>>(4)?,
+                row.get::<_, Option<String>>(5)?,
             ))
         })
         .map_err(|error| sqlite_error("query metrics messages", &error))?;
+    let mut forks = Forks::default();
     // The open span: session, harness, human message time, last assistant reply time.
     let mut open: Option<(String, String, i64, Option<i64>)> = None;
     let close = |open: Option<(String, String, i64, Option<i64>)>,
@@ -509,8 +727,11 @@ fn read_messages(
         }
     };
     for row in rows {
-        let (session, harness, role, at, text) =
+        let (session, harness, role, at, text, native) =
             row.map_err(|error| sqlite_error("read metrics messages", &error))?;
+        if !forks.keeps(&harness, &session, native) {
+            continue;
+        }
         if open.as_ref().is_some_and(|span| span.0 != session) {
             close(open.take(), harnesses);
         }
@@ -542,73 +763,117 @@ fn read_messages(
     Ok(())
 }
 
-fn read_cache(
+/// Requests of one session: total input and cache reads, by native usage key.
+type SessionRequests = BTreeMap<String, (Option<u64>, Option<u64>)>;
+
+/// One pass over token use: cache reads within total input per harness, and the
+/// largest projects by tokens, keyed by project identity.
+fn read_usage(
     transaction: &Tx<'_>,
     bounds: &Bounds,
     harnesses: &mut BTreeMap<String, HarnessAccumulator>,
-) -> Result<()> {
-    // `input_tokens` is total input; cache reads are its breakdown, so only requests
-    // that reported both enter the ratio.
+) -> Result<Vec<(Option<String>, ProjectUsage)>> {
     let mut statement = transaction
         .prepare(
-            "SELECT s.harness, sum(i.value), sum(c.value)
-             FROM sessions s CROSS JOIN usage_values c
-             JOIN usage_values i ON i.session_id = c.session_id
-               AND i.native_usage_key = c.native_usage_key AND i.metric = 'input_tokens'
-             WHERE c.session_id = s.session_id AND c.metric = 'cache_read_tokens'
-               AND c.occurred_at_epoch >= ?1 AND c.occurred_at_epoch < ?2
+            "SELECT s.harness, s.session_id, s.project_id, coalesce(p.name, p.path, s.project_id),
+                    v.native_usage_key, v.metric, v.value
+             FROM sessions s CROSS JOIN usage_values v
+             LEFT JOIN projects p ON p.project_id = s.project_id
+             WHERE v.session_id = s.session_id
+               AND v.occurred_at_epoch >= ?1 AND v.occurred_at_epoch < ?2
                AND (?3 IS NULL OR s.harness = ?3)
-             GROUP BY s.harness",
+             ORDER BY s.started_at_epoch, s.session_id",
         )
-        .map_err(|error| sqlite_error("prepare metrics cache", &error))?;
-    let rows = statement
-        .query_map(bounds.params(), |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, i64>(1)?,
-                row.get::<_, i64>(2)?,
-            ))
-        })
-        .map_err(|error| sqlite_error("query metrics cache", &error))?;
-    for row in rows {
-        let (harness, input, read) =
-            row.map_err(|error| sqlite_error("read metrics cache", &error))?;
-        harnesses.entry(harness).or_default().cache = Some((count(input), count(read)));
-    }
-    Ok(())
-}
-
-fn read_repeat_failures(transaction: &Tx<'_>, bounds: &Bounds) -> Result<Vec<RepeatFailure>> {
-    let tools = SHELL_TOOLS.map(|tool| format!("'{tool}'")).join(", ");
-    let mut statement = transaction
-        .prepare(&format!(
-            "SELECT t.tool_name, substr(CASE json_type(t.input_json, '$.command')
-                 WHEN 'array' THEN json_extract(t.input_json, '$.command[#-1]')
-                 ELSE json_extract(t.input_json, '$.command') END, 1, {COMMAND_PREFIX_CHARS})
-             FROM sessions s CROSS JOIN tool_calls t
-             WHERE t.session_id = s.session_id AND t.state = 'failed' AND t.tool_name IN ({tools})
-               AND json_valid(t.input_json)
-               AND t.started_at_epoch >= ?1 AND t.started_at_epoch < ?2
-               AND (?3 IS NULL OR s.harness = ?3)"
-        ))
-        .map_err(|error| sqlite_error("prepare metrics repeat failures", &error))?;
-    let rows = statement
-        .query_map(bounds.params(), |row| {
-            Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?))
-        })
-        .map_err(|error| sqlite_error("query metrics repeat failures", &error))?;
-    let mut programs = BTreeMap::<String, BTreeMap<String, u64>>::new();
-    for row in rows {
-        let (tool, command) =
-            row.map_err(|error| sqlite_error("read metrics repeat failures", &error))?;
-        if let Some(program) = command.as_deref().and_then(command_program) {
-            *programs
-                .entry(program)
-                .or_default()
-                .entry(tool)
-                .or_default() += 1;
+        .map_err(|error| sqlite_error("prepare metrics usage", &error))?;
+    let mut rows = statement
+        .query(bounds.params())
+        .map_err(|error| sqlite_error("query metrics usage", &error))?;
+    let mut forks = Forks::default();
+    let mut projects = BTreeMap::<Option<String>, (ProjectUsage, BTreeSet<String>)>::new();
+    let mut session = (String::new(), String::new());
+    let mut requests = SessionRequests::new();
+    // `input_tokens` is total input; cache reads are its breakdown, so only requests
+    // that reported both enter the ratio.
+    let mut flush = |harness: &str, requests: &mut SessionRequests| {
+        for (input, cached) in std::mem::take(requests).into_values() {
+            if let (Some(input), Some(cached)) = (input, cached) {
+                let cache = harnesses
+                    .entry(harness.to_owned())
+                    .or_default()
+                    .cache
+                    .get_or_insert((0, 0));
+                cache.0 += input;
+                cache.1 += cached;
+            }
+        }
+    };
+    while let Some(row) = rows
+        .next()
+        .map_err(|error| sqlite_error("read metrics usage", &error))?
+    {
+        let field = |error| sqlite_error("read metrics usage field", &error);
+        let harness = row.get::<_, String>(0).map_err(field)?;
+        let session_id = row.get::<_, String>(1).map_err(field)?;
+        let key = row.get::<_, String>(4).map_err(field)?;
+        if !forks.keeps(&harness, &session_id, Some(key.clone())) {
+            continue;
+        }
+        if session.1 != session_id {
+            flush(&session.0, &mut requests);
+            session = (harness.clone(), session_id.clone());
+        }
+        let metric = row.get::<_, String>(5).map_err(field)?;
+        let value = count(row.get(6).map_err(field)?);
+        let (project, sessions) = projects
+            .entry(row.get(2).map_err(field)?)
+            .or_insert_with(|| {
+                (
+                    ProjectUsage {
+                        project: None,
+                        sessions: 0,
+                        input_tokens: 0,
+                        output_tokens: 0,
+                        provider_cost_micros: None,
+                        warmup: WarmupCurve::default(),
+                    },
+                    BTreeSet::new(),
+                )
+            });
+        project.project = row.get(3).map_err(field)?;
+        sessions.insert(session_id);
+        let request = requests.entry(key).or_default();
+        match metric.as_str() {
+            "input_tokens" => {
+                project.input_tokens += value;
+                request.0 = Some(value);
+            }
+            "cache_read_tokens" => request.1 = Some(value),
+            "output_tokens" => project.output_tokens += value,
+            "provider_cost_micros" => {
+                *project.provider_cost_micros.get_or_insert(0) += value;
+            }
+            _ => {}
         }
     }
+    flush(&session.0, &mut requests);
+    let mut projects = projects
+        .into_iter()
+        .map(|(id, (mut project, sessions))| {
+            project.sessions = u64::try_from(sessions.len()).unwrap_or(u64::MAX);
+            (id, project)
+        })
+        .collect::<Vec<_>>();
+    projects.sort_by(|(_, a), (_, b)| {
+        (b.input_tokens + b.output_tokens)
+            .cmp(&(a.input_tokens + a.output_tokens))
+            .then_with(|| a.project.cmp(&b.project))
+    });
+    projects.truncate(MAX_PROJECTS);
+    Ok(projects)
+}
+
+/// Programs that failed at least the threshold, most failures first.
+fn repeat_failures(programs: BTreeMap<String, BTreeMap<String, u64>>) -> Vec<RepeatFailure> {
     let mut failures = programs
         .into_iter()
         .filter_map(|(program, tools)| {
@@ -630,40 +895,11 @@ fn read_repeat_failures(transaction: &Tx<'_>, bounds: &Bounds) -> Result<Vec<Rep
             .then_with(|| a.program.cmp(&b.program))
     });
     failures.truncate(MAX_REPEAT_FAILURES);
-    Ok(failures)
+    failures
 }
 
-fn read_mcp_servers(transaction: &Tx<'_>, bounds: &Bounds) -> Result<Vec<McpServerMetrics>> {
-    let mut statement = transaction
-        .prepare(
-            r"SELECT t.tool_name, count(*), sum(t.state = 'failed')
-             FROM sessions s CROSS JOIN tool_calls t
-             WHERE t.session_id = s.session_id
-               AND (t.tool_name LIKE 'mcp\_\_%' ESCAPE '\' OR t.tool_name LIKE 'mcp:%')
-               AND t.started_at_epoch >= ?1 AND t.started_at_epoch < ?2
-               AND (?3 IS NULL OR s.harness = ?3)
-             GROUP BY t.tool_name",
-        )
-        .map_err(|error| sqlite_error("prepare metrics MCP servers", &error))?;
-    let rows = statement
-        .query_map(bounds.params(), |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, i64>(1)?,
-                row.get::<_, i64>(2)?,
-            ))
-        })
-        .map_err(|error| sqlite_error("query metrics MCP servers", &error))?;
-    let mut servers = BTreeMap::<String, (u64, u64)>::new();
-    for row in rows {
-        let (tool, calls, failed) =
-            row.map_err(|error| sqlite_error("read metrics MCP servers", &error))?;
-        if let Some(server) = mcp_server(&tool) {
-            let entry = servers.entry(server.to_owned()).or_default();
-            entry.0 += count(calls);
-            entry.1 += count(failed);
-        }
-    }
+/// MCP servers with calls, most calls first.
+fn mcp_servers(servers: BTreeMap<String, (u64, u64)>) -> Vec<McpServerMetrics> {
     let mut servers = servers
         .into_iter()
         .map(|(server, (calls, failed))| McpServerMetrics {
@@ -673,62 +909,7 @@ fn read_mcp_servers(transaction: &Tx<'_>, bounds: &Bounds) -> Result<Vec<McpServ
         })
         .collect::<Vec<_>>();
     servers.sort_by(|a, b| b.calls.cmp(&a.calls).then_with(|| a.server.cmp(&b.server)));
-    Ok(servers)
-}
-
-fn read_projects(transaction: &Tx<'_>, bounds: &Bounds) -> Result<Vec<ProjectUsage>> {
-    let mut statement = transaction
-        .prepare(&format!(
-            "SELECT coalesce(p.name, p.path, s.project_id), count(DISTINCT s.session_id),
-                    total(CASE WHEN v.metric = 'input_tokens' THEN v.value END),
-                    total(CASE WHEN v.metric = 'output_tokens' THEN v.value END),
-                    sum(CASE WHEN v.metric = 'provider_cost_micros' THEN v.value END)
-             FROM sessions s CROSS JOIN usage_values v
-             LEFT JOIN projects p ON p.project_id = s.project_id
-             WHERE v.session_id = s.session_id
-               AND v.occurred_at_epoch >= ?1 AND v.occurred_at_epoch < ?2
-               AND (?3 IS NULL OR s.harness = ?3)
-             GROUP BY s.project_id
-             ORDER BY total(CASE WHEN v.metric IN ('input_tokens', 'output_tokens') THEN v.value END) DESC
-             LIMIT {MAX_PROJECTS}"
-        ))
-        .map_err(|error| sqlite_error("prepare metrics projects", &error))?;
-    let rows = statement
-        .query_map(bounds.params(), |row| {
-            Ok(ProjectUsage {
-                project: row.get(0)?,
-                sessions: count(row.get(1)?),
-                input_tokens: tokens(row.get(2)?),
-                output_tokens: tokens(row.get(3)?),
-                provider_cost_micros: row.get::<_, Option<i64>>(4)?.map(count),
-            })
-        })
-        .map_err(|error| sqlite_error("query metrics projects", &error))?;
-    rows.map(|row| row.map_err(|error| sqlite_error("read metrics projects", &error)))
-        .collect()
-}
-
-fn read_skills(transaction: &Tx<'_>, bounds: &Bounds) -> Result<BTreeMap<String, u64>> {
-    let mut statement = transaction
-        .prepare(
-            "SELECT t.skill_name, count(*)
-             FROM sessions s CROSS JOIN tool_calls t
-             WHERE t.session_id = s.session_id AND t.skill_name IS NOT NULL
-               AND t.started_at_epoch >= ?1 AND t.started_at_epoch < ?2
-               AND (?3 IS NULL OR s.harness = ?3)
-             GROUP BY t.skill_name",
-        )
-        .map_err(|error| sqlite_error("prepare metrics skills", &error))?;
-    let rows = statement
-        .query_map(bounds.params(), |row| {
-            Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?))
-        })
-        .map_err(|error| sqlite_error("query metrics skills", &error))?;
-    rows.map(|row| {
-        let (skill, calls) = row.map_err(|error| sqlite_error("read metrics skills", &error))?;
-        Ok((skill, count(calls)))
-    })
-    .collect()
+    servers
 }
 
 /// Installed names that no call used, matching plugin-qualified skill names by suffix.

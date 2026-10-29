@@ -11,11 +11,12 @@ use tempfile::TempDir;
 use crate::{
     mcp::{
         BrokerError, BrokerErrorCode, BrokerFuture, BrokerMcpServer, CUTOKYO_MCP_TOOL_NAMES,
-        CoverageOutput, CutokyoMcpServer, CutokyoReadPort, InventoryInput, InventoryOutput,
-        MAX_BROKER_TOOLS_PER_SERVER, MAX_METRICS_DAYS, McpBroker, McpSession, McpUpstreamConfig,
-        McpUpstreamConnector, McpUpstreamTransport, ResumeTargetOutput, SessionDetailsOutput,
-        SessionIdInput, SessionSearchInput, SessionSearchOutput, SetupMetricsInput,
-        SetupMetricsOutput, SqlQueryInput, SqlQueryOutput, UsageOutput,
+        CoverageOutput, CutokyoMcpServer, CutokyoReadPort, InlineProgramsInput,
+        InlineProgramsOutput, InventoryInput, InventoryOutput, MAX_BROKER_TOOLS_PER_SERVER,
+        MAX_METRICS_DAYS, McpBroker, McpSession, McpUpstreamConfig, McpUpstreamConnector,
+        McpUpstreamTransport, ResumeTargetOutput, SessionDetailsOutput, SessionIdInput,
+        SessionSearchInput, SessionSearchOutput, SetupMetricsInput, SetupMetricsOutput,
+        SqlQueryInput, SqlQueryOutput, UsageOutput,
     },
     mcp_config::{
         BrokerCommand, HarnessConfigTarget, MANAGED_BROKER_NODE, ManagedConfigErrorCode,
@@ -85,6 +86,16 @@ impl CutokyoReadPort for FakeReadPort {
             days: input.days.unwrap_or(7),
             current: json!({"harnesses": []}),
             previous: None,
+        })
+    }
+
+    fn inline_programs(
+        &self,
+        input: &InlineProgramsInput,
+    ) -> cutokyo_domain::Result<InlineProgramsOutput> {
+        Ok(InlineProgramsOutput {
+            days: input.days.unwrap_or(7),
+            page: json!({"matched": 0, "programs": [], "libraries": []}),
         })
     }
 
@@ -166,6 +177,44 @@ fn mcp_agent_metrics_real_read_port_bounds_windows() -> TestResult {
         },
     ] {
         assert!(CutokyoReadPort::setup_metrics(&queries, &input).is_err());
+    }
+    Ok(())
+}
+
+#[test]
+fn mcp_inline_programs_real_read_port_bounds_inputs() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let core = crate::app::Application::new().open_local(
+        root.path().join("history.db"),
+        root.path().join("spool"),
+        crate::store::LockOwner::current("mcp-inline-test", None)?,
+    )?;
+    let queries = core.queries();
+    let week = CutokyoReadPort::inline_programs(&queries, &InlineProgramsInput::default())?;
+    assert_eq!(week.days, 7);
+    assert_eq!(
+        week.page,
+        json!({"matched": 0, "programs": [], "libraries": []})
+    );
+    for input in [
+        InlineProgramsInput {
+            days: Some(MAX_METRICS_DAYS + 1),
+            ..InlineProgramsInput::default()
+        },
+        InlineProgramsInput {
+            harness: Some("cursor".to_owned()),
+            ..InlineProgramsInput::default()
+        },
+        InlineProgramsInput {
+            interpreter: Some("cobol".to_owned()),
+            ..InlineProgramsInput::default()
+        },
+        InlineProgramsInput {
+            limit: 51,
+            ..InlineProgramsInput::default()
+        },
+    ] {
+        assert!(CutokyoReadPort::inline_programs(&queries, &input).is_err());
     }
     Ok(())
 }

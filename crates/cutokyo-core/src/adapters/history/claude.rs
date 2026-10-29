@@ -16,13 +16,13 @@ use serde_json::{Map, Value};
 
 use super::{
     Discovery, Draft, Factory, Finish, MAX_TEXT_CHARS, MAX_TOOL_CHARS, ScanContext, ScanCursor,
-    ScanOutput, SourceFile, cap_json, cap_text, content_text, finish_scan, meta_object,
+    ScanOutput, SourceFile, cap_text, cap_tool_input, content_text, finish_scan, meta_object,
     mtime_seconds, parse_timestamp, portable, project_fields, read_chunk, remember_pending,
     take_pending, version_in_families,
 };
 
 /// Parser identity stored on every observation produced here.
-pub const PARSER_VERSION: &str = "history-import-claude-v2";
+pub const PARSER_VERSION: &str = "history-import-claude-v3";
 /// Claude Code `major.minor` families whose transcripts were observed locally.
 pub const OBSERVED_FAMILIES: [&str; 1] = ["2.1"];
 /// A message is final once its file has been idle this long; until then the newest
@@ -465,7 +465,7 @@ impl Reader<'_> {
         extra.insert("native_tool_call_id".into(), portable(id).into());
         extra.insert("tool_started_at".into(), at.as_str().into());
         extra.insert("tool_state".into(), "unknown".into());
-        extra.insert("tool_input".into(), cap_json(&input, MAX_TOOL_CHARS));
+        extra.insert("tool_input".into(), cap_tool_input(name, &input));
         if name == "Skill"
             && let Some(skill) = input.get("skill").and_then(Value::as_str)
         {

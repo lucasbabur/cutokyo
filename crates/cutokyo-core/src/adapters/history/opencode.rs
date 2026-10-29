@@ -14,12 +14,12 @@ use serde_json::{Map, Value};
 
 use super::{
     Draft, Factory, MAX_TEXT_CHARS, MAX_TOOL_CHARS, ScanContext, ScanCursor, ScanOutput,
-    ScanStatus, cap_json, cap_text, meta_object, millis_timestamp, portable, project_fields,
+    ScanStatus, cap_text, cap_tool_input, meta_object, millis_timestamp, portable, project_fields,
     version_in_families,
 };
 
 /// Parser identity stored on every observation produced here.
-pub const PARSER_VERSION: &str = "history-import-opencode-v2";
+pub const PARSER_VERSION: &str = "history-import-opencode-v3";
 /// `OpenCode` `major.minor` families whose database was observed locally.
 pub const OBSERVED_FAMILIES: [&str; 1] = ["1.18"];
 /// Parts consumed by one scan, bounding transaction size.
@@ -200,7 +200,7 @@ impl Reader<'_> {
             payload.insert("tool_ended_at".into(), end.as_str().into());
         }
         if let Some(input) = state.get("input") {
-            payload.insert("tool_input".into(), cap_json(input, MAX_TOOL_CHARS));
+            payload.insert("tool_input".into(), cap_tool_input(tool, input));
         }
         if let Some(output) = state.get("output").and_then(Value::as_str) {
             payload.insert(

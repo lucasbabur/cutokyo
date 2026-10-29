@@ -6335,7 +6335,14 @@ pub use tool_calls::{
 mod metrics;
 pub use metrics::{
     HarnessMetrics, McpServerMetrics, MetricsWindow, ProjectUsage, RepeatFailure, SetupMetrics,
-    command_program, mcp_server, unused_names,
+    WarmupCurve, command_program, mcp_server, unused_names,
+};
+
+#[path = "store_inline_programs.rs"]
+mod inline_programs;
+pub use inline_programs::{
+    INLINE_INTERPRETERS, InlineProgram, InlineProgramPage, InlineProgramQuery, LibraryUse,
+    MAX_INLINE_PROGRAMS, imported_libraries, inline_programs,
 };
 
 #[path = "store_history.rs"]

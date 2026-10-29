@@ -422,6 +422,19 @@ fn october() -> std::result::Result<MetricsWindow, Box<dyn std::error::Error>> {
     })
 }
 
+/// Every Claude call is among the session's first ten; herdr-progress and ls run first.
+fn claude_curve() -> WarmupCurve {
+    WarmupCurve {
+        warmup_calls: 8,
+        warmup_failures: 5,
+        first_use_calls: 2,
+        first_use_failures: 2,
+        later_use_calls: 3,
+        later_use_failures: 2,
+        ..WarmupCurve::default()
+    }
+}
+
 #[test]
 fn window_metrics_match_the_synthetic_world() -> TestResult {
     let (_root, store) = world()?;
@@ -434,6 +447,9 @@ fn window_metrics_match_the_synthetic_world() -> TestResult {
                 sessions: 1,
                 finished_tool_calls: 8,
                 failed_tool_calls: 5,
+                blocked_tool_calls: 0,
+                output_error_calls: 0,
+                warmup: claude_curve(),
                 human_messages: 2,
                 interrupts: Some(1),
                 corrections: 1,
@@ -447,6 +463,15 @@ fn window_metrics_match_the_synthetic_world() -> TestResult {
                 sessions: 2,
                 finished_tool_calls: 3,
                 failed_tool_calls: 1,
+                blocked_tool_calls: 0,
+                output_error_calls: 0,
+                warmup: WarmupCurve {
+                    warmup_calls: 3,
+                    warmup_failures: 1,
+                    first_use_calls: 2,
+                    first_use_failures: 1,
+                    ..WarmupCurve::default()
+                },
                 human_messages: 2,
                 interrupts: None,
                 corrections: 0,
@@ -488,6 +513,7 @@ fn window_metrics_match_the_synthetic_world() -> TestResult {
             input_tokens: 1100,
             output_tokens: 60,
             provider_cost_micros: None,
+            warmup: claude_curve(),
         }]
     );
     assert_eq!(
@@ -528,6 +554,206 @@ fn previous_window_and_harness_filter_bound_every_fact() -> TestResult {
     assert!(codex.projects.is_empty());
     assert!(codex.skills_used.is_empty());
     Ok(())
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "one synthetic call per line reads best"
+)]
+fn native_tool(
+    store: &WriterStore,
+    session: &str,
+    native: &str,
+    state: &str,
+    command: &str,
+    output: &str,
+    at: &str,
+    project: &str,
+) -> TestResult {
+    observe(
+        store,
+        &format!("{session}-{native}"),
+        Harness::ClaudeCode,
+        "tool",
+        at,
+        json!({
+            "session_id": session,
+            "project": project,
+            "tool_name": "Bash",
+            "tool_call_id": format!("tool:{session}:{native}"),
+            "native_tool_call_id": native,
+            "tool_state": state,
+            "tool_started_at": at,
+            "tool_input": {"command": command},
+            "tool_output": output,
+        }),
+    )
+}
+
+/// Session `y` forks `x`: it repeats x's message, calls and request under the same
+/// native IDs, then adds a shell echo and one failure of its own.
+fn forked_world()
+-> std::result::Result<(tempfile::TempDir, WriterStore), Box<dyn std::error::Error>> {
+    let root = tempfile::tempdir()?;
+    let store = WriterStore::open(
+        root.path().join("history.db"),
+        LockOwner::current("metrics", None)?,
+    )?;
+    for session in ["x", "y"] {
+        observe(
+            &store,
+            &format!("{session}-u1"),
+            Harness::ClaudeCode,
+            "message",
+            "2026-10-20T10:00:00Z",
+            json!({
+                "session_id": session,
+                "project": "beta",
+                "message_id": format!("message:{session}:u1"),
+                "native_message_id": "u1",
+                "role": "user",
+                "text": "clean the build",
+                "message_created_at": "2026-10-20T10:00:00Z",
+            }),
+        )?;
+        native_tool(
+            &store,
+            session,
+            "t1",
+            "failed",
+            "rm -rf build",
+            "The user doesn't want to proceed with this tool use. The tool use was rejected.",
+            "2026-10-20T10:00:10Z",
+            "beta",
+        )?;
+        native_tool(
+            &store,
+            session,
+            "t2",
+            "succeeded",
+            "frobnicate | tail -3",
+            "bash: frobnicate: command not found",
+            "2026-10-20T10:00:20Z",
+            "beta",
+        )?;
+        observe(
+            &store,
+            &format!("{session}-r1"),
+            Harness::ClaudeCode,
+            "usage",
+            "2026-10-20T10:00:30Z",
+            json!({
+                "session_id": session,
+                "project": "beta",
+                "usage": {"usage_key": "req:1", "input_tokens": 100, "cache_read_tokens": 50, "output_tokens": 5},
+            }),
+        )?;
+    }
+    message(
+        &store,
+        "y-echo",
+        Harness::ClaudeCode,
+        "y",
+        "user",
+        "<bash-stdout>ok</bash-stdout>",
+        "2026-10-20T11:00:00Z",
+    )?;
+    native_tool(
+        &store,
+        "y",
+        "t3",
+        "failed",
+        "ls nope",
+        "ls: cannot access 'nope': No such file or directory",
+        "2026-10-20T11:00:10Z",
+        "beta",
+    )?;
+    Ok((root, store))
+}
+
+#[test]
+fn forked_copies_refusals_and_output_errors_are_counted_apart() -> TestResult {
+    let (_root, store) = forked_world()?;
+    let metrics = store.reader().setup_metrics(&october()?)?;
+    let curve = WarmupCurve {
+        warmup_calls: 3,
+        warmup_failures: 2,
+        first_use_calls: 3,
+        first_use_failures: 2,
+        ..WarmupCurve::default()
+    };
+    assert_eq!(
+        metrics.harnesses,
+        vec![HarnessMetrics {
+            harness: Harness::ClaudeCode,
+            sessions: 2,
+            finished_tool_calls: 3,
+            failed_tool_calls: 2,
+            blocked_tool_calls: 1,
+            output_error_calls: 1,
+            warmup: curve.clone(),
+            human_messages: 1,
+            interrupts: Some(0),
+            corrections: 0,
+            compactions: Some(0),
+            cache_input_tokens: Some(100),
+            cache_read_tokens: Some(50),
+            median_autonomy_seconds: Some(20),
+        }]
+    );
+    assert_eq!(
+        metrics.projects,
+        vec![ProjectUsage {
+            project: Some("beta".to_owned()),
+            sessions: 1,
+            input_tokens: 100,
+            output_tokens: 5,
+            provider_cost_micros: None,
+            warmup: curve,
+        }]
+    );
+    Ok(())
+}
+
+#[test]
+fn warmup_ends_after_ten_calls_and_programs_are_new_once() -> TestResult {
+    let (_root, store) = forked_world()?;
+    for call in 0..12 {
+        native_tool(
+            &store,
+            "z",
+            &format!("z{call}"),
+            if call == 11 { "failed" } else { "succeeded" },
+            if call % 2 == 0 {
+                "git status"
+            } else {
+                "cargo test"
+            },
+            "",
+            &format!("2026-10-21T10:00:{call:02}Z"),
+            "gamma",
+        )?;
+    }
+    let metrics = store.reader().setup_metrics(&october()?)?;
+    let gamma = metrics
+        .projects
+        .iter()
+        .find(|project| project.project.as_deref() == Some("gamma"));
+    // gamma has no usage, so it is not a listed project; its calls still shape the harness curve.
+    assert!(gamma.is_none());
+    let curve = &metrics.harnesses[0].warmup;
+    assert_eq!((curve.warmup_calls, curve.warmup_failures), (13, 2));
+    assert_eq!((curve.settled_calls, curve.settled_failures), (2, 1));
+    assert_eq!((curve.first_use_calls, curve.first_use_failures), (5, 2));
+    assert_eq!((curve.later_use_calls, curve.later_use_failures), (10, 1));
+    Ok(())
+}
+
+#[test]
+fn output_patterns_match_their_json_encoding() {
+    for pattern in BLOCKED_PREFIXES.iter().chain(&OUTPUT_ERROR_PHRASES) {
+        assert_eq!(json!(pattern).to_string(), format!("\"{pattern}\""));
+    }
 }
 
 #[test]

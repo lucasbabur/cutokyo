@@ -16,13 +16,13 @@ use serde_json::{Map, Value};
 
 use super::{
     Discovery, Draft, Factory, Finish, Line, MAX_TEXT_CHARS, MAX_TOOL_CHARS, MAX_UNSUPPORTED_LINES,
-    ScanContext, ScanCursor, ScanOutput, SourceFile, cap_json, cap_text, content_text, finish_scan,
-    meta_object, mtime_seconds, parse_timestamp, portable, project_fields, read_chunk, sha256_hex,
-    version_in_families,
+    ScanContext, ScanCursor, ScanOutput, SourceFile, cap_json, cap_text, cap_tool_input,
+    content_text, finish_scan, meta_object, mtime_seconds, parse_timestamp, portable,
+    project_fields, read_chunk, sha256_hex, version_in_families,
 };
 
 /// Parser identity stored on every observation produced here.
-pub const PARSER_VERSION: &str = "history-import-codex-v2";
+pub const PARSER_VERSION: &str = "history-import-codex-v3";
 /// Codex CLI `major.minor` families whose rollouts were observed locally.
 pub const OBSERVED_FAMILIES: [&str; 7] = [
     "0.153", "0.155", "0.156", "0.157", "0.158", "0.159", "0.160",
@@ -411,7 +411,7 @@ impl Reader<'_> {
             "tool_state".into(),
             if failed { "failed" } else { "succeeded" }.into(),
         );
-        payload.insert("tool_input".into(), cap_json(&input, MAX_TOOL_CHARS));
+        payload.insert("tool_input".into(), cap_tool_input(&name, &input));
         if let Some(output) = output {
             payload.insert("tool_output".into(), output.into());
         }

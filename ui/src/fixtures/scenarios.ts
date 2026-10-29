@@ -630,6 +630,18 @@ function fixtureToolCalls(): FixtureToolCall[] {
   );
 }
 
+/** A warm-up curve with nothing recorded. */
+const noWarmup = {
+  warmupCalls: 0,
+  warmupFailures: 0,
+  settledCalls: 0,
+  settledFailures: 0,
+  firstUseCalls: 0,
+  firstUseFailures: 0,
+  laterUseCalls: 0,
+  laterUseFailures: 0,
+};
+
 /** Setup metrics for a busy week, and the quieter week before it. */
 export const fixtureSetupMetrics: {
   readonly current: SetupMetrics;
@@ -642,6 +654,9 @@ export const fixtureSetupMetrics: {
         sessions: 46,
         finishedToolCalls: 5533,
         failedToolCalls: 156,
+        blockedToolCalls: 0,
+        outputErrorCalls: 0,
+        warmup: noWarmup,
         humanMessages: 383,
         interrupts: 12,
         corrections: 10,
@@ -655,6 +670,9 @@ export const fixtureSetupMetrics: {
         sessions: 9,
         finishedToolCalls: 412,
         failedToolCalls: 41,
+        blockedToolCalls: 0,
+        outputErrorCalls: 0,
+        warmup: noWarmup,
         humanMessages: 37,
         interrupts: null,
         corrections: 2,
@@ -681,6 +699,7 @@ export const fixtureSetupMetrics: {
         inputTokens: 1_107_922_166,
         outputTokens: 2_104_923,
         providerCostMicros: null,
+        warmup: noWarmup,
       },
       {
         project: "ephra",
@@ -688,6 +707,7 @@ export const fixtureSetupMetrics: {
         inputTokens: 137_288_907,
         outputTokens: 412_778,
         providerCostMicros: null,
+        warmup: noWarmup,
       },
       {
         project: null,
@@ -695,6 +715,7 @@ export const fixtureSetupMetrics: {
         inputTokens: 2_120_000,
         outputTokens: 18_400,
         providerCostMicros: null,
+        warmup: noWarmup,
       },
     ],
     skillsUsed: { unslop: 30, "agent-browser": 6, "diagnosing-bugs": 3 },
@@ -706,6 +727,9 @@ export const fixtureSetupMetrics: {
         sessions: 52,
         finishedToolCalls: 6120,
         failedToolCalls: 240,
+        blockedToolCalls: 0,
+        outputErrorCalls: 0,
+        warmup: noWarmup,
         humanMessages: 410,
         interrupts: 19,
         corrections: 14,
@@ -719,6 +743,9 @@ export const fixtureSetupMetrics: {
         sessions: 6,
         finishedToolCalls: 300,
         failedToolCalls: 36,
+        blockedToolCalls: 0,
+        outputErrorCalls: 0,
+        warmup: noWarmup,
         humanMessages: 22,
         interrupts: null,
         corrections: 1,

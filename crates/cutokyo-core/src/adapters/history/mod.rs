@@ -40,6 +40,8 @@ const TAIL_BYTES: u64 = 64;
 pub(crate) const MAX_TEXT_CHARS: usize = 100_000;
 /// Longest tool input or output retained per observation.
 pub(crate) const MAX_TOOL_CHARS: usize = 2_048;
+/// Longest shell-command input retained; inline programs live in these commands.
+const MAX_SHELL_INPUT_CHARS: usize = 32_768;
 /// Raw bytes preserved (as hex) for a line that is not valid JSON.
 const MAX_MALFORMED_BYTES: usize = 8 * 1024;
 /// Raw lines preserved from a file whose format is not understood.
@@ -155,6 +157,16 @@ pub(crate) fn cap_text(text: &str, max_chars: usize) -> (String, bool) {
         Some((index, _)) => (text[..index].to_owned(), true),
         None => (text.to_owned(), false),
     }
+}
+
+/// Caps one tool input: shell commands keep inline programs whole, others stay small.
+pub(crate) fn cap_tool_input(tool_name: &str, input: &Value) -> Value {
+    let max_chars = if matches!(tool_name, "Bash" | "shell" | "bash") {
+        MAX_SHELL_INPUT_CHARS
+    } else {
+        MAX_TOOL_CHARS
+    };
+    cap_json(input, max_chars)
 }
 
 /// Keeps a small JSON value whole, otherwise a bounded preview with its size.
@@ -659,5 +671,22 @@ pub(crate) fn finish_scan(finish: Finish<'_>) -> ScanOutput {
         note,
         native_session_key: Some(native_session_key.to_owned()),
         bytes_read: chunk.bytes,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn shell_inputs_keep_inline_programs_that_other_inputs_cap() {
+        let script = format!("python3 - <<'EOF'\n{}\nEOF", "print(1)\n".repeat(1_000));
+        let input = json!({ "command": script });
+        for shell in ["Bash", "shell", "bash"] {
+            assert_eq!(cap_tool_input(shell, &input), input);
+        }
+        assert_eq!(cap_tool_input("Read", &input)["truncated"], true);
+        let huge = json!({ "command": "x".repeat(MAX_SHELL_INPUT_CHARS + 1) });
+        assert_eq!(cap_tool_input("Bash", &huge)["truncated"], true);
     }
 }

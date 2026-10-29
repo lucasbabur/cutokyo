@@ -38,12 +38,12 @@ pub use crate::{
     store::{
         BackupInfo, BackupManifest, BackupRestorePlan, CheckpointMode, CheckpointResult,
         ConnectionEvidence, DELETE_ALL_CONFIRMATION, DELETION_DISCLOSURE, DeletionReceipt,
-        DiagnosticRowCounts, HarnessMetrics, HealthSnapshot, HealthStatus, LockOwner,
-        McpServerMetrics, MetricsWindow, ModelUsage, ProjectUsage, RepeatFailure, RestoreReceipt,
-        RetentionPlan, SearchMode, SearchPage, SearchQuery, SearchResult, SearchSort,
-        SessionDetail, SetupMetrics, SqlQueryResult, ToolCallFilter, ToolCallOutcome,
-        ToolCallSample, ToolCallSamplePage, ToolCallSampleQuery, ToolCallStat, UsageTotals,
-        unused_names,
+        DiagnosticRowCounts, HarnessMetrics, HealthSnapshot, HealthStatus, InlineProgramPage,
+        InlineProgramQuery, LockOwner, McpServerMetrics, MetricsWindow, ModelUsage, ProjectUsage,
+        RepeatFailure, RestoreReceipt, RetentionPlan, SearchMode, SearchPage, SearchQuery,
+        SearchResult, SearchSort, SessionDetail, SetupMetrics, SqlQueryResult, ToolCallFilter,
+        ToolCallOutcome, ToolCallSample, ToolCallSamplePage, ToolCallSampleQuery, ToolCallStat,
+        UsageTotals, unused_names,
     },
 };
 
@@ -839,6 +839,15 @@ impl QueryUseCases {
     /// Returns invalid input for an inverted window or a store read error.
     pub fn setup_metrics(&self, window: &MetricsWindow) -> Result<SetupMetrics> {
         self.store.setup_metrics(window)
+    }
+
+    /// Lists inline programs from shell commands, newest first, with shared libraries.
+    ///
+    /// # Errors
+    /// Returns invalid input for an unknown interpreter or oversized limit, or a store
+    /// read error.
+    pub fn inline_programs(&self, query: &InlineProgramQuery) -> Result<InlineProgramPage> {
+        self.store.inline_programs(query)
     }
 
     /// Runs one bounded read-only `SELECT` over the derived projection tables.

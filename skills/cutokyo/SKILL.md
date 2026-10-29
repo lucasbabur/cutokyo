@@ -18,7 +18,12 @@ Pick the branch:
   cache hit rate, compactions, autonomy span, repeat failures, MCP server errors,
   tokens per project, skills used): `cutokyo_agent_metrics`. It compares the last
   `days` (default 7) with the period before; null means the harness does not record
-  that fact, not zero.
+  that fact, not zero. Agent mistakes are `failedToolCalls - blockedToolCalls +
+  outputErrorCalls`. A project whose `warmup` failure rate is far above its settled
+  rate is missing context the agent rediscovers each session.
+- **Scripts agents keep rewriting** (python/node heredocs, `-c`/`-e` one-offs):
+  `cutokyo_inline_programs`. Start with its `libraries` grouping, then read the
+  bodies of the leads before proposing a reusable tool.
 - **Audit tool calls, measure usage, any other aggregate:** `cutokyo_sql_query`. Read
   [references/sql.md](references/sql.md) first.
 - **Inventory:** `cutokyo_inventory`. An inventory answer is done when it lists every
