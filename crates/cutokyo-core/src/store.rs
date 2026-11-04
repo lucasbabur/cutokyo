@@ -34,7 +34,7 @@ use unicode_normalization::UnicodeNormalization as _;
 use uuid::Uuid;
 
 /// Current forward-only database schema version.
-pub const DATABASE_SCHEMA_VERSION: u32 = 5;
+pub const DATABASE_SCHEMA_VERSION: u32 = 6;
 /// Current rebuildable projection derivation version.
 pub const DERIVE_VERSION: u32 = 4;
 /// Busy timeout required on every SQLite connection.
@@ -55,6 +55,7 @@ const MIGRATION_2: &str = include_str!("../migrations/0002_durable_core.sql");
 const MIGRATION_3: &str = include_str!("../migrations/0003_session_search.sql");
 const MIGRATION_4: &str = include_str!("../migrations/0004_native_history_import.sql");
 const MIGRATION_5: &str = include_str!("../migrations/0005_history_import_usage_rule.sql");
+const MIGRATION_6: &str = include_str!("../migrations/0006_rescan_subagent_threads.sql");
 const HEALTH_DIMENSIONS: [&str; 11] = [
     "health_persistence",
     "quarantine",
@@ -2839,6 +2840,7 @@ fn migrations() -> Migrations<'static> {
         M::up(MIGRATION_3),
         M::up(MIGRATION_4),
         M::up(MIGRATION_5),
+        M::up(MIGRATION_6),
     ])
 }
 
