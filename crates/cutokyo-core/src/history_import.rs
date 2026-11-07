@@ -225,6 +225,7 @@ struct FileRun<'a> {
 struct FileScan<'a> {
     source: &'a SourceFile,
     state: Option<&'a HistorySourceState>,
+    policy: &'a HistoryImportPolicy,
     ctx: &'a ScanContext,
     report: &'a mut HarnessImportReport,
     bytes: &'a mut u64,
@@ -397,6 +398,7 @@ impl LocalCore {
             let mut file = FileScan {
                 source,
                 state,
+                policy: run.policy,
                 ctx: &ctx,
                 report: &mut report,
                 bytes: &mut bytes_total,
@@ -458,6 +460,18 @@ impl LocalCore {
                 .native_session_key
                 .clone()
                 .unwrap_or_else(|| source.native_session_key.clone());
+            // A Codex subagent thread names its session only inside the file, so `decide`
+            // cannot see that the session it belongs to was deleted.
+            if file.policy.is_tombstoned(harness, &session_key) {
+                file.report.skipped_deleted += 1;
+                self.mark(
+                    source,
+                    harness,
+                    file.state,
+                    HistorySourceStatus::SkippedDeleted,
+                )?;
+                return Ok(true);
+            }
             let live = live_text.get_or_insert_with(|| {
                 self.store
                     .live_session_messages(&session_key)

@@ -6,7 +6,8 @@
 //! `response_item` messages; both map to one message identity so they merge. Tool calls
 //! come from completed command, MCP and file-change items, usage from `token_count`.
 //! Titles come from the sibling `session_index.jsonl`. Subagent and guardian-review
-//! threads are not resumable sessions and are skipped.
+//! threads are not resumable sessions: only their usage is read, attributed to the
+//! session tree they belong to.
 
 use std::{collections::BTreeMap, fs, path::Path};
 
@@ -26,6 +27,9 @@ pub const PARSER_VERSION: &str = "history-import-codex-v2";
 pub const OBSERVED_FAMILIES: [&str; 7] = [
     "0.153", "0.155", "0.156", "0.157", "0.158", "0.159", "0.160",
 ];
+/// A fork restamps its parent's history in a burst of millisecond gaps; a real turn takes
+/// seconds. Usage this close to the previous copied line is the parent's, not the fork's.
+const FORK_COPY_MAX_GAP_SECONDS: i64 = 1;
 const GAPS: &str = "Reasoning, world-state, compaction, sub-agent and image items are not copied; tool output is capped";
 
 /// Enumerates rollout files and reads the sibling title index.
@@ -135,6 +139,25 @@ impl Reader<'_> {
         base(&self.meta, self.key)
     }
 
+    /// The session tree a subagent thread's usage belongs to.
+    fn usage_owner(&self) -> Option<String> {
+        text_of(&self.meta, "usage_owner").map(str::to_owned)
+    }
+
+    /// True while `at` is inside the burst of a fork copying its parent's history.
+    fn copying_fork(&mut self, at: &Timestamp) -> bool {
+        let Some(anchor) = self.meta.get("fork_anchor").and_then(Value::as_i64) else {
+            return false;
+        };
+        let now = at.unix_timestamp();
+        if now - anchor > FORK_COPY_MAX_GAP_SECONDS {
+            self.meta.remove("fork_anchor");
+            return false;
+        }
+        self.meta.insert("fork_anchor".into(), now.into());
+        true
+    }
+
     fn push(
         &mut self,
         kind: &str,
@@ -167,10 +190,19 @@ impl Reader<'_> {
             }
         }
         let at = parse_timestamp(line_stamp).unwrap_or_else(|| self.ctx.captured_at.clone());
-        match (
+        let kinds = (
             value.get("type").and_then(Value::as_str).unwrap_or(""),
             payload.get("type").and_then(Value::as_str),
-        ) {
+        );
+        if self.meta.contains_key("usage_owner")
+            && !matches!(
+                kinds,
+                ("turn_context", _) | ("event_msg", Some("token_count"))
+            )
+        {
+            return Ok(());
+        }
+        match kinds {
             ("turn_context", _) => {
                 if let Some(model) = payload.get("model").and_then(Value::as_str) {
                     self.meta.insert("model".into(), model.into());
@@ -407,10 +439,20 @@ impl Reader<'_> {
         let (Some(input), Some(output)) = (get("input_tokens"), get("output_tokens")) else {
             return Ok(());
         };
+        if self.copying_fork(at) {
+            return Ok(());
+        }
         let cached = get("cached_input_tokens").unwrap_or(0).min(input);
+        let owner = self.usage_owner();
         let mut usage = Map::new();
-        // The cumulative total names the exact turn: a repeated report is idempotent.
-        usage.insert("usage_key".into(), format!("tokens-{total}").into());
+        // The cumulative total names the exact turn: a repeated report is idempotent. A
+        // subagent's totals count from its own start, so its thread is part of the name.
+        let usage_key = if owner.is_some() {
+            format!("{}-tokens-{total}", self.key)
+        } else {
+            format!("tokens-{total}")
+        };
+        usage.insert("usage_key".into(), usage_key.into());
         // Codex's `input_tokens` already includes the cached tokens, which stay as the
         // breakdown of that total.
         usage.insert("input_tokens".into(), input.into());
@@ -425,15 +467,33 @@ impl Reader<'_> {
             usage.insert("model".into(), model.into());
         }
         usage.insert("billing_basis".into(), "unknown".into());
-        let mut body = self.base();
+        let Some(owner) = owner else {
+            let mut body = self.base();
+            body.insert("usage".into(), Value::Object(usage));
+            return self.push(
+                "codex.history.usage",
+                &format!("usage:{total}"),
+                at,
+                offset,
+                body,
+            );
+        };
+        // No session facts: the owner's own rollout states those.
+        let mut body = Map::new();
+        body.insert("session_id".into(), owner.as_str().into());
         body.insert("usage".into(), Value::Object(usage));
-        self.push(
-            "codex.history.usage",
-            &format!("usage:{total}"),
-            at,
-            offset,
-            body,
-        )
+        let observation = self.factory.observation(
+            &owner,
+            Draft {
+                kind: "codex.history.usage",
+                event_id: &format!("usage:{}:{total}", self.key),
+                observed_at: at,
+                sequence: Some(offset),
+                payload: Value::Object(body),
+            },
+        )?;
+        self.out.push(observation);
+        Ok(())
     }
 
     fn session_record(
@@ -555,13 +615,14 @@ pub fn scan(source: &SourceFile, cursor: &ScanCursor, ctx: &ScanContext) -> Resu
     if reader.meta.contains_key("skip") {
         return Ok(skipped(&chunk, cursor, reader.meta, key, source.mtime));
     }
+    let owner = reader.usage_owner();
     let unsupported = reader.meta.contains_key("unsupported");
     let finished = chunk.reached_end && !chunk.truncated_tail;
     let indexed = ctx.titles.get(key).cloned();
     let title = indexed
         .clone()
         .or_else(|| text_of(&reader.meta, "first_prompt").map(str::to_owned));
-    if !unsupported {
+    if !unsupported && owner.is_none() {
         let new_activity = !reader.out.is_empty();
         reader.session_record(title.as_deref(), finished, new_activity)?;
     }
@@ -592,7 +653,7 @@ pub fn scan(source: &SourceFile, cursor: &ScanCursor, ctx: &ScanContext) -> Resu
         malformed_new: malformed,
         emitted_messages: reader.messages,
         coverage,
-        native_session_key: key,
+        native_session_key: owner.as_deref().unwrap_or(key),
         unsupported,
         note,
     }))
@@ -656,7 +717,21 @@ fn read_header(meta: &mut Map<String, Value>, payload: &Value, line: &Value) {
     let subagent = source.is_some_and(|source| source.get("subagent").is_some());
     let thread_source = payload.get("thread_source").and_then(Value::as_str);
     if subagent || thread_source.is_some_and(|value| value != "user") {
-        meta.insert("skip".into(), "subagent".into());
+        match payload.get("session_id").and_then(Value::as_str) {
+            Some(tree) if payload.get("id").and_then(Value::as_str) != Some(tree) => {
+                meta.insert("usage_owner".into(), tree.into());
+            }
+            _ => {
+                meta.insert("skip".into(), "subagent".into());
+            }
+        }
+    }
+    let forked = payload.get("forked_from_id").is_some_and(Value::is_string)
+        || payload
+            .pointer("/source/subagent/thread_spawn/parent_thread_id")
+            .is_some_and(Value::is_string);
+    if forked && let Some(at) = parse_timestamp(line.get("timestamp").and_then(Value::as_str)) {
+        meta.insert("fork_anchor".into(), at.unix_timestamp().into());
     }
     if let Some(cwd) = payload.get("cwd").and_then(Value::as_str)
         && Path::new(cwd).is_absolute()

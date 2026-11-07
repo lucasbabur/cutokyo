@@ -769,7 +769,7 @@ fn opencode_growth_imports_new_parts_without_rereading_old_ones() -> TestResult 
 }
 
 #[test]
-fn codex_thread_id_is_the_resume_target_and_subagent_threads_are_skipped() -> TestResult {
+fn codex_thread_id_is_the_resume_target_and_subagent_threads_are_not_sessions() -> TestResult {
     let world = world()?;
     write_codex(&world, &codex_lines(&world, "0.153.4"))?;
     let child = "01a00000-0000-7000-8000-0000000000c1";
@@ -799,6 +799,103 @@ fn codex_thread_id_is_the_resume_target_and_subagent_threads_are_skipped() -> Te
     assert_eq!(sessions.len(), 1);
     assert_eq!(sessions[0].native_resume_id.as_deref(), Some(CODEX_ID));
     assert!(find(&world, "chatter")?.is_empty());
+    Ok(())
+}
+
+fn codex_tokens(ts: &str, last: u64, total: u64) -> Value {
+    let usage = |n: u64| json!({"input_tokens":n,"cached_input_tokens":0,"output_tokens":1,"reasoning_output_tokens":0,"total_tokens":n+1});
+    json!({"timestamp":ts,"type":"event_msg","payload":{"type":"token_count","info":{
+        "last_token_usage":usage(last),"total_token_usage":usage(total)}}})
+}
+
+#[test]
+fn codex_subagent_usage_counts_toward_its_session_without_fork_copies() -> TestResult {
+    let world = world()?;
+    write_codex(&world, &codex_lines(&world, "0.153.4"))?;
+    let child = "01a00000-0000-7000-8000-0000000000c1";
+    let mut header = codex_meta(
+        &world,
+        "0.153.4",
+        child,
+        CODEX_ID,
+        &json!({"subagent":{"thread_spawn":{"parent_thread_id":CODEX_ID}}}),
+    );
+    header["payload"]["forked_from_id"] = json!(CODEX_ID);
+    fs::write(
+        world.roots.codex.join(format!(
+            "sessions/2026/10/01/rollout-2026-10-01T10-00-00-{child}.jsonl"
+        )),
+        jsonl(&[
+            header,
+            // Copied from the parent within the fork's burst: not this thread's usage.
+            codex_tokens("2026-10-01T10:00:00.040Z", 100, 100),
+            codex_tokens("2026-10-01T10:00:30.000Z", 7, 107),
+        ]),
+    )?;
+    run(&world, &[Harness::Codex])?;
+    let sessions = all(&world)?;
+    assert_eq!(sessions.len(), 1, "a subagent thread is not a session");
+    let usage = world.core.usage(&sessions[0].session_id)?;
+    assert_eq!(usage.input_tokens, Some(100 + 7));
+    assert_eq!(usage.output_tokens, Some(20 + 1));
+
+    world.core.delete_session(&sessions[0].session_id)?;
+    run(&world, &[Harness::Codex])?;
+    assert!(
+        all(&world)?.is_empty(),
+        "a subagent thread does not revive its deleted session"
+    );
+    Ok(())
+}
+
+#[test]
+fn claude_subagent_usage_counts_toward_its_parent_session_only() -> TestResult {
+    let world = world()?;
+    let cwd = world.project.clone();
+    let assistant = |id: &str, ts: &str, input: u64| {
+        json!({"type":"assistant","uuid":id,"timestamp":ts,"cwd":cwd,"sessionId":CLAUDE_ID,"version":"2.1.0",
+            "message":{"id":id,"model":"synthetic-model","role":"assistant",
+            "content":[{"type":"text","text":format!("{id} chatter")}],
+            "usage":{"input_tokens":input,"output_tokens":3,"cache_read_input_tokens":0,"cache_creation_input_tokens":0}}})
+    };
+    let parent = write_claude(
+        &world,
+        &[
+            claude_user(&cwd, "u1", "2026-10-01T10:00:00Z", "top level request"),
+            assistant("msg_top", "2026-10-01T10:00:01Z", 10),
+        ],
+    )?;
+    settle(&parent)?;
+    let session_dir = parent.with_extension("");
+    let agents = session_dir.join("subagents");
+    let nested = agents.join("workflows/run-1");
+    fs::create_dir_all(&nested)?;
+    let direct = agents.join("agent-a1.jsonl");
+    let workflow = nested.join("agent-a2.jsonl");
+    fs::write(
+        &direct,
+        jsonl(&[assistant("msg_sub", "2026-10-01T10:00:02Z", 20)]),
+    )?;
+    fs::write(
+        &workflow,
+        jsonl(&[assistant("msg_flow", "2026-10-01T10:00:03Z", 40)]),
+    )?;
+    settle(&direct)?;
+    settle(&workflow)?;
+
+    run(&world, &[Harness::ClaudeCode])?;
+    let sessions = all(&world)?;
+    assert_eq!(sessions.len(), 1, "a subagent transcript is not a session");
+    assert_eq!(sessions[0].title.as_deref(), Some("top level request"));
+    let usage = world.core.usage(&sessions[0].session_id)?;
+    assert_eq!(usage.input_tokens, Some(10 + 20 + 40));
+    assert_eq!(usage.output_tokens, Some(9));
+    assert!(!find(&world, "msg_top")?.is_empty());
+    assert!(find(&world, "msg_sub")?.is_empty(), "only usage is read");
+
+    run(&world, &[Harness::ClaudeCode])?;
+    let usage = world.core.usage(&sessions[0].session_id)?;
+    assert_eq!(usage.input_tokens, Some(70), "a re-import changes nothing");
     Ok(())
 }
 

@@ -1,4 +1,6 @@
 //! Claude Code transcripts: `<config>/projects/<encoded-cwd>/<session-id>.jsonl`.
+//! Subagents write theirs to `<session-id>/subagents/**/agent-*.jsonl`; those are read
+//! for usage only, attributed to the parent session.
 //!
 //! The JSONL schema is undocumented and internal. This reader was built from locally
 //! observed files written by Claude Code 2.1.x and projects only the shapes it saw:
@@ -28,10 +30,13 @@ pub const OBSERVED_FAMILIES: [&str; 1] = ["2.1"];
 pub const SETTLE_SECONDS: i64 = 120;
 const GAPS: &str = "Attachments, file snapshots, hook and system records, thinking blocks and large tool results are not copied";
 
-/// Finds top-level session transcripts below `<claude config>/projects`.
-///
-/// Subagent transcripts live in nested directories and are never enumerated; they are
-/// subordinate agent evidence, not resumable sessions.
+/// Deepest nesting below `subagents/`; workflow agents sit at `workflows/<run>/`.
+const MAX_AGENT_DEPTH: u8 = 4;
+/// Marks a source key as a subagent transcript.
+const AGENT_KEY_MARKER: &str = "/agent:";
+
+/// Finds session transcripts and their subagent transcripts below
+/// `<claude config>/projects`.
 #[must_use]
 pub fn discover(claude_dir: &Path) -> Discovery {
     let Ok(entries) = fs::read_dir(claude_dir.join("projects")) else {
@@ -47,12 +52,16 @@ pub fn discover(claude_dir: &Path) -> Discovery {
         };
         for file in files.flatten() {
             let path = file.path();
-            if path.extension().and_then(|value| value.to_str()) != Some("jsonl") {
-                continue;
-            }
             let Ok(metadata) = fs::symlink_metadata(&path) else {
                 continue;
             };
+            if metadata.is_dir() {
+                discover_agents(&path, &mut discovery);
+                continue;
+            }
+            if path.extension().and_then(|value| value.to_str()) != Some("jsonl") {
+                continue;
+            }
             if !metadata.is_file() {
                 continue;
             }
@@ -77,6 +86,59 @@ pub fn discover(claude_dir: &Path) -> Discovery {
     discovery
 }
 
+/// Adds the subagent transcripts of the session whose directory is `session_dir`. A
+/// directory with no sibling transcript is not a session, so nothing is attributed to it.
+fn discover_agents(session_dir: &Path, discovery: &mut Discovery) {
+    let Some(session) = session_dir.file_name().and_then(|value| value.to_str()) else {
+        return;
+    };
+    if !session_dir
+        .with_file_name(format!("{session}.jsonl"))
+        .is_file()
+        || cutokyo_domain::NativeSessionId::parse(session.to_owned()).is_err()
+    {
+        return;
+    }
+    let root = session_dir.join("subagents");
+    let mut stack = vec![(root.clone(), 0_u8)];
+    while let Some((directory, depth)) = stack.pop() {
+        let Ok(entries) = fs::read_dir(&directory) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let Ok(metadata) = fs::symlink_metadata(&path) else {
+                continue;
+            };
+            if metadata.is_dir() {
+                if depth < MAX_AGENT_DEPTH {
+                    stack.push((path, depth + 1));
+                }
+                continue;
+            }
+            if !metadata.is_file()
+                || path.extension().and_then(|value| value.to_str()) != Some("jsonl")
+            {
+                continue;
+            }
+            let Some(agent) = path
+                .strip_prefix(&root)
+                .ok()
+                .and_then(|relative| relative.with_extension("").to_str().map(str::to_owned))
+            else {
+                continue;
+            };
+            discovery.sources.push(SourceFile {
+                key: format!("claude:{session}{AGENT_KEY_MARKER}{agent}"),
+                native_session_key: session.to_owned(),
+                size: metadata.len(),
+                mtime: mtime_seconds(&metadata),
+                path,
+            });
+        }
+    }
+}
+
 /// Fields of one conversation message.
 struct Parts<'a> {
     role: &'a str,
@@ -96,6 +158,8 @@ struct Reader<'a> {
     meta: Map<String, Value>,
     out: Vec<RawObservation>,
     messages: u64,
+    /// A subagent transcript: only `usage` is projected, with no session facts.
+    usage_only: bool,
 }
 
 fn text_of<'m>(meta: &'m Map<String, Value>, key: &str) -> Option<&'m str> {
@@ -106,6 +170,10 @@ impl Reader<'_> {
     fn base(&self, extra: Map<String, Value>) -> Value {
         let mut payload = Map::new();
         payload.insert("session_id".into(), self.key.into());
+        if self.usage_only {
+            payload.extend(extra);
+            return Value::Object(payload);
+        }
         project_fields(text_of(&self.meta, "cwd"), &mut payload);
         if let Some(branch) = text_of(&self.meta, "branch") {
             payload.insert("branch".into(), branch.into());
@@ -201,7 +269,11 @@ impl Reader<'_> {
     }
 
     fn absorb(&mut self, value: &Value, offset: u64) -> Result<()> {
-        match value.get("type").and_then(Value::as_str).unwrap_or("") {
+        let kind = value.get("type").and_then(Value::as_str).unwrap_or("");
+        if self.usage_only && kind != "assistant" {
+            return Ok(());
+        }
+        match kind {
             "ai-title" => {
                 if let Some(title) = value.get("aiTitle").and_then(Value::as_str) {
                     self.set_title(title, "ai");
@@ -244,6 +316,9 @@ impl Reader<'_> {
                 .and_then(|usage| usage_value(usage, message))
         {
             self.note_usage(&usage, &at, offset);
+        }
+        if self.usage_only {
+            return Ok(());
         }
         if let Some(text) = content_text(content, &["text"]).filter(|text| !text.trim().is_empty())
         {
@@ -542,6 +617,7 @@ pub fn scan(source: &SourceFile, cursor: &ScanCursor, ctx: &ScanContext) -> Resu
         },
         out: Vec::new(),
         messages: 0,
+        usage_only: source.key.contains(AGENT_KEY_MARKER),
     };
     let mut malformed = 0_u64;
     let mut stopped = None;
@@ -570,8 +646,10 @@ pub fn scan(source: &SourceFile, cursor: &ScanCursor, ctx: &ScanContext) -> Resu
     let finished = chunk.reached_end && !chunk.truncated_tail;
     let settled = ctx.captured_at.unix_timestamp() - source.mtime >= SETTLE_SECONDS;
     reader.flush_usage(finished && settled)?;
-    let new_activity = !reader.out.is_empty();
-    reader.session_record(finished, new_activity)?;
+    if !reader.usage_only {
+        let new_activity = !reader.out.is_empty();
+        reader.session_record(finished, new_activity)?;
+    }
     let coverage = reader.coverage(
         malformed > 0 || cursor.malformed_lines > 0,
         chunk.truncated_tail,
