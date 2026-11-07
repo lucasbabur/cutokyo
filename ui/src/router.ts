@@ -12,7 +12,7 @@ const VALID_ROUTES = new Set<RoutePath>([
   "/onboarding",
   "/dashboard",
   "/sessions",
-  "/tools",
+  "/metrics",
   "/inventory",
   "/health",
   "/data",
@@ -41,13 +41,13 @@ function parseLocation(hash: string): AppLocation {
     };
   }
   if (
-    normalized.startsWith("/tools/") &&
-    normalized.length > "/tools/".length
+    normalized.startsWith("/metrics/") &&
+    normalized.length > "/metrics/".length
   ) {
     return {
-      page: "/tools",
+      page: "/metrics",
       sessionId: null,
-      toolName: decodeURIComponent(normalized.slice("/tools/".length)),
+      toolName: decodeURIComponent(normalized.slice("/metrics/".length)),
     };
   }
   return {
@@ -64,7 +64,7 @@ export function useAppLocation(): AppLocation {
   return parseLocation(hash);
 }
 
-/** `itemId` is a session ID under /sessions and a tool name under /tools. */
+/** `itemId` is a session ID under /sessions and a tool name under /metrics. */
 export function routeHref(path: RoutePath, itemId?: string): string {
   return itemId === undefined
     ? `#${path}`

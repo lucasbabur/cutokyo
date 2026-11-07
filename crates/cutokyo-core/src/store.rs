@@ -454,6 +454,16 @@ pub struct UsageTotals {
     pub provider_cost_micros: Option<u64>,
 }
 
+/// Usage totals for one model within a session; `model` is `None` when unreported.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ModelUsage {
+    /// Model name as the harness reported it.
+    pub model: Option<String>,
+    /// Totals for this model.
+    pub totals: UsageTotals,
+}
+
 /// Safe aggregate row counts permitted in diagnostic bundles.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -1025,16 +1035,16 @@ impl WriterStore {
         self.reader().usage_totals(session_id)
     }
 
-    /// Usage totals for several sessions through one connection and query.
+    /// Per-model usage for several sessions through one connection and query.
     ///
     /// # Errors
     ///
     /// Returns a store or contract-decoding error if usage cannot be read.
-    pub fn usage_totals_for(
+    pub fn model_usage_for(
         &self,
         session_ids: &[SessionId],
-    ) -> Result<BTreeMap<SessionId, UsageTotals>> {
-        self.reader().usage_totals_for(session_ids)
+    ) -> Result<BTreeMap<SessionId, Vec<ModelUsage>>> {
+        self.reader().model_usage_for(session_ids)
     }
 
     /// Returns the applicable price selected by declared source precedence,
@@ -2452,68 +2462,64 @@ impl ReadStore {
             .map_err(|error| sqlite_error("read usage totals", &error))
     }
 
-    /// Usage totals for several sessions through one connection and query, so a
-    /// page of sessions does not open one connection per row.
+    /// Per-model usage for several sessions through one connection and query, so a
+    /// page of sessions does not open one connection per row. Sessions without usage
+    /// rows map to an empty list.
     ///
     /// # Errors
     ///
     /// Returns a store or contract-decoding error if usage cannot be read.
-    pub fn usage_totals_for(
+    pub fn model_usage_for(
         &self,
         session_ids: &[SessionId],
-    ) -> Result<BTreeMap<SessionId, UsageTotals>> {
-        let mut totals = BTreeMap::new();
+    ) -> Result<BTreeMap<SessionId, Vec<ModelUsage>>> {
+        let mut usage: BTreeMap<SessionId, Vec<ModelUsage>> = session_ids
+            .iter()
+            .map(|session_id| (session_id.clone(), Vec::new()))
+            .collect();
         if session_ids.is_empty() {
-            return Ok(totals);
+            return Ok(usage);
         }
         let connection = open_read_connection(&self.path)?;
         let placeholders = vec!["?"; session_ids.len()].join(",");
         let mut statement = connection
             .prepare(&format!(
-                "SELECT session_id, SUM(value) FILTER (WHERE metric = 'input_tokens'), SUM(value) FILTER (WHERE metric = 'output_tokens'), SUM(value) FILTER (WHERE metric = 'cache_read_tokens'), SUM(value) FILTER (WHERE metric = 'cache_write_tokens'), SUM(value) FILTER (WHERE metric = 'provider_cost_micros') FROM usage_values WHERE session_id IN ({placeholders}) GROUP BY session_id"
+                "SELECT session_id, model, SUM(value) FILTER (WHERE metric = 'input_tokens'), SUM(value) FILTER (WHERE metric = 'output_tokens'), SUM(value) FILTER (WHERE metric = 'cache_read_tokens'), SUM(value) FILTER (WHERE metric = 'cache_write_tokens'), SUM(value) FILTER (WHERE metric = 'provider_cost_micros') FROM usage_values WHERE session_id IN ({placeholders}) GROUP BY session_id, model ORDER BY session_id, model"
             ))
-            .map_err(|error| sqlite_error("prepare usage totals", &error))?;
+            .map_err(|error| sqlite_error("prepare model usage", &error))?;
         let rows = statement
             .query_map(
                 params_from_iter(session_ids.iter().map(SessionId::as_str)),
                 |row| {
+                    let metric = |index| {
+                        row.get::<_, Option<i64>>(index)
+                            .map(|value| value.map(nonnegative_i64_to_u64))
+                    };
                     Ok((
                         row.get::<_, String>(0)?,
-                        UsageTotals {
-                            input_tokens: row.get::<_, Option<i64>>(1)?.map(nonnegative_i64_to_u64),
-                            output_tokens: row
-                                .get::<_, Option<i64>>(2)?
-                                .map(nonnegative_i64_to_u64),
-                            cache_read_tokens: row
-                                .get::<_, Option<i64>>(3)?
-                                .map(nonnegative_i64_to_u64),
-                            cache_write_tokens: row
-                                .get::<_, Option<i64>>(4)?
-                                .map(nonnegative_i64_to_u64),
-                            provider_cost_micros: row
-                                .get::<_, Option<i64>>(5)?
-                                .map(nonnegative_i64_to_u64),
+                        ModelUsage {
+                            model: row.get(1)?,
+                            totals: UsageTotals {
+                                input_tokens: metric(2)?,
+                                output_tokens: metric(3)?,
+                                cache_read_tokens: metric(4)?,
+                                cache_write_tokens: metric(5)?,
+                                provider_cost_micros: metric(6)?,
+                            },
                         },
                     ))
                 },
             )
-            .map_err(|error| sqlite_error("read usage totals", &error))?;
+            .map_err(|error| sqlite_error("read model usage", &error))?;
         for row in rows {
-            let (session_id, usage) =
-                row.map_err(|error| sqlite_error("decode usage totals", &error))?;
-            totals.insert(SessionId::parse(session_id)?, usage);
+            let (session_id, model_usage) =
+                row.map_err(|error| sqlite_error("decode model usage", &error))?;
+            usage
+                .entry(SessionId::parse(session_id)?)
+                .or_default()
+                .push(model_usage);
         }
-        // Sessions without usage rows keep every metric unknown, exactly like `usage_totals`.
-        for session_id in session_ids {
-            totals.entry(session_id.clone()).or_insert(UsageTotals {
-                input_tokens: None,
-                output_tokens: None,
-                cache_read_tokens: None,
-                cache_write_tokens: None,
-                provider_cost_micros: None,
-            });
-        }
-        Ok(totals)
+        Ok(usage)
     }
 
     /// Resolves a price only inside its half-open validity interval.
@@ -6325,6 +6331,20 @@ pub use tool_calls::{
     ToolCallOutcome, ToolCallSample, ToolCallSamplePage, ToolCallSampleQuery, ToolCallStat,
 };
 
+#[path = "store_metrics.rs"]
+mod metrics;
+pub use metrics::{
+    HarnessMetrics, McpServerMetrics, MetricsWindow, ProjectUsage, RepeatFailure, SetupMetrics,
+    WarmupCurve, command_program, mcp_server, unused_names,
+};
+
+#[path = "store_inline_programs.rs"]
+mod inline_programs;
+pub use inline_programs::{
+    INLINE_INTERPRETERS, InlineProgram, InlineProgramPage, InlineProgramQuery, LibraryUse,
+    MAX_INLINE_PROGRAMS, imported_libraries, inline_programs,
+};
+
 #[path = "store_history.rs"]
 mod history;
 pub use history::{
@@ -6546,10 +6566,15 @@ mod tests {
         );
         let one = SessionId::parse("session:one")?;
         let missing = SessionId::parse("session:missing")?;
-        let batch = store.usage_totals_for(&[one.clone(), missing.clone()])?;
-        assert_eq!(batch.get(&one), Some(&store.usage_totals(&one)?));
-        assert_eq!(batch.get(&missing), Some(&store.usage_totals(&missing)?));
-        assert_eq!(batch.get(&missing).and_then(|u| u.input_tokens), None);
+        let batch = store.model_usage_for(&[one.clone(), missing.clone()])?;
+        assert_eq!(
+            batch.get(&one).map(|usage| usage
+                .iter()
+                .map(|model| model.totals.input_tokens)
+                .collect::<Vec<_>>()),
+            Some(vec![Some(100)])
+        );
+        assert_eq!(batch.get(&missing), Some(&Vec::new()));
         let results = store.search(&SearchQuery {
             text: Some("needle transcript".to_owned()),
             project: Some("alpha".to_owned()),

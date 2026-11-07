@@ -204,17 +204,77 @@ export interface ToolCallSamplesResponse {
   readonly samples: readonly ToolCallSample[];
 }
 
-export interface PriceFact {
-  readonly provider: string;
-  readonly model: string;
-  readonly currency: string;
-  readonly inputMicrosPerMillion: number | null;
-  readonly outputMicrosPerMillion: number | null;
-  readonly validFrom: string;
-  readonly validUntil: string | null;
-  readonly confidence: Confidence;
-  readonly label: string;
-  readonly provenance: Provenance;
+export interface HarnessMetrics {
+  readonly harness: Harness;
+  readonly sessions: number;
+  readonly finishedToolCalls: number;
+  readonly failedToolCalls: number;
+  /** Failed calls a rule, hook, the person or worktree isolation refused. */
+  readonly blockedToolCalls: number;
+  /** Shell calls that succeeded but printed a clear error. */
+  readonly outputErrorCalls: number;
+  readonly warmup: WarmupCurve;
+  readonly humanMessages: number;
+  /** Null when the harness does not record interrupts. */
+  readonly interrupts: number | null;
+  readonly corrections: number;
+  /** Null when the harness does not record compactions. */
+  readonly compactions: number | null;
+  /** Total input of the requests that reported cache reads. */
+  readonly cacheInputTokens: number | null;
+  readonly cacheReadTokens: number | null;
+  readonly medianAutonomySeconds: number | null;
+}
+
+interface RepeatFailure {
+  readonly program: string;
+  readonly toolName: string;
+  readonly failures: number;
+}
+
+/** Agent failures in each session's first ten calls and on a program's first run. */
+interface WarmupCurve {
+  readonly warmupCalls: number;
+  readonly warmupFailures: number;
+  readonly settledCalls: number;
+  readonly settledFailures: number;
+  readonly firstUseCalls: number;
+  readonly firstUseFailures: number;
+  readonly laterUseCalls: number;
+  readonly laterUseFailures: number;
+}
+
+interface McpServerMetrics {
+  readonly server: string;
+  readonly calls: number;
+  readonly failed: number;
+}
+
+interface ProjectUsage {
+  readonly project: string | null;
+  readonly sessions: number;
+  readonly inputTokens: number;
+  readonly outputTokens: number;
+  readonly providerCostMicros: number | null;
+  readonly warmup: WarmupCurve;
+}
+
+export interface SetupMetrics {
+  readonly harnesses: readonly HarnessMetrics[];
+  readonly repeatFailures: readonly RepeatFailure[];
+  readonly mcpServers: readonly McpServerMetrics[];
+  readonly projects: readonly ProjectUsage[];
+  readonly skillsUsed: Readonly<Record<string, number>>;
+}
+
+export interface SetupMetricsResponse {
+  readonly meta: RouteMeta;
+  readonly current: SetupMetrics;
+  /** The equal-length window before the current one; null for Any time. */
+  readonly previous: SetupMetrics | null;
+  /** Null when the installed inventory could not be read. */
+  readonly unusedSkills: readonly string[] | null;
+  readonly unusedMcpServers: readonly string[] | null;
 }
 
 export interface QuotaFact {
@@ -238,7 +298,6 @@ interface SourceConflict {
 export interface DashboardResponse {
   readonly meta: RouteMeta;
   readonly sessions: readonly SessionRecord[];
-  readonly prices: readonly PriceFact[];
   readonly quotas: readonly QuotaFact[];
   readonly contextBreakdown: {
     readonly instructionsTokens: number | null;
@@ -503,7 +562,7 @@ export type RoutePath =
   | "/onboarding"
   | "/dashboard"
   | "/sessions"
-  | "/tools"
+  | "/metrics"
   | "/inventory"
   | "/health"
   | "/data"
@@ -536,6 +595,7 @@ export interface CommandClient {
   getToolCallSamples(
     request: ToolCallSampleRequest,
   ): Promise<ToolCallSamplesResponse>;
+  getSetupMetrics(filters: ToolCallFilters): Promise<SetupMetricsResponse>;
   previewResume(sessionId: string): Promise<ResumePreview>;
   resumeSession(sessionId: string): Promise<ActionReceipt>;
   previewSessionDeletion(sessionId: string): Promise<DeletionPreview>;

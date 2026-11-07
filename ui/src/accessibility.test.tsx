@@ -14,7 +14,7 @@ import { InventoryPage } from "./pages/InventoryPage.js";
 import { OnboardingPage } from "./pages/OnboardingPage.js";
 import { SessionsPage } from "./pages/SessionsPage.js";
 import { SettingsPage } from "./pages/SettingsPage.js";
-import { ToolCallsPage } from "./pages/ToolCallsPage.js";
+import { MetricsPage } from "./pages/MetricsPage.js";
 
 function renderRoute(client: CommandClient, node: ReactNode) {
   return render(
@@ -49,16 +49,16 @@ const routes: readonly {
     node: <SessionsPage sessionId={null} />,
   },
   {
-    name: "tool calls",
-    heading: "Tool calls",
+    name: "metrics",
+    heading: "Metrics",
     scenario: "populated-dashboard",
-    node: <ToolCallsPage toolName={null} />,
+    node: <MetricsPage toolName={null} />,
   },
   {
     name: "tool call samples",
     heading: "Bash",
     scenario: "populated-dashboard",
-    node: <ToolCallsPage toolName="Bash" />,
+    node: <MetricsPage toolName="Bash" />,
   },
   {
     name: "inventory",

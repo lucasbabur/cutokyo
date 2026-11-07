@@ -10,6 +10,7 @@ import type {
   OnboardingResponse,
   Provenance,
   SessionRecord,
+  SetupMetrics,
   ToolCallSample,
 } from "../contracts.js";
 
@@ -277,36 +278,6 @@ const baseDashboard: DashboardResponse = {
     generatedAt: FIXTURE_NOW,
   },
   sessions: dashboardSessions,
-  prices: [
-    {
-      provider: "Anthropic",
-      model: "claude-sonnet-4-5",
-      currency: "USD",
-      inputMicrosPerMillion: 3_000_000,
-      outputMicrosPerMillion: 15_000_000,
-      validFrom: "2026-09-01T00:00:00Z",
-      validUntil: "2026-10-01T00:00:00Z",
-      confidence: "estimated",
-      label:
-        "Estimate from a validity-bounded local price snapshot; not a provider invoice.",
-      provenance: provenance("claude_code", "provider_usage_api"),
-    },
-    {
-      provider: "Operator declaration",
-      model: "gpt-5-codex",
-      currency: "USD",
-      inputMicrosPerMillion: null,
-      outputMicrosPerMillion: null,
-      validFrom: "2026-09-01T00:00:00Z",
-      validUntil: null,
-      confidence: "user_declared",
-      label: "User-declared subscription; no per-request charge is claimed.",
-      provenance: {
-        ...provenance("codex", "user_declaration"),
-        confidence: "user_declared",
-      },
-    },
-  ],
   quotas: [
     {
       name: "Claude 5-hour window",
@@ -658,6 +629,138 @@ function fixtureToolCalls(): FixtureToolCall[] {
     right.sample.startedAt.localeCompare(left.sample.startedAt),
   );
 }
+
+/** A warm-up curve with nothing recorded. */
+const noWarmup = {
+  warmupCalls: 0,
+  warmupFailures: 0,
+  settledCalls: 0,
+  settledFailures: 0,
+  firstUseCalls: 0,
+  firstUseFailures: 0,
+  laterUseCalls: 0,
+  laterUseFailures: 0,
+};
+
+/** Setup metrics for a busy week, and the quieter week before it. */
+export const fixtureSetupMetrics: {
+  readonly current: SetupMetrics;
+  readonly previous: SetupMetrics;
+} = {
+  current: {
+    harnesses: [
+      {
+        harness: "claude_code",
+        sessions: 46,
+        finishedToolCalls: 5533,
+        failedToolCalls: 156,
+        blockedToolCalls: 0,
+        outputErrorCalls: 0,
+        warmup: noWarmup,
+        humanMessages: 383,
+        interrupts: 12,
+        corrections: 10,
+        compactions: 20,
+        cacheInputTokens: 1_429_713_743,
+        cacheReadTokens: 1_417_949_157,
+        medianAutonomySeconds: 28,
+      },
+      {
+        harness: "codex",
+        sessions: 9,
+        finishedToolCalls: 412,
+        failedToolCalls: 41,
+        blockedToolCalls: 0,
+        outputErrorCalls: 0,
+        warmup: noWarmup,
+        humanMessages: 37,
+        interrupts: null,
+        corrections: 2,
+        compactions: null,
+        cacheInputTokens: 31_200_000,
+        cacheReadTokens: 29_900_000,
+        medianAutonomySeconds: 194,
+      },
+    ],
+    repeatFailures: [
+      { program: "herdr-progress", toolName: "Bash", failures: 21 },
+      { program: "bun", toolName: "Bash", failures: 14 },
+      { program: "rg", toolName: "shell", failures: 6 },
+    ],
+    mcpServers: [
+      { server: "agent-screen", calls: 399, failed: 2 },
+      { server: "ephra-tools", calls: 177, failed: 25 },
+      { server: "refero", calls: 16, failed: 0 },
+    ],
+    projects: [
+      {
+        project: "cutokyo-community",
+        sessions: 31,
+        inputTokens: 1_107_922_166,
+        outputTokens: 2_104_923,
+        providerCostMicros: null,
+        warmup: noWarmup,
+      },
+      {
+        project: "ephra",
+        sessions: 9,
+        inputTokens: 137_288_907,
+        outputTokens: 412_778,
+        providerCostMicros: null,
+        warmup: noWarmup,
+      },
+      {
+        project: null,
+        sessions: 4,
+        inputTokens: 2_120_000,
+        outputTokens: 18_400,
+        providerCostMicros: null,
+        warmup: noWarmup,
+      },
+    ],
+    skillsUsed: { unslop: 30, "agent-browser": 6, "diagnosing-bugs": 3 },
+  },
+  previous: {
+    harnesses: [
+      {
+        harness: "claude_code",
+        sessions: 52,
+        finishedToolCalls: 6120,
+        failedToolCalls: 240,
+        blockedToolCalls: 0,
+        outputErrorCalls: 0,
+        warmup: noWarmup,
+        humanMessages: 410,
+        interrupts: 19,
+        corrections: 14,
+        compactions: 31,
+        cacheInputTokens: 1_600_000_000,
+        cacheReadTokens: 1_520_000_000,
+        medianAutonomySeconds: 22,
+      },
+      {
+        harness: "codex",
+        sessions: 6,
+        finishedToolCalls: 300,
+        failedToolCalls: 36,
+        blockedToolCalls: 0,
+        outputErrorCalls: 0,
+        warmup: noWarmup,
+        humanMessages: 22,
+        interrupts: null,
+        corrections: 1,
+        compactions: null,
+        cacheInputTokens: 20_000_000,
+        cacheReadTokens: 18_500_000,
+        medianAutonomySeconds: 150,
+      },
+    ],
+    repeatFailures: [],
+    mcpServers: [],
+    projects: [],
+    skillsUsed: {},
+  },
+};
 
 export interface FixtureState {
   onboarding: OnboardingResponse;

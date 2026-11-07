@@ -38,10 +38,12 @@ pub use crate::{
     store::{
         BackupInfo, BackupManifest, BackupRestorePlan, CheckpointMode, CheckpointResult,
         ConnectionEvidence, DELETE_ALL_CONFIRMATION, DELETION_DISCLOSURE, DeletionReceipt,
-        DiagnosticRowCounts, HealthSnapshot, HealthStatus, LockOwner, RestoreReceipt,
-        RetentionPlan, SearchMode, SearchPage, SearchQuery, SearchResult, SearchSort,
-        SessionDetail, SqlQueryResult, ToolCallFilter, ToolCallOutcome, ToolCallSample,
-        ToolCallSamplePage, ToolCallSampleQuery, ToolCallStat, UsageTotals,
+        DiagnosticRowCounts, HarnessMetrics, HealthSnapshot, HealthStatus, InlineProgramPage,
+        InlineProgramQuery, LockOwner, McpServerMetrics, MetricsWindow, ModelUsage, ProjectUsage,
+        RepeatFailure, RestoreReceipt, RetentionPlan, SearchMode, SearchPage, SearchQuery,
+        SearchResult, SearchSort, SessionDetail, SetupMetrics, SqlQueryResult, ToolCallFilter,
+        ToolCallOutcome, ToolCallSample, ToolCallSamplePage, ToolCallSampleQuery, ToolCallStat,
+        UsageTotals, unused_names,
     },
 };
 
@@ -831,6 +833,23 @@ impl QueryUseCases {
         self.store.tool_call_samples(query)
     }
 
+    /// Reads the stored setup metrics for one window.
+    ///
+    /// # Errors
+    /// Returns invalid input for an inverted window or a store read error.
+    pub fn setup_metrics(&self, window: &MetricsWindow) -> Result<SetupMetrics> {
+        self.store.setup_metrics(window)
+    }
+
+    /// Lists inline programs from shell commands, newest first, with shared libraries.
+    ///
+    /// # Errors
+    /// Returns invalid input for an unknown interpreter or oversized limit, or a store
+    /// read error.
+    pub fn inline_programs(&self, query: &InlineProgramQuery) -> Result<InlineProgramPage> {
+        self.store.inline_programs(query)
+    }
+
     /// Runs one bounded read-only `SELECT` over the derived projection tables.
     ///
     /// # Errors
@@ -898,16 +917,16 @@ impl QueryUseCases {
         self.store.usage_totals(session_id)
     }
 
-    /// Returns usage for a page of sessions in one read.
+    /// Returns per-model usage for a page of sessions in one read.
     ///
     /// # Errors
     ///
     /// Returns a store error if usage cannot be read.
-    pub fn usage_for(
+    pub fn model_usage_for(
         &self,
         session_ids: &[SessionId],
-    ) -> Result<std::collections::BTreeMap<SessionId, UsageTotals>> {
-        self.store.usage_totals_for(session_ids)
+    ) -> Result<std::collections::BTreeMap<SessionId, Vec<ModelUsage>>> {
+        self.store.model_usage_for(session_ids)
     }
 
     /// Reads a quota window without converting unknown values to zero.
@@ -1213,16 +1232,16 @@ impl LocalCore {
         self.store.usage_totals(session_id)
     }
 
-    /// Returns usage for a page of sessions in one read.
+    /// Returns per-model usage for a page of sessions in one read.
     ///
     /// # Errors
     ///
     /// Returns a store error if usage cannot be read.
-    pub fn usage_for(
+    pub fn model_usage_for(
         &self,
         session_ids: &[SessionId],
-    ) -> Result<std::collections::BTreeMap<SessionId, UsageTotals>> {
-        self.store.usage_totals_for(session_ids)
+    ) -> Result<std::collections::BTreeMap<SessionId, Vec<ModelUsage>>> {
+        self.store.model_usage_for(session_ids)
     }
 
     /// Resolves pricing through its half-open validity interval and source precedence.

@@ -1,33 +1,42 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CommandProvider } from "../commands/context.js";
 import type { CommandClient } from "../contracts.js";
 import { createBrowserFixtureClient } from "../fixtures/browserAdapter.js";
-import {
-  ToolCallsPage,
-  inputPreview,
-  payloadText,
-  percent,
-} from "./ToolCallsPage.js";
+import { MetricsPage } from "./MetricsPage.js";
+import { inputPreview, payloadText, percent } from "./ToolCalls.js";
 
 function show(client: CommandClient, toolName: string | null = null) {
   return render(
     <CommandProvider client={client}>
-      <ToolCallsPage toolName={toolName} />
+      <MetricsPage toolName={toolName} />
     </CommandProvider>,
   );
 }
 
 const outcomes = () => within(screen.getByRole("group", { name: "Outcome" }));
 
+const panelNow = () =>
+  within(screen.getByRole("region", { name: "Tool calls" }));
+const toolPanel = async () =>
+  within(await screen.findByRole("region", { name: "Tool calls" }));
+
+// Fixture calls span more than the default week, so these tests read all of them.
+beforeEach(() =>
+  sessionStorage.setItem(
+    "cutokyo.metrics-filters",
+    JSON.stringify({ harness: "all", dateRange: "all" }),
+  ),
+);
 afterEach(() => sessionStorage.clear());
 
 describe("tool calls", () => {
   it("lists every tool with its call count, success rate and failures", async () => {
     show(createBrowserFixtureClient(null));
-    const table = await screen.findByRole("table");
+    const panel = await toolPanel();
+    const table = await panel.findByRole("table");
     const bash = within(table).getByRole("row", { name: /^Bash/ });
     // 40 calls, every seventh starting at index 1 fails: 6 failures.
     expect(within(bash).getByText("40")).toBeTruthy();
@@ -35,11 +44,9 @@ describe("tool calls", () => {
     expect(within(bash).getByText("6")).toBeTruthy();
     expect(
       within(bash).getByRole("link", { name: "Bash" }).getAttribute("href"),
-    ).toBe("#/tools/Bash");
+    ).toBe("#/metrics/Bash");
     expect(
-      screen.getByRole("heading", {
-        name: "74 calls · 83.8% succeeded · 12 failed",
-      }),
+      panel.getByText("74 calls · 83.8% succeeded · 12 failed"),
     ).toBeTruthy();
   });
 
@@ -47,12 +54,12 @@ describe("tool calls", () => {
     const client = createBrowserFixtureClient(null);
     const stats = vi.spyOn(client, "getToolCallStats");
     show(client);
-    await screen.findByRole("table");
+    await (await toolPanel()).findByRole("table");
     await userEvent.type(
       screen.getByRole("searchbox", { name: "Filter tools by name" }),
       "sql",
     );
-    expect(screen.getAllByRole("row")).toHaveLength(2);
+    expect(panelNow().getAllByRole("row")).toHaveLength(2);
     expect(
       screen.getByRole("link", { name: "mcp__cutokyo__cutokyo_sql_query" }),
     ).toBeTruthy();
@@ -63,14 +70,16 @@ describe("tool calls", () => {
       screen.getByRole("combobox", { name: "Sort" }),
       "failures",
     );
-    const rows = screen
+    const rows = panelNow()
       .getAllByRole("rowheader")
       .map((cell) => cell.textContent);
     expect(rows.slice(0, 2)).toEqual(["Bash", "shell"]);
     await userEvent.click(screen.getByRole("button", { name: /Codex/ }));
     await waitFor(() =>
       expect(
-        screen.getAllByRole("rowheader").map((cell) => cell.textContent),
+        panelNow()
+          .getAllByRole("rowheader")
+          .map((cell) => cell.textContent),
       ).toEqual(["shell"]),
     );
     expect(stats).toHaveBeenLastCalledWith(
@@ -127,18 +136,18 @@ describe("tool calls", () => {
     ).toBeTruthy();
   });
 
-  it("says when no tool calls are captured", async () => {
+  it("says when nothing is captured", async () => {
     show(createBrowserFixtureClient("empty-history"));
-    expect(await screen.findByText("No tool calls")).toBeTruthy();
+    expect(await screen.findByText("No activity")).toBeTruthy();
   });
 
   it("keeps harness and date filters between the list and a tool", async () => {
     const client = createBrowserFixtureClient(null);
     const view = show(client);
-    await screen.findByRole("table");
+    await (await toolPanel()).findByRole("table");
     await userEvent.selectOptions(
       screen.getByRole("combobox", { name: "Date" }),
-      "7d",
+      "30d",
     );
     view.unmount();
     const samples = vi.spyOn(client, "getToolCallSamples");
@@ -146,7 +155,7 @@ describe("tool calls", () => {
     await screen.findByRole("heading", { name: /failed calls/ });
     expect(samples).toHaveBeenCalledWith(
       expect.objectContaining({
-        filters: expect.objectContaining({ dateRange: "7d" }),
+        filters: expect.objectContaining({ dateRange: "30d" }),
       }),
     );
   });

@@ -282,6 +282,26 @@ test("dashboard and setup confirmation pass browser accessibility checks", async
   expect(consent.violations).toEqual([]);
 });
 
+test("metrics pass accessibility checks and never widen the window", async ({
+  page,
+}) => {
+  await openCase(page, "populated-dashboard", "/metrics", "Metrics");
+  await expect(page.getByRole("heading", { name: "By harness" })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "herdr-progress" }),
+  ).toHaveAttribute("href", "#/metrics/Bash");
+  const audit = await new AxeBuilder({ page }).analyze();
+  expect(audit.violations).toEqual([]);
+  for (const width of [1280, 900]) {
+    await page.setViewportSize({ width, height: 800 });
+    const widths = await page.evaluate(() => ({
+      inner: window.innerWidth,
+      document: document.documentElement.scrollWidth,
+    }));
+    expect(widths.document).toBeLessThanOrEqual(widths.inner);
+  }
+});
+
 test("System follows the OS; explicit appearance survives route navigation", async ({
   page,
 }) => {

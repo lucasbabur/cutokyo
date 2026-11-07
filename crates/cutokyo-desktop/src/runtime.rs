@@ -2,7 +2,7 @@ use std::io;
 #[cfg(feature = "native-e2e")]
 use std::path::PathBuf;
 
-use cutokyo_core::app::Application;
+use cutokyo_core::{app::Application, config::RuntimePaths};
 use cutokyo_domain::SettingsPatch;
 use serde_json::Value;
 use tauri::{Emitter as _, Manager as _};
@@ -146,6 +146,15 @@ async fn tool_call_stats(app: tauri::AppHandle, filters: ToolCallFilters) -> Res
     })
     .await
     .map_err(|error| format!("Tool-call statistics worker failed: {error}"))?
+}
+
+#[tauri::command]
+async fn setup_metrics(app: tauri::AppHandle, filters: ToolCallFilters) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        app.state::<DesktopService>().setup_metrics(&filters)
+    })
+    .await
+    .map_err(|error| format!("Setup metrics worker failed: {error}"))?
 }
 
 #[tauri::command]
@@ -468,7 +477,8 @@ fn check_for_updates() -> Result<Value, String> {
     DesktopService::check_for_updates()
 }
 
-pub(crate) fn run() -> Result<(), String> {
+/// Resolves the data and config paths, redirected into the test root for native E2E runs.
+fn desktop_paths() -> Result<RuntimePaths, String> {
     #[cfg(feature = "native-e2e")]
     let native_root = crate::native_test::validated_root(
         std::env::var("CUTOKYO_DESKTOP_TEST_MODE").ok().as_deref(),
@@ -485,7 +495,11 @@ pub(crate) fn run() -> Result<(), String> {
     );
     #[cfg(not(feature = "native-e2e"))]
     let paths = Application::new().runtime_paths(None, None);
-    let paths = paths.map_err(|error| format!("Cutokyo desktop failed: {}", error.message))?;
+    paths.map_err(|error| format!("Cutokyo desktop failed: {}", error.message))
+}
+
+pub(crate) fn run() -> Result<(), String> {
+    let paths = desktop_paths()?;
     // Before the builder, so a native toolkit initialization panic is recorded too.
     crate::crash::install(&paths);
 
@@ -545,6 +559,7 @@ pub(crate) fn run() -> Result<(), String> {
             session_detail,
             tool_call_stats,
             tool_call_samples,
+            setup_metrics,
             preview_resume,
             resume_session,
             preview_session_deletion,

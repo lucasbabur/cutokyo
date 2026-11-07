@@ -21,11 +21,19 @@ are quoted for `cmd.exe`, so paths with spaces work. Current Codex releases only
 run hooks the user has trusted; setup trusts Cutokyo's own entries through the
 Codex App Server, the same way Codex's `/hooks` review does.
 
-**Tool calls** lists every tool your agents called, with harnesses, call count,
-success rate, failures and last use. Filter by name, harness or date and sort by
-calls, failures or success rate. Open a tool to read its calls newest first,
-starting with failures when there are any, each with its native input, output,
-duration and session.
+**Metrics** shows where your setup wastes effort, for the last 7 days by default
+and against the equal-length period before it: tool error rate, interrupts and
+corrections per 100 of your messages, cache hit rate, compactions per session and
+the median time your agent keeps working after each message. Below that come the
+same numbers per harness, shell programs that failed three or more times (each
+linking to its tool calls), MCP server error rates, token use per project, and the
+installed skills and MCP servers nothing called. The Tool calls section lists every
+tool your agents called, with harnesses, call count, success rate, failures and last
+use; filter it by name and sort by calls, failures or success rate. Open a tool to
+read its calls newest first, starting with failures when there are any, each with
+its native input, output, duration and session. Claude Code is the only harness
+that records interrupts and compactions; the others show them as unknown.
+Corrections are messages that open like one ("no,", "actually", "I said", "não").
 
 **Agent tools** is the place to manage installed MCP servers, skills, hooks,
 plugins, and instruction files. Search by name or source, filter by harness or
