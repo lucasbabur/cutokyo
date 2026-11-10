@@ -134,6 +134,13 @@ action.
 
 ## Install
 
+Install the CLI from npm:
+
+```bash
+npm install --global cutokyo
+cutokyo version
+```
+
 Release builds ship as cargo-dist **shell**, **PowerShell** and **npm**
 installers, all of which install the same native binary. Verify the published
 SHA-256 manifest before first launch. See
